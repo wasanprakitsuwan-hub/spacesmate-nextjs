@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Prompt', sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #F8FAFC;
+    color: #231f20;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-spacemate-brandGold text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-white text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 hover:bg-white hover:text-spacemate-brandDark;
+  }
+
+  .btn-outline-dark {
+    @apply border-2 border-spacemate-brandDark text-spacemate-brandDark font-semibold px-6 py-3 rounded-lg transition-all duration-200 hover:bg-spacemate-brandDark hover:text-white;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-premium hover:shadow-premium-hover transition-all duration-200 hover:-translate-y-1;
+  }
+
+  .section-heading {
+    @apply text-2xl md:text-3xl font-bold text-spacemate-brandDark;
+  }
+
+  .section-subheading {
+    @apply text-gray-500 mt-2 text-sm md:text-base;
+  }
+
+  .badge-gold {
+    @apply bg-spacemate-brandGold text-white text-xs font-semibold px-3 py-1 rounded-full;
+  }
+
+  .badge-green {
+    @apply bg-spacemate-brandDark text-white text-xs font-semibold px-3 py-1 rounded-full;
+  }
+
+  .badge-teal {
+    @apply bg-spacemate-brandTeal text-white text-xs font-semibold px-3 py-1 rounded-full;
+  }
+
+  .input-field {
+    @apply w-full border border-spacemate-borderLight rounded-lg px-4 py-3 text-spacemate-textCharcoal focus:outline-none focus:ring-2 focus:ring-spacemate-brandTeal focus:border-transparent transition-all duration-200 bg-white;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-spacemate-textCharcoal mb-1;
+  }
+
+  .nav-link {
+    @apply text-white/80 hover:text-white font-medium transition-colors duration-150 text-sm;
+  }
+
+  .nav-link-active {
+    @apply text-spacemate-brandGold font-semibold border-b-2 border-spacemate-brandGold;
+  }
+}
