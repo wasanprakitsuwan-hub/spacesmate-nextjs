@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PropertyCard from '@/components/ui/PropertyCard'
 import { PROPERTY_TYPE_LABELS, AMENITY_LABELS } from '@/lib/constants'
@@ -9,7 +9,7 @@ import type { Property, PropertyType, SearchFilters } from '@/lib/types'
 const BEDROOM_OPTIONS = [1, 2, 3, 4]
 const PRICE_MAX_DEFAULT = 100000
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
@@ -236,5 +236,17 @@ export default function SearchPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center text-gray-400">
+        กำลังโหลด...
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   )
 }
