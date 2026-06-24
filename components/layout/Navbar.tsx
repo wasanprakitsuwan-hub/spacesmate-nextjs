@@ -3,15 +3,14 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
-  const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Active link style helper
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+
   const linkStyle = (href: string): React.CSSProperties => ({
     padding: '8px 14px',
     borderRadius: 20,
@@ -19,10 +18,12 @@ export default function Navbar() {
     fontWeight: isActive(href) ? 600 : 500,
     cursor: 'pointer',
     transition: 'all .2s',
-    color: isActive(href) ? '#d97f11' : '#334155',
-    background: isActive(href) ? 'rgba(217,127,17,0.10)' : 'transparent',
+    color: isActive(href) ? '#d97f11' : 'rgba(255,255,255,0.82)',
+    background: isActive(href) ? 'rgba(217,127,17,0.15)' : 'transparent',
     textDecoration: 'none',
   })
+
+  const ownerActive = isActive('/submit') || isActive('/services') || isActive('/manage')
 
   const mobileLinks = [
     { label: 'ค้นหาที่พัก',        icon: 'search',        href: '/search' },
@@ -33,20 +34,20 @@ export default function Navbar() {
   ]
 
   return (
-    <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+    <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#02402e', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', gap: 30 }}>
 
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <Image src="/logo.png" alt="SpacesMate" width={150} height={44} style={{ height: 44, width: 'auto', display: 'block' }} priority />
+          <Image src="/logo-white.png" alt="SpacesMate" width={150} height={44} style={{ height: 44, width: 'auto', display: 'block' }} priority />
         </Link>
 
         {/* Desktop nav links */}
         <div className="sm-navlinks" style={{ display: 'flex', gap: 4, marginLeft: 6, alignItems: 'center' }}>
 
           <Link href="/search" style={linkStyle('/search')}
-            onMouseEnter={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
-            onMouseLeave={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
+            onMouseEnter={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.color = '#fff' } }}
+            onMouseLeave={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.82)' } }}>
             ค้นหาที่พัก
           </Link>
 
@@ -54,9 +55,9 @@ export default function Navbar() {
           <div className="sm-owner-menu" style={{ position: 'relative' }}>
             <a style={{
               padding: '8px 14px', borderRadius: 20, fontSize: 14.5, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 3,
-              fontWeight: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? 600 : 500,
-              color: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? '#d97f11' : '#334155',
-              background: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? 'rgba(217,127,17,0.10)' : 'transparent',
+              fontWeight: ownerActive ? 600 : 500,
+              color: ownerActive ? '#d97f11' : 'rgba(255,255,255,0.82)',
+              background: ownerActive ? 'rgba(217,127,17,0.15)' : 'transparent',
             }}>
               สำหรับเจ้าของ <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
             </a>
@@ -83,22 +84,22 @@ export default function Navbar() {
           </div>
 
           <Link href="/blog" style={linkStyle('/blog')}
-            onMouseEnter={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
-            onMouseLeave={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
+            onMouseEnter={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.color = '#fff' } }}
+            onMouseLeave={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.82)' } }}>
             บทความ
           </Link>
         </div>
 
         {/* Right side */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <Link href="/dashboard" className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px', textDecoration: 'none' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#334155'}>
+          <Link href="/dashboard" className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.82)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px', textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.82)'}>
             แดชบอร์ด
           </Link>
-          <Link href="/login" className="sm-hide-mobile" title="เข้าสู่ระบบ" style={{ fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, padding: '8px 6px', textDecoration: 'none' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#334155'}>
+          <Link href="/login" className="sm-hide-mobile" title="เข้าสู่ระบบ" style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.70)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, padding: '8px 6px', textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.70)'}>
             <span className="msym" style={{ fontSize: 19 }}>admin_panel_settings</span>
           </Link>
           <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none' }}
@@ -108,7 +109,7 @@ export default function Navbar() {
           </Link>
           {/* Burger */}
           <button className="sm-burger" onClick={() => setMobileOpen(!mobileOpen)}
-            style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid #eef0ef', display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#02402e', background: 'transparent' }}>
+            style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid rgba(255,255,255,0.20)', display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', background: 'transparent' }}>
             <span className="msym" style={{ fontSize: 24 }}>{mobileOpen ? 'close' : 'menu'}</span>
           </button>
         </div>
@@ -116,12 +117,12 @@ export default function Navbar() {
 
       {/* Mobile panel */}
       {mobileOpen && (
-        <div style={{ borderTop: '1px solid #f0f0f0', background: '#fff', padding: '10px 16px 18px' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', background: '#02402e', padding: '10px 16px 18px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {mobileLinks.map(item => (
               <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#334155', textDecoration: 'none', transition: 'all .2s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: 'rgba(255,255,255,0.85)', textDecoration: 'none', transition: 'all .2s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>{item.icon}</span>
                 {item.label}
