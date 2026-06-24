@@ -2,57 +2,12 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
 import type { PropertyType } from '@/lib/types'
 
-const CATEGORIES: { type: PropertyType; th: string; en: string; icon: React.ReactNode }[] = [
-  {
-    type: 'apartment',
-    th: 'อพาร์ทเม้นท์',
-    en: 'Apartments',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
-  },
-  {
-    type: 'condo',
-    th: 'คอนโดมิเนียม',
-    en: 'Condos',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-      </svg>
-    ),
-  },
-  {
-    type: 'house',
-    th: 'บ้าน',
-    en: 'Houses',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    type: 'coworking',
-    th: 'โคเวิร์กกิ้ง',
-    en: 'Co-working',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
-    type: 'office',
-    th: 'ออฟฟิศ',
-    en: 'Office',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
+const CATEGORIES = [
+  { type: 'apartment' as PropertyType, label: 'อพาร์ทเม้นท์', icon: 'apartment' },
+  { type: 'condo'     as PropertyType, label: 'คอนโดมิเนียม',  icon: 'location_city' },
+  { type: 'house'     as PropertyType, label: 'บ้าน',           icon: 'cottage' },
+  { type: 'coworking' as PropertyType, label: 'โคเวิร์กกิ้ง',  icon: 'groups' },
+  { type: 'office'    as PropertyType, label: 'ออฟฟิศ',         icon: 'business_center' },
 ]
 
 async function getCounts(): Promise<Record<string, number>> {
@@ -76,28 +31,34 @@ export default async function CategorySection() {
   const counts = await getCounts()
 
   return (
-    <section className="py-10 bg-white border-b border-spacemate-borderLight">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-5 gap-4">
-          {CATEGORIES.map((cat) => (
-            <Link
-              key={cat.type}
-              href={`/search?type=${cat.type}`}
-              className="group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-premium hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <div className="w-14 h-14 rounded-full bg-spacemate-brandDark group-hover:bg-spacemate-brandTeal flex items-center justify-center text-white transition-colors duration-200">
-                {cat.icon}
-              </div>
-              <span className="text-sm font-semibold text-spacemate-textCharcoal group-hover:text-spacemate-brandDark text-center leading-tight">
-                {cat.th}
-              </span>
-              <span className="text-xs text-gray-400">
-                {counts[cat.type] ?? 0} แห่ง
-              </span>
-            </Link>
-          ))}
-        </div>
+    <section className="sm-home-categories" style={{ maxWidth: 1240, margin: '0 auto', padding: '32px 24px 8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }} className="sm-cats">
+        {CATEGORIES.map(cat => (
+          <Link
+            key={cat.type}
+            href={`/search?type=${cat.type}`}
+            style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
+            className="sm-cat-card"
+          >
+            <span style={{ width: 58, height: 58, borderRadius: '50%', background: 'linear-gradient(140deg,#06a487,#02402e)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 9px 18px -8px rgba(2,64,46,0.55)', flexShrink: 0 }}>
+              <span className="msym" style={{ fontSize: 28, color: '#fff' }}>{cat.icon}</span>
+            </span>
+            <span style={{ fontSize: 14.5, fontWeight: 500, color: '#231f20', textAlign: 'center', lineHeight: 1.3 }}>{cat.label}</span>
+            <span className="mono" style={{ fontSize: 10.5, color: '#9aa' }}>{counts[cat.type] ?? 0} แห่ง</span>
+          </Link>
+        ))}
       </div>
+      <style>{`
+        .sm-cat-card:hover {
+          border-color: #048c73 !important;
+          box-shadow: 0 12px 28px -12px rgba(2,64,46,0.16) !important;
+          transform: translateY(-3px) !important;
+        }
+        @media (max-width: 900px) {
+          .sm-home-categories { display: none !important; }
+          .sm-cats { grid-template-columns: repeat(2,1fr) !important; }
+        }
+      `}</style>
     </section>
   )
 }

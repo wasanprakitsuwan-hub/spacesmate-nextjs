@@ -3,109 +3,131 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [ownerOpen, setOwnerOpen] = useState(false)
+  const router = useRouter()
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const mobileLinks = [
+    { label: 'ค้นหาที่พัก',        icon: 'search',        href: '/search' },
+    { label: 'ลงประกาศปล่อยเช่า',  icon: 'sell',          href: '/submit' },
+    { label: 'รับฝากบริหาร',       icon: 'handshake',     href: '/services' },
+    { label: 'บทความ',             icon: 'article',       href: '/blog' },
+    { label: 'แดชบอร์ด',           icon: 'dashboard',     href: '/dashboard' },
+  ]
 
   return (
-    <nav className="bg-white border-b border-spacemate-borderLight sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', gap: 30 }}>
 
-          {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
-            <Image src="/logo.png" alt="SpacesMate" width={160} height={48} className="h-10 w-auto" priority />
+        {/* Logo */}
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0, background: '#fff', borderRadius: 11, padding: '7px 14px' }}>
+          <Image src="/logo.png" alt="SpacesMate" width={120} height={34} style={{ height: 34, width: 'auto', display: 'block' }} priority />
+        </Link>
+
+        {/* Desktop nav links */}
+        <div className="sm-navlinks" style={{ display: 'flex', gap: 4, marginLeft: 6, alignItems: 'center' }}>
+
+          <Link href="/search" style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', textDecoration: 'none' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
+            ค้นหาที่พัก
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/search" className="text-spacemate-textCharcoal hover:text-spacemate-brandDark font-medium text-sm transition-colors">
-              ค้นหาที่พัก
-            </Link>
-
-            {/* สำหรับเจ้าของ dropdown */}
-            <div className="relative" onMouseEnter={() => setOwnerOpen(true)} onMouseLeave={() => setOwnerOpen(false)}>
-              <button className="flex items-center gap-1 text-spacemate-textCharcoal hover:text-spacemate-brandDark font-medium text-sm transition-colors">
-                สำหรับเจ้าของ
-                <svg className="w-3.5 h-3.5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {ownerOpen && (
-                <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-premium-hover border border-spacemate-borderLight py-2 z-50">
-                  <Link href="/submit" className="block px-4 py-2.5 text-sm text-spacemate-textCharcoal hover:bg-spacemate-bgLight hover:text-spacemate-brandDark transition-colors">
-                    ลงประกาศที่พัก
-                  </Link>
-                  <Link href="/services" className="block px-4 py-2.5 text-sm text-spacemate-textCharcoal hover:bg-spacemate-bgLight hover:text-spacemate-brandDark transition-colors">
-                    บริการจัดการอสังหา
-                  </Link>
-                  <Link href="/pricing" className="block px-4 py-2.5 text-sm text-spacemate-textCharcoal hover:bg-spacemate-bgLight hover:text-spacemate-brandDark transition-colors">
-                    แพ็กเกจและราคา
-                  </Link>
-                </div>
-              )}
+          {/* สำหรับเจ้าของ dropdown */}
+          <div className="sm-owner-menu" style={{ position: 'relative' }}>
+            <a style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', display: 'flex', alignItems: 'center', gap: 3 }}>
+              สำหรับเจ้าของ <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
+            </a>
+            <div className="sm-owner-pop">
+              <Link href="/submit" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>sell</span>
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>ลงประกาศปล่อยเช่า</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>สร้างประกาศเอง ฟรี + แพ็กเกจ</span>
+                </span>
+              </Link>
+              <Link href="/services" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>handshake</span>
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>รับฝากบริหาร</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>ให้เราดูแลให้ครบวงจร</span>
+                </span>
+              </Link>
             </div>
-
-            <Link href="/blog" className="text-spacemate-textCharcoal hover:text-spacemate-brandDark font-medium text-sm transition-colors">
-              บทความ
-            </Link>
           </div>
 
-          {/* Right side */}
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/dashboard" className="text-spacemate-textCharcoal hover:text-spacemate-brandDark font-medium text-sm transition-colors">
-              แดชบอร์ด
-            </Link>
-            <Link href="/login" className="w-9 h-9 rounded-full border border-spacemate-borderLight flex items-center justify-center text-spacemate-textCharcoal hover:border-spacemate-brandTeal hover:text-spacemate-brandTeal transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </Link>
-            <Link href="/submit" className="bg-spacemate-brandGold hover:brightness-105 text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-all">
-              ลงประกาศฟรี
-            </Link>
-          </div>
-
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden text-spacemate-brandDark p-2 rounded-lg hover:bg-spacemate-bgLight transition-colors"
-            aria-label="Toggle menu"
-          >
-            <div className="w-5 h-0.5 bg-spacemate-brandDark mb-1.5" />
-            <div className="w-5 h-0.5 bg-spacemate-brandDark mb-1.5" />
-            <div className="w-5 h-0.5 bg-spacemate-brandDark" />
-          </button>
+          <Link href="/blog" style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', textDecoration: 'none' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
+            บทความ
+          </Link>
         </div>
 
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="md:hidden py-4 border-t border-spacemate-borderLight space-y-1">
-            {[
-              { href: '/search',   label: 'ค้นหาที่พัก' },
-              { href: '/submit',   label: 'ลงประกาศที่พัก' },
-              { href: '/services', label: 'บริการจัดการอสังหา' },
-              { href: '/pricing',  label: 'แพ็กเกจและราคา' },
-              { href: '/blog',     label: 'บทความ' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="block px-4 py-3 text-spacemate-textCharcoal hover:text-spacemate-brandDark hover:bg-spacemate-bgLight rounded-lg transition-colors font-medium text-sm"
-              >
+        {/* Right side */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <Link href="/dashboard" className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px', textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#334155'}>
+            แดชบอร์ด
+          </Link>
+          <Link href="/login" className="sm-hide-mobile" title="เข้าสู่ระบบ" style={{ fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, padding: '8px 6px', textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#334155'}>
+            <span className="msym" style={{ fontSize: 19 }}>admin_panel_settings</span>
+          </Link>
+          <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
+            ลงประกาศฟรี
+          </Link>
+          {/* Burger */}
+          <button className="sm-burger" onClick={() => setMobileOpen(!mobileOpen)}
+            style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid #eef0ef', display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#02402e', background: 'transparent' }}>
+            <span className="msym" style={{ fontSize: 24 }}>{mobileOpen ? 'close' : 'menu'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile panel */}
+      {mobileOpen && (
+        <div style={{ borderTop: '1px solid #f0f0f0', background: '#fff', padding: '10px 16px 18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {mobileLinks.map(item => (
+              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#334155', textDecoration: 'none', transition: 'all .2s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>{item.icon}</span>
                 {item.label}
               </Link>
             ))}
-            <div className="px-4 pt-2">
-              <Link href="/submit" className="bg-spacemate-brandGold text-white font-semibold text-sm px-5 py-3 rounded-lg block text-center">
-                ลงประกาศฟรี
-              </Link>
-            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      <style>{`
+        .sm-navlinks { display: flex !important; }
+        .sm-hide-mobile { display: flex !important; }
+        .sm-burger { display: none !important; }
+        .sm-owner-pop {
+          position: absolute; top: calc(100% + 6px); left: 0; width: 270px;
+          background: #fff; border: 1px solid #eef0ef; border-radius: 16px; padding: 7px;
+          box-shadow: 0 18px 40px -14px rgba(2,64,46,0.22); display: flex; flex-direction: column; gap: 2px;
+          opacity: 0; visibility: hidden; transform: translateY(6px); transition: all .18s ease; z-index: 60;
+        }
+        .sm-owner-menu:hover .sm-owner-pop { opacity: 1; visibility: visible; transform: translateY(0); }
+        @media (max-width: 900px) {
+          .sm-navlinks { display: none !important; }
+          .sm-hide-mobile { display: none !important; }
+          .sm-burger { display: flex !important; }
+        }
+      `}</style>
     </nav>
   )
 }
