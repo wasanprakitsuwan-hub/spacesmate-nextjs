@@ -55,7 +55,7 @@ export default function ManagePage() {
 
       {/* ── 1. HERO ──────────────────────────────────────────────────────── */}
       <section style={{ background: '#02402e', padding: '52px 24px 56px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', maxWidth: 640 } as React.CSSProperties}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#d97f11', margin: '0 0 14px' }}>
             บริการรับฝากบริหาร
           </p>
