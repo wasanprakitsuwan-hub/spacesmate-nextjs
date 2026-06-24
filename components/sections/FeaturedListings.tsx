@@ -1,82 +1,106 @@
 import Link from 'next/link'
-import PropertyCard from '@/components/ui/PropertyCard'
-import { createServerClient } from '@/lib/supabase'
-import type { Property } from '@/lib/types'
-
-async function getFeaturedListings(): Promise<Property[]> {
-  try {
-    const supabase = createServerClient()
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*, images:property_images(*)')
-      .eq('listing_status', 'active')
-      .eq('verified', true)
-      .order('updated_at', { ascending: false })
-      .limit(6)
-
-    if (error) throw error
-    // Fair Rotation: shuffle verified listings on every request
-    return (data as Property[]).sort(() => Math.random() - 0.5)
-  } catch {
-    return []
-  }
-}
+import Image from 'next/image'
+import { getWPProperties, getPropMeta, getPropImage, getPropTitle } from '@/lib/wordpress'
 
 export default async function FeaturedListings() {
-  const properties = await getFeaturedListings()
+  const properties = await getWPProperties(6)
+
+  // Fair Rotation — shuffle on every server render
+  const shuffled = [...properties].sort(() => Math.random() - 0.5)
 
   return (
-    <section className="py-14 bg-spacemate-bgLight">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="section-heading">ที่พักแนะนำ</h2>
-            <p className="section-subheading">
-              คัดเลือกจากประกาศที่ผ่านการยืนยันล่าสุด · อัปเดตทุก Refresh
-            </p>
-          </div>
-          <Link href="/search" className="text-spacemate-brandTeal text-sm font-medium hover:underline hidden sm:block">
-            ดูทั้งหมด →
-          </Link>
+    <section style={{ maxWidth: 1240, margin: '0 auto', padding: '8px 24px 56px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>ที่พักแนะนำ</h2>
+          <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>คัดเลือกจากประกาศที่ผ่านการยืนยันล่าสุด · อัปเดตทุก Refresh</p>
         </div>
+        <a href="https://spacesmate.com/property/" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, textDecoration: 'none' }}>ดูทั้งหมด →</a>
+      </div>
 
-        {/* Grid */}
-        {properties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.map((property, index) => (
-              <PropertyCard key={property.id} property={property} featured={index < 3} />
-            ))}
-          </div>
-        ) : (
-          /* Placeholder cards when DB is empty */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="card overflow-hidden animate-pulse">
-                <div className="h-48 bg-gradient-to-br from-spacemate-brandDark/20 to-spacemate-brandTeal/20" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="sm-grid3">
+        {shuffled.length > 0 ? shuffled.map(p => {
+          const meta = getPropMeta(p)
+          const img  = getPropImage(p)
+          const title = getPropTitle(p)
+          const price = meta.price ? `฿${parseInt(meta.price).toLocaleString()}/เดือน` : 'TBD'
+
+          return (
+            <a
+              key={p.id}
+              href={p.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sm-prop-card"
+              style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'all .25s', boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)', display: 'block', textDecoration: 'none' }}
+            >
+              {/* Image */}
+              <div style={{ height: 195, position: 'relative', background: 'linear-gradient(135deg,#02402e,#048c73)', overflow: 'hidden' }}>
+                {img ? (
+                  <Image
+                    src={img}
+                    alt={title}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    sizes="(max-width:768px) 100vw, 33vw"
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="msym" style={{ fontSize: 42, color: 'rgba(255,255,255,0.3)' }}>apartment</span>
+                  </div>
+                )}
+                <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.92)', color: '#02402e', fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 20 }}>ยืนยันแล้ว ✓</span>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '16px 18px 18px' }}>
+                <h3 style={{ fontSize: 15.5, fontWeight: 600, margin: '0 0 7px', lineHeight: 1.4, color: '#231f20', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{title}</h3>
+                {meta.address && (
+                  <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 10px', fontWeight: 300, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>📍 {meta.address}</p>
+                )}
+
+                {/* Stats row */}
+                {(meta.bedrooms || meta.bathrooms || meta.size) && (
+                  <div style={{ display: 'flex', gap: 12, margin: '0 0 12px', flexWrap: 'wrap' }}>
+                    {meta.bedrooms  && <span style={{ fontSize: 12.5, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, color: '#048c73' }}>bed</span>{meta.bedrooms} นอน</span>}
+                    {meta.bathrooms && <span style={{ fontSize: 12.5, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, color: '#048c73' }}>bathtub</span>{meta.bathrooms} น้ำ</span>}
+                    {meta.size      && <span style={{ fontSize: 12.5, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, color: '#048c73' }}>square_foot</span>{meta.size} ตร.ม.</span>}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="mono" style={{ fontSize: 16, fontWeight: 700, color: '#d97f11' }}>{price}</span>
+                  <span style={{ color: '#048c73', fontSize: 13, fontWeight: 600 }}>ดูรายละเอียด →</span>
                 </div>
               </div>
-            ))}
-          </div>
+            </a>
+          )
+        }) : (
+          /* Skeleton when WP is unreachable */
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden' }}>
+              <div style={{ height: 195, background: 'linear-gradient(135deg,rgba(2,64,46,0.10),rgba(4,140,115,0.10))' }} />
+              <div style={{ padding: 18 }}>
+                <div style={{ height: 16, background: '#f0f0f0', borderRadius: 8, marginBottom: 8, width: '80%' }} />
+                <div style={{ height: 13, background: '#f0f0f0', borderRadius: 8, width: '55%' }} />
+              </div>
+            </div>
+          ))
         )}
-
-        {/* Fair Rotation Note */}
-        <p className="text-center text-xs text-gray-400 mt-6 flex items-center justify-center gap-1">
-          <span>🔄</span>
-          <span>ระบบ Fair Rotation — ที่พักแนะนำจะเปลี่ยนทุกครั้งที่โหลดหน้า เพื่อให้ทุกประกาศได้รับโอกาสเท่าเทียมกัน</span>
-        </p>
-
-        <div className="text-center mt-6 sm:hidden">
-          <Link href="/search" className="btn-outline-dark inline-block text-sm">
-            ดูที่พักทั้งหมด →
-          </Link>
-        </div>
       </div>
+
+      {/* Fair Rotation note */}
+      <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        🔄 ระบบ Fair Rotation — ที่พักแนะนำจะเปลี่ยนทุกครั้งที่โหลดหน้า เพื่อให้ทุกประกาศได้รับโอกาสเท่าเทียมกัน
+      </p>
+
+      <style>{`
+        .sm-prop-card:hover { box-shadow: 0 16px 34px -12px rgba(2,64,46,0.18) !important; transform: translateY(-4px) !important; }
+        @media (max-width: 900px) { .sm-grid3 { grid-template-columns: repeat(2,1fr) !important; } }
+        @media (max-width: 600px) { .sm-grid3 { grid-template-columns: 1fr !important; } }
+      `}</style>
     </section>
   )
 }
