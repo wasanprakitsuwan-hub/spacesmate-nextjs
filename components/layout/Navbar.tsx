@@ -3,11 +3,26 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export default function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Active link style helper
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  const linkStyle = (href: string): React.CSSProperties => ({
+    padding: '8px 14px',
+    borderRadius: 20,
+    fontSize: 14.5,
+    fontWeight: isActive(href) ? 600 : 500,
+    cursor: 'pointer',
+    transition: 'all .2s',
+    color: isActive(href) ? '#d97f11' : '#334155',
+    background: isActive(href) ? 'rgba(217,127,17,0.10)' : 'transparent',
+    textDecoration: 'none',
+  })
 
   const mobileLinks = [
     { label: 'ค้นหาที่พัก',        icon: 'search',        href: '/search' },
@@ -22,22 +37,27 @@ export default function Navbar() {
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', gap: 30 }}>
 
         {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0, background: '#fff', borderRadius: 11, padding: '7px 14px' }}>
-          <Image src="/logo.png" alt="SpacesMate" width={120} height={34} style={{ height: 34, width: 'auto', display: 'block' }} priority />
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
+          <Image src="/logo.png" alt="SpacesMate" width={150} height={44} style={{ height: 44, width: 'auto', display: 'block' }} priority />
         </Link>
 
         {/* Desktop nav links */}
         <div className="sm-navlinks" style={{ display: 'flex', gap: 4, marginLeft: 6, alignItems: 'center' }}>
 
-          <Link href="/search" style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', textDecoration: 'none' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
+          <Link href="/search" style={linkStyle('/search')}
+            onMouseEnter={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
+            onMouseLeave={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
             ค้นหาที่พัก
           </Link>
 
           {/* สำหรับเจ้าของ dropdown */}
           <div className="sm-owner-menu" style={{ position: 'relative' }}>
-            <a style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <a style={{
+              padding: '8px 14px', borderRadius: 20, fontSize: 14.5, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 3,
+              fontWeight: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? 600 : 500,
+              color: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? '#d97f11' : '#334155',
+              background: (isActive('/submit') || isActive('/services') || isActive('/manage')) ? 'rgba(217,127,17,0.10)' : 'transparent',
+            }}>
               สำหรับเจ้าของ <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
             </a>
             <div className="sm-owner-pop">
@@ -62,9 +82,9 @@ export default function Navbar() {
             </div>
           </div>
 
-          <Link href="/blog" style={{ padding: '8px 14px', borderRadius: 20, fontSize: 14.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', color: '#334155', textDecoration: 'none' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
+          <Link href="/blog" style={linkStyle('/blog')}
+            onMouseEnter={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
+            onMouseLeave={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
             บทความ
           </Link>
         </div>
