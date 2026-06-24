@@ -354,16 +354,9 @@ export const PRICE_RANGES = [
   { label: 'มากกว่า ฿20,000', min: 20000, max: Infinity },
 ]
 
-// Fetch full HTML content from WP REST API at build time
-export async function fetchPropertyContent(wpId: number): Promise<string> {
-  try {
-    const res = await fetch(`${WP_BASE}/property/${wpId}?_fields=content`, {
-      next: { revalidate: false }, // cache forever — WP site closing soon
-    })
-    if (!res.ok) return '<p>เนื้อหาไม่พร้อมใช้งานในขณะนี้</p>'
-    const data = await res.json()
-    return data.content?.rendered ?? '<p>ไม่พบเนื้อหา</p>'
-  } catch {
-    return '<p>ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง</p>'
-  }
+// Property detail content — WP REST API no longer available after DNS cutover.
+// Property pages already show all key info (specs, amenities, map) from static data.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function fetchPropertyContent(_wpId: number): Promise<string> {
+  return ''
 }

@@ -1,7 +1,9 @@
 // ─── SpacesMate Blog — Static Post Data ───────────────────────────────────────
 // Migrated from WordPress (spacesmate.com) — all 9 posts
-// Images: hosted on WP CDN. Download to /public/blog/ before closing WP.
-// Content: fetched from WP REST API at build time via generateStaticParams.
+// Images: /public/blog/ (generated branded covers)
+// Content: static HTML from lib/blog-content.ts (WP REST API no longer available)
+
+import { BLOG_CONTENT } from './blog-content'
 
 export interface BlogPost {
   id: number          // WP post ID — used to fetch full content at build time
@@ -131,16 +133,7 @@ export function getBlogPostBySlug(slug: string): BlogPost | undefined {
   return blogPosts.find(p => p.slug === slug)
 }
 
-// Fetch full HTML content from WP REST API at build time
+// Return static HTML content (migrated from WP after DNS cutover)
 export async function fetchPostContent(wpId: number): Promise<string> {
-  try {
-    const res = await fetch(`${WP_BASE}/posts/${wpId}?_fields=content`, {
-      next: { revalidate: false }, // cache forever — WP site closing soon
-    })
-    if (!res.ok) return '<p>เนื้อหาไม่พร้อมใช้งานในขณะนี้</p>'
-    const data = await res.json()
-    return data.content?.rendered ?? '<p>ไม่พบเนื้อหา</p>'
-  } catch {
-    return '<p>ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง</p>'
-  }
+  return BLOG_CONTENT[wpId] ?? '<p>ไม่พบเนื้อหา</p>'
 }
