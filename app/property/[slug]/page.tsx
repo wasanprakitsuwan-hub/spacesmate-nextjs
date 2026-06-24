@@ -1,220 +1,183 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
-import { AMENITY_LABELS } from '@/lib/constants'
-import type { Property } from '@/lib/types'
 import type { Metadata } from 'next'
 
-interface Props {
-  params: { slug: string }
+interface Props { params: { slug: string } }
+
+const GRADS: Record<string, string> = {
+  apartment: 'linear-gradient(135deg,#02402e,#036b56)',
+  condo:     'linear-gradient(135deg,#03533c,#048c73)',
+  house:     'linear-gradient(135deg,#036b56,#06a487)',
+  coworking: 'linear-gradient(135deg,#1e3a5f,#2d6a9f)',
+  office:    'linear-gradient(135deg,#4a1d1d,#8b3a3a)',
+  default:   'linear-gradient(135deg,#02402e,#048c73)',
+}
+const TYPE_LABELS: Record<string, string> = {
+  apartment:'อพาร์ทเม้นท์', condo:'คอนโด', house:'บ้าน', coworking:'โคเวิร์กกิ้ง', office:'ออฟฟิศ',
 }
 
-async function getProperty(slug: string): Promise<Property | null> {
+async function getProp(slug: string) {
   try {
-    const supabase = createServerClient()
-    const { data } = await supabase
-      .from('properties')
-      .select('*, images:property_images(*)')
-      .eq('slug', slug)
-      .eq('listing_status', 'active')
-      .single()
-    return data as Property | null
-  } catch {
-    return null
-  }
+    const sb = createServerClient()
+    const { data } = await sb.from('properties')
+      .select('*').or(`id.eq.${slug},slug.eq.${slug}`).eq('listing_status','active').single()
+    return data
+  } catch { return null }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const property = await getProperty(params.slug)
-  if (!property) return { title: 'ไม่พบประกาศ' }
+  const p = await getProp(params.slug)
+  if (!p) return { title: 'ไม่พบประกาศ' }
   return {
-    title: property.title_th,
-    description: property.description_th.slice(0, 155),
-    openGraph: {
-      title: property.title_th,
-      description: property.description_th.slice(0, 155),
-      images: property.images?.[0]?.url ? [property.images[0].url] : [],
-    },
+    title: p.title,
+    description: p.description?.slice(0, 155) || 'รายละเอียดที่พัก SpacesMate',
   }
 }
 
 export default async function PropertyDetailPage({ params }: Props) {
-  const property = await getProperty(params.slug)
-  if (!property) notFound()
+  const p = await getProp(params.slug)
+  if (!p) notFound()
 
-  const heroImage = property.images?.find(img => img.is_featured) || property.images?.[0]
-  const galleryImages = property.images?.slice(1, 5) || []
+  const grad = GRADS[p.property_type] || GRADS.default
+  const typeLabel = TYPE_LABELS[p.property_type] || p.property_type
+  const priceRange = p.price_min && p.price_max
+    ? `฿${p.price_min.toLocaleString()}–${p.price_max.toLocaleString()}/เดือน`
+    : p.price_min ? `฿${p.price_min.toLocaleString()}+/เดือน` : 'TBD'
+
+  const stats = [
+    p.bedrooms != null  && { icon: 'bed',          value: `${p.bedrooms} ห้องนอน` },
+    p.bathrooms != null && { icon: 'bathtub',       value: `${p.bathrooms} ห้องน้ำ` },
+    p.size_sqm != null  && { icon: 'square_foot',   value: `${p.size_sqm} ตร.ม.` },
+    p.floor != null     && { icon: 'stairs',         value: `ชั้น ${p.floor}` },
+  ].filter(Boolean) as { icon: string; value: string }[]
+
+  const amenities = (p.amenities || []).map((a: string) => {
+    const icons: Record<string,string> = { wifi:'wifi', parking:'local_parking', air:'ac_unit', furnished:'chair', laundry:'local_laundry_service', security:'security', pool:'pool', gym:'fitness_center' }
+    return { icon: icons[a] || 'check_circle', label: a }
+  })
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
+    <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 24px 60px' }}>
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-400 mb-6 flex items-center gap-2">
-        <Link href="/" className="hover:text-spacemate-brandDark">หน้าแรก</Link>
-        <span>›</span>
-        <Link href="/search" className="hover:text-spacemate-brandDark">ค้นหาที่พัก</Link>
-        <span>›</span>
-        <span className="text-spacemate-textCharcoal">{property.sub_district}</span>
-      </nav>
+      <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 16px', cursor: 'pointer' }}>
+        <Link href="/search" style={{ color: '#94a3b8' }}>ค้นหา</Link> › {typeLabel} › {p.district || p.area || ''}
+      </p>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 356px', gap: 30 }} className="sm-detaillayout">
 
-        {/* ── Left: Main Content ── */}
-        <div className="flex-1 min-w-0">
-
-          {/* Gallery */}
-          <div className="grid grid-cols-4 gap-2 mb-6 rounded-2xl overflow-hidden">
-            {/* Hero */}
-            <div className="col-span-4 md:col-span-2 relative h-64 md:h-96 bg-card-gradient">
-              {heroImage?.url ? (
-                <Image src={heroImage.url} alt={heroImage.alt_th} fill className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-spacemate-brandDark to-spacemate-brandTeal" />
-              )}
-            </div>
-            {/* Thumbnails */}
-            <div className="col-span-4 md:col-span-2 grid grid-cols-2 gap-2">
-              {Array.from({ length: 4 }).map((_, i) => {
-                const img = galleryImages[i]
-                return (
-                  <div key={i} className="relative h-28 md:h-[11.5rem] bg-card-gradient rounded-lg overflow-hidden">
-                    {img?.url ? (
-                      <Image src={img.url} alt={img.alt_th} fill className="object-cover hover:scale-105 transition-transform cursor-pointer" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-spacemate-brandDark/60 to-spacemate-brandTeal/60" />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+        {/* Left col */}
+        <div>
+          {/* Hero image */}
+          <div style={{ height: 410, borderRadius: 20, background: grad, position: 'relative', overflow: 'hidden' }}>
+            <span style={{ position: 'absolute', top: 16, left: 16, background: '#048c73', color: '#fff', fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 10 }}>ยืนยันแล้ว ✓</span>
+            <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 12, fontWeight: 500, color: '#fff', background: 'rgba(0,0,0,0.3)', padding: '6px 12px', borderRadius: 9 }}>{typeLabel}</span>
+            <span className="mono" style={{ position: 'absolute', bottom: 16, right: 16, fontSize: 11, color: 'rgba(255,255,255,0.85)', background: 'rgba(0,0,0,0.3)', padding: '6px 11px', borderRadius: 8 }}>1 / 5</span>
           </div>
 
-          {/* Title + Badges */}
-          <div className="flex items-start gap-3 mb-4 flex-wrap">
-            <h1 className="text-xl md:text-2xl font-bold text-spacemate-brandDark flex-1">
-              {property.title_th}
-            </h1>
-            {property.verified && (
-              <span className="badge-teal flex-shrink-0">✓ ยืนยันแล้ว</span>
-            )}
-          </div>
-
-          {/* Location */}
-          <p className="text-gray-500 text-sm mb-5 flex items-center gap-1">
-            <span>📍</span> {property.address_th}
-          </p>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          {/* Thumbnails */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 11, marginTop: 11 }}>
             {[
-              { icon: '🛏', label: `${property.bedrooms} ห้องนอน` },
-              { icon: '🚿', label: `${property.bathrooms} ห้องน้ำ` },
-              { icon: '📐', label: `${property.area_sqm} ตร.ม.` },
-              { icon: '🏢', label: property.floor ? `ชั้น ${property.floor}` : 'ไม่ระบุ' },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-spacemate-bgLight rounded-xl p-3 text-center">
-                <div className="text-xl mb-1">{stat.icon}</div>
-                <div className="text-xs text-gray-600 font-medium">{stat.label}</div>
-              </div>
+              'linear-gradient(135deg,#03533c,#048c73)',
+              'linear-gradient(135deg,#02402e,#036b56)',
+              'linear-gradient(135deg,#036b56,#04a385)',
+              'linear-gradient(135deg,#02402e,#048c73)',
+            ].map((g, i) => (
+              <div key={i} style={{ height: 80, borderRadius: 12, background: g, cursor: 'pointer', border: i === 0 ? '2px solid #d97f11' : 'none', opacity: i === 0 ? 1 : 0.85 }} />
             ))}
           </div>
 
-          {/* Description */}
-          <div className="mb-8">
-            <h2 className="font-bold text-spacemate-brandDark text-lg mb-3">รายละเอียด</h2>
-            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-              {property.description_th}
-            </p>
-          </div>
+          {/* Title */}
+          <h1 style={{ fontSize: 27, fontWeight: 600, margin: '26px 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>{p.title}</h1>
+          <p style={{ color: '#64748b', fontSize: 14.5, margin: '0 0 4px' }}>📍 {p.district}{p.area ? `, ${p.area}` : ''}</p>
+          {p.address && <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 22px', fontWeight: 300 }}>{p.address}</p>}
 
-          {/* Amenities */}
-          {property.amenities?.length > 0 && (
-            <div className="mb-8">
-              <h2 className="font-bold text-spacemate-brandDark text-lg mb-3">สิ่งอำนวยความสะดวก</h2>
-              <div className="flex flex-wrap gap-2">
-                {property.amenities.map(key => {
-                  const amenity = AMENITY_LABELS[key]
-                  return amenity ? (
-                    <span key={key} className="flex items-center gap-2 bg-spacemate-bgLight border border-spacemate-borderLight px-3 py-2 rounded-full text-sm text-spacemate-textCharcoal">
-                      <span>{amenity.icon}</span>
-                      <span>{amenity.th}</span>
+          {/* Stats */}
+          {stats.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length},1fr)`, gap: 13, marginBottom: 28 }}>
+              {stats.map(st => (
+                <div key={st.icon} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: 17, textAlign: 'center' }}>
+                  <div style={{ marginBottom: 9 }}>
+                    <span style={{ width: 44, height: 44, borderRadius: 13, background: 'linear-gradient(140deg,#eaf6f1,#dcefe8)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="msym" style={{ fontSize: 23, color: '#048c73' }}>{st.icon}</span>
                     </span>
-                  ) : null
-                })}
-              </div>
+                  </div>
+                  <div style={{ fontSize: 14.5, fontWeight: 600 }}>{st.value}</div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Map Placeholder */}
-          <div className="mb-8">
-            <h2 className="font-bold text-spacemate-brandDark text-lg mb-3">แผนที่</h2>
-            <div className="h-64 bg-spacemate-bgLight border-2 border-spacemate-brandTeal rounded-2xl flex items-center justify-center">
-              <a
-                href={`https://maps.google.com/?q=${property.lat},${property.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-spacemate-brandTeal font-medium text-sm hover:underline flex items-center gap-2"
-              >
-                <span>📍</span> ดูบนแผนที่ Google Maps
-              </a>
-            </div>
+          {/* Description */}
+          <h2 style={{ fontSize: 19, fontWeight: 600, margin: '0 0 12px' }}>รายละเอียด</h2>
+          <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.75, margin: '0 0 28px', fontWeight: 300 }}>{p.description || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
+
+          {/* Amenities */}
+          {amenities.length > 0 && (
+            <>
+              <h2 style={{ fontSize: 19, fontWeight: 600, margin: '0 0 13px' }}>สิ่งอำนวยความสะดวก</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+                {amenities.map(a => (
+                  <span key={a.label} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #eef0ef', borderRadius: 12, padding: '10px 15px', fontSize: 13.5, color: '#334155', fontWeight: 500 }}>
+                    <span className="msym" style={{ fontSize: 19, color: '#048c73' }}>{a.icon}</span> {a.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Map */}
+          <h2 style={{ fontSize: 19, fontWeight: 600, margin: '0 0 13px' }}>ทำเลที่ตั้ง</h2>
+          <div style={{ height: 230, borderRadius: 16, border: '2px solid #048c73', background: 'repeating-linear-gradient(45deg,#ecf5f2,#ecf5f2 14px,#e2f0eb 14px,#e2f0eb 28px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <a
+              href={p.lat && p.lng ? `https://maps.google.com/?q=${p.lat},${p.lng}` : 'https://maps.google.com'}
+              target="_blank" rel="noopener noreferrer"
+              style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 12, padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#048c73', boxShadow: '0 4px 14px -4px rgba(2,64,46,0.15)', textDecoration: 'none' }}
+            >
+              📍 ดูบนแผนที่ Google Maps
+            </a>
           </div>
         </div>
 
-        {/* ── Right: Contact Sidebar ── */}
-        <aside className="lg:w-80 flex-shrink-0">
-          <div className="bg-white rounded-2xl shadow-premium p-6 sticky top-24">
-
-            {/* Price */}
-            <div className="text-center mb-5 pb-5 border-b border-spacemate-borderLight">
-              <p className="text-3xl font-bold text-spacemate-brandGold">
-                ฿{property.price_from.toLocaleString()}
-              </p>
-              <p className="text-gray-400 text-sm">/เดือน</p>
-            </div>
+        {/* Right sidebar */}
+        <aside style={{ alignSelf: 'start', position: 'sticky', top: 86 }}>
+          <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: 24, boxShadow: '0 14px 34px -14px rgba(2,64,46,0.14)' }}>
+            <div style={{ fontSize: 12.5, color: '#94a3b8', fontWeight: 500, marginBottom: 4 }}>ราคาเช่าต่อเดือน</div>
+            <div className="mono" style={{ fontSize: 30, fontWeight: 600, color: '#d97f11', marginBottom: 22, lineHeight: 1.1 }}>{priceRange}</div>
 
             {/* Agent */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-12 h-12 bg-card-gradient rounded-full flex items-center justify-center text-white font-bold text-lg">
-                SM
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 0', borderTop: '1px solid #f3f5f4', borderBottom: '1px solid #f3f5f4', marginBottom: 18 }}>
+              <span style={{ width: 46, height: 46, borderRadius: '50%', background: 'linear-gradient(135deg,#02402e,#048c73)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 17 }}>S</span>
               <div>
-                <p className="font-semibold text-spacemate-brandDark text-sm">SpacesMate Agent</p>
-                <p className="text-gray-400 text-xs">ตอบภายใน 1 ชั่วโมง</p>
+                <div style={{ fontSize: 14.5, fontWeight: 600 }}>SpacesMate Agent</div>
+                <div style={{ fontSize: 12, color: '#048c73', fontWeight: 500 }}>ยืนยันตัวตนแล้ว ✓</div>
               </div>
             </div>
 
-            {/* Contact Buttons */}
-            <div className="space-y-3">
-              <a
-                href="tel:0823535558"
-                className="flex items-center justify-center gap-2 w-full bg-spacemate-brandDark text-white font-semibold py-3 rounded-xl hover:brightness-110 transition-all text-sm"
-              >
-                📞 โทร: 082-353-5558
+            {/* CTA buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              <a href="tel:0823535558"
+                style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14.5, padding: '13px 0', borderRadius: 24, textAlign: 'center', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}
+                onMouseEnter={undefined}>
+                <span className="msym" style={{ fontSize: 19 }}>call</span>โทรเลย
               </a>
-              <a
-                href="https://line.me/R/ti/p/@spacesmate"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-spacemate-brandTeal text-white font-semibold py-3 rounded-xl hover:brightness-110 transition-all text-sm"
-              >
-                💬 LINE: @spacesmate
+              <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                style={{ background: '#048c73', color: '#fff', fontWeight: 600, fontSize: 14.5, padding: '13px 0', borderRadius: 24, textAlign: 'center', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
+                <span className="msym" style={{ fontSize: 19 }}>chat</span>แชทผ่าน LINE
               </a>
-              <button className="btn-primary w-full text-sm py-3">
-                📅 นัดชมห้อง
-              </button>
-            </div>
-
-            {/* Trust Badge */}
-            <div className="mt-5 pt-4 border-t border-spacemate-borderLight text-center">
-              <p className="text-xs text-gray-400">
-                🔒 ปลอดภัย — ติดต่อโดยตรง ไม่มีค่าคอมมิชชั่น
-              </p>
             </div>
           </div>
+          <p className="mono" style={{ textAlign: 'center', fontSize: 11.5, color: '#94a3b8', margin: '13px 0 0' }}>
+            {p.id?.slice(0,8).toUpperCase()} · อัปเดตล่าสุด
+          </p>
         </aside>
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .sm-detaillayout { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }
