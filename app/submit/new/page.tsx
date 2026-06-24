@@ -3,31 +3,102 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const STEPS = [
   { num: 1, label: 'ข้อมูลทรัพย์สิน' },
   { num: 2, label: 'ที่ตั้ง' },
-  { num: 3, label: 'รูปภาพ' },
+  { num: 3, label: 'รูปภาพ & ติดต่อ' },
 ]
 
-const TYPES = ['คอนโดมิเนียม','อพาร์ทเม้นท์','บ้าน','ออฟฟิศ','โคเวิร์กกิ้ง','ตึกแถว']
+const TYPES       = ['คอนโดมิเนียม','อพาร์ทเม้นท์','บ้าน','ออฟฟิศ','โคเวิร์กกิ้ง','ตึกแถว']
+const PROVINCES   = ['กรุงเทพมหานคร','นนทบุรี','สมุทรปราการ','ปทุมธานี','เชียงใหม่','ภูเก็ต']
+const DISTRICTS   = ['คลองเตย','วัฒนา','ห้วยขวาง','สาทร','บางรัก','ดินแดง','ลาดพร้าว','จตุจักร','บึงกุ่ม','บางเขน']
+const SUBDISTRICTS = ['คลองเตย','พระโขนง','คลองตัน','ช่องนนทรี','สีลม','ลุมพินี','วัฒนา']
 const AMENITIES_LIST = ['Wi-Fi','แอร์','ที่จอดรถ','เฟอร์นิเจอร์ครบ','ซักรีด','รักษาความปลอดภัย','สระว่ายน้ำ','ฟิตเนส']
 
-const fieldStyle = {
-  width:'100%', border:'1px solid #eef0ef', borderRadius:12, padding:'12px 14px',
-  fontSize:15, outline:'none', fontFamily:'inherit', background:'#fff', color:'#231f20',
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const fieldStyle: React.CSSProperties = {
+  width: '100%', border: '1px solid #eef0ef', borderRadius: 12,
+  padding: '12px 14px', fontSize: 15, outline: 'none',
+  fontFamily: 'inherit', background: '#fff', color: '#231f20',
+  boxSizing: 'border-box',
 }
-const labelStyle = { fontSize:13, fontWeight:600, color:'#475569', display:'block' as const, marginBottom:6 }
+const labelStyle: React.CSSProperties = {
+  fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6,
+}
+const focusOn  = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  e.target.style.borderColor = '#048c73'
+  e.target.style.boxShadow   = '0 0 0 3px rgba(4,140,115,0.12)'
+}
+const focusOff = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  e.target.style.borderColor = '#eef0ef'
+  e.target.style.boxShadow   = 'none'
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+interface FormData {
+  title: string; type: string; rentType: 'month' | 'day'
+  price: string; size: string; bedrooms: string; bathrooms: string; floor: string
+  description: string; amenities: string[]
+  address: string; province: string; district: string; subdistrict: string; postcode: string
+  contactName: string; contactPhone: string; contactEmail: string
+}
+
+const INITIAL: FormData = {
+  title: '', type: 'คอนโดมิเนียม', rentType: 'month',
+  price: '', size: '', bedrooms: '', bathrooms: '', floor: '',
+  description: '', amenities: [],
+  address: '', province: 'กรุงเทพมหานคร', district: 'คลองเตย', subdistrict: 'คลองเตย', postcode: '',
+  contactName: '', contactPhone: '', contactEmail: '',
+}
 
 export default function SubmitNewPage() {
-  const [step, setStep] = useState(0)
+  const [step, setStep]         = useState(0)
+  const [form, setForm]         = useState<FormData>(INITIAL)
+  const [loading, setLoading]   = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [rentType, setRentType] = useState<'month'|'day'>('month')
-  const [amenities, setAmenities] = useState<string[]>([])
+  const [error, setError]       = useState<string | null>(null)
 
-  function toggleAm(a: string) {
-    setAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
+  function set<K extends keyof FormData>(field: K, value: FormData[K]) {
+    setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  function toggleAmenity(a: string) {
+    setForm(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(a)
+        ? prev.amenities.filter(x => x !== a)
+        : [...prev.amenities, a],
+    }))
+  }
+
+  async function handleSubmit() {
+    if (!form.title.trim()) { setError('กรุณาระบุชื่อประกาศ'); return }
+    if (!form.contactName.trim() || !form.contactPhone.trim()) {
+      setError('กรุณากรอกชื่อและเบอร์โทรติดต่อ'); return
+    }
+    setError(null)
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/submit-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) throw new Error(json.error || 'Server error')
+      setSubmitted(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
       <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -36,10 +107,15 @@ export default function SubmitNewPage() {
             <span className="msym" style={{ fontSize: 38, color: '#fff' }}>check_circle</span>
           </div>
           <h2 style={{ fontSize: 23, fontWeight: 600, color: '#02402e', margin: '0 0 10px' }}>ประกาศของคุณถูกส่งแล้ว!</h2>
-          <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 26px' }}>
-            ทีมงาน SpacesMate จะตรวจสอบและเผยแพร่ประกาศของคุณภายใน 24 ชั่วโมง<br />คุณจะได้รับแพ็กเกจทดลองใช้ฟรี 30 วัน
+          <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 8px' }}>
+            ทีมงาน SpacesMate จะตรวจสอบและติดต่อกลับภายใน 24 ชั่วโมง
           </p>
-          <Link href="/" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, borderRadius: 24, padding: '13px 28px', textDecoration: 'none', display: 'inline-block' }}>กลับหน้าแรก</Link>
+          <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 26px' }}>
+            คุณจะได้รับสิทธิ์ทดลองใช้ฟรี 30 วัน
+          </p>
+          <Link href="/" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, borderRadius: 24, padding: '13px 28px', textDecoration: 'none', display: 'inline-block' }}>
+            กลับหน้าแรก
+          </Link>
         </div>
       </div>
     )
@@ -47,23 +123,31 @@ export default function SubmitNewPage() {
 
   return (
     <div>
-      {/* Step header */}
+      {/* ── Step progress bar ────────────────────────────────────────────── */}
       <div style={{ background: '#f7f9f8', borderBottom: '1px solid #eef0ef', padding: '28px 24px' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             {STEPS.map((s, i) => {
-              const done = i < step
+              const done   = i < step
               const active = i === step
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 14, background: done ? '#048c73' : active ? '#d97f11' : '#e2e8e6', color: done || active ? '#fff' : '#94a3b8', transition: 'all .3s' }}>
+                    <span style={{
+                      width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontWeight: 600, fontSize: 14, transition: 'all .3s',
+                      background: done ? '#048c73' : active ? '#d97f11' : '#e2e8e6',
+                      color: done || active ? '#fff' : '#94a3b8',
+                    }}>
                       {done ? <span className="msym" style={{ fontSize: 18 }}>check</span> : s.num}
                     </span>
-                    <span style={{ fontSize: 13.5, fontWeight: 500, color: active ? '#02402e' : done ? '#048c73' : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</span>
+                    <span style={{
+                      fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap',
+                      color: active ? '#02402e' : done ? '#048c73' : '#94a3b8',
+                    }}>{s.label}</span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div style={{ flex: 1, height: 2, background: done ? '#048c73' : '#e2e8e6', margin: '0 12px', transition: 'all .3s' }} />
+                    <div style={{ flex: 1, height: 2, margin: '0 12px', transition: 'all .3s', background: done ? '#048c73' : '#e2e8e6' }} />
                   )}
                 </div>
               )
@@ -75,70 +159,81 @@ export default function SubmitNewPage() {
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '34px 24px 64px' }}>
         <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: 32, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
 
-          {/* Step 0: Property Info */}
+          {/* ── STEP 0: Property Info ───────────────────────────────────── */}
           {step === 0 && (
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>ข้อมูลทรัพย์สิน</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
                 <div>
-                  <label style={labelStyle}>ชื่อประกาศ</label>
-                  <input style={fieldStyle} placeholder="เช่น คอนโด เมโทร ลักซ์ พระราม 4 ห้องสตูดิโอ"
-                    onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                    onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                  <label style={labelStyle}>ชื่อประกาศ *</label>
+                  <input style={fieldStyle} value={form.title}
+                    onChange={e => set('title', e.target.value)}
+                    placeholder="เช่น คอนโด เมโทร ลักซ์ พระราม 4 ห้องสตูดิโอ"
+                    onFocus={focusOn} onBlur={focusOff} />
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="sm-form2">
                   <div>
                     <label style={labelStyle}>ประเภท</label>
-                    <select style={{ ...fieldStyle, cursor: 'pointer' }}>
+                    <select style={{ ...fieldStyle, cursor: 'pointer' }} value={form.type}
+                      onChange={e => set('type', e.target.value)} onFocus={focusOn} onBlur={focusOff}>
                       {TYPES.map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>การปล่อยเช่า</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {(['month', 'day'] as const).map(rt => (
-                        <button key={rt} onClick={() => setRentType(rt)}
-                          style={{ flex: 1, padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', border: `1.5px solid ${rentType === rt ? '#048c73' : '#eef0ef'}`, background: rentType === rt ? '#eaf6f1' : '#fff', color: rentType === rt ? '#02402e' : '#475569' }}>
+                      {(['month','day'] as const).map(rt => (
+                        <button key={rt} type="button" onClick={() => set('rentType', rt)}
+                          style={{ flex: 1, padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', border: `1.5px solid ${form.rentType === rt ? '#048c73' : '#eef0ef'}`, background: form.rentType === rt ? '#eaf6f1' : '#fff', color: form.rentType === rt ? '#02402e' : '#475569' }}>
                           {rt === 'month' ? 'รายเดือน' : 'รายวัน'}
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
+
                 <div>
-                  <label style={labelStyle}>ราคาเช่า (บาท/{rentType === 'month' ? 'เดือน' : 'วัน'})</label>
-                  <input type="number" style={fieldStyle} placeholder={rentType === 'month' ? 'เช่น 15000' : 'เช่น 900'}
-                    onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                    onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                  <label style={labelStyle}>ราคาเช่า (บาท/{form.rentType === 'month' ? 'เดือน' : 'วัน'})</label>
+                  <input type="number" style={fieldStyle} value={form.price}
+                    onChange={e => set('price', e.target.value)}
+                    placeholder={form.rentType === 'month' ? 'เช่น 15000' : 'เช่น 900'}
+                    onFocus={focusOn} onBlur={focusOff} />
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }} className="sm-form4">
                   {[
-                    { label: 'ขนาด ตร.ม.', ph: '28' },
-                    { label: 'ห้องนอน', ph: '1' },
-                    { label: 'ห้องน้ำ', ph: '1' },
-                    { label: 'ชั้น', ph: '7' },
+                    { label: 'ขนาด ตร.ม.', ph: '28', field: 'size'     as const },
+                    { label: 'ห้องนอน',    ph: '1',  field: 'bedrooms' as const },
+                    { label: 'ห้องน้ำ',    ph: '1',  field: 'bathrooms'as const },
+                    { label: 'ชั้น',        ph: '7',  field: 'floor'    as const },
                   ].map(f => (
-                    <div key={f.label}>
+                    <div key={f.field}>
                       <label style={labelStyle}>{f.label}</label>
                       <input type="number" placeholder={f.ph} style={fieldStyle}
-                        onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                        onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                        value={form[f.field] as string}
+                        onChange={e => set(f.field, e.target.value)}
+                        onFocus={focusOn} onBlur={focusOff} />
                     </div>
                   ))}
                 </div>
+
                 <div>
                   <label style={labelStyle}>รายละเอียด</label>
-                  <textarea rows={4} placeholder="อธิบายจุดเด่นของทรัพย์สิน..." style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.6 }}
-                    onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                    onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                  <textarea rows={4} placeholder="อธิบายจุดเด่นของทรัพย์สิน..." value={form.description}
+                    onChange={e => set('description', e.target.value)}
+                    style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.6 }}
+                    onFocus={focusOn} onBlur={focusOff} />
                 </div>
+
                 <div>
                   <label style={{ ...labelStyle, marginBottom: 12 }}>สิ่งอำนวยความสะดวก</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
                     {AMENITIES_LIST.map(a => {
-                      const on = amenities.includes(a)
+                      const on = form.amenities.includes(a)
                       return (
-                        <button key={a} onClick={() => toggleAm(a)}
+                        <button key={a} type="button" onClick={() => toggleAmenity(a)}
                           style={{ padding: '8px 15px', borderRadius: 20, fontSize: 13.5, fontWeight: 500, cursor: 'pointer', transition: 'all .2s', border: `1px solid ${on ? '#048c73' : '#eef0ef'}`, background: on ? '#eaf6f1' : '#fff', color: on ? '#02402e' : '#475569' }}>
                           {a}
                         </button>
@@ -150,91 +245,153 @@ export default function SubmitNewPage() {
             </div>
           )}
 
-          {/* Step 1: Location */}
+          {/* ── STEP 1: Location ────────────────────────────────────────── */}
           {step === 1 && (
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>ที่ตั้ง</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
                 <div>
                   <label style={labelStyle}>ที่อยู่</label>
-                  <input style={fieldStyle} placeholder="บ้านเลขที่ / อาคาร / ถนน"
-                    onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                    onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                  <input style={fieldStyle} value={form.address}
+                    onChange={e => set('address', e.target.value)}
+                    placeholder="บ้านเลขที่ / อาคาร / ถนน / ซอย"
+                    onFocus={focusOn} onBlur={focusOff} />
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }} className="sm-form2">
                   <div>
                     <label style={labelStyle}>จังหวัด</label>
-                    <select style={{ ...fieldStyle, cursor: 'pointer' }}>
-                      {['กรุงเทพมหานคร','นนทบุรี','สมุทรปราการ','ปทุมธานี','เชียงใหม่','ภูเก็ต'].map(p => <option key={p}>{p}</option>)}
+                    <select style={{ ...fieldStyle, cursor: 'pointer' }} value={form.province}
+                      onChange={e => set('province', e.target.value)} onFocus={focusOn} onBlur={focusOff}>
+                      {PROVINCES.map(p => <option key={p}>{p}</option>)}
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>เขต / อำเภอ</label>
-                    <select style={{ ...fieldStyle, cursor: 'pointer' }}>
-                      {['คลองเตย','วัฒนา','ห้วยขวาง','สาทร','บางรัก','ดินแดง','ลาดพร้าว'].map(d => <option key={d}>{d}</option>)}
+                    <select style={{ ...fieldStyle, cursor: 'pointer' }} value={form.district}
+                      onChange={e => set('district', e.target.value)} onFocus={focusOn} onBlur={focusOff}>
+                      {DISTRICTS.map(d => <option key={d}>{d}</option>)}
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>แขวง / ตำบล</label>
-                    <select style={{ ...fieldStyle, cursor: 'pointer' }}>
-                      {['คลองเตย','พระโขนง','คลองตัน','ช่องนนทรี','สีลม'].map(d => <option key={d}>{d}</option>)}
+                    <select style={{ ...fieldStyle, cursor: 'pointer' }} value={form.subdistrict}
+                      onChange={e => set('subdistrict', e.target.value)} onFocus={focusOn} onBlur={focusOff}>
+                      {SUBDISTRICTS.map(d => <option key={d}>{d}</option>)}
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>รหัสไปรษณีย์</label>
                     <input placeholder="10110" style={fieldStyle} maxLength={5}
-                      onFocus={e => { (e.target as HTMLElement).style.borderColor = '#048c73'; (e.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(4,140,115,0.12)' }}
-                      onBlur={e => { (e.target as HTMLElement).style.borderColor = '#eef0ef'; (e.target as HTMLElement).style.boxShadow = 'none' }} />
+                      value={form.postcode}
+                      onChange={e => set('postcode', e.target.value)}
+                      onFocus={focusOn} onBlur={focusOff} />
                   </div>
                 </div>
+
                 <div>
                   <label style={labelStyle}>ตำแหน่งบนแผนที่</label>
-                  <div style={{ height: 200, border: '2px dashed #048c73', borderRadius: 14, background: 'repeating-linear-gradient(45deg,#ecf5f2,#ecf5f2 12px,#e2f0eb 12px,#e2f0eb 24px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+                  <div style={{ height: 180, border: '2px dashed #048c73', borderRadius: 14, background: 'repeating-linear-gradient(45deg,#ecf5f2,#ecf5f2 12px,#e2f0eb 12px,#e2f0eb 24px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span className="msym" style={{ fontSize: 38, color: '#048c73', opacity: .6 }}>pin_drop</span>
                     <p style={{ fontSize: 14, fontWeight: 600, color: '#048c73', margin: 0 }}>ปักหมุดตำแหน่งที่พัก</p>
-                    <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>แผนที่จะเชื่อมต่อในเวอร์ชันถัดไป</p>
+                    <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>จะเพิ่มฟีเจอร์แผนที่ในเวอร์ชันถัดไป</p>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 2: Photos */}
+          {/* ── STEP 2: Photos + Contact ─────────────────────────────────── */}
           {step === 2 && (
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>รูปภาพ</h2>
-              <div style={{ border: '2px dashed #048c73', borderRadius: 16, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: '#f7f9f8', marginBottom: 20 }}
+              <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>รูปภาพ & ข้อมูลติดต่อ</h2>
+
+              {/* Photo upload */}
+              <div style={{ border: '2px dashed #048c73', borderRadius: 16, padding: '40px 24px', textAlign: 'center', cursor: 'pointer', background: '#f7f9f8', marginBottom: 24 }}
                 onClick={() => document.getElementById('img-input')?.click()}>
                 <span className="msym" style={{ fontSize: 44, color: '#048c73', opacity: .5 }}>photo_library</span>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '12px 0 6px' }}>ลากรูปภาพมาวางที่นี่</p>
                 <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>หรือคลิกเพื่อเลือกไฟล์ · JPG, PNG · สูงสุด 10 รูป</p>
                 <input id="img-input" type="file" multiple accept="image/*" style={{ display: 'none' }} />
               </div>
-              <div style={{ background: 'linear-gradient(135deg,#fef9f0,#fef3e2)', border: '1px solid rgba(217,127,17,0.2)', borderRadius: 16, padding: '20px 22px', textAlign: 'center' }}>
-                <p style={{ color: '#d97f11', fontWeight: 600, fontSize: 15, margin: '0 0 4px' }}>🎉 ฟรี 30 วันแรก</p>
-                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>ไม่ต้องใช้บัตรเครดิต · ยกเลิกได้ทุกเมื่อ</p>
+
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 22px' }}>
+                <div style={{ flex: 1, height: 1, background: '#eef0ef' }} />
+                <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>ข้อมูลผู้ติดต่อ</span>
+                <div style={{ flex: 1, height: 1, background: '#eef0ef' }} />
               </div>
+
+              {/* Contact fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={labelStyle}>ชื่อเจ้าของ / ผู้ติดต่อ *</label>
+                  <input style={fieldStyle} value={form.contactName}
+                    onChange={e => set('contactName', e.target.value)}
+                    placeholder="ชื่อ-นามสกุล"
+                    onFocus={focusOn} onBlur={focusOff} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="sm-form2">
+                  <div>
+                    <label style={labelStyle}>เบอร์โทรศัพท์ *</label>
+                    <input type="tel" style={fieldStyle} value={form.contactPhone}
+                      onChange={e => set('contactPhone', e.target.value)}
+                      placeholder="0XX-XXX-XXXX"
+                      onFocus={focusOn} onBlur={focusOff} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>อีเมล (ถ้ามี)</label>
+                    <input type="email" style={fieldStyle} value={form.contactEmail}
+                      onChange={e => set('contactEmail', e.target.value)}
+                      placeholder="email@example.com"
+                      onFocus={focusOn} onBlur={focusOff} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Free trial note */}
+              <div style={{ marginTop: 20, background: 'linear-gradient(135deg,#fef9f0,#fef3e2)', border: '1px solid rgba(217,127,17,0.2)', borderRadius: 16, padding: '18px 22px', textAlign: 'center' }}>
+                <p style={{ color: '#d97f11', fontWeight: 600, fontSize: 15, margin: '0 0 4px' }}>🎉 ฟรี 30 วันแรก</p>
+                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง · ไม่ต้องใช้บัตรเครดิต</p>
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <div style={{ marginTop: 16, padding: '12px 16px', background: '#fff0f0', border: '1px solid #fca5a5', borderRadius: 10, fontSize: 14, color: '#dc2626' }}>
+                  ⚠️ {error}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Nav buttons */}
+          {/* ── Navigation buttons ──────────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 12, marginTop: 26, justifyContent: step > 0 ? 'space-between' : 'flex-end' }}>
             {step > 0 && (
-              <button onClick={() => setStep(s => s - 1)}
-                style={{ background: 'transparent', color: '#02402e', fontWeight: 600, fontSize: 14.5, border: '1.5px solid #02402e', borderRadius: 24, padding: '12px 26px', cursor: 'pointer', transition: 'all .2s' }}>
+              <button type="button" onClick={() => setStep(s => s - 1)} disabled={loading}
+                style={{ background: 'transparent', color: '#02402e', fontWeight: 600, fontSize: 14.5, border: '1.5px solid #02402e', borderRadius: 24, padding: '12px 26px', cursor: 'pointer', transition: 'all .2s', opacity: loading ? .5 : 1 }}>
                 ← ย้อนกลับ
               </button>
             )}
             {step < STEPS.length - 1 ? (
-              <button onClick={() => setStep(s => s + 1)}
+              <button type="button" onClick={() => setStep(s => s + 1)}
                 style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: 'pointer', transition: 'all .2s' }}>
                 ถัดไป →
               </button>
             ) : (
-              <button onClick={() => setSubmitted(true)}
-                style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: 'pointer', transition: 'all .2s' }}>
-                <span className="msym" style={{ fontSize: 18, marginRight: 6, verticalAlign: 'middle' }}>publish</span>
-                เผยแพร่ประกาศ
+              <button type="button" onClick={handleSubmit} disabled={loading}
+                style={{ background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: loading ? 'not-allowed' : 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {loading ? (
+                  <>
+                    <span className="msym" style={{ fontSize: 18, animation: 'spin 1s linear infinite' }}>autorenew</span>
+                    กำลังส่ง...
+                  </>
+                ) : (
+                  <>
+                    <span className="msym" style={{ fontSize: 18 }}>publish</span>
+                    เผยแพร่ประกาศ
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -246,6 +403,7 @@ export default function SubmitNewPage() {
           .sm-form2 { grid-template-columns: 1fr !important; }
           .sm-form4 { grid-template-columns: 1fr 1fr !important; }
         }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )
