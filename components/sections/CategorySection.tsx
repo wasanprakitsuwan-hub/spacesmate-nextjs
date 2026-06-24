@@ -76,14 +76,14 @@ export default async function CategorySection() {
   const counts = await getCounts()
 
   return (
-    <section className="py-10 bg-spacemate-bgLight border-b border-spacemate-borderLight">
+    <section className="py-10 bg-white border-b border-spacemate-borderLight">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-5 gap-4">
           {CATEGORIES.map((cat) => (
             <Link
               key={cat.type}
               href={`/search?type=${cat.type}`}
-              className="group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-spacemate-borderLight hover:border-spacemate-brandTeal hover:shadow-premium transition-all duration-200"
+              className="group flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-premium hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className="w-14 h-14 rounded-full bg-spacemate-brandDark group-hover:bg-spacemate-brandTeal flex items-center justify-center text-white transition-colors duration-200">
                 {cat.icon}

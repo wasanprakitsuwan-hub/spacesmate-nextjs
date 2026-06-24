@@ -67,7 +67,7 @@ export default function HeroSection() {
         </p>
 
         {/* Headline */}
-        <h1 className="text-center text-4xl md:text-6xl font-bold leading-tight mb-4">
+        <h1 className="text-center text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.1] tracking-tight mb-5">
           <span className="text-spacemate-brandDark">ค้นหาที่พักที่ใช่ </span>
           <span className="text-spacemate-brandGold">ในราคาที่คุ้มค่า</span>
         </h1>
