@@ -26,7 +26,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-05-06T15:33:42',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/05/Blog-website-584x438.webp',
+    image: '/blog/thi-pak-yan-dusit.jpg',
     imageAlt: 'ที่พักย่านดุสิต กรุงเทพ สำหรับผู้เช่าที่ชอบความเรียบง่ายและเดินทางสะดวก',
   },
   {
@@ -37,7 +37,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-04-28T11:36:05',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/04/Gemini_Generated_Image_uhlqmluhlqmluhlq-584x438.webp',
+    image: '/blog/asangha-ploy-chao-2026.jpg',
     imageAlt: 'เจ้าของอสังหาฯ วางกลยุทธ์ปล่อยเช่า 2026 รับมือตลาดเช่ากรุงเทพที่เปลี่ยนแปลง',
   },
   {
@@ -48,7 +48,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-04-22T11:55:51',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/04/Gemini_Generated_Image_wovxzrwovxzrwovx-584x438.webp',
+    image: '/blog/panha-ploy-chao-condo.jpg',
     imageAlt: 'เจ้าของคอนโดกรุงเทพปรึกษาปัญหาผู้เช่าและการบริหารอสังหาริมทรัพย์',
   },
   {
@@ -59,7 +59,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-04-21T13:22:50',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/Gemini_Generated_Image_g7lvzlg7lvzlg7lv-584x438.webp',
+    image: '/blog/vithi-lueak-phu-chao.jpg',
     imageAlt: 'วิธีเลือกผู้เช่าที่ดี สำหรับเจ้าของคอนโดและอพาร์ทเมนท์ในกรุงเทพ',
   },
   {
@@ -70,7 +70,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-04-01T10:02:44',
     category: 'Legal & Tax',
     categorySlug: 'legal-tax',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/%E0%B8%81%E0%B8%8E%E0%B8%AB%E0%B8%A1%E0%B8%B2%E0%B8%A2%E0%B8%AD%E0%B8%AA%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%B2-584x438.webp',
+    image: '/blog/update-kotmai-asangha-2026.jpg',
     imageAlt: 'กฎหมายอสังหาริมทรัพย์ไทย 2026 ที่เจ้าของทรัพย์ต้องรู้',
   },
   {
@@ -81,7 +81,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-03-17T16:45:53',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/Gemini_Generated_Image_1qgsbt1qgsbt1qgs-584x438.webp',
+    image: '/blog/ploy-chao-asangha-5-things.jpg',
     imageAlt: '5 สิ่งที่เจ้าของอสังหาฯ ต้องเช็คก่อนปล่อยเช่า',
   },
   {
@@ -92,7 +92,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-03-17T14:37:45',
     category: 'Real Estate Marketing',
     categorySlug: 'real-estate-marketing',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/Gemini_Generated_Image_o7gpvzo7gpvzo7gp-584x438.webp',
+    image: '/blog/long-prakat-asangha.jpg',
     imageAlt: 'เปรียบเทียบช่องทางลงประกาศอสังหาฯ Facebook vs เว็บเฉพาะทาง',
   },
   {
@@ -103,7 +103,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-03-10T17:08:58',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/blog-2-584x438.webp',
+    image: '/blog/ha-hong-pak-spacesmate.jpg',
     imageAlt: 'หาห้องพักหรือที่ทำงานในกรุงเทพกับ SpacesMate',
   },
   {
@@ -114,7 +114,7 @@ export const blogPosts: BlogPost[] = [
     date: '2026-03-10T15:10:40',
     category: 'Real Estate',
     categorySlug: 'real-estate',
-    image: 'https://spacesmate.com/wp-content/uploads/2026/03/blog-1-584x438.webp',
+    image: '/blog/jadkan-asangha-spacesmate.jpg',
     imageAlt: 'จัดการอสังหาริมทรัพย์ให้ง่ายและมีประสิทธิภาพกับ SpacesMate',
   },
 ]
