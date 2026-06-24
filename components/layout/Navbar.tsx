@@ -23,12 +23,12 @@ export default function Navbar() {
     textDecoration: 'none',
   })
 
-  const ownerActive = isActive('/submit') || isActive('/services') || isActive('/manage')
+  const ownerActive = isActive('/submit') || isActive('/manage')
 
   const mobileLinks = [
     { label: 'ค้นหาที่พัก',        icon: 'search',        href: '/search' },
     { label: 'ลงประกาศปล่อยเช่า',  icon: 'sell',          href: '/submit' },
-    { label: 'รับฝากบริหาร',       icon: 'handshake',     href: '/services' },
+    { label: 'รับฝากบริหาร',       icon: 'handshake',     href: '/manage' },
     { label: 'บทความ',             icon: 'article',       href: '/blog' },
     { label: 'แดชบอร์ด',           icon: 'dashboard',     href: '/dashboard' },
   ]
@@ -71,7 +71,7 @@ export default function Navbar() {
                   <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>สร้างประกาศเอง ฟรี + แพ็กเกจ</span>
                 </span>
               </Link>
-              <Link href="/services" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
+              <Link href="/manage" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>handshake</span>
