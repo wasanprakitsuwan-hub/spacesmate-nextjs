@@ -39,7 +39,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <Image src="/logo-white.png" alt="SpacesMate" width={130} height={38} style={{ height: 38, width: 'auto', display: 'block' }} priority />
+          <Image src="/logo-white.png" alt="SpacesMate" width={155} height={46} style={{ height: 46, width: 'auto', display: 'block' }} priority />
         </Link>
 
         {/* Desktop nav links */}
