@@ -1,57 +1,47 @@
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase'
+import { properties } from '@/lib/property-data'
 import { AREA_KEYWORDS } from '@/lib/constants'
 
-// Match terms for each keyword slug — Thai + English so we catch both
+// Match terms for each keyword slug — Thai + English
 const MATCH_MAP: Record<string, { type: string; terms: string[] }> = {
-  'condo-rent-bts-asok':            { type: 'condo',     terms: ['asok', 'อโศก', 'sukhumvit 21', 'สุขุมวิท 21'] },
-  'apartment-rent-sukhumvit':       { type: 'apartment', terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-ekkamai':         { type: 'condo',     terms: ['ekkamai', 'เอกมัย'] },
-  'house-rent-lat-phrao':           { type: 'house',     terms: ['lat phrao', 'ลาดพร้าว'] },
-  'condo-rent-bts-thonglor':        { type: 'condo',     terms: ['thonglor', 'ทองหล่อ', 'thong lor'] },
-  'office-rent-silom':              { type: 'office',    terms: ['silom', 'สีลม'] },
-  'condo-rent-bts-on-nut':          { type: 'condo',     terms: ['on nut', 'อ่อนนุช', 'on-nut'] },
-  'apartment-rent-ratchada':        { type: 'apartment', terms: ['ratchada', 'รัชดา', 'ratchadaphisek'] },
-  'house-rent-rama-9':              { type: 'house',     terms: ['rama 9', 'พระราม 9', 'rama9', 'พระราม9'] },
-  'condo-rent-mrt-lat-phrao':       { type: 'condo',     terms: ['lat phrao', 'ลาดพร้าว'] },
-  'coworking-rent-sukhumvit':       { type: 'coworking', terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-saphan-kwai':     { type: 'condo',     terms: ['saphan kwai', 'สะพานควาย'] },
-  'condo-rent-bts-ari':             { type: 'condo',     terms: ['ari', 'อารีย์', 'aree'] },
-  'apartment-rent-bang-na':         { type: 'apartment', terms: ['bang na', 'บางนา', 'bangna'] },
-  'condo-rent-mrt-phahon-yothin':   { type: 'condo',     terms: ['phahon', 'พหลโยธิน', 'phahonyothin'] },
-  'office-rent-sathorn':            { type: 'office',    terms: ['sathorn', 'สาทร'] },
+  'condo-rent-bts-asok':            { type: 'Condo',     terms: ['asok', 'อโศก', 'sukhumvit 21', 'สุขุมวิท 21'] },
+  'apartment-rent-sukhumvit':       { type: 'Apartment', terms: ['sukhumvit', 'สุขุมวิท'] },
+  'condo-rent-bts-ekkamai':         { type: 'Condo',     terms: ['ekkamai', 'เอกมัย'] },
+  'house-rent-lat-phrao':           { type: 'Apartment', terms: ['lat phrao', 'ลาดพร้าว'] },
+  'condo-rent-bts-thonglor':        { type: 'Condo',     terms: ['thonglor', 'ทองหล่อ', 'thong lor'] },
+  'office-rent-silom':              { type: 'Office',    terms: ['silom', 'สีลม'] },
+  'condo-rent-bts-on-nut':          { type: 'Condo',     terms: ['on nut', 'อ่อนนุช', 'on-nut'] },
+  'apartment-rent-ratchada':        { type: 'Apartment', terms: ['ratchada', 'รัชดา', 'ratchadaphisek'] },
+  'house-rent-rama-9':              { type: 'Apartment', terms: ['rama 9', 'พระราม 9', 'rama9'] },
+  'condo-rent-mrt-lat-phrao':       { type: 'Condo',     terms: ['lat phrao', 'ลาดพร้าว'] },
+  'coworking-rent-sukhumvit':       { type: 'Condo',     terms: ['sukhumvit', 'สุขุมวิท'] },
+  'condo-rent-bts-saphan-kwai':     { type: 'Condo',     terms: ['saphan kwai', 'สะพานควาย'] },
+  'condo-rent-bts-ari':             { type: 'Condo',     terms: ['ari', 'อารีย์', 'aree'] },
+  'apartment-rent-bang-na':         { type: 'Apartment', terms: ['bang na', 'บางนา', 'bangna'] },
+  'condo-rent-mrt-phahon-yothin':   { type: 'Condo',     terms: ['phahon', 'พหลโยธิน', 'phahonyothin'] },
+  'office-rent-sathorn':            { type: 'Office',    terms: ['sathorn', 'สาทร'] },
 }
 
-export default async function AreaLinks() {
-  // Fetch all active listing locations in one query
-  const sb = createServerClient()
-  const { data } = await sb
-    .from('properties')
-    .select('property_type, district, area, address')
-    .eq('listing_status', 'active')
+// Compute counts from static property data
+const withCounts = AREA_KEYWORDS.map(area => {
+  const match = MATCH_MAP[area.slug]
+  if (!match) return { ...area, count: 0 }
 
-  const listings = data || []
+  const count = properties.filter(p => {
+    if (p.propertyType !== match.type) return false
+    const haystack = [p.neighborhood, p.address]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return match.terms.some(t => haystack.includes(t.toLowerCase()))
+  }).length
 
-  // Count matching listings per keyword
-  const withCounts = AREA_KEYWORDS.map(area => {
-    const match = MATCH_MAP[area.slug]
-    if (!match) return { ...area, count: 0 }
+  return { ...area, count }
+})
 
-    const count = listings.filter(p => {
-      if (p.property_type !== match.type) return false
-      const haystack = [p.district, p.area, p.address]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-      return match.terms.some(t => haystack.includes(t.toLowerCase()))
-    }).length
+const sorted = [...withCounts].sort((a, b) => b.count - a.count)
 
-    return { ...area, count }
-  })
-
-  // Sort highest count first
-  const sorted = [...withCounts].sort((a, b) => b.count - a.count)
-
+export default function AreaLinks() {
   return (
     <section className="py-12 bg-spacemate-bgLight border-t border-spacemate-borderLight">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

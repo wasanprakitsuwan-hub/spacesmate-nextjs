@@ -1,38 +1,22 @@
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase'
-import type { PropertyType } from '@/lib/types'
+import { properties } from '@/lib/property-data'
 
 const CATEGORIES = [
-  { type: 'apartment' as PropertyType, label: 'อพาร์ทเม้นท์', icon: 'apartment' },
-  { type: 'condo'     as PropertyType, label: 'คอนโดมิเนียม',  icon: 'location_city' },
-  { type: 'house'     as PropertyType, label: 'บ้าน',           icon: 'cottage' },
-  { type: 'coworking' as PropertyType, label: 'โคเวิร์กกิ้ง',  icon: 'groups' },
-  { type: 'office'    as PropertyType, label: 'ออฟฟิศ',         icon: 'business_center' },
+  { type: 'Apartment', label: 'อพาร์ทเม้นท์', icon: 'apartment' },
+  { type: 'Condo',     label: 'คอนโดมิเนียม',  icon: 'location_city' },
+  { type: 'Office',    label: 'ออฟฟิศ',         icon: 'business_center' },
 ]
 
-async function getCounts(): Promise<Record<string, number>> {
-  try {
-    const supabase = createServerClient()
-    const { data } = await supabase
-      .from('properties')
-      .select('property_type')
-      .eq('listing_status', 'active')
-    const counts: Record<string, number> = {}
-    ;(data || []).forEach((row) => {
-      counts[row.property_type] = (counts[row.property_type] || 0) + 1
-    })
-    return counts
-  } catch {
-    return {}
-  }
-}
+// Compute counts from static property data
+const counts: Record<string, number> = {}
+properties.forEach(p => {
+  counts[p.propertyType] = (counts[p.propertyType] || 0) + 1
+})
 
-export default async function CategorySection() {
-  const counts = await getCounts()
-
+export default function CategorySection() {
   return (
     <section className="sm-home-categories" style={{ maxWidth: 1240, margin: '0 auto', padding: '32px 24px 8px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }} className="sm-cats">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }} className="sm-cats">
         {CATEGORIES.map(cat => (
           <Link
             key={cat.type}
