@@ -52,7 +52,7 @@ export default async function PropertyDetailPage({ params }: Props) {
     p.floor != null     && { icon: 'stairs',         value: `ชั้น ${p.floor}` },
   ].filter(Boolean) as { icon: string; value: string }[]
 
-  const amenities = (p.amenities || []).map((a: string) => {
+  const amenities = (p.amenities as string[] || []).map((a: string) => {
     const icons: Record<string,string> = { wifi:'wifi', parking:'local_parking', air:'ac_unit', furnished:'chair', laundry:'local_laundry_service', security:'security', pool:'pool', gym:'fitness_center' }
     return { icon: icons[a] || 'check_circle', label: a }
   })

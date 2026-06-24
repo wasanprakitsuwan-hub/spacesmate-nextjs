@@ -6,6 +6,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 // Client-side Supabase client (uses anon key)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Browser client alias for use in 'use client' components
+export function createBrowserClient() {
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
+
 // Server-side Supabase client (uses service role — server only)
 export function createServerClient() {
   return createClient(

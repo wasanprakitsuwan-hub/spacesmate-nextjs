@@ -71,7 +71,7 @@ function SearchContent() {
       setResults(data || [])
       const { data: all } = await sb.from('properties').select('property_type').eq('listing_status', 'active')
       const c: Record<string, number> = { '': (all || []).length }
-      ;(all || []).forEach(r => { c[r.property_type] = (c[r.property_type] || 0) + 1 })
+      ;(all || []).forEach((r: { property_type: string }) => { c[r.property_type] = (c[r.property_type] || 0) + 1 })
       setCounts(c)
     } catch { setResults([]) }
     setLoading(false)
@@ -82,7 +82,7 @@ function SearchContent() {
   function selectType(t: string) {
     setActiveType(t)
     const p = new URLSearchParams(sp.toString())
-    if (t) p.set('type', t) else p.delete('type')
+    if (t) { p.set('type', t) } else { p.delete('type') }
     router.replace(`/search?${p.toString()}`)
   }
 
