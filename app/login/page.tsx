@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase'
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -16,9 +19,21 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    // TODO: integrate Supabase auth
-    await new Promise(r => setTimeout(r, 1000))
-    setError('ระบบ Login กำลังเปิดตัว — กรุณาติดต่อ SpacesMate ทาง LINE@ เพื่อรับสิทธิ์เข้าใช้งาน')
+    setError('')
+    try {
+      const supabase = createBrowserClient()
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      })
+      if (authError) {
+        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
+      } else {
+        router.push('/dashboard')
+      }
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    }
     setLoading(false)
   }
 
