@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { properties as staticProperties, Property } from '@/lib/property-data'
 
@@ -10,6 +10,7 @@ interface DbListing {
   slug: string
   title_th: string
   title_en: string | null
+  description_th: string | null
   property_type: string
   status: string
   price_from: number
@@ -17,12 +18,17 @@ interface DbListing {
   area_sqm: number | null
   bedrooms: number
   bathrooms: number
+  floor: number | null
   address_th: string | null
   district: string | null
+  sub_district: string | null
   province: string | null
+  postcode: string | null
+  lat: number | null
+  lng: number | null
   amenities: string[]
+  rental_term: string | null
   listing_status: string
-  featured: boolean
   verified: boolean
   created_at: string
 }
@@ -42,6 +48,9 @@ interface Submission {
   bedrooms: number | null
   bathrooms: number | null
   size: number | null
+  rental_term: string | null
+  package_type: string | null
+  expires_at: string | null
   created_at: string
 }
 
@@ -62,83 +71,118 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   Apartment: { bg: '#e8f5f0', color: '#048c73' },
   'Co-Working': { bg: '#fee2e2', color: '#b91c1c' },
 }
-
 const AMENITY_OPTIONS = [
   'WiFi', 'แอร์', 'ที่จอดรถ', 'ลิฟท์', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)',
   'รปภ 24 ชม', 'กล้องวงจรปิด (CCTV)', 'เฟอร์นิเจอร์พร้อมอยู่', 'ห้องครัว',
   'เครื่องซักผ้า', 'ตู้เย็น', 'ไมโครเวฟ', 'โทรทัศน์', 'ระเบียง',
   'ร้านสะดวกซื้อ', 'ร้านอาหาร', 'ร้านซักรีด', 'สวนสาธารณะ',
 ]
+const RENTAL_TERM_OPTIONS = [
+  { value: 'daily',     label: 'รายวัน' },
+  { value: 'weekly',    label: 'รายสัปดาห์' },
+  { value: 'monthly',   label: 'รายเดือน' },
+  { value: '1_month',   label: '1 เดือน' },
+  { value: '3_months',  label: '3 เดือน' },
+  { value: '6_months',  label: '6 เดือน' },
+  { value: 'yearly',    label: 'รายปี' },
+]
+const RENTAL_TERM_LABEL: Record<string, string> = {
+  daily: '/วัน', weekly: '/สัปดาห์', monthly: '/เดือน',
+  '1_month': '/เดือน', '3_months': '/3 เดือน', '6_months': '/6 เดือน', yearly: '/ปี',
+}
 
 function TypeChip({ type }: { type: string }) {
   const tc = TYPE_COLORS[type] ?? { bg: '#f4f6f5', color: '#64748b' }
   return <span style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: tc.bg, color: tc.color, whiteSpace: 'nowrap' }}>{TYPE_LABELS[type] ?? type}</span>
 }
 
-// ── Create Listing Drawer ────────────────────────────────────────────────────
-function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({
-    title_th: '', title_en: '', slug: '',
-    property_type: 'condo',
-    price_from: '', price_to: '',
-    bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
-    address_th: '', district: '', sub_district: '', province: 'กรุงเทพมหานคร', postcode: '',
-    lat: '', lng: '',
-    description_th: '',
-    featured: false,
-    amenities: [] as string[],
+// ── Mini Rich Text Editor ─────────────────────────────────────────────────────
+function RichEditor({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value
+    }
+  }, []) // only on mount
+
+  function exec(cmd: string, arg?: string) {
+    document.execCommand(cmd, false, arg)
+    ref.current?.focus()
+    if (ref.current) onChange(ref.current.innerHTML)
+  }
+
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    padding: '4px 8px', borderRadius: 6, border: '1px solid #eef0ef',
+    background: active ? '#02402e' : '#f8fafc', color: active ? '#fff' : '#475569',
+    cursor: 'pointer', fontSize: 12, fontWeight: 600, lineHeight: 1,
   })
 
-  function set(key: string, value: string | boolean) {
-    setForm(f => ({ ...f, [key]: value }))
-    // Auto-generate slug from Thai title
-    if (key === 'title_th' && typeof value === 'string') {
-      const auto = value.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').slice(0, 60)
-      setForm(f => ({ ...f, title_th: value, slug: f.slug || auto }))
-      return
-    }
-  }
+  return (
+    <div style={{ border: '1px solid #eef0ef', borderRadius: 12, overflow: 'hidden' }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', gap: 4, padding: '8px 10px', background: '#f8fafc', borderBottom: '1px solid #eef0ef', flexWrap: 'wrap' }}>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('bold') }} title="Bold"><b>B</b></button>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('italic') }} title="Italic"><i>I</i></button>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('underline') }} title="Underline"><u>U</u></button>
+        <div style={{ width: 1, background: '#eef0ef', margin: '0 4px' }} />
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h2') }} title="หัวข้อ">H2</button>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h3') }} title="หัวข้อย่อย">H3</button>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'p') }} title="ย่อหน้า">¶</button>
+        <div style={{ width: 1, background: '#eef0ef', margin: '0 4px' }} />
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList') }} title="Bullet list">• List</button>
+        <button type="button" style={btnStyle()} onMouseDown={e => { e.preventDefault(); exec('insertOrderedList') }} title="Numbered list">1. List</button>
+        <div style={{ width: 1, background: '#eef0ef', margin: '0 4px' }} />
+        <button type="button" style={{ ...btnStyle(), color: '#b91c1c' }} onMouseDown={e => { e.preventDefault(); exec('removeFormat') }} title="Clear formatting">✕ Clear</button>
+      </div>
+      {/* Editor area */}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={() => { if (ref.current) onChange(ref.current.innerHTML) }}
+        data-placeholder={placeholder || 'อธิบายรายละเอียด...'}
+        style={{
+          minHeight: 120, padding: '12px 14px', fontSize: 13.5, lineHeight: 1.7,
+          color: '#334155', outline: 'none',
+        }}
+      />
+      <style>{`
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+        [contenteditable] h2 { font-size: 1.15em; font-weight: 700; color: #02402e; margin: 0.8em 0 0.3em; }
+        [contenteditable] h3 { font-size: 1em; font-weight: 600; margin: 0.6em 0 0.2em; }
+        [contenteditable] ul, [contenteditable] ol { padding-left: 1.4em; }
+        [contenteditable] li { margin-bottom: 3px; }
+      `}</style>
+    </div>
+  )
+}
 
-  function toggleAmenity(a: string) {
-    setForm(f => ({
-      ...f,
-      amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a],
-    }))
-  }
+// ── Shared form fields for Create & Edit drawers ──────────────────────────────
+interface ListingFormState {
+  title_th: string; title_en: string; slug: string
+  property_type: string; rental_term: string
+  price_from: string; price_to: string
+  bedrooms: string; bathrooms: string; floor: string; area_sqm: string
+  address_th: string; district: string; sub_district: string
+  province: string; postcode: string; lat: string; lng: string
+  description_th: string; amenities: string[]
+}
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title_th || !form.price_from || !form.property_type) {
-      setError('กรุณากรอกชื่อ ประเภท และราคา')
-      return
-    }
-    setSaving(true)
-    setError('')
-    try {
-      const supabase = createBrowserClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch('/api/dashboard/listings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          userId: session?.user.id,
-          userEmail: session?.user.email,
-          userName: session?.user.email?.split('@')[0],
-        }),
-      })
-      const d = await res.json()
-      if (!res.ok) throw new Error(d.error || 'Failed')
-      onCreated()
-      onClose()
-    } catch (err: any) {
-      setError(err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
-    }
-    setSaving(false)
-  }
+const BLANK_FORM: ListingFormState = {
+  title_th: '', title_en: '', slug: '', property_type: 'condo', rental_term: 'monthly',
+  price_from: '', price_to: '', bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
+  address_th: '', district: '', sub_district: '', province: 'กรุงเทพมหานคร', postcode: '',
+  lat: '', lng: '', description_th: '', amenities: [],
+}
 
+function ListingFormFields({
+  form, onChange, onAmenityToggle,
+}: {
+  form: ListingFormState
+  onChange: (k: string, v: string) => void
+  onAmenityToggle: (a: string) => void
+}) {
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 13px', borderRadius: 10,
     border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none',
@@ -147,187 +191,290 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const labelStyle: React.CSSProperties = {
     fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 5, display: 'block',
   }
-  const rowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const row2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+
+  const sectionHead = (text: string) => (
+    <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' as const }}>{text}</div>
+  )
 
   return (
+    <>
+      {/* ข้อมูลหลัก */}
+      <div style={{ marginBottom: 22 }}>
+        {sectionHead('ข้อมูลหลัก')}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>ชื่อประกาศ (ภาษาไทย) *</label>
+          <input value={form.title_th} onChange={e => onChange('title_th', e.target.value)} placeholder="เช่น เช่าคอนโด เอกมัย ห้องสวย วิวดี" required style={inputStyle} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
+          <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={inputStyle} />
+        </div>
+        <div style={row2}>
+          <div>
+            <label style={labelStyle}>Slug (URL) *</label>
+            <input value={form.slug} onChange={e => onChange('slug', e.target.value)} placeholder="condo-for-rent-ekkamai" required style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>ประเภทอสังหาฯ *</label>
+            <select value={form.property_type} onChange={e => onChange('property_type', e.target.value)} style={{ ...inputStyle }}>
+              <option value="condo">คอนโดมิเนียม</option>
+              <option value="apartment">อพาร์ทเม้นท์</option>
+              <option value="house">บ้าน</option>
+              <option value="office">ออฟฟิศ</option>
+              <option value="coworking">Co-Working Space</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ราคา & ขนาด */}
+      <div style={{ marginBottom: 22 }}>
+        {sectionHead('ราคา & ขนาด')}
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>ช่วงเช่า / ประเภทราคา</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {RENTAL_TERM_OPTIONS.map(o => (
+              <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
+                style={{ padding: '6px 13px', borderRadius: 20, border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`, background: form.rental_term === o.value ? '#eaf6f1' : '#fff', color: form.rental_term === o.value ? '#02402e' : '#64748b', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={row2}>
+          <div>
+            <label style={labelStyle}>ราคาเริ่มต้น (บาท{RENTAL_TERM_LABEL[form.rental_term] ?? ''}) *</label>
+            <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>ราคาสูงสุด (ถ้ามี)</label>
+            <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="18000" style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ ...row2, marginTop: 12 }}>
+          <div>
+            <label style={labelStyle}>ห้องนอน</label>
+            <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={{ ...inputStyle }}>
+              {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>ห้องน้ำ</label>
+            <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={{ ...inputStyle }}>
+              {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ ...row2, marginTop: 12 }}>
+          <div>
+            <label style={labelStyle}>พื้นที่ใช้สอย (ตร.ม.)</label>
+            <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>ชั้น</label>
+            <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={inputStyle} />
+          </div>
+        </div>
+      </div>
+
+      {/* ที่ตั้ง */}
+      <div style={{ marginBottom: 22 }}>
+        {sectionHead('ที่ตั้ง')}
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>ที่อยู่</label>
+          <input value={form.address_th} onChange={e => onChange('address_th', e.target.value)} placeholder="เช่น Metro Luxe Rama 4 ถนนพระราม 4" style={inputStyle} />
+        </div>
+        <div style={row2}>
+          <div>
+            <label style={labelStyle}>ย่าน / BTS / MRT</label>
+            <input value={form.district} onChange={e => onChange('district', e.target.value)} placeholder="BTS เอกมัย" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>แขวง</label>
+            <input value={form.sub_district} onChange={e => onChange('sub_district', e.target.value)} placeholder="แขวงพระโขนง" style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ ...row2, marginTop: 12 }}>
+          <div>
+            <label style={labelStyle}>จังหวัด</label>
+            <input value={form.province} onChange={e => onChange('province', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>รหัสไปรษณีย์</label>
+            <input value={form.postcode} onChange={e => onChange('postcode', e.target.value)} placeholder="10110" style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ ...row2, marginTop: 12 }}>
+          <div>
+            <label style={labelStyle}>Latitude</label>
+            <input value={form.lat} onChange={e => onChange('lat', e.target.value)} placeholder="13.7117" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Longitude</label>
+            <input value={form.lng} onChange={e => onChange('lng', e.target.value)} placeholder="100.5803" style={inputStyle} />
+          </div>
+        </div>
+      </div>
+
+      {/* รายละเอียด */}
+      <div style={{ marginBottom: 22 }}>
+        {sectionHead('รายละเอียด (Rich Text)')}
+        <RichEditor
+          value={form.description_th}
+          onChange={v => onChange('description_th', v)}
+          placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..."
+        />
+      </div>
+
+      {/* สิ่งอำนวยความสะดวก */}
+      <div style={{ marginBottom: 22 }}>
+        {sectionHead('สิ่งอำนวยความสะดวก')}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {AMENITY_OPTIONS.map(a => {
+            const on = form.amenities.includes(a)
+            return (
+              <button key={a} type="button" onClick={() => onAmenityToggle(a)}
+                style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s', border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc', color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
+                {on ? '✓ ' : ''}{a}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Create Drawer ─────────────────────────────────────────────────────────────
+function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState<ListingFormState>({ ...BLANK_FORM })
+
+  function setF(k: string, v: string) {
+    setForm(f => {
+      const next = { ...f, [k]: v }
+      if (k === 'title_th' && !f.slug) {
+        next.slug = v.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').slice(0, 60)
+      }
+      return next
+    })
+  }
+  function toggleAmenity(a: string) {
+    setForm(f => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a] }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title_th || !form.price_from) { setError('กรุณากรอกชื่อและราคา'); return }
+    setSaving(true); setError('')
+    try {
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/dashboard/listings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, userId: session?.user.id, userEmail: session?.user.email }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Failed')
+      onCreated(); onClose()
+    } catch (err: any) { setError(err.message || 'เกิดข้อผิดพลาด') }
+    setSaving(false)
+  }
+
+  return <ListingDrawer title="เพิ่มประกาศใหม่" subtitle="ประกาศจะเผยแพร่ทันทีบนเว็บไซต์" form={form} setF={setF} toggleAmenity={toggleAmenity} saving={saving} error={error} onClose={onClose} onSubmit={handleSubmit} submitLabel="🏠 เผยแพร่ประกาศ" />
+}
+
+// ── Edit Drawer ───────────────────────────────────────────────────────────────
+function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose: () => void; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState<ListingFormState>({
+    title_th:    listing.title_th,
+    title_en:    listing.title_en ?? '',
+    slug:        listing.slug,
+    property_type: listing.property_type,
+    rental_term: listing.rental_term ?? 'monthly',
+    price_from:  String(listing.price_from),
+    price_to:    listing.price_to ? String(listing.price_to) : '',
+    bedrooms:    String(listing.bedrooms),
+    bathrooms:   String(listing.bathrooms),
+    floor:       listing.floor ? String(listing.floor) : '',
+    area_sqm:    listing.area_sqm ? String(listing.area_sqm) : '',
+    address_th:  listing.address_th ?? '',
+    district:    listing.district ?? '',
+    sub_district: listing.sub_district ?? '',
+    province:    listing.province ?? 'กรุงเทพมหานคร',
+    postcode:    listing.postcode ?? '',
+    lat:         listing.lat ? String(listing.lat) : '',
+    lng:         listing.lng ? String(listing.lng) : '',
+    description_th: listing.description_th ?? '',
+    amenities:   listing.amenities ?? [],
+  })
+
+  function setF(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+  function toggleAmenity(a: string) {
+    setForm(f => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a] }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title_th || !form.price_from) { setError('กรุณากรอกชื่อและราคา'); return }
+    setSaving(true); setError('')
+    try {
+      const res = await fetch('/api/dashboard/listings', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: listing.id,
+          ...form,
+          price_from: parseInt(form.price_from),
+          price_to: form.price_to ? parseInt(form.price_to) : null,
+          bedrooms: parseInt(form.bedrooms),
+          bathrooms: parseInt(form.bathrooms),
+          floor: form.floor ? parseInt(form.floor) : null,
+          area_sqm: form.area_sqm ? parseFloat(form.area_sqm) : null,
+          lat: form.lat ? parseFloat(form.lat) : null,
+          lng: form.lng ? parseFloat(form.lng) : null,
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Failed')
+      onSaved(); onClose()
+    } catch (err: any) { setError(err.message || 'เกิดข้อผิดพลาด') }
+    setSaving(false)
+  }
+
+  return <ListingDrawer title="แก้ไขประกาศ" subtitle={`ID: ${listing.id.slice(0, 8)}...`} form={form} setF={setF} toggleAmenity={toggleAmenity} saving={saving} error={error} onClose={onClose} onSubmit={handleSubmit} submitLabel="💾 บันทึกการแก้ไข" />
+}
+
+// ── Shared Drawer Shell ───────────────────────────────────────────────────────
+function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, saving, error, onClose, onSubmit, submitLabel }: {
+  title: string; subtitle: string
+  form: ListingFormState
+  setF: (k: string, v: string) => void
+  toggleAmenity: (a: string) => void
+  saving: boolean; error: string
+  onClose: () => void
+  onSubmit: (e: React.FormEvent) => void
+  submitLabel: string
+}) {
+  return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
-      {/* Backdrop */}
       <div style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />
-      {/* Drawer */}
-      <div
-        style={{ width: 520, background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }}
-        onClick={e => e.stopPropagation()}
-      >
+      <div style={{ width: 540, background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>เพิ่มประกาศใหม่</h2>
-            <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>ประกาศจะเผยแพร่ทันทีบนเว็บไซต์</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
+            <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>{subtitle}</p>
           </div>
           <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
 
-        {/* Scrollable form */}
-        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
-
-          {/* Section: ข้อมูลหลัก */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>ข้อมูลหลัก</div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>ชื่อประกาศ (ภาษาไทย) *</label>
-              <input value={form.title_th} onChange={e => set('title_th', e.target.value)} placeholder="เช่น เช่าคอนโด เอกมัย ห้องสวย วิวดี" required style={inputStyle} />
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
-              <input value={form.title_en} onChange={e => set('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={inputStyle} />
-            </div>
-
-            <div style={rowStyle}>
-              <div>
-                <label style={labelStyle}>Slug (URL) *</label>
-                <input value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="condo-for-rent-ekkamai" required style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>ประเภทอสังหาฯ *</label>
-                <select value={form.property_type} onChange={e => set('property_type', e.target.value)} style={{ ...inputStyle }}>
-                  <option value="condo">คอนโดมิเนียม</option>
-                  <option value="apartment">อพาร์ทเม้นท์</option>
-                  <option value="house">บ้าน</option>
-                  <option value="office">ออฟฟิศ</option>
-                  <option value="coworking">Co-Working Space</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section: ราคา & ขนาด */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>ราคา & ขนาด</div>
-            <div style={rowStyle}>
-              <div>
-                <label style={labelStyle}>ราคาเริ่มต้น (บาท/เดือน) *</label>
-                <input type="number" value={form.price_from} onChange={e => set('price_from', e.target.value)} placeholder="14000" required style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>ราคาสูงสุด (ถ้ามี)</label>
-                <input type="number" value={form.price_to} onChange={e => set('price_to', e.target.value)} placeholder="18000" style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ ...rowStyle, marginTop: 12 }}>
-              <div>
-                <label style={labelStyle}>ห้องนอน</label>
-                <select value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} style={{ ...inputStyle }}>
-                  {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>ห้องน้ำ</label>
-                <select value={form.bathrooms} onChange={e => set('bathrooms', e.target.value)} style={{ ...inputStyle }}>
-                  {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ ...rowStyle, marginTop: 12 }}>
-              <div>
-                <label style={labelStyle}>พื้นที่ใช้สอย (ตร.ม.)</label>
-                <input type="number" value={form.area_sqm} onChange={e => set('area_sqm', e.target.value)} placeholder="28" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>ชั้น</label>
-                <input type="number" value={form.floor} onChange={e => set('floor', e.target.value)} placeholder="7" style={inputStyle} />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: ที่ตั้ง */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>ที่ตั้ง</div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>ที่อยู่</label>
-              <input value={form.address_th} onChange={e => set('address_th', e.target.value)} placeholder="เช่น Metro Luxe Rama 4 ถนนพระราม 4" style={inputStyle} />
-            </div>
-            <div style={rowStyle}>
-              <div>
-                <label style={labelStyle}>ย่าน / BTS / MRT</label>
-                <input value={form.district} onChange={e => set('district', e.target.value)} placeholder="BTS เอกมัย" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>แขวง</label>
-                <input value={form.sub_district} onChange={e => set('sub_district', e.target.value)} placeholder="แขวงพระโขนง" style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ ...rowStyle, marginTop: 12 }}>
-              <div>
-                <label style={labelStyle}>จังหวัด</label>
-                <input value={form.province} onChange={e => set('province', e.target.value)} style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>รหัสไปรษณีย์</label>
-                <input value={form.postcode} onChange={e => set('postcode', e.target.value)} placeholder="10110" style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ ...rowStyle, marginTop: 12 }}>
-              <div>
-                <label style={labelStyle}>Latitude</label>
-                <input value={form.lat} onChange={e => set('lat', e.target.value)} placeholder="13.7117" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Longitude</label>
-                <input value={form.lng} onChange={e => set('lng', e.target.value)} placeholder="100.5803" style={inputStyle} />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: รายละเอียด */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>รายละเอียด</div>
-            <textarea
-              value={form.description_th}
-              onChange={e => set('description_th', e.target.value)}
-              placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..."
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
-            />
-          </div>
-
-          {/* Section: สิ่งอำนวยความสะดวก */}
-          <div style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' }}>สิ่งอำนวยความสะดวก</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {AMENITY_OPTIONS.map(a => {
-                const on = form.amenities.includes(a)
-                return (
-                  <button
-                    key={a} type="button" onClick={() => toggleAmenity(a)}
-                    style={{
-                      padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
-                      border: on ? 'none' : '1px solid #eef0ef',
-                      background: on ? '#02402e' : '#f8fafc',
-                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400,
-                    }}
-                  >{on ? '✓ ' : ''}{a}</button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Featured toggle */}
-          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => set('featured', !form.featured)}
-              style={{
-                width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-                background: form.featured ? '#d97f11' : '#e2e8f0', position: 'relative', transition: 'background .2s',
-              }}
-            >
-              <span style={{ position: 'absolute', top: 3, left: form.featured ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block' }} />
-            </button>
-            <span style={{ fontSize: 13.5, fontWeight: 500, color: '#334155' }}>ประกาศแนะนำ (Featured)</span>
-          </div>
-
+        {/* Scrollable body */}
+        <form onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+          <ListingFormFields form={form} onChange={setF} onAmenityToggle={toggleAmenity} />
           {error && (
             <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c' }}>
               ⚠️ {error}
@@ -337,20 +484,9 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
         {/* Footer */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-            ยกเลิก
-          </button>
-          <button
-            onClick={handleSubmit as any}
-            disabled={saving}
-            style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-          >
-            {saving ? (
-              <>
-                <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
-                กำลังบันทึก...
-              </>
-            ) : '🏠 เผยแพร่ประกาศ'}
+          <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
+          <button onClick={onSubmit as any} disabled={saving} style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {saving ? (<><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก...</>) : submitLabel}
           </button>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -359,13 +495,13 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
   )
 }
 
-// ── Published listings tab ───────────────────────────────────────────────────
-function PublishedTab({ onAddClick }: { onAddClick: () => void }) {
+// ── Published Tab ─────────────────────────────────────────────────────────────
+function PublishedTab({ refreshKey }: { refreshKey: number }) {
   const [dbListings, setDbListings] = useState<DbListing[]>([])
   const [loadingDb, setLoadingDb] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [selected, setSelected] = useState<Property | DbListing | null>(null)
+  const [editTarget, setEditTarget] = useState<DbListing | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const loadDb = useCallback(async () => {
@@ -376,7 +512,7 @@ function PublishedTab({ onAddClick }: { onAddClick: () => void }) {
     setLoadingDb(false)
   }, [])
 
-  useEffect(() => { loadDb() }, [loadDb])
+  useEffect(() => { loadDb() }, [loadDb, refreshKey])
 
   async function deleteListing(id: string) {
     if (!confirm('ลบประกาศนี้ออกจากระบบ?')) return
@@ -386,111 +522,98 @@ function PublishedTab({ onAddClick }: { onAddClick: () => void }) {
     setDeleting(null)
   }
 
-  // Merge static + DB listings
   const allTypes = Array.from(new Set([
     ...staticProperties.map(p => p.propertyType),
     ...dbListings.map(p => p.property_type),
   ]))
 
-  const filterItem = (title: string, type: string, location: string) => {
+  const filterItem = (title: string, type: string, loc: string) => {
     if (typeFilter && type !== typeFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return title.toLowerCase().includes(q) || location.toLowerCase().includes(q)
-    }
+    if (search) { const q = search.toLowerCase(); return title.toLowerCase().includes(q) || loc.toLowerCase().includes(q) }
     return true
   }
 
   const filteredStatic = staticProperties.filter(p => filterItem(p.title, p.propertyType, p.neighborhood + p.address))
   const filteredDb = dbListings.filter(p => filterItem(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
-  const total = staticProperties.length + dbListings.length
 
   return (
     <div>
+      {editTarget && <EditDrawer listing={editTarget} onClose={() => setEditTarget(null)} onSaved={loadDb} />}
+
       {/* Filters */}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={() => setTypeFilter('')} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: !typeFilter ? '#02402e' : '#f4f6f5', color: !typeFilter ? '#fff' : '#334155' }}>ทั้งหมด</button>
-          {allTypes.map(t => (
-            <button key={t} onClick={() => setTypeFilter(t === typeFilter ? '' : t)} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: typeFilter === t ? '#02402e' : '#f4f6f5', color: typeFilter === t ? '#fff' : '#334155' }}>
-              {TYPE_LABELS[t] ?? t}
-            </button>
-          ))}
+          {allTypes.map(t => <button key={t} onClick={() => setTypeFilter(t === typeFilter ? '' : t)} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: typeFilter === t ? '#02402e' : '#f4f6f5', color: typeFilter === t ? '#fff' : '#334155' }}>{TYPE_LABELS[t] ?? t}</button>)}
         </div>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  ค้นหาชื่อ / ทำเล" style={{ flex: 1, minWidth: 180, padding: '7px 14px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13, outline: 'none' }} />
       </div>
 
-      {/* Table */}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -12px rgba(2,64,46,0.08)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredStatic.length + filteredDb.length} จาก {total} รายการ</span>
-          {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8' }}>⟳ กำลังโหลดจากระบบ...</span>}
+          <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredStatic.length + filteredDb.length} จาก {staticProperties.length + dbListings.length} รายการ</span>
+          {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8' }}>⟳ กำลังโหลด...</span>}
         </div>
-
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #eef0ef' }}>
-              {['ชื่อประกาศ', 'ประเภท', 'ทำเล', 'ราคา', 'ห้องนอน', 'แหล่งข้อมูล', ''].map(h => (
-                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
+              {['ชื่อประกาศ', 'ประเภท', 'ทำเล', 'ราคา', 'ห้องนอน', 'ช่วงเช่า', 'แหล่งข้อมูล', ''].map(h => (
+                <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {/* Static properties (read-only) */}
-            {filteredStatic.map((p, i) => (
-              <tr key={`static-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4' }}>
-                <td style={{ padding: '12px 16px', maxWidth: 280 }}>
+            {filteredStatic.map(p => (
+              <tr key={`s-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4' }}>
+                <td style={{ padding: '12px 14px', maxWidth: 240 }}>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <img src={p.image} alt="" style={{ width: 40, height: 34, borderRadius: 7, objectFit: 'cover', flexShrink: 0, background: '#eef0ef' }} onError={e => (e.currentTarget.style.display = 'none')} />
-                    <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{p.title}</div>
+                    <img src={p.image} alt="" style={{ width: 38, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />
+                    <span style={{ fontWeight: 600, color: '#02402e', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
                   </div>
                 </td>
-                <td style={{ padding: '12px 16px' }}><TypeChip type={p.propertyType} /></td>
-                <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 12.5, whiteSpace: 'nowrap' }}>{p.neighborhood}</td>
-                <td style={{ padding: '12px 16px', fontWeight: 700, color: '#02402e', whiteSpace: 'nowrap' }}>{p.priceDisplay}</td>
-                <td style={{ padding: '12px 16px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
-                <td style={{ padding: '12px 16px' }}>
-                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0f2f1', color: '#64748b', fontWeight: 500 }}>Static file</span>
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>↗ ดูหน้า</a>
+                <td style={{ padding: '12px 14px' }}><TypeChip type={p.propertyType} /></td>
+                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12.5 }}>{p.neighborhood}</td>
+                <td style={{ padding: '12px 14px', fontWeight: 700, color: '#02402e' }}>{p.priceDisplay}</td>
+                <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
+                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>รายเดือน</td>
+                <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0f2f1', color: '#64748b', fontWeight: 500 }}>Static</span></td>
+                <td style={{ padding: '12px 14px' }}>
+                  <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
                 </td>
               </tr>
             ))}
-
-            {/* DB listings (can delete) */}
             {filteredDb.map(p => (
-              <tr key={`db-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4', background: '#fafffe' }}>
-                <td style={{ padding: '12px 16px', maxWidth: 280 }}>
-                  <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, lineHeight: 1.3 }}>{p.title_th}</div>
-                  {p.title_en && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{p.title_en}</div>}
-                </td>
-                <td style={{ padding: '12px 16px' }}><TypeChip type={p.property_type} /></td>
-                <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 12.5 }}>{p.district || p.address_th || '—'}</td>
-                <td style={{ padding: '12px 16px', fontWeight: 700, color: '#02402e', whiteSpace: 'nowrap' }}>
-                  {p.price_from ? `฿${p.price_from.toLocaleString()}` : '—'}
-                  {p.price_to ? ` – ฿${p.price_to.toLocaleString()}` : ''}
-                </td>
-                <td style={{ padding: '12px 16px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Dashboard</span>
-                    {p.featured && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#fff6e9', color: '#d97f11', fontWeight: 600 }}>⭐ Featured</span>}
+              <tr key={`d-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4', background: '#fafffe' }}>
+                <td style={{ padding: '12px 14px', maxWidth: 240 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13 }}>{p.title_th}</div>
+                    {p.title_en && <div style={{ fontSize: 11, color: '#94a3b8' }}>{p.title_en}</div>}
                   </div>
                 </td>
-                <td style={{ padding: '12px 16px' }}>
+                <td style={{ padding: '12px 14px' }}><TypeChip type={p.property_type} /></td>
+                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12.5 }}>{p.district || p.address_th || '—'}</td>
+                <td style={{ padding: '12px 14px', fontWeight: 700, color: '#02402e' }}>
+                  {p.price_from ? `฿${p.price_from.toLocaleString()}` : '—'}
+                  {p.price_to ? `–฿${p.price_to.toLocaleString()}` : ''}
+                </td>
+                <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
+                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>
+                  {RENTAL_TERM_OPTIONS.find(o => o.value === p.rental_term)?.label ?? 'รายเดือน'}
+                </td>
+                <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Dashboard</span></td>
+                <td style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 5 }}>
-                    <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                    <button onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === p.id ? 0.5 : 1 }}>
+                    <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                    <button onClick={() => setEditTarget(p)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === p.id ? 0.5 : 1 }}>
                       {deleting === p.id ? '...' : 'ลบ'}
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
-
             {filteredStatic.length + filteredDb.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
+              <tr><td colSpan={8} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
             )}
           </tbody>
         </table>
@@ -499,7 +622,7 @@ function PublishedTab({ onAddClick }: { onAddClick: () => void }) {
   )
 }
 
-// ── Submission queue tab ─────────────────────────────────────────────────────
+// ── Submissions Tab ───────────────────────────────────────────────────────────
 function SubmissionsTab() {
   const [items, setItems] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -533,22 +656,23 @@ function SubmissionsTab() {
     { value: 'approved', label: 'อนุมัติแล้ว' },
     { value: 'rejected', label: 'ปฏิเสธ' },
   ]
-
   const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> = {
     pending:  { bg: '#fef9c3', color: '#a16207', label: 'รออนุมัติ' },
     approved: { bg: '#dcfce7', color: '#15803d', label: 'อนุมัติแล้ว' },
     rejected: { bg: '#fee2e2', color: '#b91c1c', label: 'ปฏิเสธ' },
+    active:   { bg: '#e0f2f9', color: '#0284c7', label: 'เผยแพร่อยู่' },
+  }
+  const PKG_LABEL: Record<string, string> = {
+    free_trial: 'ทดลองฟรี', basic: 'Basic', standard: 'Standard', premium: 'Premium',
   }
 
   return (
     <div>
       <div style={{ background: '#fff6e9', border: '1px solid #fed7aa', borderRadius: 12, padding: '11px 15px', marginBottom: 14, fontSize: 13, color: '#92400e' }}>
-        📬 ประกาศที่ส่งมาจากฟอร์ม <strong>/ลงประกาศ</strong> บนเว็บไซต์ — ต้องการอนุมัติก่อนเผยแพร่
+        📬 ประกาศที่ส่งมาจากฟอร์ม <strong>/ลงประกาศ</strong> — แพ็กเกจที่ชำระแล้วจะเผยแพร่อัตโนมัติ ฟรีทดลองต้องอนุมัติ
       </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-        {STATUS_OPTS.map(o => (
-          <button key={o.value} onClick={() => setFilter(o.value)} style={{ padding: '7px 15px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: filter === o.value ? '#02402e' : '#f4f6f5', color: filter === o.value ? '#fff' : '#334155' }}>{o.label}</button>
-        ))}
+        {STATUS_OPTS.map(o => <button key={o.value} onClick={() => setFilter(o.value)} style={{ padding: '7px 15px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: filter === o.value ? '#02402e' : '#f4f6f5', color: filter === o.value ? '#fff' : '#334155' }}>{o.label}</button>)}
       </div>
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden' }}>
         {loading ? (
@@ -561,37 +685,44 @@ function SubmissionsTab() {
           <div style={{ padding: '50px 40px', textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
             <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>ยังไม่มีคำขอใหม่</div>
-            <div style={{ fontSize: 13, color: '#94a3b8' }}>เมื่อมีคนส่งประกาศผ่านเว็บไซต์ จะปรากฏที่นี่</div>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #eef0ef' }}>
-                {['ชื่อ', 'ประเภท', 'ทำเล', 'ราคา', 'ผู้ส่ง', 'วันที่', 'สถานะ', ''].map(h => (
-                  <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 11.5 }}>{h}</th>
+                {['ชื่อ', 'ประเภท', 'ทำเล', 'ราคา', 'ช่วงเช่า', 'แพ็กเกจ', 'หมดอายุ', 'ผู้ส่ง', 'สถานะ', ''].map(h => (
+                  <th key={h} style={{ padding: '11px 12px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 11.5 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.map((item, i) => {
                 const s = STATUS_CHIP[item.status] ?? STATUS_CHIP.pending
+                const expired = item.expires_at ? new Date(item.expires_at) < new Date() : false
                 return (
                   <tr key={item.id} style={{ borderBottom: i < items.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: '#02402e', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '—'}</td>
-                    <td style={{ padding: '12px 14px' }}><TypeChip type={item.type} /></td>
-                    <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>{[item.district, item.province].filter(Boolean).join(', ') || '—'}</td>
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: '#02402e' }}>{item.price ? `฿${item.price.toLocaleString()}` : '—'}</td>
-                    <td style={{ padding: '12px 14px', fontSize: 12.5 }}>
+                    <td style={{ padding: '12px 12px', fontWeight: 600, color: '#02402e', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '—'}</td>
+                    <td style={{ padding: '12px 12px' }}><TypeChip type={item.type} /></td>
+                    <td style={{ padding: '12px 12px', color: '#64748b', fontSize: 12 }}>{[item.district, item.province].filter(Boolean).join(', ') || '—'}</td>
+                    <td style={{ padding: '12px 12px', fontWeight: 600, color: '#02402e' }}>{item.price ? `฿${item.price.toLocaleString()}` : '—'}</td>
+                    <td style={{ padding: '12px 12px', fontSize: 12, color: '#64748b' }}>{RENTAL_TERM_OPTIONS.find(o => o.value === item.rental_term)?.label ?? 'รายเดือน'}</td>
+                    <td style={{ padding: '12px 12px' }}>
+                      <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: item.package_type === 'free_trial' ? '#fef9c3' : '#dcfce7', color: item.package_type === 'free_trial' ? '#a16207' : '#15803d', fontWeight: 600 }}>
+                        {PKG_LABEL[item.package_type ?? 'free_trial'] ?? item.package_type}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 12px', fontSize: 11.5, color: expired ? '#b91c1c' : '#64748b' }}>
+                      {item.expires_at ? new Date(item.expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                      {expired && <span style={{ display: 'block', fontSize: 10, color: '#b91c1c' }}>หมดอายุแล้ว</span>}
+                    </td>
+                    <td style={{ padding: '12px 12px', fontSize: 12.5 }}>
                       <div style={{ fontWeight: 500 }}>{item.contact_name || '—'}</div>
-                      <div style={{ color: '#94a3b8', fontSize: 11.5 }}>{item.contact_email}</div>
+                      <div style={{ color: '#94a3b8', fontSize: 11 }}>{item.contact_email}</div>
                     </td>
-                    <td style={{ padding: '12px 14px', color: '#94a3b8', fontSize: 11.5, whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}</td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: s.bg, color: s.color }}>{s.label}</span>
-                    </td>
-                    <td style={{ padding: '12px 14px' }}>
+                    <td style={{ padding: '12px 12px' }}><span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: s.bg, color: s.color }}>{s.label}</span></td>
+                    <td style={{ padding: '12px 12px' }}>
                       <div style={{ display: 'flex', gap: 5 }}>
-                        {item.status !== 'approved' && <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: 'none', background: '#02402e', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>อนุมัติ</button>}
+                        {item.status !== 'approved' && item.status !== 'active' && <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: 'none', background: '#02402e', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>อนุมัติ</button>}
                         {item.status !== 'rejected' && <button onClick={() => updateStatus(item.id, 'rejected')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>ปฏิเสธ</button>}
                       </div>
                     </td>
@@ -606,7 +737,7 @@ function SubmissionsTab() {
   )
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
   const [tab, setTab] = useState<'published' | 'queue'>('published')
   const [showCreate, setShowCreate] = useState(false)
@@ -614,21 +745,16 @@ export default function ListingsPage() {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 3px', color: '#02402e' }}>จัดการประกาศ</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>{staticProperties.length} ประกาศ static + ประกาศจาก Dashboard</p>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>{staticProperties.length} static + ประกาศจาก Dashboard</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}
-        >
+        <button onClick={() => setShowCreate(true)} style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
           + เพิ่มประกาศใหม่
         </button>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button onClick={() => setTab('published')} style={{ padding: '9px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, background: tab === 'published' ? '#02402e' : '#f4f6f5', color: tab === 'published' ? '#fff' : '#64748b' }}>
           🏠 เผยแพร่แล้ว
@@ -638,10 +764,7 @@ export default function ListingsPage() {
         </button>
       </div>
 
-      {tab === 'published'
-        ? <PublishedTab key={refreshKey} onAddClick={() => setShowCreate(true)} />
-        : <SubmissionsTab />
-      }
+      {tab === 'published' ? <PublishedTab refreshKey={refreshKey} /> : <SubmissionsTab />}
 
       {showCreate && (
         <CreateDrawer

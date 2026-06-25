@@ -180,16 +180,24 @@ export default async function PropertyDetailPage({ params }: Props) {
             {p.lat && p.lng && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>ทำเลที่ตั้ง</h2>
-                <div style={{ height: 200, borderRadius: 16, border: '1px solid #eef0ef', background: 'repeating-linear-gradient(45deg,#ecf5f2,#ecf5f2 14px,#e2f0eb 14px,#e2f0eb 28px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 12, padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#048c73', boxShadow: '0 4px 14px -4px rgba(2,64,46,0.15)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <span className="msym" style={{ fontSize: 18 }}>map</span>
-                    ดูบน Google Maps — {p.neighborhood}
-                  </a>
+                <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #eef0ef', boxShadow: '0 4px 16px -8px rgba(2,64,46,0.10)' }}>
+                  <iframe
+                    title="แผนที่ที่ตั้ง"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(p.lng - 0.009).toFixed(6)},${(p.lat - 0.006).toFixed(6)},${(p.lng + 0.009).toFixed(6)},${(p.lat + 0.006).toFixed(6)}&layer=mapnik&marker=${p.lat},${p.lng}`}
+                    width="100%"
+                    height="240"
+                    style={{ border: 'none', display: 'block' }}
+                    loading="lazy"
+                  />
                 </div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 13, color: '#048c73', fontWeight: 500, textDecoration: 'none' }}
+                >
+                  <span className="msym" style={{ fontSize: 16 }}>open_in_new</span>
+                  เปิดใน Google Maps
+                </a>
               </div>
             )}
           </div>

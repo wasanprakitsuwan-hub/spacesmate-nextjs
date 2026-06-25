@@ -5,30 +5,47 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
+    // ── Package → auto-approve logic ───────────────────────────────────────
+    const packageId = body.packageId || 'free_trial'
+    const PACKAGE_DAYS: Record<string, number> = {
+      free_trial: 30,
+      basic:      30,
+      standard:   90,
+      premium:    365,
+    }
+    const isPaid = packageId !== 'free_trial'
+    const durationDays = PACKAGE_DAYS[packageId] ?? 30
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + durationDays)
+
     // ── Save to Supabase ────────────────────────────────────────────────────
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('submissions')
       .insert([{
-        title:        body.title        || null,
-        type:         body.type         || null,
-        rent_type:    body.rentType     || 'month',
-        price:        body.price        ? parseInt(body.price)    : null,
-        size:         body.size         || null,
-        bedrooms:     body.bedrooms     ? parseInt(body.bedrooms) : null,
-        bathrooms:    body.bathrooms    ? parseInt(body.bathrooms): null,
-        floor:        body.floor        || null,
-        description:  body.description  || null,
-        amenities:    body.amenities    || [],
-        address:      body.address      || null,
-        province:     body.province     || null,
-        district:     body.district     || null,
-        subdistrict:  body.subdistrict  || null,
-        postcode:     body.postcode     || null,
+        title:         body.title        || null,
+        type:          body.type         || null,
+        rent_type:     body.rentType     || 'month',
+        rental_term:   body.rentalTerm   || 'monthly',
+        price:         body.price        ? parseInt(body.price)    : null,
+        size:          body.size         || null,
+        bedrooms:      body.bedrooms     ? parseInt(body.bedrooms) : null,
+        bathrooms:     body.bathrooms    ? parseInt(body.bathrooms): null,
+        floor:         body.floor        || null,
+        description:   body.description  || null,
+        amenities:     body.amenities    || [],
+        address:       body.address      || null,
+        province:      body.province     || null,
+        district:      body.district     || null,
+        subdistrict:   body.subdistrict  || null,
+        postcode:      body.postcode     || null,
         contact_name:  body.contactName  || null,
         contact_phone: body.contactPhone || null,
         contact_email: body.contactEmail || null,
-        status:       'pending',
+        package_type:  packageId,
+        expires_at:    expiresAt.toISOString(),
+        // Paid packages go active immediately; free trial needs admin approval
+        status:        isPaid ? 'approved' : 'pending',
       }])
       .select('id')
       .single()

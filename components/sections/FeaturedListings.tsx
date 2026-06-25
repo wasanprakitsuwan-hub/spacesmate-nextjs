@@ -1,11 +1,11 @@
-import Link from 'next/link'
-import { getRecentProperties } from '@/lib/property-data'
+'use client'
 
-// Show 6 most recent listings on homepage
-const FEATURED = getRecentProperties(6)
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { properties, Property } from '@/lib/property-data'
 
 const TYPE_LABELS: Record<string, string> = {
-  Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโด', Office: 'ออฟฟิศ',
+  Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโด', Office: 'ออฟฟิศ', 'Co-Working': 'Co-space',
 }
 const GRADS: Record<string, string> = {
   Apartment: 'linear-gradient(135deg,#02402e,#036b56)',
@@ -14,7 +14,24 @@ const GRADS: Record<string, string> = {
   default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
+// Fisher-Yates shuffle — new random order on every mount
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function FeaturedListings() {
+  // Start with deterministic slice (SSR), then randomise on client mount
+  const [displayed, setDisplayed] = useState<Property[]>(properties.slice(0, 6))
+
+  useEffect(() => {
+    setDisplayed(shuffle(properties).slice(0, 6))
+  }, [])
+
   return (
     <section style={{ background: '#f7f9f8', padding: '56px 0' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px' }}>
@@ -22,8 +39,8 @@ export default function FeaturedListings() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>ที่พักแนะนำ</h2>
-            <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>คอนโดและอพาร์ทเม้นท์ให้เช่าในกรุงเทพฯ — อัปเดตล่าสุด</p>
+            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>ประกาศที่พักล่าสุด</h2>
+            <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>คอนโดและอพาร์ทเม้นท์ให้เช่าในกรุงเทพฯ — สุ่มแสดงใหม่ทุกครั้ง</p>
           </div>
           <Link href="/search" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, textDecoration: 'none' }}>
             ดูประกาศทั้งหมด →
@@ -32,7 +49,7 @@ export default function FeaturedListings() {
 
         {/* Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="sm-feat-grid">
-          {FEATURED.map((p) => {
+          {displayed.map((p) => {
             const bedroomLabel = p.bedrooms === 0 ? 'สตูดิโอ' : `${p.bedrooms} ห้องนอน`
             const grad = GRADS[p.propertyType] || GRADS.default
             return (
@@ -43,9 +60,6 @@ export default function FeaturedListings() {
                   {p.image && (
                     <img src={p.image} alt={p.title} className="sm-feat-img"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }} />
-                  )}
-                  {p.featured && (
-                    <span style={{ position: 'absolute', top: 12, left: 12, background: '#d97f11', color: '#fff', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7 }}>แนะนำ</span>
                   )}
                   <span style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.9)', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(4px)', padding: '3px 9px', borderRadius: 6 }}>
                     {TYPE_LABELS[p.propertyType] || p.propertyType}
@@ -74,7 +88,7 @@ export default function FeaturedListings() {
           })}
         </div>
 
-        <div className="text-center mt-8" style={{ textAlign: 'center', marginTop: 28 }}>
+        <div style={{ textAlign: 'center', marginTop: 28 }}>
           <Link href="/search"
             style={{ display: 'inline-block', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 28px', borderRadius: 24, textDecoration: 'none' }}>
             ดูประกาศทั้งหมด

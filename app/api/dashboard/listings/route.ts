@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
         lat:            body.lat ? parseFloat(body.lat) : null,
         lng:            body.lng ? parseFloat(body.lng) : null,
         amenities:      body.amenities || [],
+        rental_term:    body.rental_term || 'monthly',
         listing_status: 'active',  // admin-created = immediately active
-        featured:       body.featured || false,
         verified:       true,
         verified_at:    new Date().toISOString(),
       })
@@ -89,6 +89,41 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('listings POST error:', err)
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
+  }
+}
+
+// ── PATCH — update an existing property ──────────────────────────────────────
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { id, ...fields } = body
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+    const supabase = createServerClient()
+
+    const ALLOWED = [
+      'title_th', 'title_en', 'description_th', 'property_type', 'status',
+      'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
+      'address_th', 'district', 'sub_district', 'province', 'postcode',
+      'lat', 'lng', 'amenities', 'listing_status', 'rental_term',
+    ]
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    for (const k of ALLOWED) {
+      if (fields[k] !== undefined) update[k] = fields[k] === '' ? null : fields[k]
+    }
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update(update)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return NextResponse.json({ success: true, listing: data })
+  } catch (err) {
+    console.error('listings PATCH error:', err)
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
 }
 
