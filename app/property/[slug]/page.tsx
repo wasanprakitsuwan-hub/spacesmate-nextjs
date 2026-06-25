@@ -183,7 +183,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                 <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #eef0ef', boxShadow: '0 4px 16px -8px rgba(2,64,46,0.10)' }}>
                   <iframe
                     title="แผนที่ที่ตั้ง"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(p.lng - 0.009).toFixed(6)},${(p.lat - 0.006).toFixed(6)},${(p.lng + 0.009).toFixed(6)},${(p.lat + 0.006).toFixed(6)}&layer=mapnik&marker=${p.lat},${p.lng}`}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(parseFloat(p.lng) - 0.009).toFixed(6)},${(parseFloat(p.lat) - 0.006).toFixed(6)},${(parseFloat(p.lng) + 0.009).toFixed(6)},${(parseFloat(p.lat) + 0.006).toFixed(6)}&layer=mapnik&marker=${p.lat},${p.lng}`}
                     width="100%"
                     height="240"
                     style={{ border: 'none', display: 'block' }}
