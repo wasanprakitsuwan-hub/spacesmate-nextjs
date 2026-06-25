@@ -12,15 +12,24 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
 
   useEffect(() => {
     const supabase = createBrowserClient()
-    // onAuthStateChange fires immediately with the persisted session on page refresh
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.replace('/login')
-      } else {
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         setUserEmail(session.user.email ?? '')
         setAuthReady(true)
+      } else {
+        router.replace('/login')
       }
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.replace('/login')
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        setUserEmail(session.user.email ?? '')
+      }
+    })
+
     return () => subscription.unsubscribe()
   }, [router])
 

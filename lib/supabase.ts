@@ -3,15 +3,27 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Client-side Supabase client (uses anon key)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// ── Browser client — SINGLETON ─────────────────────────────────────────────
+// One instance per browser tab. Re-creating the client on every call causes
+// token-refresh races and breaks session persistence. The singleton ensures
+// autoRefreshToken runs in exactly one place and localStorage is shared.
+let _browserClient: ReturnType<typeof createClient> | null = null
 
-// Browser client alias for use in 'use client' components
 export function createBrowserClient() {
-  return createClient(supabaseUrl, supabaseAnonKey)
+  if (typeof window === 'undefined') {
+    // SSR context — no localStorage, return a fresh client (not cached)
+    return createClient(supabaseUrl, supabaseAnonKey)
+  }
+  if (!_browserClient) {
+    _browserClient = createClient(supabaseUrl, supabaseAnonKey)
+  }
+  return _browserClient
 }
 
-// Server-side Supabase client (uses service role — server only)
+// Legacy named export kept for any existing imports
+export const supabase = createBrowserClient()
+
+// ── Server client — never cached, service role, no session persistence ─────
 export function createServerClient() {
   return createClient(
     supabaseUrl,

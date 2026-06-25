@@ -24,15 +24,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const supabase = createBrowserClient()
-    // onAuthStateChange fires immediately with the persisted session on page refresh
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.replace('/login')
-      } else {
+
+    // getSession() reads localStorage directly — instant, no async wait.
+    // This is the fast path so a returning user never hits the login page.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         setUserEmail(session.user.email ?? '')
         setAuthReady(true)
+      } else {
+        router.replace('/login')
       }
     })
+
+    // onAuthStateChange handles sign-out and silent token refresh only.
+    // We do NOT redirect on every event — only when explicitly signed out.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.replace('/login')
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        setUserEmail(session.user.email ?? '')
+      }
+    })
+
     return () => subscription.unsubscribe()
   }, [router])
 
