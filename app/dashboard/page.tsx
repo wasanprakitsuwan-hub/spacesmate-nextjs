@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { properties } from '@/lib/property-data'
 
 interface StatsData {
   total: number
@@ -61,7 +62,14 @@ export default function DashboardOverview() {
 
   const now = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-  const byType = stats?.byType ?? {}
+  // Build byType from static property data (real live listings)
+  const staticByType: Record<string, number> = {}
+  for (const p of properties) {
+    const t = p.propertyType === 'Co-Working' ? 'Coworking' : p.propertyType
+    staticByType[t] = (staticByType[t] || 0) + 1
+  }
+
+  const byType = staticByType
   const maxTypeCount = Math.max(...ALL_TYPES.map(t => byType[t] ?? 0), 1)
 
   return (
@@ -87,9 +95,9 @@ export default function DashboardOverview() {
             {[
               {
                 label: 'ประกาศทั้งหมด',
-                value: stats?.total ?? 0,
-                delta: `+${stats?.thisMonth ?? 0} เดือนนี้`,
-                deltaColor: '#22c55e',
+                value: properties.length,
+                delta: `${stats?.pending ?? 0} คำขอรอตรวจสอบ`,
+                deltaColor: (stats?.pending ?? 0) > 0 ? '#d97f11' : '#22c55e',
                 iconBg: '#e8f5f0',
                 iconColor: '#048c73',
                 icon: '🏠',
@@ -253,7 +261,8 @@ export default function DashboardOverview() {
 
           {/* ── STATUS SUMMARY ── */}
           <div style={{ marginTop: 20, background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: '#02402e' }}>สรุปสถานะประกาศ</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 4px', color: '#02402e' }}>คิวคำขอจากฟอร์ม</h2>
+            <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 16px' }}>ประกาศที่ส่งมาผ่านฟอร์ม /ลงประกาศ บนเว็บไซต์</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
               {[
                 { label: 'รออนุมัติ', value: stats?.pending ?? 0, bg: '#fef9c3', color: '#a16207', link: '/dashboard/listings?status=pending' },
