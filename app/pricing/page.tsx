@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
-  description: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/เดือน หรือ ฿2,499/ปี — 1 ประกาศต่อแพ็กเกจ เผยแพร่ทันทีหลังชำระ',
+  description: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/เดือน — 1 ประกาศต่อแพ็กเกจ เผยแพร่ทันทีหลังชำระ มีแพ็กเกจอาคารสำหรับผู้ที่มีหลายห้อง',
 }
 
 const PLANS = [
@@ -11,14 +11,14 @@ const PLANS = [
     name: 'Basic',
     price: '299',
     period: '/เดือน',
-    description: 'สำหรับเจ้าของที่ต้องการเริ่มต้น ลองก่อนได้เลย',
+    description: 'สำหรับเจ้าของที่ต้องการเริ่มต้น ทดลองใช้งานก่อนได้',
     highlight: false,
     badge: null as string | null,
-    maxImages: '5 รูป',
+    maxImages: '8 รูป',
     allowVideo: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 5 รูป',
+      'รูปภาพสูงสุด 8 รูป',
       'แสดงผล 1 เดือน',
       'เผยแพร่ทันทีหลังชำระ',
       'ต่ออายุได้ทุกเดือน',
@@ -27,10 +27,29 @@ const PLANS = [
     ctaHref: '/submit/new',
   },
   {
+    name: 'Standard',
+    price: '699',
+    period: '/3 เดือน',
+    description: 'เหมาะสำหรับเจ้าของที่ต้องการลงประกาศต่อเนื่อง 3 เดือน',
+    highlight: false,
+    badge: 'ยอดนิยม' as string | null,
+    maxImages: '12 รูป',
+    allowVideo: false,
+    features: [
+      '1 ประกาศ',
+      'รูปภาพสูงสุด 12 รูป',
+      'แสดงผล 3 เดือน',
+      'เผยแพร่ทันทีหลังชำระ',
+      'ประหยัดกว่า Basic 22%',
+    ],
+    cta: 'ลงประกาศ ฿699',
+    ctaHref: '/submit/new',
+  },
+  {
     name: 'Premium',
     price: '2,499',
     period: '/12 เดือน',
-    description: 'สำหรับเจ้าของที่ต้องการประกาศตลอดทั้งปี',
+    description: 'สำหรับเจ้าของที่ต้องการประกาศตลอดทั้งปี พร้อมอัปโหลดวิดีโอ',
     highlight: true,
     badge: 'คุ้มที่สุด' as string | null,
     maxImages: '20 รูป + วิดีโอ',
@@ -51,19 +70,23 @@ const PLANS = [
 const FAQS = [
   {
     q: '1 แพ็กเกจ = 1 ประกาศ หมายความว่าอย่างไร?',
-    a: 'แต่ละแพ็กเกจรองรับ 1 ประกาศ ถ้าต้องการลงหลายห้องหรือหลายทรัพย์ สามารถซื้อหลายแพ็กเกจแยกกันได้ ไม่จำกัดจำนวน',
+    a: 'แต่ละแพ็กเกจรองรับ 1 ประกาศ ถ้าต้องการลงหลายห้องหรือหลายทรัพย์ สามารถซื้อหลายแพ็กเกจแยกกันได้ ไม่จำกัดจำนวน หรือสอบถาม Building Bundle สำหรับราคาพิเศษ 5 ประกาศขึ้นไป',
   },
   {
     q: 'ชำระเงินอย่างไร?',
     a: 'หลังกดลงประกาศ ทีมงาน SpacesMate จะติดต่อผ่าน LINE เพื่อยืนยันและแจ้งช่องทางชำระ (โอนบัญชี / PromptPay) ประกาศจะเผยแพร่ทันทีหลังยืนยันการชำระ',
   },
   {
-    q: 'แพ็กเกจ Basic หมดอายุแล้ว ต่ออายุได้ไหม?',
-    a: 'ได้เลย ซื้อแพ็กเกจ Basic ใหม่ได้ตลอดเวลา หรืออัปเกรดเป็น Premium เพื่อแสดงผลต่อเนื่อง 12 เดือน',
+    q: 'แพ็กเกจหมดอายุแล้ว ต่ออายุหรืออัปเกรดได้ไหม?',
+    a: 'ได้เลย สามารถซื้อแพ็กเกจใหม่ได้ตลอดเวลา หรืออัปเกรดจาก Basic → Standard → Premium เพื่อระยะเวลาและรูปภาพที่มากขึ้น',
   },
   {
     q: 'SpacesMate ต่างจากเว็บประกาศอสังหาทั่วไปอย่างไร?',
     a: 'SpacesMate ใช้ระบบ Fair Rotation — ประกาศจะหมุนขึ้นหน้าแรกแบบสุ่มโดยอัตโนมัติ ไม่มีระบบจ่ายเงินเพื่อขึ้นอันดับ ทุกประกาศมีโอกาสเท่าเทียมกัน',
+  },
+  {
+    q: 'Building Bundle คืออะไร?',
+    a: 'แพ็กเกจพิเศษสำหรับเจ้าของอาคารหรือนายหน้าที่มี 5 ห้องขึ้นไป ราคา ฿9,999 สำหรับ 5 ประกาศ ระยะเวลา 12 เดือน (ประหยัดกว่า 5 × Premium ถึง ฿2,496) ติดต่อทีมงานผ่าน LINE @spacesmate',
   },
 ]
 
@@ -81,7 +104,7 @@ export default function PricingPage() {
 
       {/* Plans */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
@@ -131,6 +154,53 @@ export default function PricingPage() {
               </Link>
             </div>
           ))}
+        </div>
+
+        {/* Building Bundle */}
+        <div className="mb-16 rounded-2xl border border-spacemate-brandDark/20 bg-gradient-to-r from-spacemate-brandDark to-spacemate-brandTeal p-8 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #d97f11 0%, transparent 60%)' }} />
+          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1">
+              <span className="inline-block bg-spacemate-brandGold text-white text-xs font-bold px-3 py-1 rounded-full mb-3">สำหรับเจ้าของอาคาร & นายหน้า</span>
+              <h2 className="text-2xl font-bold mb-2">Building Bundle</h2>
+              <p className="text-white/70 text-sm leading-relaxed mb-4">มี 5 ห้องขึ้นไป? รับส่วนลดพิเศษทันที — ซื้อ 5 ประกาศ Premium รวมกันในราคาเดียว ประหยัดทันที ฿2,496</p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>5 ประกาศ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>20 รูป + วิดีโอ ต่อประกาศ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>แสดงผล 12 เดือน</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>Account Manager ส่วนตัว</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex-shrink-0 text-center">
+              <div className="mb-1">
+                <span className="text-white/50 text-sm line-through">฿12,495</span>
+              </div>
+              <div className="flex items-end gap-1 justify-center mb-1">
+                <span className="text-4xl font-bold">฿9,999</span>
+              </div>
+              <p className="text-white/60 text-xs mb-5">5 ประกาศ / 12 เดือน</p>
+              <a
+                href="https://line.me/R/ti/p/@spacesmate"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-white text-spacemate-brandDark font-bold text-sm py-3 px-8 rounded-xl hover:bg-spacemate-brandGold hover:text-white transition-all"
+              >
+                ติดต่อผ่าน LINE
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* FAQs */}

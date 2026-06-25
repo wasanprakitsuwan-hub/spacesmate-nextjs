@@ -8,8 +8,9 @@ export async function POST(req: NextRequest) {
     // ── Package → auto-approve logic ───────────────────────────────────────
     const packageId = body.packageId || 'basic'
     const PACKAGE_DAYS: Record<string, number> = {
-      basic:   30,   // ฿299 / 1 เดือน
-      premium: 365,  // ฿2,499 / 12 เดือน
+      basic:    30,   // ฿299 / 1 เดือน
+      standard: 90,   // ฿699 / 3 เดือน
+      premium:  365,  // ฿2,499 / 12 เดือน
     }
     const isPaid = true // both packages are paid — status = approved immediately
     const durationDays = PACKAGE_DAYS[packageId] ?? 30
