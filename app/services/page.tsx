@@ -79,7 +79,7 @@ export default function ServicesPage() {
                 ))}
               </ul>
               <Link
-                href="/contact"
+                href="/manage"
                 className="block text-center py-3 rounded-xl border border-spacemate-brandDark text-spacemate-brandDark text-sm font-semibold hover:bg-spacemate-brandDark hover:text-white transition-all"
               >
                 สอบถามบริการนี้ →
@@ -100,11 +100,11 @@ export default function ServicesPage() {
               SpacesMate ไม่ได้เป็นเจ้าของทรัพย์สินใด ๆ เราบริหารแทนเจ้าของและได้รับค่าตอบแทนตามผลงานจริง — ยิ่งคุณได้มาก เราได้มากด้วย
             </p>
             <Link
-              href="/contact"
+              href="/manage"
               className="inline-block text-white font-semibold px-8 py-3.5 rounded-full transition-all hover:brightness-110"
               style={{ background: '#d97f11', boxShadow: '0 8px 22px -6px rgba(217,127,17,0.6)' }}
             >
-              ให้เราติดต่อกลับ →
+              ฝากบริหารทรัพย์สิน →
             </Link>
           </div>
         </div>

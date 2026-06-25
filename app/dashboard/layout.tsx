@@ -24,14 +24,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const supabase = createBrowserClient()
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
+    // onAuthStateChange fires immediately with the persisted session on page refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
         router.replace('/login')
       } else {
-        setUserEmail(data.session.user.email ?? '')
+        setUserEmail(session.user.email ?? '')
         setAuthReady(true)
       }
     })
+    return () => subscription.unsubscribe()
   }, [router])
 
   useEffect(() => {

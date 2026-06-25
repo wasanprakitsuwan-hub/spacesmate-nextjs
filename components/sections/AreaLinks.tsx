@@ -52,7 +52,7 @@ export default function AreaLinks() {
           {sorted.map((area) => (
             <Link
               key={area.slug}
-              href={`/search?type=${area.property_type}&area=${encodeURIComponent(area.label_en)}`}
+              href={`/area/${area.slug}`}
               className="group flex items-center justify-between p-4 bg-white rounded-xl border border-spacemate-borderLight hover:border-spacemate-brandTeal hover:shadow-premium transition-all duration-200"
             >
               <span className="text-sm font-medium text-spacemate-textCharcoal group-hover:text-spacemate-brandDark leading-tight transition-colors">

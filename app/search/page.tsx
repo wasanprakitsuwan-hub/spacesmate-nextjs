@@ -60,6 +60,7 @@ function SearchContent() {
   const sp = useSearchParams()
   const router = useRouter()
   const [activeType, setActiveType] = useState(sp.get('type') || '')
+  const [keyword, setKeyword] = useState(sp.get('q') || '')
   const [priceRangeIdx, setPriceRangeIdx] = useState(0)
   const [sortBy, setSortBy] = useState('recent')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -88,6 +89,15 @@ function SearchContent() {
   const results = useMemo(() => {
     let list = [...properties, ...dbListings]
     if (activeType) list = list.filter(p => p.propertyType === activeType)
+    if (keyword.trim()) {
+      const kw = keyword.trim().toLowerCase()
+      list = list.filter(p =>
+        p.title.toLowerCase().includes(kw) ||
+        p.neighborhood.toLowerCase().includes(kw) ||
+        p.address.toLowerCase().includes(kw) ||
+        (p.excerpt && p.excerpt.toLowerCase().includes(kw))
+      )
+    }
     const range = PRICE_RANGES[priceRangeIdx]
     if (range.min > 0 || range.max !== Infinity) {
       list = list.filter(p => p.priceMin >= range.min && p.priceMin <= range.max)
@@ -96,7 +106,7 @@ function SearchContent() {
     else if (sortBy === 'priceHigh') list.sort((a, b) => b.priceMin - a.priceMin)
     else list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     return list
-  }, [activeType, priceRangeIdx, sortBy, dbListings])
+  }, [activeType, keyword, priceRangeIdx, sortBy, dbListings])
 
   function selectType(t: string) {
     setActiveType(t)
@@ -114,13 +124,30 @@ function SearchContent() {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <div style={{ background: '#f7f9f8', borderBottom: '1px solid #eef0ef', padding: '24px' }}>
+      {/* Search hero */}
+      <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '32px 24px 36px' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-          <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 6px' }}>
-            <Link href="/" style={{ color: '#94a3b8' }}>หน้าแรก</Link> › ค้นหาที่พัก › {label}
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, margin: '0 0 8px' }}>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>หน้าแรก</Link> › ค้นหาที่พัก
           </p>
-          <h1 style={{ color: '#02402e', fontSize: 24, fontWeight: 600, margin: 0 }}>{label}ในกรุงเทพฯ</h1>
+          <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 600, margin: '0 0 18px' }}>{label}ในกรุงเทพฯ</h1>
+          {/* Keyword search bar */}
+          <div style={{ position: 'relative', maxWidth: 560 }}>
+            <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 20, color: '#94a3b8', pointerEvents: 'none' }} className="msym">search</span>
+            <input
+              type="text"
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              placeholder="ค้นหาย่าน BTS สถานี หรือชื่อที่พัก..."
+              style={{ width: '100%', paddingLeft: 48, paddingRight: keyword ? 44 : 16, paddingTop: 14, paddingBottom: 14, fontSize: 15, borderRadius: 28, border: 'none', outline: 'none', background: '#fff', color: '#231f20', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', boxSizing: 'border-box' }}
+            />
+            {keyword && (
+              <button onClick={() => setKeyword('')}
+                style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#94a3b8', padding: 4, display: 'flex', alignItems: 'center' }}>
+                <span className="msym">close</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
