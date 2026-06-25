@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
         lat:            body.lat ? parseFloat(body.lat) : null,
         lng:            body.lng ? parseFloat(body.lng) : null,
         amenities:      body.amenities || [],
-        rental_term:    body.rental_term || 'monthly',
+        rental_term:    body.rental_term || '1_month',
+        package_type:   body.package_type || 'admin',
+        expires_at:     body.expires_at || null,
         listing_status: 'active',  // admin-created = immediately active
         verified:       true,
         verified_at:    new Date().toISOString(),
@@ -106,6 +108,7 @@ export async function PATCH(req: NextRequest) {
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'listing_status', 'rental_term',
+      'package_type', 'expires_at',
     ]
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const k of ALLOWED) {

@@ -28,6 +28,8 @@ interface DbListing {
   lng: number | null
   amenities: string[]
   rental_term: string | null
+  package_type: string | null
+  expires_at: string | null
   listing_status: string
   verified: boolean
   created_at: string
@@ -87,6 +89,18 @@ const RENTAL_TERM_OPTIONS = [
 const RENTAL_TERM_LABEL: Record<string, string> = {
   daily: '/วัน', '1_month': '/เดือน',
   '3_months': '/3 เดือน', '6_months': '/6 เดือน', '12_months': '/12 เดือน',
+}
+const ADMIN_PACKAGES = [
+  { id: 'admin',    label: 'Admin — ไม่มีวันหมดอายุ', days: 0 },
+  { id: 'basic',    label: 'Basic — 1 เดือน (฿299)',      days: 30 },
+  { id: 'standard', label: 'Standard — 3 เดือน (฿699)',   days: 90 },
+  { id: 'premium',  label: 'Premium — 12 เดือน (฿2,499)', days: 365 },
+]
+function computeExpiry(packageId: string): string | null {
+  const pkg = ADMIN_PACKAGES.find(p => p.id === packageId)
+  if (!pkg || pkg.days === 0) return null
+  const d = new Date(); d.setDate(d.getDate() + pkg.days)
+  return d.toISOString()
 }
 
 function TypeChip({ type }: { type: string }) {
@@ -159,7 +173,7 @@ function RichEditor({ value, onChange, placeholder }: { value: string; onChange:
 // ── Shared form fields for Create & Edit drawers ──────────────────────────────
 interface ListingFormState {
   title_th: string; title_en: string; slug: string
-  property_type: string; rental_term: string
+  property_type: string; rental_term: string; package_type: string
   price_from: string; price_to: string
   bedrooms: string; bathrooms: string; floor: string; area_sqm: string
   address_th: string; district: string; sub_district: string
@@ -168,7 +182,7 @@ interface ListingFormState {
 }
 
 const BLANK_FORM: ListingFormState = {
-  title_th: '', title_en: '', slug: '', property_type: 'condo', rental_term: '1_month',
+  title_th: '', title_en: '', slug: '', property_type: 'condo', rental_term: '1_month', package_type: 'admin',
   price_from: '', price_to: '', bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
   address_th: '', district: '', sub_district: '', province: 'กรุงเทพมหานคร', postcode: '',
   lat: '', lng: '', description_th: '', amenities: [],
@@ -239,6 +253,20 @@ function ListingFormFields({
               </button>
             ))}
           </div>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>แพ็กเกจ / วันหมดอายุ</label>
+          <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={{ ...inputStyle }}>
+            {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+          {form.package_type !== 'admin' && (
+            <p style={{ fontSize: 11.5, color: '#048c73', margin: '5px 0 0', fontWeight: 500 }}>
+              ⏱ หมดอายุ: {new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+            </p>
+          )}
+          {form.package_type === 'admin' && (
+            <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '5px 0 0' }}>ไม่มีวันหมดอายุ — ประกาศอยู่บนเว็บตลอดไปจนกว่าจะลบ</p>
+          )}
         </div>
         <div style={row2}>
           <div>
@@ -372,7 +400,13 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/dashboard/listings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, userId: session?.user.id, userEmail: session?.user.email }),
+        body: JSON.stringify({
+          ...form,
+          userId: session?.user.id,
+          userEmail: session?.user.email,
+          package_type: form.package_type,
+          expires_at: computeExpiry(form.package_type),
+        }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Failed')
@@ -393,7 +427,8 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     title_en:    listing.title_en ?? '',
     slug:        listing.slug,
     property_type: listing.property_type,
-    rental_term: listing.rental_term ?? 'monthly',
+    rental_term: listing.rental_term ?? '1_month',
+    package_type: listing.package_type ?? 'admin',
     price_from:  String(listing.price_from),
     price_to:    listing.price_to ? String(listing.price_to) : '',
     bedrooms:    String(listing.bedrooms),
@@ -434,6 +469,8 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
           area_sqm: form.area_sqm ? parseFloat(form.area_sqm) : null,
           lat: form.lat ? parseFloat(form.lat) : null,
           lng: form.lng ? parseFloat(form.lng) : null,
+          package_type: form.package_type,
+          expires_at: computeExpiry(form.package_type),
         }),
       })
       const d = await res.json()
@@ -555,7 +592,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #eef0ef' }}>
-              {['ชื่อประกาศ', 'ประเภท', 'ทำเล', 'ราคา', 'ห้องนอน', 'ช่วงเช่า', 'แหล่งข้อมูล', ''].map(h => (
+              {['ชื่อประกาศ', 'ประเภท', 'ทำเล', 'ราคา', 'ห้องนอน', 'ช่วงเช่า', 'หมดอายุ', 'แหล่งข้อมูล', ''].map(h => (
                 <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -574,6 +611,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: '#02402e' }}>{p.priceDisplay}</td>
                 <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
                 <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>รายเดือน</td>
+                <td style={{ padding: '12px 14px', color: '#94a3b8', fontSize: 12 }}>—</td>
                 <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0f2f1', color: '#64748b', fontWeight: 500 }}>Static</span></td>
                 <td style={{ padding: '12px 14px' }}>
                   <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
@@ -598,6 +636,16 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>
                   {RENTAL_TERM_OPTIONS.find(o => o.value === p.rental_term)?.label ?? 'รายเดือน'}
                 </td>
+                <td style={{ padding: '12px 14px', fontSize: 12 }}>
+                  {p.expires_at ? (
+                    <span style={{ color: new Date(p.expires_at) < new Date() ? '#b91c1c' : '#15803d', fontWeight: 600 }}>
+                      {new Date(p.expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+                      {new Date(p.expires_at) < new Date() && <span style={{ display: 'block', fontSize: 10, color: '#b91c1c' }}>หมดอายุแล้ว</span>}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#94a3b8' }}>ไม่จำกัด</span>
+                  )}
+                </td>
                 <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Dashboard</span></td>
                 <td style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 5 }}>
@@ -611,7 +659,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
               </tr>
             ))}
             {filteredStatic.length + filteredDb.length === 0 && (
-              <tr><td colSpan={8} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
+              <tr><td colSpan={9} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
             )}
           </tbody>
         </table>
