@@ -14,40 +14,18 @@ const STEPS = [
 
 const PACKAGES = [
   {
-    id: 'free_trial',
-    name: 'ทดลองฟรี',
-    price: 0,
-    priceLabel: 'ฟรี',
-    duration: 30,
-    durationLabel: '30 วัน',
-    badge: null,
-    highlight: false,
-    note: 'ทีมงานตรวจสอบก่อนเผยแพร่',
-    features: ['1 ประกาศ', 'แสดงผล 30 วัน', 'ไม่ต้องใช้บัตรเครดิต', 'รออนุมัติจากทีมงาน'],
-  },
-  {
     id: 'basic',
     name: 'Basic',
     price: 299,
     priceLabel: '฿299',
     duration: 30,
-    durationLabel: '30 วัน',
+    durationLabel: '1 เดือน',
     badge: null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    features: ['1 ประกาศ', 'แสดงผล 30 วัน', 'เผยแพร่ทันที', 'อัปเดตได้ไม่จำกัด'],
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: 799,
-    priceLabel: '฿799',
-    duration: 90,
-    durationLabel: '3 เดือน',
-    badge: 'แนะนำ',
-    highlight: true,
-    note: 'เผยแพร่ทันทีหลังชำระ',
-    features: ['สูงสุด 3 ประกาศ', 'แสดงผล 3 เดือน', 'เผยแพร่ทันที', 'ส่วนลด 11%'],
+    maxImages: 5,
+    allowVideo: false,
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 5 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
   },
   {
     id: 'premium',
@@ -55,11 +33,13 @@ const PACKAGES = [
     price: 2499,
     priceLabel: '฿2,499',
     duration: 365,
-    durationLabel: '1 ปี',
-    badge: null,
-    highlight: false,
+    durationLabel: '12 เดือน',
+    badge: 'คุ้มที่สุด',
+    highlight: true,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    features: ['ประกาศไม่จำกัด', 'แสดงผล 1 ปี', 'เผยแพร่ทันที', 'ส่วนลด 30%'],
+    maxImages: 20,
+    allowVideo: true,
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 20 รูป', 'อัปโหลดวิดีโอได้', 'แสดงผล 12 เดือน', 'ประหยัดกว่า Basic 30%'],
   },
 ]
 
@@ -70,17 +50,15 @@ const SUBDISTRICTS = ['คลองเตย','พระโขนง','คลอ
 const AMENITIES_LIST = ['Wi-Fi','แอร์','ที่จอดรถ','เฟอร์นิเจอร์ครบ','ซักรีด','รักษาความปลอดภัย','สระว่ายน้ำ','ฟิตเนส']
 
 const RENTAL_TERMS = [
-  { value: 'daily',    label: 'รายวัน' },
-  { value: 'weekly',   label: 'รายสัปดาห์' },
-  { value: 'monthly',  label: 'รายเดือน' },
-  { value: '1_month',  label: '1 เดือน' },
-  { value: '3_months', label: '3 เดือน' },
-  { value: '6_months', label: '6 เดือน' },
-  { value: 'yearly',   label: 'รายปี' },
+  { value: 'daily',     label: 'รายวัน' },
+  { value: '1_month',   label: '1 เดือน' },
+  { value: '3_months',  label: '3 เดือน' },
+  { value: '6_months',  label: '6 เดือน' },
+  { value: '12_months', label: '12 เดือน' },
 ]
 const TERM_SUFFIX: Record<string, string> = {
-  daily: '/วัน', weekly: '/สัปดาห์', monthly: '/เดือน',
-  '1_month': '/เดือน', '3_months': '/3 เดือน', '6_months': '/6 เดือน', yearly: '/ปี',
+  daily: '/วัน', '1_month': '/เดือน',
+  '3_months': '/3 เดือน', '6_months': '/6 เดือน', '12_months': '/12 เดือน',
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -115,8 +93,8 @@ interface FormData {
 }
 
 const INITIAL: FormData = {
-  packageId: 'free_trial',
-  title: '', type: 'คอนโดมิเนียม', rentalTerm: 'monthly',
+  packageId: 'basic',
+  title: '', type: 'คอนโดมิเนียม', rentalTerm: '1_month',
   price: '', size: '', bedrooms: '', bathrooms: '', floor: '',
   description: '', amenities: [],
   address: '', province: 'กรุงเทพมหานคร', district: 'คลองเตย', subdistrict: 'คลองเตย', postcode: '',
@@ -171,7 +149,7 @@ export default function SubmitNewPage() {
   }
 
   const selectedPkg = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
-  const isPaid = submittedPkg !== 'free_trial'
+  const isPaid = true // all packages are paid
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
@@ -279,7 +257,7 @@ export default function SubmitNewPage() {
                 })}
               </div>
               <div style={{ marginTop: 18, padding: '14px 16px', background: '#f7f9f8', borderRadius: 12, fontSize: 13, color: '#64748b' }}>
-                💡 แพ็กเกจที่ชำระเงิน = ประกาศเผยแพร่ทันที · ทดลองฟรี = รออนุมัติจากทีมงาน (ภายใน 24 ชม.)
+                💡 1 แพ็กเกจ = 1 ประกาศ · ต้องการลงหลายประกาศ? ซื้อหลายแพ็กเกจได้เลย · ทีมงานจะติดต่อยืนยันการชำระเงินหลังกด "เผยแพร่"
               </div>
             </div>
           )}

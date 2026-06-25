@@ -6,14 +6,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     // ── Package → auto-approve logic ───────────────────────────────────────
-    const packageId = body.packageId || 'free_trial'
+    const packageId = body.packageId || 'basic'
     const PACKAGE_DAYS: Record<string, number> = {
-      free_trial: 30,
-      basic:      30,
-      standard:   90,
-      premium:    365,
+      basic:   30,   // ฿299 / 1 เดือน
+      premium: 365,  // ฿2,499 / 12 เดือน
     }
-    const isPaid = packageId !== 'free_trial'
+    const isPaid = true // both packages are paid — status = approved immediately
     const durationDays = PACKAGE_DAYS[packageId] ?? 30
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + durationDays)
@@ -44,8 +42,8 @@ export async function POST(req: NextRequest) {
         contact_email: body.contactEmail || null,
         package_type:  packageId,
         expires_at:    expiresAt.toISOString(),
-        // Paid packages go active immediately; free trial needs admin approval
-        status:        isPaid ? 'approved' : 'pending',
+        // All paid packages go active immediately — no admin approval needed
+        status:        'approved',
       }])
       .select('id')
       .single()

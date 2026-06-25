@@ -79,16 +79,14 @@ const AMENITY_OPTIONS = [
 ]
 const RENTAL_TERM_OPTIONS = [
   { value: 'daily',     label: 'รายวัน' },
-  { value: 'weekly',    label: 'รายสัปดาห์' },
-  { value: 'monthly',   label: 'รายเดือน' },
   { value: '1_month',   label: '1 เดือน' },
   { value: '3_months',  label: '3 เดือน' },
   { value: '6_months',  label: '6 เดือน' },
-  { value: 'yearly',    label: 'รายปี' },
+  { value: '12_months', label: '12 เดือน' },
 ]
 const RENTAL_TERM_LABEL: Record<string, string> = {
-  daily: '/วัน', weekly: '/สัปดาห์', monthly: '/เดือน',
-  '1_month': '/เดือน', '3_months': '/3 เดือน', '6_months': '/6 เดือน', yearly: '/ปี',
+  daily: '/วัน', '1_month': '/เดือน',
+  '3_months': '/3 เดือน', '6_months': '/6 เดือน', '12_months': '/12 เดือน',
 }
 
 function TypeChip({ type }: { type: string }) {
@@ -170,7 +168,7 @@ interface ListingFormState {
 }
 
 const BLANK_FORM: ListingFormState = {
-  title_th: '', title_en: '', slug: '', property_type: 'condo', rental_term: 'monthly',
+  title_th: '', title_en: '', slug: '', property_type: 'condo', rental_term: '1_month',
   price_from: '', price_to: '', bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
   address_th: '', district: '', sub_district: '', province: 'กรุงเทพมหานคร', postcode: '',
   lat: '', lng: '', description_th: '', amenities: [],
