@@ -85,7 +85,7 @@ function PublishedTab() {
     return true
   })
 
-  const types = [...new Set(properties.map(p => p.propertyType))]
+  const types = Array.from(new Set(properties.map(p => p.propertyType)))
 
   return (
     <div>
