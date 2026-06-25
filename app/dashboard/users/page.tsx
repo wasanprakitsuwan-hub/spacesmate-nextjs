@@ -23,7 +23,7 @@ export default function UsersPage() {
       try {
         const r = await fetch('/api/dashboard/submissions')
         const d = await r.json()
-        const subs = d.submissions ?? []
+        const subs = d.data ?? d.submissions ?? []
 
         // Aggregate by email
         const map: Record<string, UserRow> = {}

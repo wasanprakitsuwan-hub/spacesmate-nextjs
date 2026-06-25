@@ -47,7 +47,7 @@ export default function EnquiriesPage() {
     try {
       const r = await fetch('/api/dashboard/submissions')
       const d = await r.json()
-      setItems(d.submissions ?? [])
+      setItems(d.data ?? d.submissions ?? [])
     } catch {}
     setLoading(false)
   }, [])

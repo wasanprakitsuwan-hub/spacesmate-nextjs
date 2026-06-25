@@ -10,11 +10,16 @@ interface Submission {
   contact_name: string | null
   contact_email: string | null
   contact_phone: string | null
-  location: string | null
+  // DB columns
+  address: string | null
+  district: string | null
+  province: string | null
   price: number | null
   bedrooms: number | null
   bathrooms: number | null
-  area: number | null
+  size: number | null       // DB uses 'size', not 'area'
+  description: string | null
+  amenities: string[] | null
   created_at: string
   updated_at: string | null
 }
@@ -72,7 +77,7 @@ export default function ListingsPage() {
       if (filter) params.set('status', filter)
       const r = await fetch(`/api/dashboard/submissions?${params}`)
       const d = await r.json()
-      setItems(d.submissions ?? [])
+      setItems(d.data ?? d.submissions ?? [])
     } catch {}
     setLoading(false)
   }, [filter])
@@ -95,7 +100,8 @@ export default function ListingsPage() {
         (i.title || '').toLowerCase().includes(q) ||
         (i.contact_name || '').toLowerCase().includes(q) ||
         (i.contact_email || '').toLowerCase().includes(q) ||
-        (i.location || '').toLowerCase().includes(q)
+        (i.address || '').toLowerCase().includes(q) ||
+        (i.district || '').toLowerCase().includes(q)
       )
     }
     return true
@@ -167,7 +173,7 @@ export default function ListingsPage() {
                   <tr key={item.id} style={{ borderBottom: i < displayed.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
                     <td style={{ padding: '13px 16px', maxWidth: 220 }}>
                       <div style={{ fontWeight: 600, color: '#02402e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '—'}</div>
-                      {item.bedrooms != null && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{item.bedrooms} ห้องนอน · {item.area ?? '—'} ตร.ม.</div>}
+                      {item.bedrooms != null && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{item.bedrooms} ห้องนอน · {item.size ?? '—'} ตร.ม.</div>}
                     </td>
                     <td style={{ padding: '13px 16px' }}>
                       <span style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: tc.bg, color: tc.color, whiteSpace: 'nowrap' }}>
@@ -175,7 +181,7 @@ export default function ListingsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '13px 16px', color: '#64748b', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.location || '—'}
+                      {[item.district, item.province].filter(Boolean).join(', ') || item.address || '—'}
                     </td>
                     <td style={{ padding: '13px 16px', fontWeight: 600, color: '#02402e', whiteSpace: 'nowrap' }}>
                       {item.price ? `฿${item.price.toLocaleString()}` : '—'}
@@ -240,11 +246,13 @@ export default function ListingsPage() {
             {[
               { label: 'ชื่อประกาศ', value: selected.title },
               { label: 'ประเภท', value: TYPE_LABELS[selected.type] ?? selected.type },
-              { label: 'ทำเล', value: selected.location },
+              { label: 'ที่อยู่', value: selected.address },
+              { label: 'เขต / แขวง', value: selected.district },
+              { label: 'จังหวัด', value: selected.province },
               { label: 'ราคา / เดือน', value: selected.price ? `฿${selected.price.toLocaleString()}` : null },
               { label: 'ห้องนอน', value: selected.bedrooms != null ? `${selected.bedrooms} ห้อง` : null },
               { label: 'ห้องน้ำ', value: selected.bathrooms != null ? `${selected.bathrooms} ห้อง` : null },
-              { label: 'พื้นที่', value: selected.area != null ? `${selected.area} ตร.ม.` : null },
+              { label: 'พื้นที่', value: selected.size != null ? `${selected.size} ตร.ม.` : null },
               { label: 'ผู้ลงประกาศ', value: selected.contact_name },
               { label: 'อีเมล', value: selected.contact_email },
               { label: 'เบอร์โทร', value: selected.contact_phone },
