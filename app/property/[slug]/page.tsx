@@ -239,7 +239,7 @@ export default async function PropertyDetailPage({ params }: Props) {
               <div
                 className="property-content"
                 style={{ color: '#475569', lineHeight: 1.75, fontSize: 15, marginBottom: 32 }}
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: content ?? '' }}
               />
             )}
 
