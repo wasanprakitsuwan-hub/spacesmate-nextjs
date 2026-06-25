@@ -17,7 +17,8 @@ export interface Property {
   neighborhood: string   // e.g. "BTS เอกมัย", "MRT ศูนย์วัฒนธรรม"
   lat: string
   lng: string
-  image: string          // WP CDN URL (migrate to /public/properties/ before closing WP)
+  image: string          // Primary / hero image
+  images?: string[]      // Additional gallery images (index 0 = hero override if set)
   propertyType: 'Condo' | 'Apartment' | 'Office' | 'Co-Working'
   listingType: 'Rent' | 'Sale' | 'Daily'
   amenities: string[]
@@ -43,7 +44,15 @@ export const properties: Property[] = [
     neighborhood: 'BTS เอกมัย',
     lat: '13.7117907',
     lng: '100.5803751',
-    image: '/properties/metro-luxe-rama-4-unit-318-154-rent-bts-ekkamai.jpg',
+    image: '/properties/metro-luxe-318-154-photo-0.jpg',
+    images: [
+      '/properties/metro-luxe-318-154-photo-0.jpg',
+      '/properties/metro-luxe-318-154-photo-1.jpg',
+      '/properties/metro-luxe-318-154-photo-2.jpg',
+      '/properties/metro-luxe-318-154-photo-3.jpg',
+      '/properties/metro-luxe-318-154-photo-4.jpg',
+      '/properties/metro-luxe-318-154-photo-5.jpg',
+    ],
     propertyType: 'Condo',
     listingType: 'Rent',
     amenities: ['กล้องวงจรปิด (CCTV)', 'รปภ 24 ชม', 'ลิฟท์', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)', 'เฟอร์นิเจอร์พร้อมอยู่', 'เแอร์'],

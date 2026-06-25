@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
+import PropertyGallery from '@/components/property/PropertyGallery'
 
 interface Props {
   params: { slug: string }
@@ -134,35 +135,14 @@ export default async function PropertyDetailPage({ params }: Props) {
   return (
     <div className="bg-white min-h-screen">
 
-      {/* Hero image */}
-      <div className="w-full h-64 md:h-[420px] overflow-hidden relative"
-        style={{ background: 'linear-gradient(135deg,#02402e,#048c73)' }}>
-        {p.image && (
-          <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-        )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(2,64,46,0.35))' }} />
-        {/* Price badge */}
-        <div className="absolute bottom-5 left-5">
-          <span className="inline-block text-white font-bold text-xl px-4 py-2 rounded-xl"
-            style={{ background: 'rgba(2,64,46,0.78)', backdropFilter: 'blur(8px)' }}>
-            {p.priceDisplay}
-          </span>
-        </div>
-        {/* Featured badge */}
-        {p.featured && (
-          <div className="absolute top-5 left-5">
-            <span className="inline-block text-white font-semibold text-xs px-3 py-1.5 rounded-full"
-              style={{ background: '#d97f11' }}>แนะนำ</span>
-          </div>
-        )}
-        {/* Type label */}
-        <div className="absolute top-5 right-5">
-          <span className="inline-block text-white text-xs font-medium px-3 py-1.5 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(6px)' }}>
-            {typeLabel}
-          </span>
-        </div>
-      </div>
+      {/* Photo gallery — single image falls back to hero-only view */}
+      <PropertyGallery
+        images={p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])}
+        title={p.title}
+        priceDisplay={p.priceDisplay}
+        typeLabel={typeLabel}
+        featured={p.featured}
+      />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }} className="sm-detaillayout">
