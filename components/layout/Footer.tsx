@@ -63,6 +63,7 @@ export default function Footer() {
               {[
                 { label: 'เกี่ยวกับเรา', href: '/about' },
                 { label: 'ติดต่อเรา', href: '/contact' },
+                { label: 'คำถามที่พบบ่อย', href: '/faq' },
                 { label: 'นโยบายความเป็นส่วนตัว', href: '/privacy' },
                 { label: 'เงื่อนไขการใช้งาน', href: '/terms' },
               ].map((item) => (
