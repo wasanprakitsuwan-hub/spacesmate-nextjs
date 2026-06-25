@@ -20,27 +20,41 @@ export async function GET() {
 
 // ── POST — create a new property ─────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // Guard: service role key must be set or we cannot write to the DB
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      {
+        error:
+          'Server config error: SUPABASE_SERVICE_ROLE_KEY is not set. ' +
+          'Go to Vercel → Project → Settings → Environment Variables and add it, then redeploy.',
+      },
+      { status: 500 }
+    )
+  }
+
   try {
     const body = await req.json()
     const supabase = createServerClient()
 
-    // Ensure user_profile exists for this admin user
-    const userId = body.userId
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+    const userId    = body.userId as string | undefined
+    const userEmail = (body.userEmail as string) || 'admin@spacesmate.com'
+
+    // Upsert user_profile so landlord_id FK is satisfied (best-effort — don't fail the whole request)
+    if (userId) {
+      const { error: profileErr } = await supabase.from('user_profiles').upsert(
+        { id: userId, email: userEmail, full_name: 'SpacesMate Admin', role: 'admin' },
+        { onConflict: 'id', ignoreDuplicates: true }
+      )
+      if (profileErr) {
+        // Log but continue — landlord_id will be null if profile upsert fails
+        console.warn('user_profiles upsert warning (non-fatal):', profileErr.message)
+      }
     }
 
-    // Upsert user_profile so landlord_id FK is satisfied
-    await supabase.from('user_profiles').upsert({
-      id: userId,
-      email: body.userEmail || 'admin@spacesmate.com',
-      full_name: body.userName || 'SpacesMate Admin',
-      role: 'admin',
-    }, { onConflict: 'id', ignoreDuplicates: true })
-
     // Auto-generate slug if not provided
-    const rawSlug = body.slug?.trim() ||
-      (body.title_th || 'listing')
+    const rawSlug =
+      body.slug?.trim() ||
+      ((body.title_th || 'listing') as string)
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s+/g, '-')
@@ -48,47 +62,79 @@ export async function POST(req: NextRequest) {
         .slice(0, 80) +
       '-' + Date.now().toString(36)
 
+    // Normalise room_types payload
+    const roomTypes = Array.isArray(body.room_types)
+      ? body.room_types.map((r: any) => ({
+          room_type:  r.room_type  || 'Studio',
+          price_from: parseInt(r.price_from) || 0,
+          price_to:   r.price_to ? parseInt(r.price_to) : null,
+        }))
+      : []
+
+    const insertPayload: Record<string, unknown> = {
+      slug:           rawSlug,
+      title_th:       body.title_th,
+      title_en:       body.title_en  || null,
+      description_th: body.description_th || null,
+      property_type:  body.property_type,
+      status:         body.status    || 'for_rent',
+      price_from:     parseInt(body.price_from) || 0,
+      price_to:       body.price_to  ? parseInt(body.price_to)  : null,
+      area_sqm:       body.area_sqm  ? parseFloat(body.area_sqm) : null,
+      bedrooms:       parseInt(body.bedrooms)  || 1,
+      bathrooms:      parseInt(body.bathrooms) || 1,
+      floor:          body.floor     ? parseInt(body.floor) : null,
+      address_th:     body.address_th    || null,
+      district:       body.district      || null,
+      sub_district:   body.sub_district  || null,
+      province:       body.province      || 'กรุงเทพมหานคร',
+      postcode:       body.postcode      || null,
+      lat:            body.lat   ? parseFloat(body.lat) : null,
+      lng:            body.lng   ? parseFloat(body.lng) : null,
+      amenities:      body.amenities || [],
+      rental_term:    body.rental_term   || '1_month',
+      package_type:   body.package_type  || 'admin',
+      expires_at:     body.expires_at    || null,
+      listing_status: 'active',
+      verified:       true,
+      verified_at:    new Date().toISOString(),
+    }
+
+    // Only add landlord_id if userId exists (FK may be optional)
+    if (userId) insertPayload.landlord_id = userId
+
+    // Optional columns — added only when non-empty so they don't break
+    // if the column doesn't exist yet (run supabase/fix-permissions.sql first)
+    if (roomTypes.length > 0)          insertPayload.room_types = roomTypes
+    if (Array.isArray(body.images) && body.images.length > 0) insertPayload.images = body.images
+    if (body.video_url)                insertPayload.video_url = body.video_url
+
     const { data, error } = await supabase
       .from('properties')
-      .insert({
-        slug:           rawSlug,
-        landlord_id:    userId,
-        title_th:       body.title_th,
-        title_en:       body.title_en || null,
-        description_th: body.description_th || null,
-        property_type:  body.property_type,
-        status:         body.status || 'for_rent',
-        price_from:     parseInt(body.price_from) || 0,
-        price_to:       body.price_to ? parseInt(body.price_to) : null,
-        area_sqm:       body.area_sqm ? parseFloat(body.area_sqm) : null,
-        bedrooms:       parseInt(body.bedrooms) || 1,
-        bathrooms:      parseInt(body.bathrooms) || 1,
-        floor:          body.floor ? parseInt(body.floor) : null,
-        address_th:     body.address_th || null,
-        district:       body.district || null,
-        sub_district:   body.sub_district || null,
-        province:       body.province || 'กรุงเทพมหานคร',
-        postcode:       body.postcode || null,
-        lat:            body.lat ? parseFloat(body.lat) : null,
-        lng:            body.lng ? parseFloat(body.lng) : null,
-        amenities:      body.amenities || [],
-        rental_term:    body.rental_term || '1_month',
-        package_type:   body.package_type || 'admin',
-        expires_at:     body.expires_at || null,
-        listing_status: 'active',  // admin-created = immediately active
-        verified:       true,
-        verified_at:    new Date().toISOString(),
-      })
+      .insert(insertPayload)
       .select()
       .single()
 
     if (error) {
       console.error('properties insert error:', error)
+
+      // Surface a human-readable fix for the most common error
+      if (error.code === '42501') {
+        return NextResponse.json(
+          {
+            error:
+              'DB permission denied. Run this SQL in Supabase → SQL Editor:\n' +
+              'GRANT ALL ON public.properties TO service_role;\n' +
+              'GRANT ALL ON public.user_profiles TO service_role;',
+          },
+          { status: 500 }
+        )
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, listing: data })
-  } catch (err) {
+  } catch (err: any) {
     console.error('listings POST error:', err)
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
   }
@@ -109,10 +155,24 @@ export async function PATCH(req: NextRequest) {
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'listing_status', 'rental_term',
       'package_type', 'expires_at',
+      // extended columns (run supabase/fix-permissions.sql to enable)
+      'room_types', 'images', 'video_url',
     ]
+
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const k of ALLOWED) {
-      if (fields[k] !== undefined) update[k] = fields[k] === '' ? null : fields[k]
+      if (fields[k] !== undefined) {
+        update[k] = fields[k] === '' ? null : fields[k]
+      }
+    }
+
+    // Normalise room_types if provided
+    if (Array.isArray(update.room_types)) {
+      update.room_types = (update.room_types as any[]).map((r: any) => ({
+        room_type:  r.room_type  || 'Studio',
+        price_from: parseInt(r.price_from) || 0,
+        price_to:   r.price_to ? parseInt(r.price_to) : null,
+      }))
     }
 
     const { data, error } = await supabase
@@ -124,7 +184,7 @@ export async function PATCH(req: NextRequest) {
 
     if (error) throw error
     return NextResponse.json({ success: true, listing: data })
-  } catch (err) {
+  } catch (err: any) {
     console.error('listings PATCH error:', err)
     return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
@@ -138,7 +198,7 @@ export async function DELETE(req: NextRequest) {
     const { error } = await supabase.from('properties').delete().eq('id', id)
     if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch (err: any) {
     console.error('listings DELETE error:', err)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
