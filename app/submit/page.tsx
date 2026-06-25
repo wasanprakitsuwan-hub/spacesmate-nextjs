@@ -4,74 +4,63 @@ import Link from 'next/link'
 
 const STATS = [
   { num: '8,400+',   label: 'ผู้เช่าที่ยืนยันตัวตนแล้ว' },
-  { num: '0 บาท',   label: 'ค่าลงประกาศเริ่มต้น' },
-  { num: '< 24 ชม.', label: 'ตรวจสอบและเผยแพร่ประกาศ' },
+  { num: '฿299',     label: 'ราคาเริ่มต้น/ประกาศ/เดือน' },
+  { num: '< 24 ชม.', label: 'เผยแพร่ประกาศทันทีหลังชำระ' },
 ]
 
 const WHY = [
-  { icon: 'groups',          title: 'เข้าถึงผู้เช่าจริง',   desc: 'ประกาศของคุณแสดงต่อผู้เช่าที่ผ่านการยืนยันหลายพันคน' },
-  { icon: 'manage_accounts', title: 'ผู้เช่าที่ยืนยันแล้ว', desc: 'ลดความเสี่ยงด้วยระบบยืนยันตัวตน ผู้เช่าก่อนติดต่อ' },
-  { icon: 'paid',            title: 'เริ่มต้นฟรี',          desc: 'ลงประกาศแรกได้ฟรี ไม่ต้องใช้บัตรเครดิต' },
-  { icon: 'grid_view',       title: 'จัดการง่าย',           desc: 'ดูยอดเข้าชมและผู้สนใจได้จากแดชบอร์ดเดียว' },
+  { icon: 'groups',          title: 'เข้าถึงผู้เช่าจริง',     desc: 'ประกาศของคุณแสดงต่อผู้เช่าที่ผ่านการยืนยันหลายพันคน' },
+  { icon: 'manage_accounts', title: 'ผู้เช่าที่ยืนยันแล้ว',   desc: 'ลดความเสี่ยงด้วยระบบยืนยันตัวตนผู้เช่าก่อนติดต่อ' },
+  { icon: 'payments',        title: 'ราคาเริ่มต้น ฿299',      desc: 'แพ็กเกจรายเดือนถึงรายปี เลือกให้เหมาะกับทรัพย์สินของคุณ' },
+  { icon: 'grid_view',       title: 'จัดการง่าย',             desc: 'ดูยอดเข้าชมและผู้สนใจได้จากแดชบอร์ดเดียว' },
 ]
 
 const STEPS = [
-  { num: '1', title: 'สมัครสมาชิก',         desc: 'สร้างบัญชีผู้ลงประกาศฟรีในไม่กี่นาที' },
-  { num: '2', title: 'เลือกแพ็กเกจ',        desc: 'เริ่มฟรี หรืออัปเกรดเพื่อฟีเจอร์เพิ่มเติม' },
-  { num: '3', title: 'ลงประกาศและเผยแพร่',  desc: 'กรอกข้อมูล อัปโหลดรูป แล้วเผยแพร่ได้ทันที' },
+  { num: '1', title: 'กรอกข้อมูลทรัพย์สิน',   desc: 'ชื่อ ประเภท ราคา ที่อยู่ และสิ่งอำนวยความสะดวก' },
+  { num: '2', title: 'เลือกแพ็กเกจ',          desc: 'Basic ฿299 · Standard ฿699 · Premium ฿2,499 — ชำระแล้วเผยแพร่ทันที' },
+  { num: '3', title: 'อัปโหลดรูปและเผยแพร่',  desc: 'อัปโหลดรูปภาพสวยๆ แล้วประกาศจะปรากฏบนเว็บทันที' },
 ]
 
 const PACKAGES = [
   {
-    period: '1 เดือน',
+    period: 'Basic',
     price: '299',
-    sub: 'ต่อเดือน',
+    sub: '1 ประกาศ · แสดงผล 1 เดือน',
     badge: null,
     highlight: false,
     features: [
-      'ลงประกาศได้ 5 รายการ',
-      'รูปได้ 10 รูป/ประกาศ',
-      'แสดงผล 1 เดือน',
-      'สถิติการเข้าชม',
+      '1 ประกาศ',
+      'รูปภาพสูงสุด 8 รูป',
+      'แสดงผล 30 วัน',
+      'เผยแพร่ทันทีหลังชำระ',
     ],
   },
   {
-    period: '3 เดือน',
+    period: 'Standard',
     price: '699',
-    sub: 'เฉลี่ย 233 บาท/เดือน',
-    badge: null,
-    highlight: false,
-    features: [
-      'ลงประกาศได้ 10 รายการ',
-      'รูปได้ 15 รูป/ประกาศ',
-      'แสดงผล 3 เดือน',
-      'สถิติการเข้าชม',
-    ],
-  },
-  {
-    period: '6 เดือน',
-    price: '1,599',
-    sub: 'เฉลี่ย 267 บาท/เดือน',
-    badge: 'แนะนำ',
+    sub: '1 ประกาศ · แสดงผล 3 เดือน',
+    badge: 'ยอดนิยม',
     highlight: true,
     features: [
-      'ลงประกาศได้ 20 รายการ',
-      'รูปได้ 20 รูป/ประกาศ',
-      'ติดป้าย "แนะนำ"',
-      'แสดงผล 6 เดือน',
+      '1 ประกาศ',
+      'รูปภาพสูงสุด 12 รูป',
+      'แสดงผล 90 วัน',
+      'เผยแพร่ทันทีหลังชำระ',
+      'ประหยัดกว่า Basic 22%',
     ],
   },
   {
-    period: '12 เดือน',
-    price: '2,999',
-    sub: 'เฉลี่ย 250 บาท/เดือน · คุ้มสุด',
+    period: 'Premium',
+    price: '2,499',
+    sub: '1 ประกาศ · แสดงผล 12 เดือน',
     badge: null,
     highlight: false,
     features: [
-      'ลงประกาศไม่จำกัด',
-      'รูปได้ 30 รูป/ประกาศ',
-      'แสดงบนสุดของผลค้นหา',
-      'ผู้ช่วยส่วนตัว',
+      '1 ประกาศ',
+      'รูปภาพสูงสุด 20 รูป',
+      'แสดงผล 365 วัน',
+      'อัปโหลดวิดีโอได้',
+      'เผยแพร่ทันทีหลังชำระ',
     ],
   },
 ]
@@ -96,16 +85,16 @@ export default function SubmitPage() {
                 ลงประกาศปล่อยเช่า
               </span>
               <span style={{ fontSize: 'clamp(32px,4.5vw,52px)', fontWeight: 700, color: '#d97f11', display: 'block' }}>
-                ฟรี ไม่มีค่าใช้จ่าย
+                เริ่มต้น ฿299/เดือน
               </span>
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15.5, fontWeight: 300, lineHeight: 1.7, margin: '20px 0 32px', maxWidth: 480 }}>
-              ปล่อยเช่าทรัพย์สินของคุณให้เข้าถึงผู้เช่าที่ผ่านการยืนยันหลายพันคน สร้างประกาศเองง่ายๆ ใน 3 ขั้นตอน เริ่มฟรี 30 วันแรก
+              ปล่อยเช่าทรัพย์สินของคุณให้เข้าถึงผู้เช่าที่ผ่านการยืนยันหลายพันคน สร้างประกาศเองง่ายๆ ใน 3 ขั้นตอน — เผยแพร่ทันทีหลังชำระ
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/submit/new"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 28px', textDecoration: 'none' }}>
-                เริ่มลงประกาศฟรี →
+                เริ่มลงประกาศเลย →
               </Link>
               <Link href="/manage"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 24px', textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.5)' }}>
@@ -177,7 +166,7 @@ export default function SubmitPage() {
             แพ็กเกจราคา
           </h2>
           <p style={{ color: '#6b7280', fontSize: 15, margin: '0 0 16px', textAlign: 'center', fontWeight: 300 }}>
-            ทดลองใช้ฟรี 30 วันสำหรับประกาศแรก — ไม่ต้องใช้บัตรเครดิต
+            1 ประกาศ/แพ็กเกจ — เผยแพร่ทันทีหลังชำระ ไม่ต้องรอ
           </p>
           {/* Green promo note */}
           <p style={{ textAlign: 'center', fontSize: 14, color: '#02402e', fontWeight: 500, margin: '0 0 36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -185,7 +174,7 @@ export default function SubmitPage() {
             แพ็กเกจสูงสุด 12 เดือน เพื่อให้ประกาศได้รับการอัปเดตเสมอ — ข้อมูลแม่นกว่าเว็บอื่น
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }} className="sm-pkg4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18, maxWidth: 860, margin: '0 auto' }} className="sm-pkg3">
             {PACKAGES.map((pkg) => (
               <div key={pkg.period} style={{ position: 'relative', background: '#fff', border: `2px solid ${pkg.highlight ? '#d97f11' : '#e5eae8'}`, borderRadius: 18, padding: '28px 22px', display: 'flex', flexDirection: 'column' }}>
 
@@ -241,11 +230,11 @@ export default function SubmitPage() {
               พร้อมปล่อยเช่าแล้วหรือยัง?
             </h2>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', margin: '0 0 32px', fontWeight: 300 }}>
-              เริ่มลงประกาศแรกของคุณวันนี้ ฟรี 30 วัน
+              เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299
             </p>
             <Link href="/submit/new"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 16, borderRadius: 30, padding: '15px 36px', textDecoration: 'none' }}>
-              เริ่มลงประกาศฟรี →
+              เริ่มลงประกาศเลย →
             </Link>
           </div>
         </div>
@@ -255,13 +244,13 @@ export default function SubmitPage() {
         @media (max-width: 960px) {
           .sm-hero-grid { grid-template-columns: 1fr !important; }
           .sm-why4 { grid-template-columns: repeat(2,1fr) !important; }
-          .sm-pkg4 { grid-template-columns: repeat(2,1fr) !important; }
+          .sm-pkg3 { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 600px) {
           .sm-hero-grid { gap: 32px !important; }
           .sm-why4 { grid-template-columns: 1fr !important; }
           .sm-steps3 { grid-template-columns: 1fr !important; }
-          .sm-pkg4 { grid-template-columns: 1fr !important; }
+          .sm-pkg3 { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

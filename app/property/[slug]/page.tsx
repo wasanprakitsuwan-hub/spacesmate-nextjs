@@ -1,29 +1,97 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { properties, getPropertyBySlug, fetchPropertyContent } from '@/lib/property-data'
+import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
+import { createServerClient } from '@/lib/supabase'
 
 interface Props {
   params: { slug: string }
 }
 
-// Pre-render all property pages at build time
+// Static slugs rendered at build time; all other slugs resolved at runtime
 export async function generateStaticParams() {
   return properties.map((p) => ({ slug: p.slug }))
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const p = getPropertyBySlug(params.slug)
-  if (!p) return { title: 'ไม่พบประกาศ | SpacesMate' }
+// Allow runtime resolution of slugs not in generateStaticParams (e.g. DB listings)
+export const dynamicParams = true
+
+// ── DB listing helpers ──────────────────────────────────────────────────────
+const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
+  condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
+  office: 'Office', coworking: 'Co-Working',
+}
+const TERM_SUFFIX: Record<string, string> = {
+  daily: '/วัน', '1_month': '/เดือน', '3_months': '/เดือน',
+  '6_months': '/เดือน', '12_months': '/เดือน',
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getDbPropertyRaw(slug: string): Promise<any | null> {
+  try {
+    const supabase = createServerClient()
+    const { data } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('slug', slug)
+      .eq('listing_status', 'active')
+      .single()
+    return data ?? null
+  } catch {
+    return null
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeDbListing(raw: any): Property {
+  const suffix = TERM_SUFFIX[raw.rental_term] ?? '/เดือน'
   return {
-    title: `${p.title} | SpacesMate`,
-    description: p.excerpt,
-    openGraph: {
-      title: p.title,
-      description: p.excerpt,
-      images: p.image ? [{ url: p.image, alt: p.title }] : [],
-      type: 'website',
-    },
+    id: 0,
+    slug: raw.slug,
+    title: raw.title_th || raw.title_en || 'ไม่ระบุชื่อ',
+    excerpt: '',
+    priceMin: raw.price_from || 0,
+    priceDisplay: raw.price_from
+      ? `฿${Number(raw.price_from).toLocaleString('en-US')}${suffix}`
+      : 'สอบถามราคา',
+    bedrooms: raw.bedrooms || 0,
+    bathrooms: raw.bathrooms || 0,
+    size: raw.area_sqm ? String(raw.area_sqm) : '',
+    address: raw.address_th || '',
+    neighborhood: raw.district || raw.province || 'กรุงเทพมหานคร',
+    lat: raw.lat ? String(raw.lat) : '',
+    lng: raw.lng ? String(raw.lng) : '',
+    image: '',
+    propertyType: DB_TYPE_MAP[raw.property_type] ?? 'Condo',
+    listingType: 'Rent',
+    amenities: raw.amenities || [],
+    featured: false,
+    date: raw.created_at || '',
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const staticP = getPropertyBySlug(params.slug)
+  if (staticP) {
+    return {
+      title: `${staticP.title} | SpacesMate`,
+      description: staticP.excerpt,
+      openGraph: {
+        title: staticP.title,
+        description: staticP.excerpt,
+        images: staticP.image ? [{ url: staticP.image, alt: staticP.title }] : [],
+        type: 'website',
+      },
+    }
+  }
+  const raw = await getDbPropertyRaw(params.slug)
+  if (!raw) return { title: 'ไม่พบประกาศ | SpacesMate' }
+  const title = raw.title_th || raw.title_en || 'ประกาศ'
+  return {
+    title: `${title} | SpacesMate`,
+    description: raw.description_th || '',
+    openGraph: { title, description: raw.description_th || '', type: 'website' },
   }
 }
 
@@ -35,11 +103,24 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export default async function PropertyDetailPage({ params }: Props) {
-  const p = getPropertyBySlug(params.slug)
-  if (!p) notFound()
+  // 1. Try static data first (builds fast from property-data.ts)
+  const staticP = getPropertyBySlug(params.slug)
 
-  // Fetch full WP HTML content at build time (cached forever — WP closing soon)
-  const content = await fetchPropertyContent(p.id)
+  let p: Property
+  let content: string | null = null
+
+  if (staticP) {
+    p = staticP
+    // Fetch WP HTML content at runtime (cached by Next.js)
+    content = await fetchPropertyContent(p.id)
+  } else {
+    // 2. Fall back to Supabase for admin-created / user-submitted listings
+    const raw = await getDbPropertyRaw(params.slug)
+    if (!raw) notFound()
+    p = normalizeDbListing(raw)
+    content = raw.description_th || null
+  }
+
   const hasContent = content && !content.includes('เนื้อหาไม่พร้อม') && !content.includes('ไม่พบเนื้อหา')
 
   // Related properties — same type, exclude current, up to 3
@@ -281,7 +362,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                 </Link>
                 <Link href="/submit"
                   style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block', border: '1px solid rgba(255,255,255,0.2)' }}>
-                  ลงประกาศฟรี
+                  ลงประกาศที่พัก
                 </Link>
               </div>
             </div>

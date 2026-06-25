@@ -14,7 +14,45 @@ const GRADS: Record<string, string> = {
   default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
-// Fisher-Yates shuffle — new random order on every mount
+// DB rental_term → price suffix
+const TERM_SUFFIX: Record<string, string> = {
+  daily: '/วัน', '1_month': '/เดือน', '3_months': '/เดือน',
+  '6_months': '/เดือน', '12_months': '/เดือน',
+}
+const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
+  condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
+  office: 'Office', coworking: 'Co-Working',
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function adaptDbListing(l: any): Property {
+  const suffix = TERM_SUFFIX[l.rental_term] ?? '/เดือน'
+  return {
+    id: 0,
+    slug: l.slug,
+    title: l.title_th || l.title_en || 'ไม่ระบุชื่อ',
+    excerpt: l.description_th || '',
+    priceMin: l.price_from || 0,
+    priceDisplay: l.price_from
+      ? `฿${Number(l.price_from).toLocaleString('en-US')}${suffix}`
+      : 'สอบถามราคา',
+    bedrooms: l.bedrooms || 0,
+    bathrooms: l.bathrooms || 0,
+    size: l.area_sqm ? String(l.area_sqm) : '',
+    address: l.address_th || '',
+    neighborhood: l.district || l.province || 'กรุงเทพมหานคร',
+    lat: l.lat ? String(l.lat) : '',
+    lng: l.lng ? String(l.lng) : '',
+    image: '',
+    propertyType: DB_TYPE_MAP[l.property_type] ?? 'Condo',
+    listingType: 'Rent',
+    amenities: l.amenities || [],
+    featured: false,
+    date: l.created_at || '',
+  }
+}
+
+// Fisher-Yates shuffle
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -25,11 +63,22 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function FeaturedListings() {
-  // Start with deterministic slice (SSR), then randomise on client mount
+  // SSR-safe: start with static slice, then merge DB + shuffle on mount
   const [displayed, setDisplayed] = useState<Property[]>(properties.slice(0, 6))
 
   useEffect(() => {
-    setDisplayed(shuffle(properties).slice(0, 6))
+    // Fetch DB listings and merge with static for full pool
+    fetch('/api/listings/public')
+      .then(r => r.json())
+      .then((d: { listings?: unknown[] }) => {
+        const dbListings = (d.listings ?? []).map(adaptDbListing)
+        const all = [...properties, ...dbListings]
+        setDisplayed(shuffle(all).slice(0, 6))
+      })
+      .catch(() => {
+        // Fallback to static only on error
+        setDisplayed(shuffle(properties).slice(0, 6))
+      })
   }, [])
 
   return (
