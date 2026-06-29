@@ -69,7 +69,7 @@ interface Submission {
 interface ListingFormState {
   title_th: string
   title_en: string
-  slug: string
+  slug: string          // kept in state for edit mode; hidden in form (auto-generated)
   property_type: string
   rental_term: string
   package_type: string
@@ -85,7 +85,6 @@ interface ListingFormState {
   sub_district: string
   province: string
   postcode: string
-  map_search: string
   lat: string
   lng: string
   description_th: string
@@ -95,11 +94,6 @@ interface ListingFormState {
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const ROOM_TYPE_OPTIONS = [
-  'Studio', '1 ห้องนอน', '2 ห้องนอน', '3 ห้องนอน', '4 ห้องนอน+',
-  'Penthouse', 'เชิงพาณิชย์', 'ลอฟท์', 'ดูเพล็กซ์',
-]
-
 const TYPE_LABELS: Record<string, string> = {
   condo: 'คอนโด', apartment: 'อพาร์ทเม้นท์', house: 'บ้าน',
   office: 'ออฟฟิศ', coworking: 'Co-space',
@@ -134,11 +128,32 @@ const RENTAL_TERM_LABEL: Record<string, string> = {
   '3_months': '/3 เดือน', '6_months': '/6 เดือน', '12_months': '/12 เดือน',
 }
 const ADMIN_PACKAGES = [
-  { id: 'admin',    label: 'Admin — ไม่มีวันหมดอายุ',         days: 0   },
-  { id: 'basic',    label: 'Basic — 1 เดือน (฿299)',           days: 30  },
-  { id: 'standard', label: 'Standard — 3 เดือน (฿699)',        days: 90  },
-  { id: 'premium',  label: 'Premium — 12 เดือน (฿2,499)',      days: 365 },
+  { id: 'admin',    label: 'Admin — ไม่มีวันหมดอายุ',    days: 0   },
+  { id: 'basic',    label: 'Basic — 1 เดือน (฿299)',      days: 30  },
+  { id: 'standard', label: 'Standard — 3 เดือน (฿699)',   days: 90  },
+  { id: 'premium',  label: 'Premium — 12 เดือน (฿2,499)', days: 365 },
 ]
+
+// ── Room type options per property type ───────────────────────────────────────
+function getRoomTypeOptions(propType: string): string[] {
+  switch (propType) {
+    case 'apartment': return ['Studio', '1 ห้องนอน', '2 ห้องนอน', '3 ห้องนอน', 'เชิงพาณิชย์']
+    case 'house':     return ['บ้านเดี่ยว', 'ทาวน์เฮ้าส์', '2 ห้องนอน', '3 ห้องนอน', '4 ห้องนอน+']
+    case 'office':    return ['Individual Desk', 'Private Office', 'Meeting Room', 'Full Floor', 'Shared Space']
+    case 'coworking': return ['Hot Desk', 'Dedicated Desk', 'Private Office', 'Meeting Room', 'Day Pass']
+    default:          return ['Studio', '1 ห้องนอน', '2 ห้องนอน', '3 ห้องนอน', '4 ห้องนอน+', 'Penthouse', 'ดูเพล็กซ์', 'ลอฟท์']
+  }
+}
+
+// ── Shared form styles ────────────────────────────────────────────────────────
+const SINP: React.CSSProperties = {
+  width: '100%', padding: '9px 13px', borderRadius: 10,
+  border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none',
+  boxSizing: 'border-box' as const, background: '#fff',
+}
+const SLBL: React.CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 5, display: 'block',
+}
 
 function computeExpiry(packageId: string): string | null {
   const pkg = ADMIN_PACKAGES.find(p => p.id === packageId)
@@ -155,12 +170,12 @@ const BLANK_FORM: ListingFormState = {
   bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
   address_th: '', district: '', sub_district: '',
   province: 'กรุงเทพมหานคร', postcode: '',
-  map_search: '', lat: '', lng: '',
+  lat: '', lng: '',
   description_th: '', amenities: [],
   images: [], video_url: '',
 }
 
-// ── Tiny helper components ───────────────────────────────────────────────────
+// ── Small helpers ─────────────────────────────────────────────────────────────
 function TypeChip({ type }: { type: string }) {
   const tc = TYPE_COLORS[type] ?? { bg: '#f4f6f5', color: '#64748b' }
   return (
@@ -173,40 +188,22 @@ function TypeChip({ type }: { type: string }) {
 function SectionHead({ text }: { text: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 4 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1.2, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' }}>
-        {text}
-      </span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1.2, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' }}>{text}</span>
       <div style={{ flex: 1, height: 1, background: '#eef0ef' }} />
     </div>
   )
 }
 
-// ── Rich Text Editor ─────────────────────────────────────────────────────────
-function RichEditor({ value, onChange, placeholder }: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
+// ── Rich Text Editor ──────────────────────────────────────────────────────────
+function RichEditor({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value
-    }
-  }, []) // only on mount
-
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value }, [])
   function exec(cmd: string, arg?: string) {
     document.execCommand(cmd, false, arg)
     ref.current?.focus()
     if (ref.current) onChange(ref.current.innerHTML)
   }
-
-  const btnStyle: React.CSSProperties = {
-    padding: '4px 8px', borderRadius: 6, border: '1px solid #eef0ef',
-    background: '#f8fafc', color: '#475569', cursor: 'pointer',
-    fontSize: 12, fontWeight: 600, lineHeight: 1,
-  }
-
+  const btnStyle: React.CSSProperties = { padding: '4px 8px', borderRadius: 6, border: '1px solid #eef0ef', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontSize: 12, fontWeight: 600, lineHeight: 1 }
   return (
     <div style={{ border: '1px solid #eef0ef', borderRadius: 12, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: 4, padding: '8px 10px', background: '#f8fafc', borderBottom: '1px solid #eef0ef', flexWrap: 'wrap' }}>
@@ -220,180 +217,430 @@ function RichEditor({ value, onChange, placeholder }: {
         <div style={{ width: 1, background: '#eef0ef', margin: '0 2px' }} />
         <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList') }}>• List</button>
         <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertOrderedList') }}>1. List</button>
-        <div style={{ width: 1, background: '#eef0ef', margin: '0 2px' }} />
         <button type="button" style={{ ...btnStyle, color: '#b91c1c' }} onMouseDown={e => { e.preventDefault(); exec('removeFormat') }}>✕ Clear</button>
       </div>
-      <div
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => { if (ref.current) onChange(ref.current.innerHTML) }}
-        data-placeholder={placeholder || 'อธิบายรายละเอียด...'}
-        style={{ minHeight: 120, padding: '12px 14px', fontSize: 13.5, lineHeight: 1.7, color: '#334155', outline: 'none' }}
-      />
-      <style>{`
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
-        [contenteditable] h2 { font-size: 1.15em; font-weight: 700; color: #02402e; margin: .8em 0 .3em; }
-        [contenteditable] h3 { font-size: 1em; font-weight: 600; margin: .6em 0 .2em; }
-        [contenteditable] ul, [contenteditable] ol { padding-left: 1.4em; }
-        [contenteditable] li { margin-bottom: 3px; }
-      `}</style>
+      <div ref={ref} contentEditable suppressContentEditableWarning onInput={() => { if (ref.current) onChange(ref.current.innerHTML) }} data-placeholder={placeholder || 'อธิบายรายละเอียด...'} style={{ minHeight: 120, padding: '12px 14px', fontSize: 13.5, lineHeight: 1.7, color: '#334155', outline: 'none' }} />
+      <style>{`[contenteditable]:empty:before{content:attr(data-placeholder);color:#94a3b8;pointer-events:none}[contenteditable] h2{font-size:1.15em;font-weight:700;color:#02402e;margin:.8em 0 .3em}[contenteditable] h3{font-size:1em;font-weight:600;margin:.6em 0 .2em}[contenteditable] ul,[contenteditable] ol{padding-left:1.4em}[contenteditable] li{margin-bottom:3px}`}</style>
     </div>
   )
 }
 
 // ── Room Type Pricing Grid ────────────────────────────────────────────────────
-function RoomTypePricingGrid({ rows, onChange, termLabel }: {
+// isDaily=true → single price column (/วัน)
+// isDaily=false → two price columns (ต่ำสุด / สูงสุด)
+function RoomTypePricingGrid({ rows, onChange, termLabel, isDaily, roomTypeOptions }: {
   rows: RoomTypeRow[]
   onChange: (rows: RoomTypeRow[]) => void
   termLabel: string
+  isDaily: boolean
+  roomTypeOptions: string[]
 }) {
-  const inputS: React.CSSProperties = {
-    width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid #eef0ef',
-    fontSize: 13, outline: 'none', background: '#fff', boxSizing: 'border-box',
-  }
-
   function addRow() {
-    onChange([...rows, { id: `rt-${Date.now()}`, room_type: 'Studio', price_from: '', price_to: '' }])
+    onChange([...rows, { id: `rt-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio', price_from: '', price_to: '' }])
   }
-  function removeRow(id: string) {
-    onChange(rows.filter(r => r.id !== id))
-  }
+  function removeRow(id: string) { onChange(rows.filter(r => r.id !== id)) }
   function updateRow(id: string, field: keyof RoomTypeRow, val: string) {
     onChange(rows.map(r => r.id === id ? { ...r, [field]: val } : r))
   }
+
+  const colTemplate = isDaily ? '1.8fr 1fr 28px' : '1.5fr 1fr 1fr 28px'
 
   return (
     <div>
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 30px', gap: 6, marginBottom: 5, paddingLeft: 2 }}>
-            {[`ประเภทห้อง`, `ราคาต่ำสุด${termLabel}`, `ราคาสูงสุด${termLabel}`, ''].map(h => (
-              <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: colTemplate, gap: 6, marginBottom: 5, paddingLeft: 2 }}>
+            {(isDaily
+              ? [`ประเภท`, `ราคา${termLabel}`, '']
+              : [`ประเภท`, `ต่ำสุด${termLabel}`, `สูงสุด${termLabel}`, '']
+            ).map(h => <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>)}
           </div>
           {/* Rows */}
           {rows.map(row => (
-            <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 30px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-              <select value={row.room_type} onChange={e => updateRow(row.id, 'room_type', e.target.value)} style={inputS}>
-                {ROOM_TYPE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            <div key={row.id} style={{ display: 'grid', gridTemplateColumns: colTemplate, gap: 6, marginBottom: 6, alignItems: 'center' }}>
+              <select value={row.room_type} onChange={e => updateRow(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
+                {roomTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
-              <input type="number" value={row.price_from} onChange={e => updateRow(row.id, 'price_from', e.target.value)} placeholder="14000" style={inputS} />
-              <input type="number" value={row.price_to}   onChange={e => updateRow(row.id, 'price_to',   e.target.value)} placeholder="16000" style={inputS} />
-              <button
-                type="button"
-                onClick={() => removeRow(row.id)}
-                style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-              >✕</button>
+              <input type="number" value={row.price_from} onChange={e => updateRow(row.id, 'price_from', e.target.value)} placeholder={isDaily ? '1200' : '14000'} style={{ ...SINP, padding: '7px 10px' }} />
+              {!isDaily && (
+                <input type="number" value={row.price_to} onChange={e => updateRow(row.id, 'price_to', e.target.value)} placeholder="16000" style={{ ...SINP, padding: '7px 10px' }} />
+              )}
+              <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
           ))}
         </div>
       )}
-      <button
-        type="button"
-        onClick={addRow}
-        style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-      >
-        + เพิ่มประเภทห้อง
+      <button type="button" onClick={addRow} style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+        + เพิ่มประเภท
       </button>
     </div>
   )
 }
 
-// ── Map Search (proxied Nominatim) ────────────────────────────────────────────
-function MapSearch({ value, onChange, onResult }: {
-  value: string
-  onChange: (v: string) => void
-  onResult: (lat: string, lng: string) => void
+// ── Map Picker (Leaflet with draggable pin + geocoding search) ─────────────────
+function MapPicker({ lat, lng, onLatLng }: {
+  lat: string
+  lng: string
+  onLatLng: (lat: string, lng: string) => void
 }) {
+  const [searchVal, setSearchVal] = useState('')
   const [searching, setSearching] = useState(false)
-  const [results, setResults]     = useState<Array<{ lat: string; lon: string; display_name: string }>>([])
+  const [results, setResults] = useState<Array<{ lat: string; lon: string; display_name: string }>>([])
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapObjRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+  const onLatLngRef = useRef(onLatLng)
+  onLatLngRef.current = onLatLng   // always-fresh callback ref
+
+  const defaultLat = lat ? parseFloat(lat) : 13.7563
+  const defaultLng = lng ? parseFloat(lng) : 100.5018
+
+  function initLeaflet(L: any) {
+    if (mapObjRef.current || !mapContainerRef.current) return
+
+    const map = L.map(mapContainerRef.current, { zoomControl: true }).setView(
+      [defaultLat, defaultLng],
+      lat ? 15 : 12
+    )
+    mapObjRef.current = map
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map)
+
+    // SpacesMate-branded pin icon
+    const icon = L.divIcon({
+      html: `<div style="
+        width:28px;height:28px;
+        background:#02402e;
+        border:3px solid #fff;
+        border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        box-shadow:0 3px 10px rgba(2,64,46,.45);
+        position:relative;
+      "><div style="
+        position:absolute;inset:3px;
+        background:#d97f11;
+        border-radius:50%;
+        transform:rotate(45deg);
+      "></div></div>`,
+      className: '',
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+    })
+
+    const marker = L.marker([defaultLat, defaultLng], { draggable: true, icon }).addTo(map)
+    markerRef.current = marker
+
+    marker.bindPopup('<b style="color:#02402e;font-size:12px">📍 ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
+
+    marker.on('dragend', () => {
+      const pos = markerRef.current.getLatLng()
+      onLatLngRef.current(pos.lat.toFixed(6), pos.lng.toFixed(6))
+    })
+
+    map.on('click', (e: any) => {
+      markerRef.current.setLatLng(e.latlng)
+      onLatLngRef.current(e.latlng.lat.toFixed(6), e.latlng.lng.toFixed(6))
+    })
+  }
+
+  // Load Leaflet CSS + JS from CDN (client only)
+  useEffect(() => {
+    if ((window as any).L) {
+      initLeaflet((window as any).L)
+      return
+    }
+    if (!document.getElementById('leaflet-css')) {
+      const css = document.createElement('link')
+      css.id = 'leaflet-css'
+      css.rel = 'stylesheet'
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(css)
+    }
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+    script.onload = () => initLeaflet((window as any).L)
+    document.head.appendChild(script)
+
+    return () => {
+      if (mapObjRef.current) {
+        mapObjRef.current.remove()
+        mapObjRef.current = null
+      }
+    }
+  }, [])
+
+  // Move marker when lat/lng change externally (e.g., from geocoder)
+  useEffect(() => {
+    if (!mapObjRef.current || !markerRef.current) return
+    const la = parseFloat(lat), ln = parseFloat(lng)
+    if (isNaN(la) || isNaN(ln)) return
+    markerRef.current.setLatLng([la, ln])
+    mapObjRef.current.setView([la, ln], 15)
+  }, [lat, lng])
 
   async function doSearch() {
-    if (!value.trim()) return
-    setSearching(true)
-    setResults([])
+    if (!searchVal.trim()) return
+    setSearching(true); setResults([])
     try {
-      const r = await fetch(`/api/geocode?q=${encodeURIComponent(value)}`)
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(searchVal)}`)
       const d = await r.json()
       setResults(d.results ?? [])
     } catch {}
     setSearching(false)
   }
 
-  return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); doSearch() } }}
-          placeholder="พิมพ์ชื่อโครงการ หรือที่อยู่ แล้วกด Enter หรือ ค้นหา"
-          style={{ flex: 1, padding: '9px 13px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none' }}
-        />
-        <button
-          type="button"
-          onClick={doSearch}
-          disabled={searching}
-          style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 13, cursor: searching ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: searching ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 6 }}
-        >
-          {searching
-            ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />ค้นหา</>
-            : '🗺️ ค้นหา'
-          }
-        </button>
-      </div>
+  function selectResult(r: { lat: string; lon: string; display_name: string }) {
+    onLatLng(r.lat, r.lon)
+    setSearchVal(r.display_name.split(',')[0].trim())
+    setResults([])
+  }
 
-      {results.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, background: '#fff', border: '1px solid #eef0ef', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.1)', overflow: 'hidden', marginTop: 4 }}>
-          {results.map((r, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => {
-                onResult(r.lat, r.lon)
-                onChange(r.display_name.split(',')[0].trim())
-                setResults([])
-              }}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '9px 14px', border: 'none', background: 'none',
-                cursor: 'pointer', fontSize: 13, color: '#334155',
-                borderBottom: i < results.length - 1 ? '1px solid #f1f5f4' : 'none',
-              }}
-            >
-              📍 {r.display_name.length > 90 ? r.display_name.slice(0, 90) + '…' : r.display_name}
-            </button>
-          ))}
+  return (
+    <div>
+      {/* ── Search box ── */}
+      <div style={{ position: 'relative', marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={searchVal}
+            onChange={e => setSearchVal(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); doSearch() } }}
+            placeholder="ค้นหาชื่อโครงการ / ที่อยู่ใกล้เคียง แล้วกด Enter"
+            style={{ ...SINP, flex: 1 }}
+          />
           <button
             type="button"
-            onClick={() => setResults([])}
-            style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}
-          >ปิด</button>
+            onClick={doSearch}
+            disabled={searching}
+            style={{ padding: '9px 14px', borderRadius: 10, border: 'none', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 13, cursor: searching ? 'not-allowed' : 'pointer', opacity: searching ? 0.7 : 1, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}
+          >
+            {searching
+              ? <><span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />ค้นหา</>
+              : '🗺️ ค้นหา'
+            }
+          </button>
         </div>
+        {results.length > 0 && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: '#fff', border: '1px solid #eef0ef', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', overflow: 'hidden', marginTop: 4 }}>
+            {results.map((r, i) => (
+              <button key={i} type="button" onClick={() => selectResult(r)}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 12.5, color: '#334155', borderBottom: i < results.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
+                📍 {r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
+              </button>
+            ))}
+            <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>ปิด</button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Leaflet map ── */}
+      <div
+        ref={mapContainerRef}
+        style={{ height: 280, borderRadius: 12, overflow: 'hidden', border: '1px solid #eef0ef', background: '#f0f4f2' }}
+      />
+
+      {/* ── Coordinates status ── */}
+      {lat && lng ? (
+        <div style={{ marginTop: 8, padding: '7px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', fontWeight: 500, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span>✅ {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}</span>
+          <span style={{ color: '#94a3b8', fontWeight: 400 }}>ลากหมุดหรือคลิกบนแผนที่เพื่อปรับ</span>
+        </div>
+      ) : (
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>
+          คลิกบนแผนที่ ลากหมุด หรือค้นหาชื่อสถานที่ด้านบน
+        </p>
       )}
+
+      {/* ── Manual lat / lng inputs (small override) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+        <div>
+          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>Lat (ละติจูด)</label>
+          <input value={lat} onChange={e => onLatLng(e.target.value, lng)} placeholder="13.756300" style={{ ...SINP, fontSize: 12.5, padding: '7px 10px' }} />
+        </div>
+        <div>
+          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>Lng (ลองจิจูด)</label>
+          <input value={lng} onChange={e => onLatLng(lat, e.target.value)} placeholder="100.501800" style={{ ...SINP, fontSize: 12.5, padding: '7px 10px' }} />
+        </div>
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+// ── Thailand Cascading Address Select ────────────────────────────────────────
+type AddrItem = { id: number; name: string; zip?: string }
+
+function ThaiAddressSelect({ form, onChange }: {
+  form: Pick<ListingFormState, 'address_th' | 'district' | 'sub_district' | 'province' | 'postcode'>
+  onChange: (k: string, v: string) => void
+}) {
+  const [provinces, setProvinces] = useState<AddrItem[]>([])
+  const [amphures,  setAmphures]  = useState<AddrItem[]>([])
+  const [tambons,   setTambons]   = useState<AddrItem[]>([])
+  const [provId, setProvId] = useState<number | null>(null)
+  const [amphId, setAmphId] = useState<number | null>(null)
+  const [loadA, setLoadA]   = useState(false)
+  const [loadT, setLoadT]   = useState(false)
+
+  // Load province list once on mount
+  useEffect(() => {
+    fetch('/api/thailand-address?level=provinces')
+      .then(r => r.json())
+      .then((d: AddrItem[]) => setProvinces(d))
+      .catch(() => {})
+  }, [])
+
+  // Pre-populate province → districts when editing an existing listing
+  useEffect(() => {
+    if (!provinces.length || !form.province || provId !== null) return
+    const p = provinces.find(p => p.name === form.province)
+    if (!p) return
+    setProvId(p.id)
+    setLoadA(true)
+    fetch(`/api/thailand-address?level=amphures&parent=${p.id}`)
+      .then(r => r.json())
+      .then((d: AddrItem[]) => { setAmphures(d); setLoadA(false) })
+      .catch(() => setLoadA(false))
+  }, [provinces, form.province, provId])
+
+  // Pre-populate district → sub-districts when editing an existing listing
+  useEffect(() => {
+    if (!amphures.length || !form.district || amphId !== null) return
+    const a = amphures.find(a => a.name === form.district)
+    if (!a) return
+    setAmphId(a.id)
+    setLoadT(true)
+    fetch(`/api/thailand-address?level=tambons&parent=${a.id}`)
+      .then(r => r.json())
+      .then((d: AddrItem[]) => { setTambons(d); setLoadT(false) })
+      .catch(() => setLoadT(false))
+  }, [amphures, form.district, amphId])
+
+  function selectProvince(id: number) {
+    const p = provinces.find(p => p.id === id)
+    if (!p) return
+    onChange('province', p.name)
+    onChange('district', '')
+    onChange('sub_district', '')
+    onChange('postcode', '')
+    setProvId(id); setAmphId(null); setAmphures([]); setTambons([])
+    setLoadA(true)
+    fetch(`/api/thailand-address?level=amphures&parent=${id}`)
+      .then(r => r.json())
+      .then((d: AddrItem[]) => { setAmphures(d); setLoadA(false) })
+      .catch(() => setLoadA(false))
+  }
+
+  function selectAmphure(id: number) {
+    const a = amphures.find(a => a.id === id)
+    if (!a) return
+    onChange('district', a.name)
+    onChange('sub_district', '')
+    onChange('postcode', '')
+    setAmphId(id); setTambons([])
+    setLoadT(true)
+    fetch(`/api/thailand-address?level=tambons&parent=${id}`)
+      .then(r => r.json())
+      .then((d: AddrItem[]) => { setTambons(d); setLoadT(false) })
+      .catch(() => setLoadT(false))
+  }
+
+  function selectTambon(name: string) {
+    const t = tambons.find(t => t.name === name)
+    if (!t) return
+    onChange('sub_district', t.name)
+    onChange('postcode', t.zip ?? '')
+  }
+
+  function selStyle(disabled: boolean): React.CSSProperties {
+    return { ...SINP, background: disabled ? '#f8fafc' : '#fff', color: disabled ? '#94a3b8' : '#334155', cursor: disabled ? 'not-allowed' : 'pointer' }
+  }
+
+  return (
+    <div>
+      {/* Address line */}
+      <div style={{ marginBottom: 12 }}>
+        <label style={SLBL}>ที่อยู่ (ชื่ออาคาร / ถนน / เลขที่)</label>
+        <input value={form.address_th} onChange={e => onChange('address_th', e.target.value)} placeholder="เช่น Metro Luxe Rama 4  ถนนพระราม 4" style={SINP} />
+      </div>
+
+      {/* Province */}
+      <div style={{ marginBottom: 12 }}>
+        <label style={SLBL}>จังหวัด *</label>
+        <select
+          value={provId ?? ''}
+          onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectProvince(id) }}
+          style={{ ...SINP, cursor: 'pointer' }}
+        >
+          <option value="">{provinces.length === 0 ? '⟳ กำลังโหลด…' : 'เลือกจังหวัด'}</option>
+          {provinces.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </div>
+
+      {/* District + Sub-district */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={SLBL}>
+            เขต / อำเภอ
+            {loadA && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>⟳</span>}
+          </label>
+          <select
+            value={amphId ?? ''}
+            onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectAmphure(id) }}
+            disabled={!provId || loadA}
+            style={selStyle(!provId || loadA)}
+          >
+            <option value="">{!provId ? 'เลือกจังหวัดก่อน' : loadA ? 'กำลังโหลด…' : 'เลือกเขต / อำเภอ'}</option>
+            {amphures.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={SLBL}>
+            แขวง / ตำบล
+            {loadT && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>⟳</span>}
+          </label>
+          <select
+            value={form.sub_district || ''}
+            onChange={e => selectTambon(e.target.value)}
+            disabled={!amphId || loadT}
+            style={selStyle(!amphId || loadT)}
+          >
+            <option value="">{!amphId ? 'เลือกเขต/อำเภอก่อน' : loadT ? 'กำลังโหลด…' : 'เลือกแขวง / ตำบล'}</option>
+            {tambons.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Postcode */}
+      <div>
+        <label style={SLBL}>รหัสไปรษณีย์</label>
+        <input
+          value={form.postcode}
+          onChange={e => onChange('postcode', e.target.value)}
+          placeholder="10110"
+          style={{ ...SINP, width: 130 }}
+        />
+        {form.postcode && <span style={{ fontSize: 11.5, color: '#048c73', marginLeft: 8, fontWeight: 500 }}>✅ {form.postcode}</span>}
+      </div>
     </div>
   )
 }
 
 // ── Image Upload Zone ─────────────────────────────────────────────────────────
-function ImageUploadZone({ images, onImagesChange }: {
-  images: string[]
-  onImagesChange: (imgs: string[]) => void
-}) {
-  const [uploading, setUploading]   = useState(false)
+function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImagesChange: (imgs: string[]) => void }) {
+  const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleFiles(files: FileList) {
-    setUploading(true)
-    setUploadError('')
+    setUploading(true); setUploadError('')
     const added: string[] = []
     for (const file of Array.from(files)) {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('type', 'image')
+      const fd = new FormData(); fd.append('file', file); fd.append('type', 'image')
       try {
         const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
         const d = await r.json()
@@ -405,95 +652,44 @@ function ImageUploadZone({ images, onImagesChange }: {
     setUploading(false)
   }
 
-  function remove(idx: number) {
-    onImagesChange(images.filter((_, i) => i !== idx))
-  }
-
   const limit = images.length >= 10
 
   return (
     <div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        style={{ display: 'none' }}
-        onChange={e => { if (e.target.files) handleFiles(e.target.files) }}
-      />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={uploading || limit}
-        style={{
-          width: '100%', padding: '14px 0', borderRadius: 10,
-          border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'),
-          background: uploading ? '#f8fafc' : '#fafffe',
-          color: limit ? '#94a3b8' : '#048c73',
-          fontWeight: 600, fontSize: 13,
-          cursor: (uploading || limit) ? 'not-allowed' : 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}
-      >
-        {uploading ? (
-          <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
-        ) : limit ? (
-          '✅ อัปโหลดครบ 10 รูปแล้ว'
-        ) : (
-          <><span style={{ fontSize: 20 }}>📁</span> เลือกรูปภาพห้อง (JPG · PNG · WebP  •  สูงสุด 10 รูป  •  10 MB/รูป)</>
-        )}
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) handleFiles(e.target.files) }} />
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || limit}
+        style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: limit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || limit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
+          : limit ? '✅ อัปโหลดครบ 10 รูปแล้ว'
+          : <><span style={{ fontSize: 20 }}>📁</span> เลือกรูปภาพห้อง (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
       </button>
-
-      {uploadError && (
-        <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>
-      )}
-
+      {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>}
       {images.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
           {images.map((url, i) => (
             <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-              <img
-                src={url}
-                alt=""
-                style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: '1px solid #eef0ef' }}
-              />
-              {i === 0 && (
-                <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>
-                  หน้าปก
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}
-              >✕</button>
+              <img src={url} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: '1px solid #eef0ef' }} />
+              {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>หน้าปก</span>}
+              <button type="button" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
+                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>✕</button>
             </div>
           ))}
         </div>
       )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
 
 // ── Video Upload Zone ─────────────────────────────────────────────────────────
-function VideoUploadZone({ videoUrl, onVideoChange, packageType }: {
-  videoUrl: string
-  onVideoChange: (url: string) => void
-  packageType: string
-}) {
-  const [uploading, setUploading]     = useState(false)
+function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: string; onVideoChange: (url: string) => void; packageType: string }) {
+  const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
-
   const isPremium = packageType === 'premium'
 
   async function handleFile(file: File) {
-    setUploading(true)
-    setUploadError('')
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('type', 'video')
+    setUploading(true); setUploadError('')
+    const fd = new FormData(); fd.append('file', file); fd.append('type', 'video')
     try {
       const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
       const d = await r.json()
@@ -515,39 +711,16 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: {
 
   return (
     <div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="video/mp4,video/quicktime,video/webm"
-        style={{ display: 'none' }}
-        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }}
-      />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={uploading}
-        style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}
-      >
-        {uploading
-          ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
-          : '📹 อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)'
-        }
+      <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+        style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
+        {uploading ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</> : '📹 อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)'}
       </button>
-
       <div>
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4, display: 'block' }}>
-          หรือวางลิงก์วิดีโอ (YouTube / Vimeo / ลิงก์ตรง)
-        </label>
-        <input
-          value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''}
-          onChange={e => onVideoChange(e.target.value)}
-          placeholder="https://youtube.com/watch?v=..."
-          style={{ width: '100%', padding: '9px 13px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' as const }}
-        />
+        <label style={{ ...SLBL, fontSize: 12 }}>หรือวางลิงก์วิดีโอ (YouTube / Vimeo)</label>
+        <input value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''} onChange={e => onVideoChange(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={SINP} />
       </div>
-
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>}
-
       {videoUrl && (
         <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ flex: 1, wordBreak: 'break-all' }}>✅ {videoUrl.length > 60 ? videoUrl.slice(0, 60) + '…' : videoUrl}</span>
@@ -558,213 +731,233 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: {
   )
 }
 
-// ── Form Fields (all sections) ────────────────────────────────────────────────
-function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, onRoomTypesChange }: {
+// ── Form Fields (all 9 sections) ──────────────────────────────────────────────
+function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, onRoomTypesChange, isAdmin = true }: {
   form: ListingFormState
   onChange: (k: string, v: any) => void
   onAmenityToggle: (a: string) => void
   onImagesChange: (imgs: string[]) => void
   onRoomTypesChange: (rows: RoomTypeRow[]) => void
+  isAdmin?: boolean
 }) {
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '9px 13px', borderRadius: 10,
-    border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none',
-    boxSizing: 'border-box' as const, background: '#fff',
-  }
-  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 5, display: 'block' }
   const g2:  React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const termLabel   = RENTAL_TERM_LABEL[form.rental_term] ?? '/เดือน'
+  const isDaily     = form.rental_term === 'daily'
+  const roomOpts    = getRoomTypeOptions(form.property_type)
+
+  // Conditional size fields per property type
+  const isApartment  = form.property_type === 'apartment'
+  const showBedsBaths = ['condo', 'house'].includes(form.property_type)
+  const showFloor     = !isApartment  // apartment = building-level, floor not meaningful
+
+  // Derive price_from from minimum room type price when table has values
+  const derivedPriceFrom = form.room_types.length > 0
+    ? Math.min(...form.room_types.map(r => parseFloat(r.price_from) || 0).filter(n => n > 0))
+    : null
 
   return (
     <>
-      {/* ── 1. ข้อมูลหลัก ──────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          1 · ข้อมูลหลัก
+          Property type is FIRST — the form adapts its fields based on this.
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="1 · ข้อมูลหลัก" />
-        <div style={{ marginBottom: 14 }}>
-          <label style={lbl}>ชื่อประกาศ (ภาษาไทย) *</label>
-          <input value={form.title_th} onChange={e => onChange('title_th', e.target.value)} placeholder="เช่น เช่าคอนโด เอกมัย ห้องสวย วิวดี" required style={inp} />
-        </div>
-        <div style={{ marginBottom: 14 }}>
-          <label style={lbl}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
-          <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={inp} />
-        </div>
-        <div style={g2}>
-          <div>
-            <label style={lbl}>Slug (URL ของประกาศ) *</label>
-            <input value={form.slug} onChange={e => onChange('slug', e.target.value)} placeholder="condo-for-rent-ekkamai" required style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>ประเภทอสังหาฯ *</label>
-            <select value={form.property_type} onChange={e => onChange('property_type', e.target.value)} style={inp}>
-              <option value="condo">คอนโดมิเนียม</option>
-              <option value="apartment">อพาร์ทเม้นท์</option>
-              <option value="house">บ้าน</option>
-              <option value="office">ออฟฟิศ</option>
-              <option value="coworking">Co-Working Space</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
-      {/* ── 2. แพ็กเกจ & รูปแบบเช่า ─────────────────────────────── */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionHead text="2 · แพ็กเกจ & รูปแบบการเช่า" />
+        {/* Property type — first so conditional fields below adapt */}
         <div style={{ marginBottom: 14 }}>
-          <label style={lbl}>แพ็กเกจประกาศ</label>
-          <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={inp}>
-            {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-          </select>
-          <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
-            {form.package_type === 'admin'
-              ? 'ไม่มีวันหมดอายุ — ประกาศอยู่บนเว็บตลอดไปจนกว่าจะลบ'
-              : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
-          </p>
-        </div>
-        <div>
-          <label style={lbl}>รูปแบบการเช่า</label>
+          <label style={SLBL}>ประเภทอสังหาฯ *</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {RENTAL_TERM_OPTIONS.map(o => (
-              <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
-                style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`, background: form.rental_term === o.value ? '#eaf6f1' : '#fff', color: form.rental_term === o.value ? '#02402e' : '#64748b' }}>
+            {[
+              { value: 'condo',     label: '🏙 คอนโด' },
+              { value: 'apartment', label: '🏢 อพาร์ทเม้นท์' },
+              { value: 'house',     label: '🏡 บ้าน' },
+              { value: 'office',    label: '🏛 ออฟฟิศ' },
+              { value: 'coworking', label: '💼 Co-Working' },
+            ].map(o => (
+              <button key={o.value} type="button" onClick={() => onChange('property_type', o.value)}
+                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: `1.5px solid ${form.property_type === o.value ? '#02402e' : '#eef0ef'}`, background: form.property_type === o.value ? '#02402e' : '#fff', color: form.property_type === o.value ? '#fff' : '#64748b', transition: 'all .15s' }}>
                 {o.label}
               </button>
             ))}
           </div>
         </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={SLBL}>ชื่อประกาศ (ภาษาไทย) *</label>
+          <input value={form.title_th} onChange={e => onChange('title_th', e.target.value)} placeholder="เช่น เช่าคอนโด เอกมัย ห้องสวย วิวดี" required style={SINP} />
+        </div>
+        <div>
+          <label style={SLBL}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
+          <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={SINP} />
+        </div>
+        {/* Slug hidden — auto-generated server-side from title_th */}
       </div>
 
-      {/* ── 3. ราคาหลัก & ราคาตามประเภทห้อง ─────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          2 · แพ็กเกจ & ราคา  (combined: package + rental term + price table)
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="3 · ราคาและประเภทห้อง" />
+        <SectionHead text="2 · แพ็กเกจ & ราคา" />
 
-        {/* ราคาหลัก */}
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '14px', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 10px' }}>💰 ราคาหลัก (แสดงเป็น "เริ่มต้น" บนหน้าประกาศ)</p>
-          <div style={g2}>
-            <div>
-              <label style={lbl}>ราคาต่ำสุด (บาท{RENTAL_TERM_LABEL[form.rental_term] ?? ''}) *</label>
-              <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={inp} />
-            </div>
-            <div>
-              <label style={lbl}>ราคาสูงสุด (ถ้ามี)</label>
-              <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="22000" style={inp} />
-            </div>
+        {/* Package selector — admin only */}
+        {isAdmin ? (
+          <div style={{ marginBottom: 16 }}>
+            <label style={SLBL}>แพ็กเกจประกาศ (Admin)</label>
+            <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={SINP}>
+              {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+            <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
+              {form.package_type === 'admin'
+                ? 'ไม่มีวันหมดอายุ — อยู่บนเว็บจนกว่าจะลบ'
+                : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
+            </p>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 16, padding: '10px 14px', background: '#f0fbf8', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#048c73' }}>แพ็กเกจ:</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#02402e' }}>
+              {ADMIN_PACKAGES.find(p => p.id === form.package_type)?.label ?? form.package_type}
+            </span>
+          </div>
+        )}
+
+        {/* Rental term tabs */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={SLBL}>รูปแบบการเช่า *</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {RENTAL_TERM_OPTIONS.map(o => (
+              <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
+                style={{ padding: '7px 15px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`, background: form.rental_term === o.value ? '#eaf6f1' : '#fff', color: form.rental_term === o.value ? '#02402e' : '#64748b', transition: 'all .15s' }}>
+                {o.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* ราคาตามประเภทห้อง */}
-        <div>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>🏠 ราคาตามประเภทห้อง (สำหรับอาคารที่มีหลายขนาด)</p>
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 10px' }}>เพิ่มราคาแยกตามประเภท เช่น Studio, 1 ห้องนอน, 2 ห้องนอน</p>
+        {/* Price table — adapts to rental term */}
+        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px', marginBottom: 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>
+            💰 ตารางราคา{isDaily ? ' รายวัน' : termLabel}
+          </p>
+          <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '0 0 12px' }}>
+            {isDaily
+              ? 'เพิ่มประเภทห้องและราคาต่อวัน'
+              : 'เพิ่มประเภทห้องและช่วงราคาสำหรับแต่ละขนาด'}
+          </p>
           <RoomTypePricingGrid
             rows={form.room_types}
             onChange={onRoomTypesChange}
-            termLabel={RENTAL_TERM_LABEL[form.rental_term] ?? ''}
+            termLabel={termLabel}
+            isDaily={isDaily}
+            roomTypeOptions={roomOpts}
           />
-        </div>
-      </div>
 
-      {/* ── 4. ขนาดและลักษณะห้อง ─────────────────────────────────── */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionHead text="4 · ขนาดและลักษณะห้อง" />
-        <div style={{ ...g2, marginBottom: 12 }}>
-          <div>
-            <label style={lbl}>ห้องนอน</label>
-            <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={inp}>
-              {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={lbl}>ห้องน้ำ</label>
-            <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={inp}>
-              {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
-            </select>
-          </div>
-        </div>
-        <div style={g2}>
-          <div>
-            <label style={lbl}>พื้นที่ใช้สอย (ตร.ม.)</label>
-            <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28" style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>ชั้นที่ตั้ง</label>
-            <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={inp} />
+          {/* Starting price (manual or derived) */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #eef0ef' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>
+              ราคาเริ่มต้น (แสดงในหน้าค้นหา)
+              {derivedPriceFrom && derivedPriceFrom > 0 && (
+                <button type="button" onClick={() => onChange('price_from', String(derivedPriceFrom))}
+                  style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, border: '1px solid #048c73', background: '#f0fbf8', color: '#048c73', cursor: 'pointer', fontWeight: 500 }}>
+                  ดึงจากตาราง ฿{derivedPriceFrom.toLocaleString()}
+                </button>
+              )}
+            </p>
+            <div style={g2}>
+              <div>
+                <label style={{ ...SLBL, fontSize: 11.5 }}>ต่ำสุด (บาท{termLabel}) *</label>
+                <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={SINP} />
+              </div>
+              <div>
+                <label style={{ ...SLBL, fontSize: 11.5 }}>สูงสุด (ถ้ามี)</label>
+                <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="22000" style={SINP} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── 5. ที่ตั้งและที่อยู่ ────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          3 · ขนาดและลักษณะ  (conditional per property type)
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="5 · ที่ตั้งและที่อยู่" />
-        <div style={{ marginBottom: 12 }}>
-          <label style={lbl}>ที่อยู่ (ชื่ออาคาร / ถนน)</label>
-          <input value={form.address_th} onChange={e => onChange('address_th', e.target.value)} placeholder="เช่น Metro Luxe Rama 4 ถนนพระราม 4" style={inp} />
-        </div>
-        <div style={{ ...g2, marginBottom: 12 }}>
-          <div>
-            <label style={lbl}>ย่าน / BTS / MRT</label>
-            <input value={form.district} onChange={e => onChange('district', e.target.value)} placeholder="BTS เอกมัย" style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>แขวง</label>
-            <input value={form.sub_district} onChange={e => onChange('sub_district', e.target.value)} placeholder="แขวงพระโขนง" style={inp} />
-          </div>
-        </div>
-        <div style={g2}>
-          <div>
-            <label style={lbl}>จังหวัด</label>
-            <input value={form.province} onChange={e => onChange('province', e.target.value)} style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>รหัสไปรษณีย์</label>
-            <input value={form.postcode} onChange={e => onChange('postcode', e.target.value)} placeholder="10110" style={inp} />
-          </div>
-        </div>
-      </div>
+        <SectionHead text="3 · ขนาดและลักษณะ" />
 
-      {/* ── 6. พิกัดบนแผนที่ ──────────────────────────────────────── */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionHead text="6 · พิกัดบนแผนที่ (Latitude / Longitude)" />
-        <div style={{ marginBottom: 10 }}>
-          <label style={lbl}>🗺️ ค้นหาพิกัดอัตโนมัติจากชื่อสถานที่</label>
-          <MapSearch
-            value={form.map_search}
-            onChange={v => onChange('map_search', v)}
-            onResult={(lat, lng) => { onChange('lat', lat); onChange('lng', lng) }}
-          />
-          {form.lat && form.lng && (
-            <div style={{ marginTop: 6, padding: '6px 10px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', fontWeight: 500 }}>
-              ✅ พิกัดที่เลือก: {parseFloat(form.lat).toFixed(6)}, {parseFloat(form.lng).toFixed(6)}
+        {/* apartment → area only */}
+        {isApartment && (
+          <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
+            💡 อพาร์ทเม้นท์ — ระบุขนาดห้องทั่วไป ส่วนจำนวนห้องนอน/น้ำให้ระบุในตารางประเภทห้องข้างบน
+          </div>
+        )}
+
+        <div style={{ ...g2, marginBottom: showBedsBaths ? 12 : 0 }}>
+          <div>
+            <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
+            <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder={isApartment ? '28 (ขนาดเฉลี่ย)' : '28'} style={SINP} />
+          </div>
+          {showFloor && (
+            <div>
+              <label style={SLBL}>ชั้นที่ตั้ง</label>
+              <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={SINP} />
             </div>
           )}
         </div>
-        <div style={g2}>
-          <div>
-            <label style={lbl}>Latitude (ละติจูด)</label>
-            <input value={form.lat} onChange={e => onChange('lat', e.target.value)} placeholder="13.711700" style={inp} />
+
+        {showBedsBaths && (
+          <div style={g2}>
+            <div>
+              <label style={SLBL}>ห้องนอน</label>
+              <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
+                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={SLBL}>ห้องน้ำ</label>
+              <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
+                {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+              </select>
+            </div>
           </div>
-          <div>
-            <label style={lbl}>Longitude (ลองจิจูด)</label>
-            <input value={form.lng} onChange={e => onChange('lng', e.target.value)} placeholder="100.580300" style={inp} />
-          </div>
-        </div>
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '6px 0 0' }}>
-          ค้นหาชื่อโครงการด้านบนเพื่อดึงพิกัดอัตโนมัติ หรือใส่ตัวเลขพิกัดด้วยตนเอง
-        </p>
+        )}
       </div>
 
-      {/* ── 7. รายละเอียดประกาศ ──────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          4 · ที่ตั้งและที่อยู่  (cascading Thai address dropdowns)
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="7 · รายละเอียดประกาศ" />
-        <RichEditor
-          value={form.description_th}
-          onChange={v => onChange('description_th', v)}
-          placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..."
+        <SectionHead text="4 · ที่ตั้งและที่อยู่" />
+        <ThaiAddressSelect
+          form={{ address_th: form.address_th, district: form.district, sub_district: form.sub_district, province: form.province, postcode: form.postcode }}
+          onChange={onChange}
         />
       </div>
 
-      {/* ── 8. สิ่งอำนวยความสะดวก ────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          5 · พิกัดบนแผนที่  (Leaflet map + drag pin + search)
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="8 · สิ่งอำนวยความสะดวก" />
+        <SectionHead text="5 · พิกัดบนแผนที่" />
+        <MapPicker
+          lat={form.lat}
+          lng={form.lng}
+          onLatLng={(lat, lng) => { onChange('lat', lat); onChange('lng', lng) }}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          6 · รายละเอียดประกาศ
+      ════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionHead text="6 · รายละเอียดประกาศ" />
+        <RichEditor value={form.description_th} onChange={v => onChange('description_th', v)} placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..." />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          7 · สิ่งอำนวยความสะดวก
+      ════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {AMENITY_OPTIONS.map(a => {
             const on = form.amenities.includes(a)
@@ -778,23 +971,21 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
         </div>
       </div>
 
-      {/* ── 9. รูปภาพห้อง ────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          8 · รูปภาพห้อง
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="9 · รูปภาพห้อง" />
+        <SectionHead text="8 · รูปภาพห้อง" />
         <ImageUploadZone images={form.images} onImagesChange={onImagesChange} />
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>
-          รูปแรกจะเป็นรูปหน้าปกของประกาศ · ลาก/วางก็ได้เช่นกัน
-        </p>
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>รูปแรกจะเป็นรูปหน้าปกของประกาศ</p>
       </div>
 
-      {/* ── 10. วิดีโอ (Premium) ─────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          9 · วิดีโอ (Premium)
+      ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 8 }}>
-        <SectionHead text="10 · วิดีโอประกาศ (Premium เท่านั้น)" />
-        <VideoUploadZone
-          videoUrl={form.video_url}
-          onVideoChange={v => onChange('video_url', v)}
-          packageType={form.package_type}
-        />
+        <SectionHead text="9 · วิดีโอประกาศ (Premium เท่านั้น)" />
+        <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} />
       </div>
     </>
   )
@@ -809,9 +1000,10 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
   function setF(k: string, v: any) {
     setForm(f => {
       const next = { ...f, [k]: v }
-      if (k === 'title_th' && !f.slug) {
-        next.slug = (v as string).toLowerCase().trim()
-          .replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').slice(0, 60)
+      // Auto-generate slug from title_th (only when slug is still empty or matches previous auto-gen)
+      if (k === 'title_th' && !f.title_en) {
+        // Keep slug empty — server will generate it
+        next.slug = ''
       }
       return next
     })
@@ -832,6 +1024,7 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          slug: '',  // always empty → server auto-generates from title_th
           userId:    session?.user.id,
           userEmail: session?.user.email,
           expires_at: computeExpiry(form.package_type),
@@ -850,7 +1043,7 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
       form={form} setF={setF} toggleAmenity={toggleAmenity}
       onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))}
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
-      saving={saving} error={error}
+      saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
       submitLabel="🏠 เผยแพร่ประกาศ"
     />
@@ -883,7 +1076,6 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     sub_district:  listing.sub_district ?? '',
     province:      listing.province ?? 'กรุงเทพมหานคร',
     postcode:      listing.postcode ?? '',
-    map_search:    '',
     lat:           listing.lat ? String(listing.lat) : '',
     lng:           listing.lng ? String(listing.lng) : '',
     description_th: listing.description_th ?? '',
@@ -937,7 +1129,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
       form={form} setF={setF} toggleAmenity={toggleAmenity}
       onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))}
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
-      saving={saving} error={error}
+      saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
       submitLabel="💾 บันทึกการแก้ไข"
     />
@@ -945,7 +1137,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
 }
 
 // ── Drawer Shell ──────────────────────────────────────────────────────────────
-function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, onClose, onSubmit, submitLabel }: {
+function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel }: {
   title: string; subtitle: string
   form: ListingFormState
   setF: (k: string, v: any) => void
@@ -953,6 +1145,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   onImagesChange: (imgs: string[]) => void
   onRoomTypesChange: (rows: RoomTypeRow[]) => void
   saving: boolean; error: string
+  isAdmin: boolean
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   submitLabel: string
@@ -960,10 +1153,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
       <div style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />
-      <div
-        style={{ width: 600, background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }}
-        onClick={e => e.stopPropagation()}
-      >
+      <div style={{ width: 620, background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
@@ -972,12 +1162,12 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
           </div>
           <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
-
-        {/* Form */}
+        {/* Form body */}
         <form onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
           <ListingFormFields
             form={form} onChange={setF} onAmenityToggle={toggleAmenity}
             onImagesChange={onImagesChange} onRoomTypesChange={onRoomTypesChange}
+            isAdmin={isAdmin}
           />
           {error && (
             <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
@@ -985,15 +1175,11 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
             </div>
           )}
         </form>
-
         {/* Footer */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10, flexShrink: 0 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
           <button onClick={onSubmit as any} disabled={saving} style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving
-              ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</>
-              : submitLabel
-            }
+            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
           </button>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -1029,25 +1215,18 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
     setDeleting(null)
   }
 
-  const allTypes = Array.from(new Set([
-    ...staticProperties.map(p => p.propertyType),
-    ...dbListings.map(p => p.property_type),
-  ]))
-
+  const allTypes = Array.from(new Set([...staticProperties.map(p => p.propertyType), ...dbListings.map(p => p.property_type)]))
   const ok = (title: string, type: string, loc: string) => {
     if (typeFilter && type !== typeFilter) return false
     if (search) { const q = search.toLowerCase(); return title.toLowerCase().includes(q) || loc.toLowerCase().includes(q) }
     return true
   }
-
   const filteredStatic = staticProperties.filter(p => ok(p.title, p.propertyType, p.neighborhood + p.address))
   const filteredDb     = dbListings.filter(p => ok(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
 
   return (
     <div>
       {editTarget && <EditDrawer listing={editTarget} onClose={() => setEditTarget(null)} onSaved={loadDb} />}
-
-      {/* Filters */}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={() => setTypeFilter('')} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: !typeFilter ? '#02402e' : '#f4f6f5', color: !typeFilter ? '#fff' : '#334155' }}>ทั้งหมด</button>
@@ -1059,7 +1238,6 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
         </div>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  ค้นหาชื่อ / ทำเล" style={{ flex: 1, minWidth: 180, padding: '7px 14px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13, outline: 'none' }} />
       </div>
-
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -12px rgba(2,64,46,0.08)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredStatic.length + filteredDb.length} จาก {staticProperties.length + dbListings.length} รายการ</span>
@@ -1187,7 +1365,6 @@ function SubmissionsTab() {
     pending:  { bg: '#fef9c3', color: '#a16207', label: 'รออนุมัติ' },
     approved: { bg: '#dcfce7', color: '#15803d', label: 'อนุมัติแล้ว' },
     rejected: { bg: '#fee2e2', color: '#b91c1c', label: 'ปฏิเสธ' },
-    active:   { bg: '#e0f2f9', color: '#0284c7', label: 'เผยแพร่อยู่' },
   }
   const PKG_LABEL: Record<string, string> = {
     free_trial: 'ทดลองฟรี', basic: 'Basic', standard: 'Standard', premium: 'Premium',
@@ -1200,9 +1377,7 @@ function SubmissionsTab() {
       </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {STATUS_OPTS.map(o => (
-          <button key={o.value} onClick={() => setFilter(o.value)} style={{ padding: '7px 15px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: filter === o.value ? '#02402e' : '#f4f6f5', color: filter === o.value ? '#fff' : '#334155' }}>
-            {o.label}
-          </button>
+          <button key={o.value} onClick={() => setFilter(o.value)} style={{ padding: '7px 15px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: filter === o.value ? '#02402e' : '#f4f6f5', color: filter === o.value ? '#fff' : '#334155' }}>{o.label}</button>
         ))}
       </div>
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden' }}>
@@ -1287,10 +1462,7 @@ export default function ListingsPage() {
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 3px', color: '#02402e' }}>จัดการประกาศ</h1>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>{staticProperties.length} static + ประกาศจาก Dashboard</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-        >
+        <button onClick={() => setShowCreate(true)} style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
           + เพิ่มประกาศใหม่
         </button>
       </div>
