@@ -2,35 +2,36 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Province { id: number; name_th: string }
-interface Amphure  { id: number; name_th: string; province_id: number }
-interface Tambon   { id: number; name_th: string; amphure_id: number; zip_code: number }
+interface District { id: number; name_th: string; province_id: number }
+interface SubDistrict { id: number; name_th: string; district_id: number; zip_code: number }
 
 // ── Module-level cache — survives multiple requests in the same process ────────
-let _cache: { provinces: Province[]; amphures: Amphure[]; tambons: Tambon[] } | null = null
+let _cache: { provinces: Province[]; districts: District[]; subDistricts: SubDistrict[] } | null = null
 
-const RAW = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master'
+// ── Updated paths (repo restructured from api_province.json → api/latest/) ───
+const RAW = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest'
 
 async function loadAll() {
   if (_cache) return _cache
-  const [provinces, amphures, tambons] = await Promise.all([
-    fetch(`${RAW}/api_province.json`).then(r => r.json()),
-    fetch(`${RAW}/api_amphure.json`).then(r => r.json()),
-    fetch(`${RAW}/api_tambon.json`).then(r => r.json()),
+  const [provinces, districts, subDistricts] = await Promise.all([
+    fetch(`${RAW}/province.json`).then(r => r.json()),
+    fetch(`${RAW}/district.json`).then(r => r.json()),
+    fetch(`${RAW}/sub_district.json`).then(r => r.json()),
   ])
-  _cache = { provinces, amphures, tambons }
+  _cache = { provinces, districts, subDistricts }
   return _cache
 }
 
 // ── GET /api/thailand-address ─────────────────────────────────────────────────
 // ?level=provinces
-// ?level=amphures&parent=<province_id>
-// ?level=tambons&parent=<amphure_id>
+// ?level=amphures&parent=<province_id>   (districts)
+// ?level=tambons&parent=<district_id>    (sub-districts)
 export async function GET(req: NextRequest) {
   try {
     const level  = req.nextUrl.searchParams.get('level')
     const parent = req.nextUrl.searchParams.get('parent')
 
-    const { provinces, amphures, tambons } = await loadAll()
+    const { provinces, districts, subDistricts } = await loadAll()
 
     if (level === 'provinces') {
       return NextResponse.json(
@@ -42,17 +43,17 @@ export async function GET(req: NextRequest) {
     if (level === 'amphures' && parent) {
       const pid = parseInt(parent)
       return NextResponse.json(
-        amphures.filter(a => a.province_id === pid).map(a => ({ id: a.id, name: a.name_th })),
+        districts.filter(d => d.province_id === pid).map(d => ({ id: d.id, name: d.name_th })),
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       )
     }
 
     if (level === 'tambons' && parent) {
-      const aid = parseInt(parent)
+      const did = parseInt(parent)
       return NextResponse.json(
-        tambons
-          .filter(t => t.amphure_id === aid)
-          .map(t => ({ id: t.id, name: t.name_th, zip: String(t.zip_code) })),
+        subDistricts
+          .filter(s => s.district_id === did)
+          .map(s => ({ id: s.id, name: s.name_th, zip: String(s.zip_code) })),
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       )
     }
@@ -60,7 +61,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid parameters. Use ?level=provinces|amphures|tambons' }, { status: 400 })
   } catch (err: any) {
     console.error('thailand-address route error:', err)
-    // Clear cache so next request retries the fetch
     _cache = null
     return NextResponse.json({ error: 'Failed to load address data', detail: err.message }, { status: 500 })
   }

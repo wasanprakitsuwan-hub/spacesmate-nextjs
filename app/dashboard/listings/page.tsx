@@ -490,7 +490,7 @@ function ThaiAddressSelect({ form, onChange }: {
   useEffect(() => {
     fetch('/api/thailand-address?level=provinces')
       .then(r => r.json())
-      .then((d: AddrItem[]) => setProvinces(d))
+      .then((d: AddrItem[]) => { if (Array.isArray(d)) setProvinces(d) })
       .catch(() => {})
   }, [])
 
@@ -503,7 +503,7 @@ function ThaiAddressSelect({ form, onChange }: {
     setLoadA(true)
     fetch(`/api/thailand-address?level=amphures&parent=${p.id}`)
       .then(r => r.json())
-      .then((d: AddrItem[]) => { setAmphures(d); setLoadA(false) })
+      .then((d: AddrItem[]) => { if (Array.isArray(d)) setAmphures(d); setLoadA(false) })
       .catch(() => setLoadA(false))
   }, [provinces, form.province, provId])
 
@@ -516,7 +516,7 @@ function ThaiAddressSelect({ form, onChange }: {
     setLoadT(true)
     fetch(`/api/thailand-address?level=tambons&parent=${a.id}`)
       .then(r => r.json())
-      .then((d: AddrItem[]) => { setTambons(d); setLoadT(false) })
+      .then((d: AddrItem[]) => { if (Array.isArray(d)) setTambons(d); setLoadT(false) })
       .catch(() => setLoadT(false))
   }, [amphures, form.district, amphId])
 
@@ -531,7 +531,7 @@ function ThaiAddressSelect({ form, onChange }: {
     setLoadA(true)
     fetch(`/api/thailand-address?level=amphures&parent=${id}`)
       .then(r => r.json())
-      .then((d: AddrItem[]) => { setAmphures(d); setLoadA(false) })
+      .then((d: AddrItem[]) => { if (Array.isArray(d)) setAmphures(d); setLoadA(false) })
       .catch(() => setLoadA(false))
   }
 
@@ -545,7 +545,7 @@ function ThaiAddressSelect({ form, onChange }: {
     setLoadT(true)
     fetch(`/api/thailand-address?level=tambons&parent=${id}`)
       .then(r => r.json())
-      .then((d: AddrItem[]) => { setTambons(d); setLoadT(false) })
+      .then((d: AddrItem[]) => { if (Array.isArray(d)) setTambons(d); setLoadT(false) })
       .catch(() => setLoadT(false))
   }
 
