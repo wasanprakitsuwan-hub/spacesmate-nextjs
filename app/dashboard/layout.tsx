@@ -26,14 +26,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const supabase = createBrowserClient()
 
     // getSession() reads localStorage directly — instant, no async wait.
-    // This is the fast path so a returning user never hits the login page.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserEmail(session.user.email ?? '')
-        setAuthReady(true)
-      } else {
-        router.replace('/login')
-      }
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { router.replace('/login'); return }
+      setUserEmail(session.user.email ?? '')
+
+      // Role check — only 'admin' can access /dashboard
+      // Best-effort: if profile fetch fails, fall through (don't lock out admin)
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+        if (profile && profile.role === 'landlord') {
+          router.replace('/owner-dashboard')
+          return
+        }
+      } catch { /* network error — proceed */ }
+
+      setAuthReady(true)
     })
 
     // onAuthStateChange handles sign-out and silent token refresh only.

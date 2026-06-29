@@ -13,13 +13,18 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
   useEffect(() => {
     const supabase = createBrowserClient()
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserEmail(session.user.email ?? '')
-        setAuthReady(true)
-      } else {
-        router.replace('/login')
-      }
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { router.replace('/login'); return }
+      setUserEmail(session.user.email ?? '')
+
+      // If admin → send to admin dashboard
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles').select('role').eq('id', session.user.id).single()
+        if (profile?.role === 'admin') { router.replace('/dashboard'); return }
+      } catch { /* proceed as owner */ }
+
+      setAuthReady(true)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
