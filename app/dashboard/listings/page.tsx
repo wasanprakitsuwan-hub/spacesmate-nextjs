@@ -12,6 +12,43 @@ interface RoomTypeRow {
   price_to: string
 }
 
+// Apartment — one row per unit type
+interface ApartmentUnitRow {
+  id: string
+  room_type: string
+  size_sqm: string
+  price_1mo: string
+  available_3mo: boolean
+  price_3mo: string
+  available_6mo: boolean
+  price_6mo: string
+}
+
+// Condo / House — single-unit rental detail
+interface CondoRentalDetail {
+  unit_number: string
+  floor: string
+  facing: string
+  size_sqm: string
+  property_name: string
+  price_12mo: string
+  price_6mo: string
+  price_3mo: string
+  price_1mo: string
+}
+
+// Apartment — charges & deposit detail
+type RateType = 'fixed' | 'min_rate' | 'ask'
+interface RentalCharges {
+  water_type: RateType
+  water_fixed: string
+  electricity_type: RateType
+  electricity_fixed: string
+  security_deposit: string
+  advance_deposit: string
+  other_charges: string[]
+}
+
 interface DbListing {
   id: string
   slug: string
@@ -75,7 +112,10 @@ interface ListingFormState {
   package_type: string
   price_from: string
   price_to: string
-  room_types: RoomTypeRow[]
+  room_types: RoomTypeRow[]         // office / coworking only
+  apartment_units: ApartmentUnitRow[]
+  condo_rental: CondoRentalDetail
+  rental_charges: RentalCharges
   bedrooms: string
   bathrooms: string
   floor: string
@@ -110,11 +150,38 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   Apartment:  { bg: '#e8f5f0', color: '#048c73' },
   'Co-Working': { bg: '#fee2e2', color: '#b91c1c' },
 }
+// Amenity lists — apartment & condo use split sections, others use AMENITY_OPTIONS
+const AMENITY_BUILDING = [
+  'ที่จอดรถ', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)', 'กล้องวงจรปิด (CCTV)',
+  'ลิฟท์', 'สวนสาธารณะ', 'สนามบาสเกตบอล', 'ห้องเกม', 'ตู้หยอดเหรียญ',
+  'ห้องซักรีด', 'รปภ 24 ชม', 'ระบบ Keycard',
+]
+const AMENITY_ROOM = [
+  'เฟอร์นิเจอร์พร้อมอยู่', 'เฟอร์นิเจอร์บางส่วน', 'แอร์', 'โทรทัศน์',
+  'ตู้เย็น', 'โซฟา', 'โต๊ะกินข้าว', 'ไมโครเวฟ', 'เตาแม่เหล็กไฟฟ้า',
+]
 const AMENITY_OPTIONS = [
   'WiFi', 'แอร์', 'ที่จอดรถ', 'ลิฟท์', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)',
   'รปภ 24 ชม', 'กล้องวงจรปิด (CCTV)', 'เฟอร์นิเจอร์พร้อมอยู่', 'ห้องครัว',
   'เครื่องซักผ้า', 'ตู้เย็น', 'ไมโครเวฟ', 'โทรทัศน์', 'ระเบียง',
   'ร้านสะดวกซื้อ', 'ร้านอาหาร', 'ร้านซักรีด', 'สวนสาธารณะ',
+]
+const FACING_OPTIONS = [
+  { value: 'N',  label: 'ทิศเหนือ (N)' },
+  { value: 'S',  label: 'ทิศใต้ (S)' },
+  { value: 'E',  label: 'ทิศตะวันออก (E)' },
+  { value: 'W',  label: 'ทิศตะวันตก (W)' },
+  { value: 'NE', label: 'ทิศตะวันออกเฉียงเหนือ (NE)' },
+  { value: 'NW', label: 'ทิศตะวันตกเฉียงเหนือ (NW)' },
+  { value: 'SE', label: 'ทิศตะวันออกเฉียงใต้ (SE)' },
+  { value: 'SW', label: 'ทิศตะวันตกเฉียงใต้ (SW)' },
+]
+const OTHER_CHARGES_OPTIONS = [
+  { value: 'parking',   label: 'ค่าจอดรถ' },
+  { value: 'internet',  label: 'ค่าอินเทอร์เน็ต' },
+  { value: 'fridge',    label: 'ค่าเช่าตู้เย็น' },
+  { value: 'tv',        label: 'ค่าเช่าโทรทัศน์' },
+  { value: 'microwave', label: 'ค่าเช่าไมโครเวฟ' },
 ]
 const RENTAL_TERM_OPTIONS = [
   { value: 'daily',     label: 'รายวัน' },
@@ -162,11 +229,25 @@ function computeExpiry(packageId: string): string | null {
   return d.toISOString()
 }
 
+const BLANK_CONDO_RENTAL: CondoRentalDetail = {
+  unit_number: '', floor: '', facing: '', size_sqm: '',
+  property_name: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
+}
+const BLANK_CHARGES: RentalCharges = {
+  water_type: 'ask', water_fixed: '',
+  electricity_type: 'ask', electricity_fixed: '',
+  security_deposit: '2', advance_deposit: '1',
+  other_charges: [],
+}
+
 const BLANK_FORM: ListingFormState = {
   title_th: '', title_en: '', slug: '',
   property_type: 'condo', rental_term: '1_month', package_type: 'admin',
   price_from: '', price_to: '',
   room_types: [],
+  apartment_units: [],
+  condo_rental: { ...BLANK_CONDO_RENTAL },
+  rental_charges: { ...BLANK_CHARGES },
   bedrooms: '1', bathrooms: '1', floor: '', area_sqm: '',
   address_th: '', district: '', sub_district: '',
   province: 'กรุงเทพมหานคร', postcode: '',
@@ -273,6 +354,89 @@ function RoomTypePricingGrid({ rows, onChange, termLabel, isDaily, roomTypeOptio
       )}
       <button type="button" onClick={addRow} style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
         + เพิ่มประเภท
+      </button>
+    </div>
+  )
+}
+
+// ── Apartment Unit Grid ───────────────────────────────────────────────────────
+// Multi-row table: unit type | size (sqm) | price/month | short-term availability
+function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
+  rows: ApartmentUnitRow[]
+  onChange: (rows: ApartmentUnitRow[]) => void
+  roomTypeOptions: string[]
+}) {
+  function addRow() {
+    onChange([...rows, {
+      id: `au-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio',
+      size_sqm: '', price_1mo: '',
+      available_3mo: false, price_3mo: '',
+      available_6mo: false, price_6mo: '',
+    }])
+  }
+  function removeRow(id: string) { onChange(rows.filter(r => r.id !== id)) }
+  function upd(id: string, field: keyof ApartmentUnitRow, val: any) {
+    onChange(rows.map(r => r.id === id ? { ...r, [field]: val } : r))
+  }
+
+  return (
+    <div>
+      {rows.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          {/* Column headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 0.85fr 1fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
+            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'ราคา/เดือน', ''].map(h => (
+              <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
+            ))}
+          </div>
+          {rows.map(row => (
+            <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+              {/* Main row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 0.85fr 1fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+                <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
+                  {roomTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <input type="number" value={row.size_sqm} onChange={e => upd(row.id, 'size_sqm', e.target.value)} placeholder="28" style={{ ...SINP, padding: '7px 10px' }} />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
+                  <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
+                </div>
+                <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+              </div>
+              {/* Short-term availability */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
+                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>ระยะสั้น:</span>
+                {/* 3 months */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={row.available_3mo} onChange={e => upd(row.id, 'available_3mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
+                  <span style={{ fontSize: 12, color: '#334155' }}>3 เดือน</span>
+                </label>
+                {row.available_3mo && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>฿</span>
+                    <input type="number" value={row.price_3mo} onChange={e => upd(row.id, 'price_3mo', e.target.value)} placeholder="7,500" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>/เดือน</span>
+                  </div>
+                )}
+                {/* 6 months */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: row.available_3mo ? 4 : 0 }}>
+                  <input type="checkbox" checked={row.available_6mo} onChange={e => upd(row.id, 'available_6mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
+                  <span style={{ fontSize: 12, color: '#334155' }}>6 เดือน</span>
+                </label>
+                {row.available_6mo && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>฿</span>
+                    <input type="number" value={row.price_6mo} onChange={e => upd(row.id, 'price_6mo', e.target.value)} placeholder="7,200" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>/เดือน</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={addRow} style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+        + เพิ่มประเภทห้อง
       </button>
     </div>
   )
@@ -731,6 +895,186 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
   )
 }
 
+// ── Condo / House Rental Detail ───────────────────────────────────────────────
+function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
+  detail: CondoRentalDetail
+  propertyType: string
+  onChange: (d: CondoRentalDetail) => void
+}) {
+  function u(k: keyof CondoRentalDetail, v: string) { onChange({ ...detail, [k]: v }) }
+  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const isHouse = propertyType === 'house'
+
+  return (
+    <div>
+      <div style={{ ...g2, marginBottom: 12 }}>
+        <div>
+          <label style={SLBL}>เลขห้อง / Unit No.</label>
+          <input value={detail.unit_number} onChange={e => u('unit_number', e.target.value)} placeholder={isHouse ? 'เช่น 88/10' : '101'} style={SINP} />
+        </div>
+        <div>
+          <label style={SLBL}>ชั้นที่</label>
+          <input type="number" value={detail.floor} onChange={e => u('floor', e.target.value)} placeholder="5" style={SINP} />
+        </div>
+      </div>
+      <div style={{ ...g2, marginBottom: 12 }}>
+        <div>
+          <label style={SLBL}>ทิศทางห้อง</label>
+          <select value={detail.facing} onChange={e => u('facing', e.target.value)} style={{ ...SINP, cursor: 'pointer' }}>
+            <option value="">-- เลือกทิศ --</option>
+            {FACING_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={SLBL}>ขนาดห้อง (ตร.ม.) *</label>
+          <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder="35" style={SINP} />
+        </div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={SLBL}>{isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}</label>
+        <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
+          placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'} style={SINP} />
+      </div>
+      {/* Price grid */}
+      <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px' }}>💰 ราคาเช่าตามระยะสัญญา</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+          {([
+            { key: 'price_12mo', label: '12 เดือน', ph: '15,000' },
+            { key: 'price_6mo',  label: '6 เดือน',  ph: '16,000' },
+            { key: 'price_3mo',  label: '3 เดือน',  ph: '17,000' },
+            { key: 'price_1mo',  label: '1 เดือน',  ph: '18,000' },
+          ] as const).map(({ key, label, ph }) => (
+            <div key={key}>
+              <label style={{ ...SLBL, fontSize: 11.5 }}>{label}</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
+                <input type="number" value={detail[key]} onChange={e => u(key, e.target.value)} placeholder={ph}
+                  style={{ ...SINP, padding: '7px 8px 7px 20px', fontSize: 13 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>ราคาที่แสดงในหน้าค้นหาจะใช้ราคา 12 เดือน (ต่ำสุด)</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Rental Charges Section (Apartment only) ───────────────────────────────────
+function RentalChargesSection({ charges, onChange }: {
+  charges: RentalCharges
+  onChange: (c: RentalCharges) => void
+}) {
+  function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
+  function toggleOther(val: string) {
+    const arr = charges.other_charges
+    onChange({ ...charges, other_charges: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] })
+  }
+  const rateOpts: { value: RateType; label: string }[] = [
+    { value: 'fixed',    label: 'ราคาคงที่ (บาท/หน่วย)' },
+    { value: 'min_rate', label: 'ราคาขั้นต่ำของการไฟฟ้า/ประปา' },
+    { value: 'ask',      label: 'สอบถามเจ้าของ' },
+  ]
+
+  function RateRow({ label, type, fixed, onType, onFixed }: {
+    label: string; type: RateType; fixed: string
+    onType: (t: RateType) => void; onFixed: (v: string) => void
+  }) {
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <label style={SLBL}>{label}</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: type === 'fixed' ? 8 : 0 }}>
+          {rateOpts.map(o => (
+            <button key={o.value} type="button" onClick={() => onType(o.value)}
+              style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                border: `1.5px solid ${type === o.value ? '#048c73' : '#eef0ef'}`,
+                background: type === o.value ? '#eaf6f1' : '#fff',
+                color: type === o.value ? '#02402e' : '#64748b',
+                fontWeight: type === o.value ? 600 : 400 }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {type === 'fixed' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="number" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="6.50"
+              style={{ ...SINP, width: 130 }} />
+            <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท / หน่วย</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <RateRow label="ค่าน้ำประปา (ต่อหน่วย)"
+        type={charges.water_type} fixed={charges.water_fixed}
+        onType={v => u('water_type', v)} onFixed={v => u('water_fixed', v)} />
+      <RateRow label="ค่าไฟฟ้า (ต่อหน่วย)"
+        type={charges.electricity_type} fixed={charges.electricity_fixed}
+        onType={v => u('electricity_type', v)} onFixed={v => u('electricity_fixed', v)} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div>
+          <label style={SLBL}>เงินมัดจำ (เดือน)</label>
+          <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
+        </div>
+        <div>
+          <label style={SLBL}>เงินล่วงหน้า (เดือน)</label>
+          <input type="number" value={charges.advance_deposit} onChange={e => u('advance_deposit', e.target.value)} placeholder="1" style={SINP} />
+        </div>
+      </div>
+      <div>
+        <label style={SLBL}>ค่าใช้จ่ายอื่น ๆ (เลือกที่เรียกเก็บ)</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {OTHER_CHARGES_OPTIONS.map(o => {
+            const on = charges.other_charges.includes(o.value)
+            return (
+              <button key={o.value} type="button" onClick={() => toggleOther(o.value)}
+                style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer',
+                  border: on ? 'none' : '1px solid #eef0ef',
+                  background: on ? '#02402e' : '#f8fafc',
+                  color: on ? '#fff' : '#64748b',
+                  fontWeight: on ? 600 : 400 }}>
+                {on ? '✓ ' : ''}{o.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Submit data serializer (shared between Create and Edit) ───────────────────
+function prepareSubmitData(form: ListingFormState) {
+  let price_from = parseInt(form.price_from) || 0
+  let price_to: number | null = form.price_to ? parseInt(form.price_to) : null
+  let room_types: any[] = form.room_types
+  let floor: number | null = form.floor ? parseInt(form.floor) : null
+  let area_sqm: number | null = form.area_sqm ? parseFloat(form.area_sqm) : null
+
+  if (form.property_type === 'apartment') {
+    const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
+    price_from = prices.length > 0 ? Math.min(...prices) : 0
+    price_to   = prices.length > 1 ? Math.max(...prices) : (prices[0] ?? null)
+    room_types = [
+      { _type: 'charges', ...form.rental_charges },
+      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
+    ]
+  } else if (['condo', 'house'].includes(form.property_type)) {
+    const r = form.condo_rental
+    price_from = parseFloat(r.price_12mo || r.price_1mo || '0') || 0
+    price_to   = r.price_1mo ? parseFloat(r.price_1mo) : null
+    room_types = [{ _type: 'rental_detail', ...r }]
+    floor      = r.floor ? parseInt(r.floor) : null
+    area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
+  }
+
+  return { price_from, price_to, room_types, floor, area_sqm }
+}
+
 // ── Form Fields (all 9 sections) ──────────────────────────────────────────────
 function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, onRoomTypesChange, isAdmin = true }: {
   form: ListingFormState
@@ -740,20 +1084,47 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
   onRoomTypesChange: (rows: RoomTypeRow[]) => void
   isAdmin?: boolean
 }) {
-  const g2:  React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
-  const termLabel   = RENTAL_TERM_LABEL[form.rental_term] ?? '/เดือน'
-  const isDaily     = form.rental_term === 'daily'
-  const roomOpts    = getRoomTypeOptions(form.property_type)
+  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const termLabel = RENTAL_TERM_LABEL[form.rental_term] ?? '/เดือน'
+  const isDaily   = form.rental_term === 'daily'
+  const roomOpts  = getRoomTypeOptions(form.property_type)
 
-  // Conditional size fields per property type
-  const isApartment  = form.property_type === 'apartment'
-  const showBedsBaths = ['condo', 'house'].includes(form.property_type)
-  const showFloor     = !isApartment  // apartment = building-level, floor not meaningful
+  const isApartment     = form.property_type === 'apartment'
+  const isCondoOrHouse  = ['condo', 'house'].includes(form.property_type)
+  const isOfficeOrCo    = ['office', 'coworking'].includes(form.property_type)
+  const showBedsBaths   = isCondoOrHouse
+  // Apartment: area average only | Condo/House: size in rental detail | Office/Coworking: area + floor
+  const showAreaSqm     = isApartment || isOfficeOrCo
+  const showFloorSect3  = isOfficeOrCo
 
-  // Derive price_from from minimum room type price when table has values
+  // Derive price_from from minimum room type price (office/coworking)
   const derivedPriceFrom = form.room_types.length > 0
     ? Math.min(...form.room_types.map(r => parseFloat(r.price_from) || 0).filter(n => n > 0))
     : null
+
+  // Package UI (shared across all property types)
+  const PackageSelector = (
+    isAdmin ? (
+      <div style={{ marginBottom: 16 }}>
+        <label style={SLBL}>แพ็กเกจประกาศ (Admin)</label>
+        <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={SINP}>
+          {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
+          {form.package_type === 'admin'
+            ? 'ไม่มีวันหมดอายุ — อยู่บนเว็บจนกว่าจะลบ'
+            : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
+        </p>
+      </div>
+    ) : (
+      <div style={{ marginBottom: 16, padding: '10px 14px', background: '#f0fbf8', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#048c73' }}>แพ็กเกจ:</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#02402e' }}>
+          {ADMIN_PACKAGES.find(p => p.id === form.package_type)?.label ?? form.package_type}
+        </span>
+      </div>
+    )
+  )
 
   return (
     <>
@@ -776,7 +1147,10 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
               { value: 'coworking', label: '💼 Co-Working' },
             ].map(o => (
               <button key={o.value} type="button" onClick={() => onChange('property_type', o.value)}
-                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: `1.5px solid ${form.property_type === o.value ? '#02402e' : '#eef0ef'}`, background: form.property_type === o.value ? '#02402e' : '#fff', color: form.property_type === o.value ? '#fff' : '#64748b', transition: 'all .15s' }}>
+                style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                  border: `1.5px solid ${form.property_type === o.value ? '#02402e' : '#eef0ef'}`,
+                  background: form.property_type === o.value ? '#02402e' : '#fff',
+                  color: form.property_type === o.value ? '#fff' : '#64748b', transition: 'all .15s' }}>
                 {o.label}
               </button>
             ))}
@@ -795,87 +1169,98 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          2 · แพ็กเกจ & ราคา  (combined: package + rental term + price table)
+          2 · แพ็กเกจ & ราคา  — adapts per property type
       ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="2 · แพ็กเกจ & ราคา" />
 
-        {/* Package selector — admin only */}
-        {isAdmin ? (
-          <div style={{ marginBottom: 16 }}>
-            <label style={SLBL}>แพ็กเกจประกาศ (Admin)</label>
-            <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={SINP}>
-              {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
-            <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
-              {form.package_type === 'admin'
-                ? 'ไม่มีวันหมดอายุ — อยู่บนเว็บจนกว่าจะลบ'
-                : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
+        {/* ── APARTMENT ── whole-building multi-unit table ── */}
+        {isApartment && (
+          <>
+            <SectionHead text="2 · แพ็กเกจ" />
+            {PackageSelector}
+            <SectionHead text="2B · ประเภทและราคาห้อง" />
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
+              เพิ่มแต่ละประเภทห้องพร้อมขนาดและราคา (ราคาในหน้าค้นหาจะดึงจาก ต่ำสุด–สูงสุด ของตาราง)
             </p>
-          </div>
-        ) : (
-          <div style={{ marginBottom: 16, padding: '10px 14px', background: '#f0fbf8', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#048c73' }}>แพ็กเกจ:</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#02402e' }}>
-              {ADMIN_PACKAGES.find(p => p.id === form.package_type)?.label ?? form.package_type}
-            </span>
-          </div>
+            <ApartmentUnitGrid
+              rows={form.apartment_units}
+              onChange={rows => onChange('apartment_units', rows)}
+              roomTypeOptions={roomOpts}
+            />
+          </>
         )}
 
-        {/* Rental term tabs */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={SLBL}>รูปแบบการเช่า *</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {RENTAL_TERM_OPTIONS.map(o => (
-              <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
-                style={{ padding: '7px 15px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`, background: form.rental_term === o.value ? '#eaf6f1' : '#fff', color: form.rental_term === o.value ? '#02402e' : '#64748b', transition: 'all .15s' }}>
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* ── CONDO / HOUSE ── single-unit rental detail ── */}
+        {isCondoOrHouse && (
+          <>
+            <SectionHead text="2 · แพ็กเกจ" />
+            {PackageSelector}
+            <SectionHead text="2B · รายละเอียดการเช่า" />
+            <CondoHouseRentalDetail
+              detail={form.condo_rental}
+              propertyType={form.property_type}
+              onChange={d => onChange('condo_rental', d)}
+            />
+          </>
+        )}
 
-        {/* Price table — adapts to rental term */}
-        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px', marginBottom: 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>
-            💰 ตารางราคา{isDaily ? ' รายวัน' : termLabel}
-          </p>
-          <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '0 0 12px' }}>
-            {isDaily
-              ? 'เพิ่มประเภทห้องและราคาต่อวัน'
-              : 'เพิ่มประเภทห้องและช่วงราคาสำหรับแต่ละขนาด'}
-          </p>
-          <RoomTypePricingGrid
-            rows={form.room_types}
-            onChange={onRoomTypesChange}
-            termLabel={termLabel}
-            isDaily={isDaily}
-            roomTypeOptions={roomOpts}
-          />
-
-          {/* Starting price (manual or derived) */}
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #eef0ef' }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>
-              ราคาเริ่มต้น (แสดงในหน้าค้นหา)
-              {derivedPriceFrom && derivedPriceFrom > 0 && (
-                <button type="button" onClick={() => onChange('price_from', String(derivedPriceFrom))}
-                  style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, border: '1px solid #048c73', background: '#f0fbf8', color: '#048c73', cursor: 'pointer', fontWeight: 500 }}>
-                  ดึงจากตาราง ฿{derivedPriceFrom.toLocaleString()}
-                </button>
-              )}
-            </p>
-            <div style={g2}>
-              <div>
-                <label style={{ ...SLBL, fontSize: 11.5 }}>ต่ำสุด (บาท{termLabel}) *</label>
-                <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={SINP} />
-              </div>
-              <div>
-                <label style={{ ...SLBL, fontSize: 11.5 }}>สูงสุด (ถ้ามี)</label>
-                <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="22000" style={SINP} />
+        {/* ── OFFICE / COWORKING ── existing multi-unit pricing grid ── */}
+        {isOfficeOrCo && (
+          <>
+            <SectionHead text="2 · แพ็กเกจ & ราคา" />
+            {PackageSelector}
+            <div style={{ marginBottom: 16 }}>
+              <label style={SLBL}>รูปแบบการเช่า *</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {RENTAL_TERM_OPTIONS.map(o => (
+                  <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
+                    style={{ padding: '7px 15px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                      border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`,
+                      background: form.rental_term === o.value ? '#eaf6f1' : '#fff',
+                      color: form.rental_term === o.value ? '#02402e' : '#64748b', transition: 'all .15s' }}>
+                    {o.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>
+                💰 ตารางราคา{isDaily ? ' รายวัน' : termLabel}
+              </p>
+              <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '0 0 12px' }}>
+                {isDaily ? 'เพิ่มประเภทพื้นที่และราคาต่อวัน' : 'เพิ่มประเภทพื้นที่และช่วงราคา'}
+              </p>
+              <RoomTypePricingGrid
+                rows={form.room_types}
+                onChange={onRoomTypesChange}
+                termLabel={termLabel}
+                isDaily={isDaily}
+                roomTypeOptions={roomOpts}
+              />
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #eef0ef' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>
+                  ราคาเริ่มต้น (แสดงในหน้าค้นหา)
+                  {derivedPriceFrom && derivedPriceFrom > 0 && (
+                    <button type="button" onClick={() => onChange('price_from', String(derivedPriceFrom))}
+                      style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, border: '1px solid #048c73', background: '#f0fbf8', color: '#048c73', cursor: 'pointer', fontWeight: 500 }}>
+                      ดึงจากตาราง ฿{derivedPriceFrom.toLocaleString()}
+                    </button>
+                  )}
+                </p>
+                <div style={g2}>
+                  <div>
+                    <label style={{ ...SLBL, fontSize: 11.5 }}>ต่ำสุด (บาท{termLabel}) *</label>
+                    <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={SINP} />
+                  </div>
+                  <div>
+                    <label style={{ ...SLBL, fontSize: 11.5 }}>สูงสุด (ถ้ามี)</label>
+                    <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="22000" style={SINP} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -884,25 +1269,26 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="3 · ขนาดและลักษณะ" />
 
-        {/* apartment → area only */}
         {isApartment && (
           <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
-            💡 อพาร์ทเม้นท์ — ระบุขนาดห้องทั่วไป ส่วนจำนวนห้องนอน/น้ำให้ระบุในตารางประเภทห้องข้างบน
+            💡 ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
           </div>
         )}
 
-        <div style={{ ...g2, marginBottom: showBedsBaths ? 12 : 0 }}>
-          <div>
-            <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
-            <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder={isApartment ? '28 (ขนาดเฉลี่ย)' : '28'} style={SINP} />
-          </div>
-          {showFloor && (
+        {showAreaSqm && (
+          <div style={{ ...g2, marginBottom: showBedsBaths || showFloorSect3 ? 12 : 0 }}>
             <div>
-              <label style={SLBL}>ชั้นที่ตั้ง</label>
-              <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={SINP} />
+              <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
+              <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder={isApartment ? '28 (ขนาดเฉลี่ย)' : '28'} style={SINP} />
             </div>
-          )}
-        </div>
+            {showFloorSect3 && (
+              <div>
+                <label style={SLBL}>ชั้นที่ตั้ง</label>
+                <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={SINP} />
+              </div>
+            )}
+          </div>
+        )}
 
         {showBedsBaths && (
           <div style={g2}>
@@ -921,6 +1307,20 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           </div>
         )}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          3B · รายละเอียดการเช่า  (Apartment only)
+      ════════════════════════════════════════════════════════════════════ */}
+      {isApartment && (
+        <div style={{ marginBottom: 24 }}>
+          <SectionHead text="3B · รายละเอียดการเช่า" />
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>ค่าสาธารณูปโภค เงินมัดจำ และค่าใช้จ่ายอื่น ๆ ที่เรียกเก็บ</p>
+          <RentalChargesSection
+            charges={form.rental_charges}
+            onChange={c => onChange('rental_charges', c)}
+          />
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           4 · ที่ตั้งและที่อยู่  (cascading Thai address dropdowns)
@@ -954,21 +1354,61 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          7 · สิ่งอำนวยความสะดวก
+          7 · สิ่งอำนวยความสะดวก  — split for apartment/condo, single for others
       ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {AMENITY_OPTIONS.map(a => {
-            const on = form.amenities.includes(a)
-            return (
-              <button key={a} type="button" onClick={() => onAmenityToggle(a)}
-                style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s', border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc', color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                {on ? '✓ ' : ''}{a}
-              </button>
-            )
-          })}
-        </div>
+        {(isApartment || isCondoOrHouse) ? (
+          <>
+            <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
+            {/* ── ภายในห้อง ── */}
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>🛋 ภายในห้อง</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+              {AMENITY_ROOM.map(a => {
+                const on = form.amenities.includes(a)
+                return (
+                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
+                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
+                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
+                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
+                    {on ? '✓ ' : ''}{a}
+                  </button>
+                )
+              })}
+            </div>
+            {/* ── ภายในอาคาร ── */}
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>🏢 ภายในอาคาร</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {AMENITY_BUILDING.map(a => {
+                const on = form.amenities.includes(a)
+                return (
+                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
+                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
+                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#048c73' : '#f8fafc',
+                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
+                    {on ? '✓ ' : ''}{a}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {AMENITY_OPTIONS.map(a => {
+                const on = form.amenities.includes(a)
+                return (
+                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
+                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
+                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
+                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
+                    {on ? '✓ ' : ''}{a}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -1014,17 +1454,35 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.title_th || !form.price_from) { setError('กรุณากรอกชื่อประกาศและราคาเริ่มต้น'); return }
+    // Validate by property type
+    let validErr = ''
+    if (!form.title_th.trim()) {
+      validErr = 'กรุณากรอกชื่อประกาศ'
+    } else if (form.property_type === 'apartment') {
+      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภทห้อง'
+    } else if (['condo', 'house'].includes(form.property_type)) {
+      if (!form.condo_rental.price_1mo && !form.condo_rental.price_12mo) validErr = 'กรุณากรอกราคาเช่า'
+    } else {
+      if (!form.price_from) validErr = 'กรุณากรอกราคาเริ่มต้น'
+    }
+    if (validErr) { setError(validErr); return }
+
     setSaving(true); setError('')
     try {
       const supabase = createBrowserClient()
       const { data: { session } } = await supabase.auth.getSession()
+      const extra = prepareSubmitData(form)
       const res = await fetch('/api/dashboard/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          slug: '',  // always empty → server auto-generates from title_th
+          ...extra,
+          slug: '',  // server auto-generates from title_th
+          bedrooms:  parseInt(form.bedrooms),
+          bathrooms: parseInt(form.bathrooms),
+          lat: form.lat ? parseFloat(form.lat) : null,
+          lng: form.lng ? parseFloat(form.lng) : null,
           userId:    session?.user.id,
           userEmail: session?.user.email,
           expires_at: computeExpiry(form.package_type),
@@ -1054,7 +1512,65 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
 function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose: () => void; onSaved: () => void }) {
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [form,   setForm]   = useState<ListingFormState>({
+
+  // Parse the new extended DB format back into form state
+  const rawRts: any[] = listing.room_types ?? []
+
+  // Apartment unit rows
+  const apartmentUnits: ApartmentUnitRow[] = listing.property_type === 'apartment'
+    ? rawRts
+        .filter(r => r._type === 'apt_unit' || (!r._type && r.room_type))
+        .map((r, i) => ({
+          id: `au-${i}`,
+          room_type: r.room_type || 'Studio',
+          size_sqm:  String(r.size_sqm ?? ''),
+          price_1mo: String(r.price_1mo ?? r.price_from ?? ''),
+          available_3mo: r.available_3mo ?? false,
+          price_3mo: String(r.price_3mo ?? ''),
+          available_6mo: r.available_6mo ?? false,
+          price_6mo: String(r.price_6mo ?? ''),
+        }))
+    : []
+
+  // Condo/House rental detail
+  const condoRaw = rawRts.find(r => r._type === 'rental_detail')
+  const condoRental: CondoRentalDetail = condoRaw ? {
+    unit_number:   condoRaw.unit_number  ?? '',
+    floor:         String(condoRaw.floor ?? listing.floor ?? ''),
+    facing:        condoRaw.facing       ?? '',
+    size_sqm:      String(condoRaw.size_sqm ?? listing.area_sqm ?? ''),
+    property_name: condoRaw.property_name ?? '',
+    price_12mo:    String(condoRaw.price_12mo ?? ''),
+    price_6mo:     String(condoRaw.price_6mo  ?? ''),
+    price_3mo:     String(condoRaw.price_3mo  ?? ''),
+    price_1mo:     String(condoRaw.price_1mo  ?? ''),
+  } : { ...BLANK_CONDO_RENTAL }
+
+  // Apartment rental charges
+  const chargesRaw = rawRts.find(r => r._type === 'charges')
+  const rentalCharges: RentalCharges = chargesRaw ? {
+    water_type:       chargesRaw.water_type       ?? 'ask',
+    water_fixed:      String(chargesRaw.water_fixed ?? ''),
+    electricity_type: chargesRaw.electricity_type ?? 'ask',
+    electricity_fixed: String(chargesRaw.electricity_fixed ?? ''),
+    security_deposit: String(chargesRaw.security_deposit ?? '2'),
+    advance_deposit:  String(chargesRaw.advance_deposit ?? '1'),
+    other_charges:    chargesRaw.other_charges ?? [],
+  } : { ...BLANK_CHARGES }
+
+  // Office/Coworking: classic room type rows
+  const classicRoomTypes: RoomTypeRow[] = ['office', 'coworking'].includes(listing.property_type)
+    ? rawRts
+        .filter(r => !r._type)
+        .map((r, i) => ({
+          id: `rt-${i}`,
+          room_type:  r.room_type  || 'Studio',
+          price_from: String(r.price_from || ''),
+          price_to:   String(r.price_to   || ''),
+        }))
+    : []
+
+  const [form, setForm] = useState<ListingFormState>({
     title_th:      listing.title_th,
     title_en:      listing.title_en ?? '',
     slug:          listing.slug,
@@ -1063,10 +1579,10 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     package_type:  listing.package_type ?? 'admin',
     price_from:    String(listing.price_from),
     price_to:      listing.price_to ? String(listing.price_to) : '',
-    room_types:    (listing.room_types ?? []).map((r: any, i: number) => ({
-      id: `rt-${i}`, room_type: r.room_type || 'Studio',
-      price_from: String(r.price_from || ''), price_to: String(r.price_to || ''),
-    })),
+    room_types:    classicRoomTypes,
+    apartment_units: apartmentUnits,
+    condo_rental:    condoRental,
+    rental_charges:  rentalCharges,
     bedrooms:      String(listing.bedrooms),
     bathrooms:     String(listing.bathrooms),
     floor:         listing.floor ? String(listing.floor) : '',
@@ -1091,29 +1607,33 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.title_th || !form.price_from) { setError('กรุณากรอกชื่อประกาศและราคา'); return }
+    let validErr = ''
+    if (!form.title_th.trim()) {
+      validErr = 'กรุณากรอกชื่อประกาศ'
+    } else if (form.property_type === 'apartment') {
+      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภทห้อง'
+    } else if (['condo', 'house'].includes(form.property_type)) {
+      if (!form.condo_rental.price_1mo && !form.condo_rental.price_12mo) validErr = 'กรุณากรอกราคาเช่า'
+    } else {
+      if (!form.price_from) validErr = 'กรุณากรอกราคาเริ่มต้น'
+    }
+    if (validErr) { setError(validErr); return }
+
     setSaving(true); setError('')
     try {
+      const extra = prepareSubmitData(form)
       const res = await fetch('/api/dashboard/listings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: listing.id,
           ...form,
-          price_from:  parseInt(form.price_from),
-          price_to:    form.price_to ? parseInt(form.price_to) : null,
-          bedrooms:    parseInt(form.bedrooms),
-          bathrooms:   parseInt(form.bathrooms),
-          floor:       form.floor    ? parseInt(form.floor)    : null,
-          area_sqm:    form.area_sqm ? parseFloat(form.area_sqm) : null,
-          lat:         form.lat ? parseFloat(form.lat) : null,
-          lng:         form.lng ? parseFloat(form.lng) : null,
-          expires_at:  computeExpiry(form.package_type),
-          room_types:  form.room_types.map(r => ({
-            room_type:  r.room_type,
-            price_from: parseInt(r.price_from) || 0,
-            price_to:   r.price_to ? parseInt(r.price_to) : null,
-          })),
+          ...extra,
+          bedrooms:  parseInt(form.bedrooms),
+          bathrooms: parseInt(form.bathrooms),
+          lat: form.lat ? parseFloat(form.lat) : null,
+          lng: form.lng ? parseFloat(form.lng) : null,
+          expires_at: computeExpiry(form.package_type),
         }),
       })
       const d = await res.json()
