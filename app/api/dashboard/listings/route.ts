@@ -62,14 +62,8 @@ export async function POST(req: NextRequest) {
         .slice(0, 80) +
       '-' + Date.now().toString(36)
 
-    // Normalise room_types payload
-    const roomTypes = Array.isArray(body.room_types)
-      ? body.room_types.map((r: any) => ({
-          room_type:  r.room_type  || 'Studio',
-          price_from: parseInt(r.price_from) || 0,
-          price_to:   r.price_to ? parseInt(r.price_to) : null,
-        }))
-      : []
+    // Pass room_types as-is (JSONB — contains _type markers for apt_unit, charges, rental_detail)
+    const roomTypes = Array.isArray(body.room_types) ? body.room_types : []
 
     const insertPayload: Record<string, unknown> = {
       slug:           rawSlug,
@@ -166,14 +160,7 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    // Normalise room_types if provided
-    if (Array.isArray(update.room_types)) {
-      update.room_types = (update.room_types as any[]).map((r: any) => ({
-        room_type:  r.room_type  || 'Studio',
-        price_from: parseInt(r.price_from) || 0,
-        price_to:   r.price_to ? parseInt(r.price_to) : null,
-      }))
-    }
+    // room_types passed as-is (JSONB with _type markers) — no normalisation needed
 
     const { data, error } = await supabase
       .from('properties')

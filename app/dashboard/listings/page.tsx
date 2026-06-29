@@ -1459,10 +1459,10 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
 }
 
 // ── Create Drawer ─────────────────────────────────────────────────────────────
-function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void; onCreated: () => void; initialData?: Partial<ListingFormState> }) {
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [form,   setForm]   = useState<ListingFormState>({ ...BLANK_FORM })
+  const [form,   setForm]   = useState<ListingFormState>({ ...BLANK_FORM, ...initialData })
 
   function setF(k: string, v: any) {
     setForm(f => {
@@ -1727,14 +1727,35 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   )
 }
 
+// ── Map static Property → form pre-fill ───────────────────────────────────────
+function staticToFormState(p: import('../../../lib/property-data').Property): Partial<ListingFormState> {
+  const ptMap: Record<string, string> = {
+    'Condo': 'condo', 'Apartment': 'apartment', 'Office': 'office', 'Co-Working': 'coworking',
+  }
+  return {
+    title_th:      p.title,
+    property_type: ptMap[p.propertyType] ?? 'condo',
+    price_from:    String(p.priceMin || ''),
+    bedrooms:      String(p.bedrooms),
+    bathrooms:     String(p.bathrooms),
+    lat:           p.lat,
+    lng:           p.lng,
+    address_th:    p.address,
+    district:      p.neighborhood,
+    amenities:     p.amenities ?? [],
+    images:        p.images?.length ? p.images : (p.image ? [p.image] : []),
+  }
+}
+
 // ── Published Tab ─────────────────────────────────────────────────────────────
 function PublishedTab({ refreshKey }: { refreshKey: number }) {
-  const [dbListings, setDbListings] = useState<DbListing[]>([])
-  const [loadingDb,  setLoadingDb]  = useState(true)
-  const [search,     setSearch]     = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [editTarget, setEditTarget] = useState<DbListing | null>(null)
-  const [deleting,   setDeleting]   = useState<string | null>(null)
+  const [dbListings,       setDbListings]       = useState<DbListing[]>([])
+  const [loadingDb,        setLoadingDb]        = useState(true)
+  const [search,           setSearch]           = useState('')
+  const [typeFilter,       setTypeFilter]       = useState('')
+  const [editTarget,       setEditTarget]       = useState<DbListing | null>(null)
+  const [deleting,         setDeleting]         = useState<string | null>(null)
+  const [createFromStatic, setCreateFromStatic] = useState<Partial<ListingFormState> | null>(null)
 
   const loadDb = useCallback(async () => {
     setLoadingDb(true)
@@ -1765,7 +1786,8 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
 
   return (
     <div>
-      {editTarget && <EditDrawer listing={editTarget} onClose={() => setEditTarget(null)} onSaved={loadDb} />}
+      {editTarget       && <EditDrawer   listing={editTarget}  onClose={() => setEditTarget(null)}       onSaved={loadDb} />}
+      {createFromStatic && <CreateDrawer initialData={createFromStatic} onClose={() => setCreateFromStatic(null)} onCreated={() => { setCreateFromStatic(null); loadDb() }} />}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={() => setTypeFilter('')} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: !typeFilter ? '#02402e' : '#f4f6f5', color: !typeFilter ? '#fff' : '#334155' }}>ทั้งหมด</button>
@@ -1807,7 +1829,10 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 <td style={{ padding: '12px 14px', color: '#94a3b8', fontSize: 12 }}>—</td>
                 <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0f2f1', color: '#64748b', fontWeight: 500 }}>Static</span></td>
                 <td style={{ padding: '12px 14px' }}>
-                  <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                    <button onClick={() => setCreateFromStatic(staticToFormState(p))} title="นำเข้าและแก้ไขเป็น DB listing" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✏️</button>
+                  </div>
                 </td>
               </tr>
             ))}
