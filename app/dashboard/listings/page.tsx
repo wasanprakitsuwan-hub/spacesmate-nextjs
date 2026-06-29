@@ -42,11 +42,14 @@ type RateType = 'fixed' | 'min_rate' | 'ask'
 interface RentalCharges {
   water_type: RateType
   water_fixed: string
+  water_min_rate: string        // minimum bill amount (for min_rate mode)
   electricity_type: RateType
   electricity_fixed: string
+  electricity_min_rate: string  // minimum bill amount (for min_rate mode)
   security_deposit: string
   advance_deposit: string
   other_charges: string[]
+  other_charges_fees: Record<string, string>  // monthly fee per charge key
 }
 
 interface DbListing {
@@ -234,10 +237,10 @@ const BLANK_CONDO_RENTAL: CondoRentalDetail = {
   property_name: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
 }
 const BLANK_CHARGES: RentalCharges = {
-  water_type: 'ask', water_fixed: '',
-  electricity_type: 'ask', electricity_fixed: '',
+  water_type: 'ask', water_fixed: '', water_min_rate: '',
+  electricity_type: 'ask', electricity_fixed: '', electricity_min_rate: '',
   security_deposit: '2', advance_deposit: '1',
-  other_charges: [],
+  other_charges: [], other_charges_fees: {},
 }
 
 const BLANK_FORM: ListingFormState = {
@@ -909,25 +912,25 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
     <div>
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
-          <label style={SLBL}>เลขห้อง / Unit No.</label>
+          <label style={SLBL}>{isHouse ? 'บ้านเลขที่ / House No.' : 'เลขห้อง / Unit No.'}</label>
           <input value={detail.unit_number} onChange={e => u('unit_number', e.target.value)} placeholder={isHouse ? 'เช่น 88/10' : '101'} style={SINP} />
         </div>
         <div>
-          <label style={SLBL}>ชั้นที่</label>
-          <input type="number" value={detail.floor} onChange={e => u('floor', e.target.value)} placeholder="5" style={SINP} />
+          <label style={SLBL}>{isHouse ? 'จำนวนชั้นในบ้าน' : 'ชั้นที่'}</label>
+          <input type="number" value={detail.floor} onChange={e => u('floor', e.target.value)} placeholder={isHouse ? '2' : '5'} style={SINP} />
         </div>
       </div>
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
-          <label style={SLBL}>ทิศทางห้อง</label>
+          <label style={SLBL}>{isHouse ? 'ทิศทางบ้าน / หน้าบ้านหันไปทาง' : 'ทิศทางห้อง'}</label>
           <select value={detail.facing} onChange={e => u('facing', e.target.value)} style={{ ...SINP, cursor: 'pointer' }}>
             <option value="">-- เลือกทิศ --</option>
             {FACING_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
           </select>
         </div>
         <div>
-          <label style={SLBL}>ขนาดห้อง (ตร.ม.) *</label>
-          <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder="35" style={SINP} />
+          <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) *</label>
+          <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder={isHouse ? '120' : '35'} style={SINP} />
         </div>
       </div>
       <div style={{ marginBottom: 16 }}>
@@ -967,24 +970,34 @@ function RentalChargesSection({ charges, onChange }: {
   onChange: (c: RentalCharges) => void
 }) {
   function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
+
   function toggleOther(val: string) {
     const arr = charges.other_charges
-    onChange({ ...charges, other_charges: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] })
+    const next = arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
+    // Remove fee when deselecting
+    const fees = { ...charges.other_charges_fees }
+    if (arr.includes(val)) delete fees[val]
+    onChange({ ...charges, other_charges: next, other_charges_fees: fees })
   }
+
+  function setOtherFee(key: string, fee: string) {
+    onChange({ ...charges, other_charges_fees: { ...charges.other_charges_fees, [key]: fee } })
+  }
+
   const rateOpts: { value: RateType; label: string }[] = [
     { value: 'fixed',    label: 'ราคาคงที่ (บาท/หน่วย)' },
-    { value: 'min_rate', label: 'ราคาขั้นต่ำของการไฟฟ้า/ประปา' },
+    { value: 'min_rate', label: 'ราคาขั้นต่ำ' },
     { value: 'ask',      label: 'สอบถามเจ้าของ' },
   ]
 
-  function RateRow({ label, type, fixed, onType, onFixed }: {
-    label: string; type: RateType; fixed: string
-    onType: (t: RateType) => void; onFixed: (v: string) => void
+  function RateRow({ label, type, fixed, minRate, onType, onFixed, onMinRate }: {
+    label: string; type: RateType; fixed: string; minRate: string
+    onType: (t: RateType) => void; onFixed: (v: string) => void; onMinRate: (v: string) => void
   }) {
     return (
       <div style={{ marginBottom: 16 }}>
         <label style={SLBL}>{label}</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: type === 'fixed' ? 8 : 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: type !== 'ask' ? 8 : 0 }}>
           {rateOpts.map(o => (
             <button key={o.value} type="button" onClick={() => onType(o.value)}
               style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
@@ -1003,6 +1016,31 @@ function RentalChargesSection({ charges, onChange }: {
             <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท / หน่วย</span>
           </div>
         )}
+        {type === 'min_rate' && (
+          <div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div>
+                  <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาต่อหน่วย (บาท)</label>
+                  <input type="number" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="3.50"
+                    style={{ ...SINP, width: 120 }} />
+                </div>
+                <span style={{ fontSize: 18, color: '#c7d2d0', paddingBottom: 4 }}>×</span>
+                <span style={{ fontSize: 12.5, color: '#64748b', paddingBottom: 4 }}>หน่วย</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div>
+                  <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาขั้นต่ำ (บาท/เดือน)</label>
+                  <input type="number" value={minRate} onChange={e => onMinRate(e.target.value)} placeholder="200"
+                    style={{ ...SINP, width: 130 }} />
+                </div>
+              </div>
+            </div>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '5px 0 0' }}>
+              💡 เรียกเก็บ <strong>ราคาที่สูงกว่า</strong> ระหว่าง (ราคา/หน่วย × จำนวนหน่วย) กับราคาขั้นต่ำ
+            </p>
+          </div>
+        )}
       </div>
     )
   }
@@ -1010,11 +1048,11 @@ function RentalChargesSection({ charges, onChange }: {
   return (
     <div>
       <RateRow label="ค่าน้ำประปา (ต่อหน่วย)"
-        type={charges.water_type} fixed={charges.water_fixed}
-        onType={v => u('water_type', v)} onFixed={v => u('water_fixed', v)} />
+        type={charges.water_type} fixed={charges.water_fixed} minRate={charges.water_min_rate}
+        onType={v => u('water_type', v)} onFixed={v => u('water_fixed', v)} onMinRate={v => u('water_min_rate', v)} />
       <RateRow label="ค่าไฟฟ้า (ต่อหน่วย)"
-        type={charges.electricity_type} fixed={charges.electricity_fixed}
-        onType={v => u('electricity_type', v)} onFixed={v => u('electricity_fixed', v)} />
+        type={charges.electricity_type} fixed={charges.electricity_fixed} minRate={charges.electricity_min_rate}
+        onType={v => u('electricity_type', v)} onFixed={v => u('electricity_fixed', v)} onMinRate={v => u('electricity_min_rate', v)} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <label style={SLBL}>เงินมัดจำ (เดือน)</label>
@@ -1027,18 +1065,33 @@ function RentalChargesSection({ charges, onChange }: {
       </div>
       <div>
         <label style={SLBL}>ค่าใช้จ่ายอื่น ๆ (เลือกที่เรียกเก็บ)</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {OTHER_CHARGES_OPTIONS.map(o => {
             const on = charges.other_charges.includes(o.value)
             return (
-              <button key={o.value} type="button" onClick={() => toggleOther(o.value)}
-                style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer',
-                  border: on ? 'none' : '1px solid #eef0ef',
-                  background: on ? '#02402e' : '#f8fafc',
-                  color: on ? '#fff' : '#64748b',
-                  fontWeight: on ? 600 : 400 }}>
-                {on ? '✓ ' : ''}{o.label}
-              </button>
+              <div key={o.value} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <button type="button" onClick={() => toggleOther(o.value)}
+                  style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
+                    border: on ? 'none' : '1px solid #eef0ef',
+                    background: on ? '#02402e' : '#f8fafc',
+                    color: on ? '#fff' : '#64748b',
+                    fontWeight: on ? 600 : 400 }}>
+                  {on ? '✓ ' : ''}{o.label}
+                </button>
+                {on && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12, color: '#64748b' }}>฿</span>
+                    <input
+                      type="number"
+                      value={charges.other_charges_fees[o.value] ?? ''}
+                      onChange={e => setOtherFee(o.value, e.target.value)}
+                      placeholder="500"
+                      style={{ ...SINP, width: 110, padding: '6px 10px', fontSize: 12.5 }}
+                    />
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>บาท/เดือน</span>
+                  </div>
+                )}
+              </div>
             )
           })}
         </div>
@@ -1055,14 +1108,17 @@ function prepareSubmitData(form: ListingFormState) {
   let floor: number | null = form.floor ? parseInt(form.floor) : null
   let area_sqm: number | null = form.area_sqm ? parseFloat(form.area_sqm) : null
 
-  if (form.property_type === 'apartment') {
+  if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
     const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
     price_from = prices.length > 0 ? Math.min(...prices) : 0
     price_to   = prices.length > 1 ? Math.max(...prices) : (prices[0] ?? null)
-    room_types = [
-      { _type: 'charges', ...form.rental_charges },
-      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
-    ]
+    // Apartment: prefix with charges block; Office/Coworking: no charges block
+    room_types = form.property_type === 'apartment'
+      ? [
+          { _type: 'charges', ...form.rental_charges },
+          ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
+        ]
+      : form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u }))
   } else if (['condo', 'house'].includes(form.property_type)) {
     const r = form.condo_rental
     price_from = parseFloat(r.price_12mo || r.price_1mo || '0') || 0
@@ -1204,61 +1260,20 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           </>
         )}
 
-        {/* ── OFFICE / COWORKING ── existing multi-unit pricing grid ── */}
+        {/* ── OFFICE / COWORKING ── same unit table as Apartment ── */}
         {isOfficeOrCo && (
           <>
-            <SectionHead text="2 · แพ็กเกจ & ราคา" />
+            <SectionHead text="2 · แพ็กเกจ" />
             {PackageSelector}
-            <div style={{ marginBottom: 16 }}>
-              <label style={SLBL}>รูปแบบการเช่า *</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {RENTAL_TERM_OPTIONS.map(o => (
-                  <button key={o.value} type="button" onClick={() => onChange('rental_term', o.value)}
-                    style={{ padding: '7px 15px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
-                      border: `1.5px solid ${form.rental_term === o.value ? '#048c73' : '#eef0ef'}`,
-                      background: form.rental_term === o.value ? '#eaf6f1' : '#fff',
-                      color: form.rental_term === o.value ? '#02402e' : '#64748b', transition: 'all .15s' }}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>
-                💰 ตารางราคา{isDaily ? ' รายวัน' : termLabel}
-              </p>
-              <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '0 0 12px' }}>
-                {isDaily ? 'เพิ่มประเภทพื้นที่และราคาต่อวัน' : 'เพิ่มประเภทพื้นที่และช่วงราคา'}
-              </p>
-              <RoomTypePricingGrid
-                rows={form.room_types}
-                onChange={onRoomTypesChange}
-                termLabel={termLabel}
-                isDaily={isDaily}
-                roomTypeOptions={roomOpts}
-              />
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #eef0ef' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>
-                  ราคาเริ่มต้น (แสดงในหน้าค้นหา)
-                  {derivedPriceFrom && derivedPriceFrom > 0 && (
-                    <button type="button" onClick={() => onChange('price_from', String(derivedPriceFrom))}
-                      style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, border: '1px solid #048c73', background: '#f0fbf8', color: '#048c73', cursor: 'pointer', fontWeight: 500 }}>
-                      ดึงจากตาราง ฿{derivedPriceFrom.toLocaleString()}
-                    </button>
-                  )}
-                </p>
-                <div style={g2}>
-                  <div>
-                    <label style={{ ...SLBL, fontSize: 11.5 }}>ต่ำสุด (บาท{termLabel}) *</label>
-                    <input type="number" value={form.price_from} onChange={e => onChange('price_from', e.target.value)} placeholder="14000" required style={SINP} />
-                  </div>
-                  <div>
-                    <label style={{ ...SLBL, fontSize: 11.5 }}>สูงสุด (ถ้ามี)</label>
-                    <input type="number" value={form.price_to} onChange={e => onChange('price_to', e.target.value)} placeholder="22000" style={SINP} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SectionHead text="2B · ประเภทและราคาพื้นที่" />
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
+              เพิ่มแต่ละประเภทพื้นที่พร้อมขนาดและราคา (ราคาในหน้าค้นหาจะดึงจาก ต่ำสุด–สูงสุด ของตาราง)
+            </p>
+            <ApartmentUnitGrid
+              rows={form.apartment_units}
+              onChange={rows => onChange('apartment_units', rows)}
+              roomTypeOptions={roomOpts}
+            />
           </>
         )}
       </div>
@@ -1458,8 +1473,8 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
     let validErr = ''
     if (!form.title_th.trim()) {
       validErr = 'กรุณากรอกชื่อประกาศ'
-    } else if (form.property_type === 'apartment') {
-      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภทห้อง'
+    } else if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
+      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภท'
     } else if (['condo', 'house'].includes(form.property_type)) {
       if (!form.condo_rental.price_1mo && !form.condo_rental.price_12mo) validErr = 'กรุณากรอกราคาเช่า'
     } else {
@@ -1516,8 +1531,8 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
   // Parse the new extended DB format back into form state
   const rawRts: any[] = listing.room_types ?? []
 
-  // Apartment unit rows
-  const apartmentUnits: ApartmentUnitRow[] = listing.property_type === 'apartment'
+  // Apartment / Office / Coworking unit rows
+  const apartmentUnits: ApartmentUnitRow[] = ['apartment', 'office', 'coworking'].includes(listing.property_type)
     ? rawRts
         .filter(r => r._type === 'apt_unit' || (!r._type && r.room_type))
         .map((r, i) => ({
@@ -1549,26 +1564,17 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
   // Apartment rental charges
   const chargesRaw = rawRts.find(r => r._type === 'charges')
   const rentalCharges: RentalCharges = chargesRaw ? {
-    water_type:       chargesRaw.water_type       ?? 'ask',
-    water_fixed:      String(chargesRaw.water_fixed ?? ''),
-    electricity_type: chargesRaw.electricity_type ?? 'ask',
-    electricity_fixed: String(chargesRaw.electricity_fixed ?? ''),
-    security_deposit: String(chargesRaw.security_deposit ?? '2'),
-    advance_deposit:  String(chargesRaw.advance_deposit ?? '1'),
-    other_charges:    chargesRaw.other_charges ?? [],
+    water_type:          chargesRaw.water_type          ?? 'ask',
+    water_fixed:         String(chargesRaw.water_fixed  ?? ''),
+    water_min_rate:      String(chargesRaw.water_min_rate ?? ''),
+    electricity_type:    chargesRaw.electricity_type    ?? 'ask',
+    electricity_fixed:   String(chargesRaw.electricity_fixed ?? ''),
+    electricity_min_rate: String(chargesRaw.electricity_min_rate ?? ''),
+    security_deposit:    String(chargesRaw.security_deposit ?? '2'),
+    advance_deposit:     String(chargesRaw.advance_deposit ?? '1'),
+    other_charges:       chargesRaw.other_charges ?? [],
+    other_charges_fees:  chargesRaw.other_charges_fees ?? {},
   } : { ...BLANK_CHARGES }
-
-  // Office/Coworking: classic room type rows
-  const classicRoomTypes: RoomTypeRow[] = ['office', 'coworking'].includes(listing.property_type)
-    ? rawRts
-        .filter(r => !r._type)
-        .map((r, i) => ({
-          id: `rt-${i}`,
-          room_type:  r.room_type  || 'Studio',
-          price_from: String(r.price_from || ''),
-          price_to:   String(r.price_to   || ''),
-        }))
-    : []
 
   const [form, setForm] = useState<ListingFormState>({
     title_th:      listing.title_th,
@@ -1579,7 +1585,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     package_type:  listing.package_type ?? 'admin',
     price_from:    String(listing.price_from),
     price_to:      listing.price_to ? String(listing.price_to) : '',
-    room_types:    classicRoomTypes,
+    room_types:    [],
     apartment_units: apartmentUnits,
     condo_rental:    condoRental,
     rental_charges:  rentalCharges,
@@ -1610,8 +1616,8 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     let validErr = ''
     if (!form.title_th.trim()) {
       validErr = 'กรุณากรอกชื่อประกาศ'
-    } else if (form.property_type === 'apartment') {
-      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภทห้อง'
+    } else if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
+      if (form.apartment_units.length === 0) validErr = 'กรุณาเพิ่มอย่างน้อย 1 ประเภท'
     } else if (['condo', 'house'].includes(form.property_type)) {
       if (!form.condo_rental.price_1mo && !form.condo_rental.price_12mo) validErr = 'กรุณากรอกราคาเช่า'
     } else {
