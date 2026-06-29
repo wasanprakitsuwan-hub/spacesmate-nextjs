@@ -17,7 +17,8 @@ interface ApartmentUnitRow {
   id: string
   room_type: string
   size_sqm: string
-  price_1mo: string
+  price_1mo: string      // base / default monthly rate (shown in search)
+  available_1mo: boolean // 1-month short-term tenancy available
   available_3mo: boolean
   price_3mo: string
   available_6mo: boolean
@@ -373,6 +374,7 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
     onChange([...rows, {
       id: `au-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio',
       size_sqm: '', price_1mo: '',
+      available_1mo: false,
       available_3mo: false, price_3mo: '',
       available_6mo: false, price_6mo: '',
     }])
@@ -409,6 +411,16 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
               {/* Short-term availability */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
                 <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>ระยะสั้น:</span>
+                {/* 1 month — uses base price_1mo, no extra input */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={row.available_1mo} onChange={e => upd(row.id, 'available_1mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
+                  <span style={{ fontSize: 12, color: '#334155' }}>1 เดือน</span>
+                </label>
+                {row.available_1mo && (
+                  <span style={{ fontSize: 11, color: '#048c73', background: '#eaf6f1', padding: '2px 8px', borderRadius: 10 }}>
+                    ฿{row.price_1mo ? Number(row.price_1mo).toLocaleString() : '—'}/เดือน
+                  </span>
+                )}
                 {/* 3 months */}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_3mo} onChange={e => upd(row.id, 'available_3mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
@@ -422,7 +434,7 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                   </div>
                 )}
                 {/* 6 months */}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: row.available_3mo ? 4 : 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_6mo} onChange={e => upd(row.id, 'available_6mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
                   <span style={{ fontSize: 12, color: '#334155' }}>6 เดือน</span>
                 </label>
@@ -1540,6 +1552,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
           room_type: r.room_type || 'Studio',
           size_sqm:  String(r.size_sqm ?? ''),
           price_1mo: String(r.price_1mo ?? r.price_from ?? ''),
+          available_1mo: r.available_1mo ?? false,
           available_3mo: r.available_3mo ?? false,
           price_3mo: String(r.price_3mo ?? ''),
           available_6mo: r.available_6mo ?? false,
