@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [authReady, setAuthReady] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [userRole,  setUserRole]  = useState<'admin' | 'super_admin'>('admin')
   const [pendingBadge, setPendingBadge] = useState(0)
 
   useEffect(() => {
@@ -30,18 +31,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!session) { router.replace('/login'); return }
       setUserEmail(session.user.email ?? '')
 
-      // Role check — only 'admin' can access /dashboard
-      // Best-effort: if profile fetch fails, fall through (don't lock out admin)
+      // Role check — only 'admin' and 'super_admin' can access /dashboard
       try {
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('role')
           .eq('id', session.user.id)
           .single()
-        if (profile && profile.role === 'landlord') {
+        if (profile?.role === 'landlord') {
           router.replace('/owner-dashboard')
           return
         }
+        if (profile?.role === 'super_admin') setUserRole('super_admin')
+        else setUserRole('admin')
       } catch { /* network error — proceed */ }
 
       setAuthReady(true)
@@ -143,7 +145,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }}>{initial}</span>
           <div style={{ lineHeight: 1.2, minWidth: 0, flex: 1 }}>
             <div style={{ color: '#fff', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
-            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>Space Works</div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, marginTop: 2,
+              color: userRole === 'super_admin' ? '#d97f11' : 'rgba(255,255,255,0.45)' }}>
+              {userRole === 'super_admin' ? '⭐ SUPER ADMIN' : 'ADMIN'}
+            </div>
           </div>
           <button onClick={handleLogout} title="ออกจากระบบ" style={{
             background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
@@ -186,7 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page */}
-        <main style={{ flex: 1, padding: '28px 32px 56px' }}>
+        <main style={{ flex: 1, padding: '28px 32px 56px' }} data-caller-role={userRole}>
           {children}
         </main>
       </div>
