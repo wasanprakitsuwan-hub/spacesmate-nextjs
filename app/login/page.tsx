@@ -22,14 +22,17 @@ export default function LoginPage() {
     setError('')
     try {
       const supabase = createBrowserClient()
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       })
       if (authError) {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
-      } else {
-        router.push('/dashboard')
+      } else if (data.user) {
+        // Role-based redirect
+        const { data: profile } = await supabase
+          .from('user_profiles').select('role').eq('id', data.user.id).single()
+        router.push(profile?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
