@@ -31,18 +31,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!session) { router.replace('/login'); return }
       setUserEmail(session.user.email ?? '')
 
-      // Role check — only 'admin' and 'super_admin' can access /dashboard
+      // Role check via service-role API — bypasses RLS completely
       try {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-        if (profile?.role === 'landlord') {
-          router.replace('/owner-dashboard')
-          return
-        }
-        if (profile?.role === 'super_admin') setUserRole('super_admin')
+        const r = await fetch('/api/auth/role', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const { role } = await r.json()
+        if (role === 'landlord') { router.replace('/owner-dashboard'); return }
+        if (role === 'super_admin') setUserRole('super_admin')
         else setUserRole('admin')
       } catch { /* network error — proceed */ }
 

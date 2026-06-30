@@ -17,11 +17,13 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
       if (!session) { router.replace('/login'); return }
       setUserEmail(session.user.email ?? '')
 
-      // If admin → send to admin dashboard
+      // If admin/super_admin → send to admin dashboard (use service-role API to bypass RLS)
       try {
-        const { data: profile } = await supabase
-          .from('user_profiles').select('role').eq('id', session.user.id).single()
-        if (profile?.role === 'admin' || profile?.role === 'super_admin') { router.replace('/dashboard'); return }
+        const r = await fetch('/api/auth/role', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const { role } = await r.json()
+        if (role === 'admin' || role === 'super_admin') { router.replace('/dashboard'); return }
       } catch { /* proceed as owner */ }
 
       setAuthReady(true)

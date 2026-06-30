@@ -322,18 +322,21 @@ export default function UsersPage() {
   const [totalListings,setTotalListings]= useState(0)
   const [editingUser,  setEditingUser]  = useState<UserRow | null>(null)
 
-  // Determine own role first
+  // Determine own role via service-role API — bypasses RLS
   useEffect(() => {
     const supabase = createBrowserClient()
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
-      if (profile?.role === 'super_admin') setCallerRole('super_admin')
-      else setCallerRole('admin')
+      try {
+        const r = await fetch('/api/auth/role', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const { role } = await r.json()
+        if (role === 'super_admin') setCallerRole('super_admin')
+        else setCallerRole('admin')
+      } catch {
+        setCallerRole('admin')
+      }
     })
   }, [])
 
