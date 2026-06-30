@@ -7,8 +7,8 @@ import { createBrowserClient } from '@/lib/supabase'
 
 const NAV = [
   { href: '/dashboard',          label: 'ภาพรวมระบบ',   icon: 'grid_view',  exact: true },
-  { href: '/dashboard/listings', label: 'จัดการประกาศ', icon: 'home_work',  exact: false },
-  { href: '/dashboard/users',    label: 'ผู้ใช้งาน',     icon: 'group',      exact: false },
+  { href: '/dashboard/listings', label: 'จัดการประกาศ', icon: 'apartment',        exact: false },
+  { href: '/dashboard/users',    label: 'ผู้ใช้งาน',     icon: 'manage_accounts', exact: false },
   { href: '/dashboard/revenue',  label: 'รายได้',        icon: 'bar_chart',  exact: false },
   { href: '/dashboard/blog',     label: 'บทความ',        icon: 'article',    exact: false },
   { href: '/dashboard/settings', label: 'ตั้งค่า',       icon: 'settings',   exact: false },

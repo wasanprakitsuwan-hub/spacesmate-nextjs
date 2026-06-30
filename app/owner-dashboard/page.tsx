@@ -837,6 +837,7 @@ function ThaiAddressSelect({ form, onChange }: {
 function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImagesChange: (imgs: string[]) => void }) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleFiles(files: FileList) {
@@ -855,6 +856,14 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
     setUploading(false)
   }
 
+  function setAsCover(idx: number) {
+    if (idx === 0) return
+    const next = [...images]
+    const [picked] = next.splice(idx, 1)
+    next.unshift(picked)
+    onImagesChange(next)
+  }
+
   const limit = images.length >= 10
   return (
     <div>
@@ -863,20 +872,33 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
         style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: limit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || limit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
           : limit ? '✅ อัปโหลดครบ 10 รูปแล้ว'
-          : <><span style={{ fontSize: 20 }}>📁</span> เลือกรูปภาพ (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
+          : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span> เลือกรูปภาพ (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
       </button>
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>}
       {images.length > 0 && (
+        <>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
           {images.map((url, i) => (
-            <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-              <img src={url} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: '1px solid #eef0ef' }} />
-              {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>หน้าปก</span>}
+            <div key={url + i} style={{ position: 'relative', flexShrink: 0, cursor: i !== 0 ? 'pointer' : 'default' }}
+              onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(null)}>
+              <img src={url} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: i === 0 ? '2.5px solid #02402e' : hoveredIdx === i ? '2px solid #048c73' : '1px solid #eef0ef', transition: 'border-color .15s' }} />
+              {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>★ หน้าปก</span>}
+              {i !== 0 && hoveredIdx === i && (
+                <button type="button" onClick={() => setAsCover(i)}
+                  style={{ position: 'absolute', inset: 0, borderRadius: 8, border: 'none', background: 'rgba(2,64,46,.72)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                  <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>
+                  <span>ตั้งหน้าปก</span>
+                </button>
+              )}
               <button type="button" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
-                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>✕</button>
+                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, zIndex: 2 }}>✕</button>
             </div>
           ))}
         </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0' }}>
+          คลิกบนรูปเพื่อตั้งเป็นรูปหน้าปก • รูปแรกจะแสดงเป็น Thumbnail บนเว็บไซต์
+        </p>
+        </>
       )}
     </div>
   )
