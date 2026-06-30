@@ -32,7 +32,8 @@ export default function LoginPage() {
         // Role-based redirect
         const { data: profile } = await supabase
           .from('user_profiles').select('role').eq('id', data.user.id).single()
-        router.push(profile?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
+        const role = profile?.role
+        router.push(role === 'admin' || role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
