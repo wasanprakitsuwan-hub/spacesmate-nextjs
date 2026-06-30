@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import FloatingChat from '@/components/ui/FloatingChat'
+import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
 
 export const metadata: Metadata = {
   title: {
@@ -26,10 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th">
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-        <FloatingChat />
+        <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
       </body>
     </html>
   )
