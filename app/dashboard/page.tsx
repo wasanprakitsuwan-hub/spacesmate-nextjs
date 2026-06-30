@@ -100,7 +100,7 @@ export default function DashboardOverview() {
                 deltaColor: (stats?.pending ?? 0) > 0 ? '#d97f11' : '#22c55e',
                 iconBg: '#e8f5f0',
                 iconColor: '#048c73',
-                icon: '🏠',
+                icon: 'home_work',
               },
               {
                 label: 'ผู้ใช้ที่ลงประกาศ',
@@ -109,7 +109,7 @@ export default function DashboardOverview() {
                 deltaColor: '#94a3b8',
                 iconBg: '#e0f2f9',
                 iconColor: '#0284c7',
-                icon: '👥',
+                icon: 'group',
               },
               {
                 label: 'ยังไม่อัปเดต 6 เดือน',
@@ -118,7 +118,7 @@ export default function DashboardOverview() {
                 deltaColor: stats?.staleCount ? '#d97f11' : '#22c55e',
                 iconBg: '#fff6e9',
                 iconColor: '#d97f11',
-                icon: '⏰',
+                icon: 'schedule',
               },
               {
                 label: 'รายได้เดือนนี้',
@@ -127,13 +127,15 @@ export default function DashboardOverview() {
                 deltaColor: '#94a3b8',
                 iconBg: '#f3e8ff',
                 iconColor: '#9333ea',
-                icon: '💳',
+                icon: 'payments',
               },
             ].map(k => (
               <div key={k.label} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '18px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <span style={{ fontSize: 12.5, color: '#94a3b8' }}>{k.label}</span>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: k.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{k.icon}</span>
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: k.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="msym" style={{ fontSize: 20, color: k.iconColor, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{k.icon}</span>
+                  </span>
                 </div>
                 <div style={{ fontSize: 27, fontWeight: 700, color: '#02402e', lineHeight: 1 }}>{k.value}</div>
                 <div style={{ fontSize: 11.5, color: k.deltaColor, marginTop: 7, fontWeight: 500 }}>{k.delta}</div>
@@ -172,7 +174,9 @@ export default function DashboardOverview() {
             {/* Stale listings */}
             <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: '#fff6e9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19 }}>⏰</span>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: '#fff6e9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>schedule</span>
+              </span>
                 <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: '#02402e' }}>ยังไม่อัปเดตสถานะ</h2>
               </div>
               <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 14px' }}>ไม่มีการอัปเดตในรอบ 6 เดือน — ควรตรวจสอบว่ายังว่างอยู่</p>
@@ -181,8 +185,9 @@ export default function DashboardOverview() {
                 <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 400 }}>รายการ</span>
               </div>
               {stats?.staleCount === 0 ? (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 11, padding: '14px 16px', fontSize: 13, color: '#15803d', fontWeight: 500 }}>
-                  ✅ ทุกรายการได้รับการอัปเดตแล้ว
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 11, padding: '14px 16px', fontSize: 13, color: '#15803d', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
+                  ทุกรายการได้รับการอัปเดตแล้ว
                 </div>
               ) : (
                 <div style={{ fontSize: 13, color: '#64748b' }}>
@@ -233,13 +238,13 @@ export default function DashboardOverview() {
               <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 14px', color: '#02402e' }}>กิจกรรมล่าสุด</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
                 {(stats?.recentActivity ?? []).slice(0, 5).map((item, i) => {
-                  const icons = ['✏️','🆕','✅','❌','📝']
-                  const colors = ['#e8f5f0','#e0f2f9','#f0fdf4','#fee2e2','#fef9c3']
+                  const msyms    = ['edit','add_circle','check_circle','cancel','description']
+                  const colors   = ['#e8f5f0','#e0f2f9','#f0fdf4','#fee2e2','#fef9c3']
                   const iconColors = ['#048c73','#0284c7','#22c55e','#b91c1c','#a16207']
                   return (
                     <div key={item.id} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 8, background: colors[i % colors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
-                        {icons[i % icons.length]}
+                      <span style={{ width: 28, height: 28, borderRadius: 8, background: colors[i % colors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span className="msym" style={{ fontSize: 16, color: iconColors[i % iconColors.length], fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{msyms[i % msyms.length]}</span>
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.45 }}>

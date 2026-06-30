@@ -1,25 +1,51 @@
 'use client'
 
 // ── Revenue & Stats Page ──────────────────────────────────────────────────────
-// Package pricing is managed in WooCommerce (spacesmate.com/wp-admin).
-// Payment processing and promo codes are managed in Stripe (dashboard.stripe.com).
-// This page shows revenue KPIs only.
+// Payment processing and promo codes are managed via Stripe (dashboard.stripe.com).
+// Package sales flow through the Stripe payment link / checkout — not WordPress.
+// Live payment revenue will be available once the Stripe API is wired to this dashboard.
+// What we CAN show now: active subscriber count pulled from Supabase user_profiles.
+
+import { useEffect, useState } from 'react'
 
 export default function RevenuePage() {
+  const [activeSubscribers, setActiveSubscribers] = useState<number | null>(null)
+  const [totalUsers, setTotalUsers]               = useState<number | null>(null)
+
+  // Pull subscriber stats directly from Supabase via the users API we already have
+  useEffect(() => {
+    fetch('/api/dashboard/users?limit=1000')
+      .then(r => r.json())
+      .then((d: { users?: Array<{ active_package?: string | null; package_expires_at?: string | null }> }) => {
+        const users = d.users ?? []
+        setTotalUsers(users.length)
+        const now = new Date()
+        const active = users.filter(u =>
+          u.active_package !== null &&
+          u.active_package !== undefined &&
+          (u.package_expires_at === null || u.package_expires_at === undefined || new Date(u.package_expires_at) > now)
+        ).length
+        setActiveSubscribers(active)
+      })
+      .catch(() => {})
+  }, [])
+
+  const fmt = (n: number | null) => n === null ? '—' : n.toLocaleString()
+
   const KPI = [
     {
       label:  'รายได้เดือนนี้',
       value:  '—',
-      sub:    'เชื่อมต่อ Stripe เพื่อดูข้อมูล',
+      sub:    'เชื่อมต่อ Stripe API เพื่อดูข้อมูล',
       icon:   'payments',
       bg:     '#e8f5f0',
       color:  '#048c73',
     },
     {
       label:  'สมาชิกที่ใช้งาน',
-      value:  '—',
-      sub:    'จากฐานข้อมูล Supabase',
-      icon:   'group',
+      value:  fmt(activeSubscribers),
+      sub:    activeSubscribers !== null ? `จาก ${fmt(totalUsers)} ผู้ใช้ทั้งหมด` : 'กำลังโหลด...',
+      icon:   'verified_user',
       bg:     '#eef2ff',
       color:  '#4f46e5',
     },
@@ -44,19 +70,11 @@ export default function RevenuePage() {
   const LINKS = [
     {
       title:   'Stripe Dashboard',
-      desc:    'ดูรายได้ ธุรกรรม และจัดการ Promo Code / Coupon',
+      desc:    'ดูรายได้ ธุรกรรม ยอดชำระ และรายงานทางการเงิน',
       icon:    'credit_card',
       href:    'https://dashboard.stripe.com',
       color:   '#635bff',
       bg:      '#f5f4ff',
-    },
-    {
-      title:   'WooCommerce',
-      desc:    'จัดการแพ็กเกจ ราคา และ Orders บน WordPress',
-      icon:    'shopping_bag',
-      href:    'https://spacesmate.com/wp-admin/edit.php?post_type=product',
-      color:   '#7f54b3',
-      bg:      '#f5f0fb',
     },
     {
       title:   'Promo Codes',
@@ -73,7 +91,7 @@ export default function RevenuePage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px', color: '#02402e', letterSpacing: '-0.3px' }}>รายได้</h1>
-        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ภาพรวมรายได้และการชำระเงิน — ข้อมูลสดจาก Stripe และ WooCommerce</p>
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ภาพรวมรายได้และการชำระเงิน — ข้อมูลสดจาก Supabase และ Stripe</p>
       </div>
 
       {/* KPI cards */}
@@ -104,24 +122,24 @@ export default function RevenuePage() {
       }}>
         <span className="msym" style={{ fontSize: 22, color: '#048c73', marginTop: 1, flexShrink: 0, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>info</span>
         <div>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', marginBottom: 4 }}>รายได้จริงอยู่ใน Stripe และ WooCommerce</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', marginBottom: 4 }}>รายได้จริงอยู่ใน Stripe</div>
           <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
-            ระบบชำระเงินดำเนินการผ่าน <strong>Stripe</strong> (Payment Gateway) และ <strong>WooCommerce</strong> (แพ็กเกจ)
-            การเชื่อมต่อ Stripe API กับ Dashboard นี้จะเพิ่มในอนาคต
-            ปัจจุบันกรุณาดูรายงานโดยตรงจากลิงก์ด้านล่าง
+            ระบบชำระเงินดำเนินการผ่าน <strong>Stripe</strong> — ยอดรายได้จริง (฿), MRR, และ Churn Rate
+            จะแสดงในหน้านี้โดยอัตโนมัติเมื่อเชื่อมต่อ Stripe API ในอนาคต
+            ปัจจุบัน <strong>จำนวนสมาชิก</strong> ดึงมาจาก Supabase ได้เลย — ส่วนยอดเงินกรุณาดูจาก Stripe โดยตรง
           </div>
         </div>
       </div>
 
       {/* Quick links to external platforms */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 }}>จัดการผ่านแพลตฟอร์มภายนอก</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 }}>จัดการผ่าน Stripe โดยตรง</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16 }}>
           {LINKS.map(l => (
             <a key={l.title} href={l.href} target="_blank" rel="noopener noreferrer"
               style={{
                 background: '#fff', border: '1px solid #eef0ef', borderRadius: 16,
-                padding: '20px 20px', textDecoration: 'none', display: 'block',
+                padding: '22px 22px', textDecoration: 'none', display: 'block',
                 boxShadow: '0 2px 12px -6px rgba(2,64,46,0.06)',
                 transition: 'all .18s',
               }}
@@ -129,15 +147,15 @@ export default function RevenuePage() {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px -6px rgba(2,64,46,0.06)'; (e.currentTarget as HTMLElement).style.transform = '' }}
             >
               <div style={{
-                width: 42, height: 42, borderRadius: 12, background: l.bg,
+                width: 44, height: 44, borderRadius: 13, background: l.bg,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14,
               }}>
-                <span className="msym" style={{ fontSize: 22, color: l.color, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{l.icon}</span>
+                <span className="msym" style={{ fontSize: 24, color: l.color, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{l.icon}</span>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#02402e', marginBottom: 5 }}>{l.title}</div>
-              <div style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.5 }}>{l.desc}</div>
-              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: l.color, fontWeight: 600 }}>
-                เปิดลิงก์
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#02402e', marginBottom: 6 }}>{l.title}</div>
+              <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, marginBottom: 14 }}>{l.desc}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: l.color, fontWeight: 600 }}>
+                เปิดใน Stripe
                 <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>open_in_new</span>
               </div>
             </a>
@@ -147,7 +165,7 @@ export default function RevenuePage() {
 
       {/* Promo code note */}
       <div style={{
-        marginTop: 20, padding: '14px 18px',
+        padding: '14px 18px',
         background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>

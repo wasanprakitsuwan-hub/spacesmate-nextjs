@@ -6,13 +6,12 @@ import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase'
 
 const NAV = [
-  { href: '/dashboard',            label: 'ภาพรวมระบบ',   icon: 'grid_view',     exact: true },
-  { href: '/dashboard/listings',   label: 'จัดการประกาศ', icon: 'home_work',     exact: false },
-  { href: '/dashboard/users',      label: 'ผู้ใช้งาน',     icon: 'group',         exact: false },
-  { href: '/dashboard/revenue',    label: 'รายได้',        icon: 'bar_chart',     exact: false },
-  { href: '/dashboard/enquiries',  label: 'คำขอรับบริการ', icon: 'support_agent', exact: false, badge: 0 },
-  { href: '/dashboard/blog',       label: 'บทความ',        icon: 'article',       exact: false },
-  { href: '/dashboard/settings',   label: 'ตั้งค่า',       icon: 'settings',      exact: false },
+  { href: '/dashboard',          label: 'ภาพรวมระบบ',   icon: 'grid_view',  exact: true },
+  { href: '/dashboard/listings', label: 'จัดการประกาศ', icon: 'home_work',  exact: false },
+  { href: '/dashboard/users',    label: 'ผู้ใช้งาน',     icon: 'group',      exact: false },
+  { href: '/dashboard/revenue',  label: 'รายได้',        icon: 'bar_chart',  exact: false },
+  { href: '/dashboard/blog',     label: 'บทความ',        icon: 'article',    exact: false },
+  { href: '/dashboard/settings', label: 'ตั้งค่า',       icon: 'settings',   exact: false },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -109,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         {NAV.map(n => {
           const isActive = n.exact ? pathname === n.href : (pathname ?? '').startsWith(n.href)
-          const badge = n.href === '/dashboard/listings' ? pendingBadge : (n.badge || 0)
+          const badge = n.href === '/dashboard/listings' ? pendingBadge : 0
           return (
             <Link key={n.href} href={n.href} style={{
               display: 'flex', alignItems: 'center', gap: 11,
