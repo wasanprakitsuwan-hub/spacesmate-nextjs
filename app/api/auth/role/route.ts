@@ -23,11 +23,18 @@ export async function GET(req: NextRequest) {
     const service = createServerClient()
     const { data: profile } = await service
       .from('user_profiles')
-      .select('role')
+      .select('role, full_name, phone, active_package, package_expires_at')
       .eq('id', user.id)
       .single()
 
-    return NextResponse.json({ role: profile?.role ?? null, userId: user.id })
+    return NextResponse.json({
+      role:               profile?.role               ?? null,
+      userId:             user.id,
+      full_name:          profile?.full_name           ?? null,
+      phone:              profile?.phone               ?? null,
+      active_package:     profile?.active_package      ?? null,
+      package_expires_at: profile?.package_expires_at  ?? null,
+    })
   } catch (err: any) {
     return NextResponse.json({ role: null, error: err.message }, { status: 500 })
   }

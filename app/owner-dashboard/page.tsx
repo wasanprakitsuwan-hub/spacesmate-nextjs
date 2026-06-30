@@ -1318,13 +1318,19 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function OwnerDashboardPage() {
-  const [listings,   setListings]   = useState<OwnerListing[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [userId,     setUserId]     = useState('')
-  const [userEmail,  setUserEmail]  = useState('')
-  const [showCreate, setShowCreate] = useState(false)
-  const [editTarget, setEditTarget] = useState<OwnerListing | null>(null)
-  const [deleting,   setDeleting]   = useState<string | null>(null)
+  const [listings,           setListings]           = useState<OwnerListing[]>([])
+  const [loading,            setLoading]            = useState(true)
+  const [userId,             setUserId]             = useState('')
+  const [userEmail,          setUserEmail]          = useState('')
+  const [activePackage,      setActivePackage]      = useState<string | null>(null)
+  const [packageExpiresAt,   setPackageExpiresAt]   = useState<string | null>(null)
+  const [showCreate,         setShowCreate]         = useState(false)
+  const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
+  const [deleting,           setDeleting]           = useState<string | null>(null)
+
+  // Derived: user has a valid active package
+  const hasPackage = activePackage !== null &&
+    (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())
 
   const load = useCallback(async (uid: string) => {
     setLoading(true)
@@ -1336,11 +1342,20 @@ export default function OwnerDashboardPage() {
 
   useEffect(() => {
     const supabase = createBrowserClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return
       setUserId(session.user.id)
       setUserEmail(session.user.email ?? '')
       load(session.user.id)
+      // Fetch package status via service-role API
+      try {
+        const r = await fetch('/api/auth/role', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const d = await r.json()
+        setActivePackage(d.active_package ?? null)
+        setPackageExpiresAt(d.package_expires_at ?? null)
+      } catch { /* no-op */ }
     })
   }, [load])
 
@@ -1370,9 +1385,30 @@ export default function OwnerDashboardPage() {
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#02402e', margin: '0 0 4px', letterSpacing: '-0.3px' }}>ประกาศของฉัน</h1>
           <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>{userEmail}</p>
         </div>
-        <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '12px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}>
-          + เพิ่มประกาศใหม่
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <button
+            onClick={() => hasPackage && setShowCreate(true)}
+            style={{
+              background: hasPackage ? '#02402e' : '#e2e8f0',
+              color: hasPackage ? '#fff' : '#94a3b8',
+              border: 'none', borderRadius: 24, padding: '12px 22px',
+              fontSize: 14, fontWeight: 700,
+              cursor: hasPackage ? 'pointer' : 'not-allowed',
+              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
+              transition: 'all .2s',
+            }}
+            title={!hasPackage ? 'กรุณาซื้อแพ็กเกจก่อนเพื่อลงประกาศ' : undefined}
+          >
+            + เพิ่มประกาศใหม่
+          </button>
+          {!hasPackage && (
+            <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right' }}>
+              ⚠️ กรุณา{' '}
+              <a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>
+              {' '}ก่อนเพื่อลงประกาศ
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -1406,9 +1442,18 @@ export default function OwnerDashboardPage() {
             <p style={{ fontSize: 44, margin: '0 0 12px' }}>🏠</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ยังไม่มีประกาศ</h3>
             <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 24px' }}>เริ่มต้นลงประกาศทรัพย์สินแรกของคุณวันนี้</p>
-            <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              + เพิ่มประกาศใหม่
-            </button>
+            {hasPackage ? (
+              <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                + เพิ่มประกาศใหม่
+              </button>
+            ) : (
+              <div>
+                <p style={{ fontSize: 13.5, color: '#d97f11', margin: '0 0 14px', fontWeight: 500 }}>คุณยังไม่มีแพ็กเกจที่ใช้งานอยู่</p>
+                <a href="/pricing" style={{ background: '#d97f11', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
+                  🛒 ดูแพ็กเกจ
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>

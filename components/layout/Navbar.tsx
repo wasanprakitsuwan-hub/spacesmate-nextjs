@@ -2,41 +2,83 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import AuthModal from '@/components/auth/AuthModal'
 
+interface UserInfo {
+  role:               string | null
+  full_name:          string | null
+  active_package:     string | null
+  package_expires_at: string | null
+  dashUrl:            string
+}
+
+function userHasActivePackage(info: UserInfo | null): boolean {
+  if (!info) return false
+  if (!info.active_package) return false
+  if (!info.package_expires_at) return true   // null expiry = admin/unlimited
+  return new Date(info.package_expires_at) > new Date()
+}
+
+function displayName(info: UserInfo | null, email: string | null | undefined): string {
+  if (info?.full_name?.trim()) return info.full_name.trim().split(' ')[0]
+  if (email) return email.split('@')[0]
+  return 'บัญชีของฉัน'
+}
+
 export default function Navbar() {
-  const pathname = usePathname()
+  const pathname   = usePathname()
+  const router     = useRouter()
   const [mobileOpen,  setMobileOpen]  = useState(false)
   const [authModal,   setAuthModal]   = useState(false)
   const [session,     setSession]     = useState<any>(null)
-  const [dashUrl,     setDashUrl]     = useState('/owner-dashboard')
+  const [userInfo,    setUserInfo]    = useState<UserInfo | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [userMenu,    setUserMenu]    = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close user menu on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  async function fetchUserInfo(token: string) {
+    try {
+      const r = await fetch('/api/auth/role', { headers: { Authorization: `Bearer ${token}` } })
+      const d = await r.json()
+      setUserInfo({
+        role:               d.role               ?? null,
+        full_name:          d.full_name           ?? null,
+        active_package:     d.active_package      ?? null,
+        package_expires_at: d.package_expires_at  ?? null,
+        dashUrl: (d.role === 'admin' || d.role === 'super_admin') ? '/dashboard' : '/owner-dashboard',
+      })
+    } catch {
+      setUserInfo(null)
+    }
+  }
 
   useEffect(() => {
     const supabase = createBrowserClient()
 
-    // Check current session immediately
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s)
-      if (s?.user) {
-        const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
-        setDashUrl(data?.role === 'admin' || data?.role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
-      }
+      if (s?.access_token) await fetchUserInfo(s.access_token)
       setAuthLoading(false)
     })
 
-    // Live auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s)
-      if (s?.user) {
-        const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
-        setDashUrl(data?.role === 'admin' || data?.role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
-      } else {
-        setDashUrl('/owner-dashboard')
-      }
+      if (s?.access_token) await fetchUserInfo(s.access_token)
+      else setUserInfo(null)
     })
 
     return () => subscription.unsubscribe()
@@ -58,13 +100,37 @@ export default function Navbar() {
 
   const ownerActive = isActive('/submit') || isActive('/manage')
 
+  async function handleSignOut() {
+    const supabase = createBrowserClient()
+    await supabase.auth.signOut()
+    setUserMenu(false)
+    setSession(null)
+    setUserInfo(null)
+    router.push('/')
+  }
+
+  function handleListingClick(e: React.MouseEvent) {
+    if (!session) {
+      e.preventDefault()
+      setAuthModal(true)
+      return
+    }
+    if (!userHasActivePackage(userInfo)) {
+      e.preventDefault()
+      router.push('/pricing')
+    }
+    // Has active package → /submit link proceeds normally
+  }
+
   const mobileLinks = [
-    { label: 'ค้นหาที่พัก',        icon: 'search',        href: '/search' },
-    { label: 'ลงประกาศปล่อยเช่า',  icon: 'sell',          href: '/submit' },
-    { label: 'รับฝากบริหาร',       icon: 'handshake',     href: '/manage' },
-    { label: 'บทความ',             icon: 'article',       href: '/blog' },
-    ...(session ? [{ label: 'แดชบอร์ด', icon: 'dashboard', href: dashUrl }] : []),
+    { label: 'ค้นหาที่พัก',       icon: 'search',    href: '/search' },
+    { label: 'ลงประกาศปล่อยเช่า', icon: 'sell',       href: '/submit' },
+    { label: 'รับฝากบริหาร',      icon: 'handshake',  href: '/manage' },
+    { label: 'บทความ',            icon: 'article',    href: '/blog' },
+    ...(session ? [{ label: 'แดชบอร์ด', icon: 'dashboard', href: userInfo?.dashUrl ?? '/owner-dashboard' }] : []),
   ]
+
+  const uName = displayName(userInfo, session?.user?.email)
 
   return (
     <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#ffffff', borderBottom: '1px solid #eef0ef', boxShadow: '0 1px 8px -4px rgba(2,64,46,0.08)' }}>
@@ -126,17 +192,77 @@ export default function Navbar() {
         {/* Right side */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
 
-          {/* Auth button — แดชบอร์ด when logged in, เข้าสู่ระบบ when logged out */}
+          {/* Auth area */}
           {!authLoading && (
             session ? (
-              <Link href={dashUrl} className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 600, color: '#02402e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #02402e', textDecoration: 'none', transition: 'all .18s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#fff' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}>
-                <span className="msym" style={{ fontSize: 17 }}>dashboard</span>
-                แดชบอร์ด
-              </Link>
+              /* ── Username chip + dropdown ── */
+              <div ref={userMenuRef} className="sm-hide-mobile" style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setUserMenu(v => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    padding: '8px 14px', borderRadius: 22,
+                    border: `1.5px solid ${userMenu ? '#02402e' : '#e2e8f0'}`,
+                    background: userMenu ? '#f4f8f6' : '#fff',
+                    cursor: 'pointer', fontFamily: 'inherit', transition: 'all .18s',
+                    fontSize: 14, fontWeight: 600, color: '#02402e',
+                  }}
+                >
+                  <span className="msym" style={{ fontSize: 17, color: '#048c73' }}>account_circle</span>
+                  {uName}
+                  <span className="msym" style={{ fontSize: 16, color: '#94a3b8', transition: 'transform .2s', display: 'inline-block', transform: userMenu ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                </button>
+
+                {/* Dropdown menu */}
+                {userMenu && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    width: 230, background: '#fff',
+                    border: '1px solid #eef0ef', borderRadius: 16, padding: 7,
+                    boxShadow: '0 18px 40px -14px rgba(2,64,46,0.22)',
+                    zIndex: 60,
+                  }}>
+                    {/* User label */}
+                    <div style={{ padding: '10px 13px 10px', borderBottom: '1px solid #f1f5f9', marginBottom: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#02402e' }}>{uName}</div>
+                      <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2, wordBreak: 'break-all' }}>{session?.user?.email}</div>
+                    </div>
+
+                    {/* 1 · ข้อมูลส่วนตัว */}
+                    <Link href="/owner-dashboard/profile" onClick={() => setUserMenu(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#334155', textDecoration: 'none', transition: 'background .15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>person</span>
+                      ข้อมูลส่วนตัว
+                    </Link>
+
+                    {/* 2 · แดชบอร์ด */}
+                    <Link href={userInfo?.dashUrl ?? '/owner-dashboard'} onClick={() => setUserMenu(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#334155', textDecoration: 'none', transition: 'background .15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>dashboard</span>
+                      แดชบอร์ด
+                    </Link>
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: '#f1f5f9', margin: '4px 6px' }} />
+
+                    {/* 3 · ออกจากระบบ */}
+                    <button onClick={handleSignOut}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#b91c1c', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                      <span className="msym" style={{ fontSize: 18 }}>logout</span>
+                      ออกจากระบบ
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
-              <button onClick={() => setAuthModal(true)} className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: '#fff', fontFamily: 'inherit', transition: 'all .18s' }}
+              <button onClick={() => setAuthModal(true)} className="sm-hide-mobile"
+                style={{ fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: '#fff', fontFamily: 'inherit', transition: 'all .18s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
                 <span className="msym" style={{ fontSize: 17 }}>login</span>
@@ -145,11 +271,14 @@ export default function Navbar() {
             )
           )}
 
-          <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none' }}
+          {/* ลงประกาศ CTA — checks package status before routing */}
+          <Link href="/submit" onClick={handleListingClick}
+            style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none', display: 'inline-block' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
             ลงประกาศฟรี
           </Link>
+
           {/* Burger */}
           <button className="sm-burger" onClick={() => setMobileOpen(!mobileOpen)}
             style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid #e2e8f0', display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#334155', background: 'transparent' }}>
@@ -171,8 +300,24 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
-            {/* Mobile auth button */}
-            {!session && (
+            {session ? (
+              <>
+                <Link href="/owner-dashboard/profile" onClick={() => setMobileOpen(false)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#334155', textDecoration: 'none', transition: 'all .2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                  <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>person</span>
+                  ข้อมูลส่วนตัว
+                </Link>
+                <button onClick={() => { setMobileOpen(false); handleSignOut() }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#b91c1c', background: 'transparent', border: 'none', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                  <span className="msym" style={{ fontSize: 21, color: '#b91c1c' }}>logout</span>
+                  ออกจากระบบ
+                </button>
+              </>
+            ) : (
               <button onClick={() => { setMobileOpen(false); setAuthModal(true) }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#02402e', background: 'transparent', border: 'none', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}

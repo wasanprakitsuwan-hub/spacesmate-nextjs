@@ -66,11 +66,8 @@ export default function LoginPage() {
       if (authErr) {
         setError(authErr.message || 'สมัครสมาชิกไม่สำเร็จ')
       } else if (data.user) {
-        // Upsert profile as landlord
-        await supabase.from('user_profiles').upsert(
-          { id: data.user.id, email: signEmail, full_name: signName, role: 'landlord' },
-          { onConflict: 'id', ignoreDuplicates: true }
-        )
+        // Profile is created automatically via DB trigger on auth.users insert.
+        // Show the email confirmation screen immediately.
         setSuccess(signEmail)
       }
     } catch {
