@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAuth, isErr } from '@/lib/auth-guard'
 import sharp from 'sharp'
 
 // ── Bucket names ──────────────────────────────────────────────────────────────
@@ -27,6 +28,9 @@ async function ensureBucket(
 
 // ── POST /api/dashboard/upload ────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const authCheck = await requireAuth(req)
+  if (isErr(authCheck)) return authCheck
+
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
       { error: 'SUPABASE_SERVICE_ROLE_KEY not set in environment variables.' },

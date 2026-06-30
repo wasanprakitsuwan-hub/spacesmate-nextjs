@@ -842,11 +842,12 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
 
   async function handleFiles(files: FileList) {
     setUploading(true); setUploadError('')
+    const { data: { session: upSess } } = await createBrowserClient().auth.getSession()
     const added: string[] = []
     for (const file of Array.from(files)) {
       const fd = new FormData(); fd.append('file', file); fd.append('type', 'image')
       try {
-        const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
+        const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${upSess?.access_token}` }, body: fd })
         const d = await r.json()
         if (d.url) added.push(d.url)
         else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
@@ -913,9 +914,10 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
 
   async function handleFile(file: File) {
     setUploading(true); setUploadError('')
+    const { data: { session: vidSess } } = await createBrowserClient().auth.getSession()
     const fd = new FormData(); fd.append('file', file); fd.append('type', 'video')
     try {
-      const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
+      const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${vidSess?.access_token}` }, body: fd })
       const d = await r.json()
       if (d.url) onVideoChange(d.url)
       else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
@@ -1233,14 +1235,14 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
 
     setSaving(true); setError('')
     try {
+      const { data: { session: cSess } } = await createBrowserClient().auth.getSession()
       const extra = prepareSubmitData(form)
       const res = await fetch('/api/owner/listings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cSess?.access_token}` },
         body: JSON.stringify({
           ...form,
           ...extra,
-          userId, userEmail,
           slug: '',
           bedrooms:  parseInt(form.bedrooms)  || 1,
           bathrooms: parseInt(form.bathrooms) || 1,
@@ -1371,12 +1373,13 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
 
     setSaving(true); setError('')
     try {
+      const { data: { session: eSess } } = await createBrowserClient().auth.getSession()
       const extra = prepareSubmitData(form)
       const res = await fetch('/api/owner/listings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${eSess?.access_token}` },
         body: JSON.stringify({
-          id: listing.id, userId,
+          id: listing.id,
           ...form,
           ...extra,
           bedrooms:  parseInt(form.bedrooms)  || 1,
@@ -1424,9 +1427,12 @@ export default function OwnerDashboardPage() {
   const hasPackage = activePackage !== null &&
     (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())
 
-  const load = useCallback(async (uid: string) => {
+  const load = useCallback(async (_uid?: string) => {
     setLoading(true)
-    const r = await fetch(`/api/owner/listings?userId=${uid}`)
+    const { data: { session: lSess } } = await createBrowserClient().auth.getSession()
+    const r = await fetch('/api/owner/listings', {
+      headers: { Authorization: `Bearer ${lSess?.access_token}` },
+    })
     const d = await r.json()
     setListings(d.listings ?? [])
     setLoading(false)
@@ -1438,7 +1444,7 @@ export default function OwnerDashboardPage() {
       if (!session) return
       setUserId(session.user.id)
       setUserEmail(session.user.email ?? '')
-      load(session.user.id)
+      load()
       // Fetch package status via service-role API
       try {
         const r = await fetch('/api/auth/role', {
@@ -1454,8 +1460,9 @@ export default function OwnerDashboardPage() {
   async function deleteListing(id: string) {
     if (!confirm('ลบประกาศนี้?')) return
     setDeleting(id)
-    await fetch('/api/owner/listings', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, userId }) })
-    await load(userId)
+    const { data: { session: dSess } } = await createBrowserClient().auth.getSession()
+    await fetch('/api/owner/listings', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${dSess?.access_token}` }, body: JSON.stringify({ id }) })
+    await load()
     setDeleting(null)
   }
 
@@ -1465,10 +1472,10 @@ export default function OwnerDashboardPage() {
   return (
     <div>
       {showCreate && userId && (
-        <CreateDrawer userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load(userId)} />
+        <CreateDrawer userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load()} />
       )}
       {editTarget && userId && (
-        <EditDrawer listing={editTarget} userId={userId} onClose={() => setEditTarget(null)} onSaved={() => load(userId)} />
+        <EditDrawer listing={editTarget} userId={userId} onClose={() => setEditTarget(null)} onSaved={() => load()} />
       )}
 
       {/* Header */}

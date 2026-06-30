@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAuth, isErr } from '@/lib/auth-guard'
 
 const PACKAGE_DAYS: Record<string, number> = {
   basic:    30,
@@ -18,10 +19,12 @@ function computeExpiry(pkg: string): string | null {
 
 // ── GET — fetch owner's own listings from properties table ────────────────────
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (isErr(auth)) return auth
+
   try {
-    const { searchParams } = new URL(req.url)
-    const userId = searchParams.get('userId')
-    if (!userId) return NextResponse.json({ listings: [] })
+    // userId from verified JWT — never trust query params
+    const userId = auth.id
 
     const supabase = createServerClient()
     const { data, error } = await supabase
@@ -40,17 +43,21 @@ export async function GET(req: NextRequest) {
 
 // ── POST — create a new listing for the owner ─────────────────────────────────
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (isErr(auth)) return auth
+
   try {
     const body = await req.json()
-    const { userId, userEmail, ...fields } = body
-
-    if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    const { userEmail, ...fields } = body
+    // userId from verified JWT — never trust client body
+    const userId   = auth.id
+    const resolvedEmail = auth.email || userEmail || ''
 
     const supabase = createServerClient()
 
     // Upsert user_profile so landlord_id FK is satisfied
     await supabase.from('user_profiles').upsert(
-      { id: userId, email: userEmail || '', full_name: fields.full_name || '', role: 'landlord' },
+      { id: userId, email: resolvedEmail, full_name: fields.full_name || '', role: 'landlord' },
       { onConflict: 'id', ignoreDuplicates: true }
     )
 
@@ -119,10 +126,14 @@ export async function POST(req: NextRequest) {
 
 // ── PATCH — update owner's own listing ───────────────────────────────────────
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (isErr(auth)) return auth
+
   try {
     const body = await req.json()
-    const { id, userId, ...fields } = body
-    if (!id || !userId) return NextResponse.json({ error: 'id and userId required' }, { status: 400 })
+    const { id, ...fields } = body
+    const userId = auth.id
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
     const supabase = createServerClient()
 
@@ -166,9 +177,13 @@ export async function PATCH(req: NextRequest) {
 
 // ── DELETE — remove owner's own listing ──────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (isErr(auth)) return auth
+
   try {
-    const { id, userId } = await req.json()
-    if (!id || !userId) return NextResponse.json({ error: 'id and userId required' }, { status: 400 })
+    const { id } = await req.json()
+    const userId = auth.id
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
     const supabase = createServerClient()
 

@@ -7,6 +7,7 @@
 // What we CAN show now: active subscriber count pulled from Supabase user_profiles.
 
 import { useEffect, useState } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
 
 export default function RevenuePage() {
   const [activeSubscribers, setActiveSubscribers] = useState<number | null>(null)
@@ -14,7 +15,10 @@ export default function RevenuePage() {
 
   // Pull subscriber stats directly from Supabase via the users API we already have
   useEffect(() => {
-    fetch('/api/dashboard/users?limit=1000')
+    createBrowserClient().auth.getSession().then(({ data: { session } }) => {
+    fetch('/api/dashboard/users', {
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
       .then(r => r.json())
       .then((d: { users?: Array<{ active_package?: string | null; package_expires_at?: string | null }> }) => {
         const users = d.users ?? []
@@ -28,6 +32,7 @@ export default function RevenuePage() {
         setActiveSubscribers(active)
       })
       .catch(() => {})
+    })
   }, [])
 
   const fmt = (n: number | null) => n === null ? '—' : n.toLocaleString()

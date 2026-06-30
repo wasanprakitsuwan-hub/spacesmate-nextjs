@@ -75,16 +75,16 @@ function EditDrawer({
     try {
       const body: Record<string, string> = {
         id:         user.id,
-        callerRole,
         first_name: firstName.trim(),
         last_name:  lastName.trim(),
         phone:      phone.trim(),
       }
       if (callerRole === 'super_admin') body.role = role
 
+      const { data: { session: patchSess } } = await createBrowserClient().auth.getSession()
       const r = await fetch('/api/dashboard/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${patchSess?.access_token}` },
         body: JSON.stringify(body),
       })
       const d = await r.json()
@@ -343,7 +343,10 @@ export default function UsersPage() {
   async function load() {
     setLoading(true)
     try {
-      const r = await fetch(`/api/dashboard/users?callerRole=${callerRole}`)
+      const { data: { session: ls } } = await createBrowserClient().auth.getSession()
+      const r = await fetch('/api/dashboard/users', {
+        headers: { Authorization: `Bearer ${ls?.access_token}` },
+      })
       const d = await r.json()
       setUsers(d.users ?? [])
       setTotalListings(d.totalListings ?? 0)

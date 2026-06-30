@@ -918,11 +918,12 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
 
   async function handleFiles(files: FileList) {
     setUploading(true); setUploadError('')
+    const { data: { session: upSess } } = await createBrowserClient().auth.getSession()
     const added: string[] = []
     for (const file of Array.from(files)) {
       const fd = new FormData(); fd.append('file', file); fd.append('type', 'image')
       try {
-        const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
+        const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${upSess?.access_token}` }, body: fd })
         const d = await r.json()
         if (d.url) added.push(d.url)
         else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
@@ -1020,9 +1021,10 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
 
   async function handleFile(file: File) {
     setUploading(true); setUploadError('')
+    const { data: { session: vidSess } } = await createBrowserClient().auth.getSession()
     const fd = new FormData(); fd.append('file', file); fd.append('type', 'video')
     try {
-      const r = await fetch('/api/dashboard/upload', { method: 'POST', body: fd })
+      const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${vidSess?.access_token}` }, body: fd })
       const d = await r.json()
       if (d.url) onVideoChange(d.url)
       else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
@@ -1653,7 +1655,7 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
       const extra = prepareSubmitData(form)
       const res = await fetch('/api/dashboard/listings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({
           ...form,
           ...extra,
@@ -1662,8 +1664,6 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
           bathrooms: parseInt(form.bathrooms),
           lat: form.lat ? parseFloat(form.lat) : null,
           lng: form.lng ? parseFloat(form.lng) : null,
-          userId:    session?.user.id,
-          userEmail: session?.user.email,
           expires_at: computeExpiry(form.package_type),
         }),
       })
@@ -1792,10 +1792,11 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
 
     setSaving(true); setError('')
     try {
+      const { data: { session: editSess } } = await createBrowserClient().auth.getSession()
       const extra = prepareSubmitData(form)
       const res = await fetch('/api/dashboard/listings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${editSess?.access_token}` },
         body: JSON.stringify({
           id: listing.id,
           ...form,
@@ -1922,7 +1923,8 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
   async function deleteListing(id: string) {
     if (!confirm('ลบประกาศนี้ออกจากระบบ?')) return
     setDeleting(id)
-    await fetch('/api/dashboard/listings', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    const { data: { session: delSess } } = await createBrowserClient().auth.getSession()
+    await fetch('/api/dashboard/listings', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${delSess?.access_token}` }, body: JSON.stringify({ id }) })
     await loadDb()
     setDeleting(null)
   }

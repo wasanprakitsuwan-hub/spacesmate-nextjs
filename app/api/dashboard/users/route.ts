@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAdmin, isErr } from '@/lib/auth-guard'
 
 // ── GET — users list, filtered by callerRole ──────────────────────────────────
 // super_admin  → sees all users (super_admin, admin, landlord)
 // admin        → sees only landlord users
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase    = createServerClient()
-    const callerRole  = req.nextUrl.searchParams.get('callerRole') ?? 'admin'
+    // Role comes from verified JWT — never trust client query params
+    const callerRole  = auth.role
 
     // Build query — super_admin sees everyone, admin sees only landlords
     let query = supabase
@@ -79,9 +84,14 @@ export async function GET(req: NextRequest) {
 // ── PATCH — update user profile fields ───────────────────────────────────────
 // Fields: first_name, last_name, phone, role (super_admin only for role)
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const body = await req.json()
-    const { id, callerRole, first_name, last_name, phone, role } = body
+    const { id, first_name, last_name, phone, role } = body
+    // Role authorization from verified JWT — never trust client body
+    const callerRole = auth.role
 
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 

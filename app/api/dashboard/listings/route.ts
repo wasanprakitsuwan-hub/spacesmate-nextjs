@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAdmin, isErr } from '@/lib/auth-guard'
 
 // ── GET — fetch all properties from Supabase ─────────────────────────────────
 export async function GET() {
@@ -20,6 +21,9 @@ export async function GET() {
 
 // ── POST — create a new property ─────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   // Guard: service role key must be set or we cannot write to the DB
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
@@ -36,8 +40,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const supabase = createServerClient()
 
-    const userId    = body.userId as string | undefined
-    const userEmail = (body.userEmail as string) || 'admin@spacesmate.com'
+    // Use verified identity from JWT — never trust client-supplied userId
+    const userId    = auth.id
+    const userEmail = auth.email
 
     // Upsert user_profile so landlord_id FK is satisfied (best-effort — don't fail the whole request)
     if (userId) {
@@ -136,6 +141,9 @@ export async function POST(req: NextRequest) {
 
 // ── PATCH — update an existing property ──────────────────────────────────────
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const body = await req.json()
     const { id, ...fields } = body
@@ -179,6 +187,9 @@ export async function PATCH(req: NextRequest) {
 
 // ── DELETE — remove a property ────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const { id } = await req.json()
     const supabase = createServerClient()
