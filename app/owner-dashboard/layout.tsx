@@ -21,7 +21,7 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
       try {
         const { data: profile } = await supabase
           .from('user_profiles').select('role').eq('id', session.user.id).single()
-        if (profile?.role === 'admin') { router.replace('/dashboard'); return }
+        if (profile?.role === 'admin' || profile?.role === 'super_admin') { router.replace('/dashboard'); return }
       } catch { /* proceed as owner */ }
 
       setAuthReady(true)
