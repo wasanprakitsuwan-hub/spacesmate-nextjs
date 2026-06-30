@@ -463,6 +463,9 @@ function MapPicker({ lat, lng, onLatLng }: {
   lng: string
   onLatLng: (lat: string, lng: string) => void
 }) {
+  const [urlInput,   setUrlInput]   = useState('')
+  const [urlParsing, setUrlParsing] = useState(false)
+  const [urlError,   setUrlError]   = useState('')
   const [searchVal, setSearchVal] = useState('')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<Array<{ lat: string; lon: string; display_name: string }>>([])
@@ -578,8 +581,105 @@ function MapPicker({ lat, lng, onLatLng }: {
     setResults([])
   }
 
+  // ── Google Maps URL parser ──────────────────────────────────────────────────
+  function parseGoogleMapsUrl(url: string): { lat: string; lng: string } | null {
+    // /@lat,lng or /@lat,lng,zoom  (most common share format)
+    const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/)
+    if (atMatch) return { lat: atMatch[1], lng: atMatch[2] }
+    // ?q=lat,lng or &q=lat,lng
+    const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/)
+    if (qMatch) return { lat: qMatch[1], lng: qMatch[2] }
+    // !3d lat !4d lng  (embed / place URL format)
+    const embedMatch = url.match(/!3d(-?\d+\.?\d*).*?!4d(-?\d+\.?\d*)/)
+    if (embedMatch) return { lat: embedMatch[1], lng: embedMatch[2] }
+    return null
+  }
+
+  async function handleGoogleMapsUrl(raw: string) {
+    const trimmed = raw.trim()
+    if (!trimmed) return
+    setUrlError('')
+
+    // Try parsing directly first (long URLs always work this way)
+    const direct = parseGoogleMapsUrl(trimmed)
+    if (direct) {
+      onLatLng(direct.lat, direct.lng)
+      return
+    }
+
+    // Short URL — resolve via server then parse
+    if (trimmed.includes('maps.app.goo.gl') || trimmed.includes('goo.gl')) {
+      setUrlParsing(true)
+      try {
+        const r = await fetch(`/api/resolve-url?url=${encodeURIComponent(trimmed)}`)
+        const d = await r.json()
+        if (d.resolved) {
+          const parsed = parseGoogleMapsUrl(d.resolved)
+          if (parsed) { onLatLng(parsed.lat, parsed.lng); return }
+        }
+        setUrlError('ไม่สามารถอ่านพิกัดจากลิงก์นี้ได้')
+      } catch { setUrlError('ไม่สามารถ resolve ลิงก์สั้นได้') }
+      finally { setUrlParsing(false) }
+      return
+    }
+
+    setUrlError('ลิงก์ไม่ถูกต้อง — ลองใช้ Google Maps แชร์ตำแหน่งแล้ววางที่นี่')
+  }
+
   return (
     <div>
+      {/* ── Google Maps URL paste (primary method) ── */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <span style={{
+              position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+              fontSize: 15, color: urlError ? '#dc2626' : '#048c73', pointerEvents: 'none',
+            }}>🔗</span>
+            <input
+              value={urlInput}
+              onChange={e => { setUrlInput(e.target.value); setUrlError('') }}
+              onPaste={e => {
+                const pasted = e.clipboardData.getData('text')
+                if (pasted.includes('google.com/maps') || pasted.includes('maps.app.goo.gl') || pasted.includes('goo.gl')) {
+                  e.preventDefault()
+                  setUrlInput(pasted)
+                  handleGoogleMapsUrl(pasted)
+                }
+              }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGoogleMapsUrl(urlInput) } }}
+              placeholder="วางลิงก์ Google Maps ที่นี่... (วิธีแนะนำ)"
+              style={{
+                ...SINP, paddingLeft: 32, flex: 1,
+                background: urlError ? '#fff5f5' : '#f0fbf8',
+                border: `1.5px solid ${urlError ? '#fca5a5' : '#b2d8c9'}`,
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => handleGoogleMapsUrl(urlInput)}
+            disabled={urlParsing || !urlInput.trim()}
+            style={{
+              padding: '9px 14px', borderRadius: 10, border: 'none',
+              background: '#048c73', color: '#fff', fontWeight: 600, fontSize: 13,
+              cursor: urlParsing || !urlInput.trim() ? 'not-allowed' : 'pointer',
+              opacity: urlParsing || !urlInput.trim() ? 0.6 : 1,
+              whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            {urlParsing
+              ? <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
+              : '📍 ดึงพิกัด'
+            }
+          </button>
+        </div>
+        {urlError
+          ? <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#dc2626' }}>{urlError}</p>
+          : <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94a3b8' }}>วางลิงก์จาก Google Maps แล้วพิกัดจะดึงอัตโนมัติ • หรือค้นหาด้านล่าง / คลิกบนแผนที่</p>
+        }
+      </div>
+
       {/* ── Search box ── */}
       <div style={{ position: 'relative', marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8 }}>
