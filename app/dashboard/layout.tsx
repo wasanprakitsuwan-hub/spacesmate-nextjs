@@ -6,13 +6,13 @@ import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase'
 
 const NAV = [
-  { href: '/dashboard',            label: 'ภาพรวมระบบ',       icon: '⊞',  exact: true },
-  { href: '/dashboard/listings',   label: 'จัดการประกาศ',     icon: '🏠', exact: false },
-  { href: '/dashboard/users',      label: 'ผู้ใช้งาน',         icon: '👥', exact: false },
-  { href: '/dashboard/revenue',    label: 'แพ็กเกจ & รายได้', icon: '💳', exact: false },
-  { href: '/dashboard/enquiries',  label: 'คำขอรับบริการ',    icon: '🤝', exact: false, badge: 0 },
-  { href: '/dashboard/blog',       label: 'บทความ',            icon: '📝', exact: false },
-  { href: '/dashboard/settings',   label: 'ตั้งค่า',           icon: '⚙️', exact: false },
+  { href: '/dashboard',            label: 'ภาพรวมระบบ',   icon: 'grid_view',     exact: true },
+  { href: '/dashboard/listings',   label: 'จัดการประกาศ', icon: 'home_work',     exact: false },
+  { href: '/dashboard/users',      label: 'ผู้ใช้งาน',     icon: 'group',         exact: false },
+  { href: '/dashboard/revenue',    label: 'รายได้',        icon: 'bar_chart',     exact: false },
+  { href: '/dashboard/enquiries',  label: 'คำขอรับบริการ', icon: 'support_agent', exact: false, badge: 0 },
+  { href: '/dashboard/blog',       label: 'บทความ',        icon: 'article',       exact: false },
+  { href: '/dashboard/settings',   label: 'ตั้งค่า',       icon: 'settings',      exact: false },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
               background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
             }}>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{n.icon}</span>
+              <span className="msym" style={{ fontSize: 20, lineHeight: 1, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{n.icon}</span>
               <span style={{ flex: 1 }}>{n.label}</span>
               {badge > 0 && (
                 <span style={{
@@ -148,8 +148,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <button onClick={handleLogout} title="ออกจากระบบ" style={{
             background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-            cursor: 'pointer', fontSize: 18, padding: '0 2px', lineHeight: 1,
-          }}>⇥</button>
+            cursor: 'pointer', padding: '0 2px', lineHeight: 1,
+          }}>
+            <span className="msym" style={{ fontSize: 19, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>logout</span>
+          </button>
         </div>
       </aside>
 
@@ -164,7 +166,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           position: 'sticky', top: 0, zIndex: 40,
         }}>
           <Link href="/" style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-            ← กลับไปยังเว็บไซต์
+            <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>arrow_back</span>
+            กลับไปยังเว็บไซต์
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
@@ -172,15 +175,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               borderRadius: 11, padding: '8px 14px', fontSize: 13, color: '#94a3b8',
               minWidth: 200, border: '1px solid #eef0ef',
             }}>
-              🔍 <span>ค้นหา...</span>
+              <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span>
+              <span>ค้นหา...</span>
             </div>
             <span style={{
               position: 'relative', width: 40, height: 40, borderRadius: 11,
               background: '#f4f6f5', border: '1px solid #eef0ef',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', fontSize: 20,
+              cursor: 'pointer',
             }}>
-              🔔
+              <span className="msym" style={{ fontSize: 20, color: '#64748b', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>notifications</span>
               <span style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#d97f11' }} />
             </span>
           </div>
