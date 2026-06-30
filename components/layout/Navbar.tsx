@@ -2,12 +2,45 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase'
+import AuthModal from '@/components/auth/AuthModal'
 
 export default function Navbar() {
   const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileOpen,  setMobileOpen]  = useState(false)
+  const [authModal,   setAuthModal]   = useState(false)
+  const [session,     setSession]     = useState<any>(null)
+  const [dashUrl,     setDashUrl]     = useState('/owner-dashboard')
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createBrowserClient()
+
+    // Check current session immediately
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      setSession(s)
+      if (s?.user) {
+        const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
+        setDashUrl(data?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
+      }
+      setAuthLoading(false)
+    })
+
+    // Live auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      setSession(s)
+      if (s?.user) {
+        const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
+        setDashUrl(data?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
+      } else {
+        setDashUrl('/owner-dashboard')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
@@ -30,7 +63,7 @@ export default function Navbar() {
     { label: 'ลงประกาศปล่อยเช่า',  icon: 'sell',          href: '/submit' },
     { label: 'รับฝากบริหาร',       icon: 'handshake',     href: '/manage' },
     { label: 'บทความ',             icon: 'article',       href: '/blog' },
-    { label: 'แดชบอร์ด',           icon: 'dashboard',     href: '/dashboard' },
+    ...(session ? [{ label: 'แดชบอร์ด', icon: 'dashboard', href: dashUrl }] : []),
   ]
 
   return (
@@ -91,17 +124,27 @@ export default function Navbar() {
         </div>
 
         {/* Right side */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <Link href="/dashboard" className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px', textDecoration: 'none' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#334155'}>
-            แดชบอร์ด
-          </Link>
-          <Link href="/login" className="sm-hide-mobile" title="เข้าสู่ระบบ" style={{ fontSize: 14, fontWeight: 500, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, padding: '8px 6px', textDecoration: 'none' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#02402e'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#64748b'}>
-            <span className="msym" style={{ fontSize: 19 }}>admin_panel_settings</span>
-          </Link>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+
+          {/* Auth button — แดชบอร์ด when logged in, เข้าสู่ระบบ when logged out */}
+          {!authLoading && (
+            session ? (
+              <Link href={dashUrl} className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 600, color: '#02402e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #02402e', textDecoration: 'none', transition: 'all .18s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#fff' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}>
+                <span className="msym" style={{ fontSize: 17 }}>dashboard</span>
+                แดชบอร์ด
+              </Link>
+            ) : (
+              <button onClick={() => setAuthModal(true)} className="sm-hide-mobile" style={{ fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: '#fff', fontFamily: 'inherit', transition: 'all .18s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
+                <span className="msym" style={{ fontSize: 17 }}>login</span>
+                เข้าสู่ระบบ
+              </button>
+            )
+          )}
+
           <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
@@ -128,9 +171,22 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {/* Mobile auth button */}
+            {!session && (
+              <button onClick={() => { setMobileOpen(false); setAuthModal(true) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#02402e', background: 'transparent', border: 'none', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                <span className="msym" style={{ fontSize: 21, color: '#02402e' }}>login</span>
+                เข้าสู่ระบบ / สมัครสมาชิก
+              </button>
+            )}
           </div>
         </div>
       )}
+
+      {/* Auth modal */}
+      {authModal && <AuthModal onClose={() => setAuthModal(false)} />}
 
       <style>{`
         .sm-navlinks { display: flex !important; }
