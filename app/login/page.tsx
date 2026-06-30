@@ -71,8 +71,7 @@ export default function LoginPage() {
           { id: data.user.id, email: signEmail, full_name: signName, role: 'landlord' },
           { onConflict: 'id', ignoreDuplicates: true }
         )
-        setSuccess('สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี')
-        router.push('/owner-dashboard')
+        setSuccess(signEmail)
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่')
@@ -157,8 +156,31 @@ export default function LoginPage() {
               </form>
             )}
 
+            {/* ── SIGNUP SUCCESS ── */}
+            {tab === 'signup' && success && (
+              <div className="text-center py-4 space-y-4">
+                <div className="text-5xl">📧</div>
+                <h3 className="text-lg font-bold text-spacemate-brandDark">ตรวจสอบอีเมลของคุณ</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  เราได้ส่งลิงก์ยืนยันบัญชีไปที่<br/>
+                  <span className="font-semibold text-spacemate-brandDark">{success}</span>
+                </p>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  กรุณาคลิกลิงก์ในอีเมลเพื่อยืนยันบัญชีก่อนเข้าสู่ระบบ<br/>
+                  หากไม่พบอีเมล ให้ตรวจสอบในโฟลเดอร์ Spam
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setSuccess(''); switchTab('login') }}
+                  className="btn-primary w-full"
+                >
+                  กลับไปเข้าสู่ระบบ
+                </button>
+              </div>
+            )}
+
             {/* ── SIGNUP FORM ── */}
-            {tab === 'signup' && (
+            {tab === 'signup' && !success && (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div>
                   <label className="label block mb-1.5">ชื่อ-นามสกุล</label>
