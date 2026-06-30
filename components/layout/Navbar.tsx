@@ -23,7 +23,7 @@ export default function Navbar() {
       setSession(s)
       if (s?.user) {
         const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
-        setDashUrl(data?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
+        setDashUrl(data?.role === 'admin' || data?.role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
       }
       setAuthLoading(false)
     })
@@ -33,7 +33,7 @@ export default function Navbar() {
       setSession(s)
       if (s?.user) {
         const { data } = await supabase.from('user_profiles').select('role').eq('id', s.user.id).single()
-        setDashUrl(data?.role === 'admin' ? '/dashboard' : '/owner-dashboard')
+        setDashUrl(data?.role === 'admin' || data?.role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
       } else {
         setDashUrl('/owner-dashboard')
       }

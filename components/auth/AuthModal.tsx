@@ -64,7 +64,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
     try {
       const supabase = createBrowserClient()
       const { data } = await supabase.from('user_profiles').select('role').eq('id', userId).single()
-      return data?.role === 'admin' ? '/dashboard' : '/owner-dashboard'
+      return data?.role === 'admin' || data?.role === 'super_admin' ? '/dashboard' : '/owner-dashboard'
     } catch {
       return '/owner-dashboard'
     }
