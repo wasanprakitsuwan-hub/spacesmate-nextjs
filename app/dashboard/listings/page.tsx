@@ -270,6 +270,17 @@ function TypeChip({ type }: { type: string }) {
   )
 }
 
+// ── Responsive width hook ─────────────────────────────────────────────────────
+function useWindowWidth() {
+  const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1280)
+  useEffect(() => {
+    const h = () => setW(window.innerWidth)
+    window.addEventListener('resize', h)
+    return () => window.removeEventListener('resize', h)
+  }, [])
+  return w
+}
+
 function SectionHead({ text }: { text: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 4 }}>
@@ -474,6 +485,7 @@ function MapPicker({ lat, lng, onLatLng }: {
   const markerRef = useRef<any>(null)
   const onLatLngRef = useRef(onLatLng)
   onLatLngRef.current = onLatLng   // always-fresh callback ref
+  const isMob = useWindowWidth() < 768
 
   const defaultLat = lat ? parseFloat(lat) : 13.7563
   const defaultLng = lng ? parseFloat(lng) : 100.5018
@@ -734,7 +746,7 @@ function MapPicker({ lat, lng, onLatLng }: {
       )}
 
       {/* ── Manual lat / lng inputs (small override) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMob ? '1fr' : '1fr 1fr', gap: 10, marginTop: 10 }}>
         <div>
           <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>Lat (ละติจูด)</label>
           <input value={lat} onChange={e => onLatLng(e.target.value, lng)} placeholder="13.756300" style={{ ...SINP, fontSize: 12.5, padding: '7px 10px' }} />
@@ -764,6 +776,7 @@ function ThaiAddressSelect({ form, onChange }: {
   const [amphId, setAmphId] = useState<number | null>(null)
   const [loadA, setLoadA]   = useState(false)
   const [loadT, setLoadT]   = useState(false)
+  const isMob = useWindowWidth() < 768
 
   // Load province list once on mount
   useEffect(() => {
@@ -861,7 +874,7 @@ function ThaiAddressSelect({ form, onChange }: {
       </div>
 
       {/* District + Sub-district */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMob ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
           <label style={SLBL}>
             เขต / อำเภอ
@@ -1065,13 +1078,14 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
 }
 
 // ── Condo / House Rental Detail ───────────────────────────────────────────────
-function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
+function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
   detail: CondoRentalDetail
   propertyType: string
   onChange: (d: CondoRentalDetail) => void
+  isMobile?: boolean
 }) {
   function u(k: keyof CondoRentalDetail, v: string) { onChange({ ...detail, [k]: v }) }
-  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }
   const isHouse = propertyType === 'house'
 
   return (
@@ -1107,7 +1121,7 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
       {/* Price grid */}
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px' }}>💰 ราคาเช่าตามระยะสัญญา</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 10 }}>
           {([
             { key: 'price_12mo', label: '12 เดือน', ph: '15,000' },
             { key: 'price_6mo',  label: '6 เดือน',  ph: '16,000' },
@@ -1131,9 +1145,10 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
 }
 
 // ── Rental Charges Section (Apartment only) ───────────────────────────────────
-function RentalChargesSection({ charges, onChange }: {
+function RentalChargesSection({ charges, onChange, isMobile }: {
   charges: RentalCharges
   onChange: (c: RentalCharges) => void
+  isMobile?: boolean
 }) {
   function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
 
@@ -1219,7 +1234,7 @@ function RentalChargesSection({ charges, onChange }: {
       <RateRow label="ค่าไฟฟ้า (ต่อหน่วย)"
         type={charges.electricity_type} fixed={charges.electricity_fixed} minRate={charges.electricity_min_rate}
         onType={v => u('electricity_type', v)} onFixed={v => u('electricity_fixed', v)} onMinRate={v => u('electricity_min_rate', v)} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <label style={SLBL}>เงินมัดจำ (เดือน)</label>
           <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
@@ -1298,15 +1313,16 @@ function prepareSubmitData(form: ListingFormState) {
 }
 
 // ── Form Fields (all 9 sections) ──────────────────────────────────────────────
-function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, onRoomTypesChange, isAdmin = true }: {
+function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, onRoomTypesChange, isAdmin = true, isMobile = false }: {
   form: ListingFormState
   onChange: (k: string, v: any) => void
   onAmenityToggle: (a: string) => void
   onImagesChange: (imgs: string[]) => void
   onRoomTypesChange: (rows: RoomTypeRow[]) => void
   isAdmin?: boolean
+  isMobile?: boolean
 }) {
-  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
+  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }
   const termLabel = RENTAL_TERM_LABEL[form.rental_term] ?? '/เดือน'
   const isDaily   = form.rental_term === 'daily'
   const roomOpts  = getRoomTypeOptions(form.property_type)
@@ -1354,7 +1370,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           1 · ข้อมูลหลัก
           Property type is FIRST — the form adapts its fields based on this.
       ════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 24 }}>
+      <div id="lf-s1" style={{ marginBottom: 24 }}>
         <SectionHead text="1 · ข้อมูลหลัก" />
 
         {/* Property type — first so conditional fields below adapt */}
@@ -1393,7 +1409,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       {/* ═══════════════════════════════════════════════════════════════════
           2 · แพ็กเกจ & ราคา  — adapts per property type
       ════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 24 }}>
+      <div id="lf-s2" style={{ marginBottom: 24 }}>
 
         {/* ── APARTMENT ── whole-building multi-unit table ── */}
         {isApartment && (
@@ -1422,6 +1438,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
               detail={form.condo_rental}
               propertyType={form.property_type}
               onChange={d => onChange('condo_rental', d)}
+              isMobile={isMobile}
             />
           </>
         )}
@@ -1499,6 +1516,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           <RentalChargesSection
             charges={form.rental_charges}
             onChange={c => onChange('rental_charges', c)}
+            isMobile={isMobile}
           />
         </div>
       )}
@@ -1506,7 +1524,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       {/* ═══════════════════════════════════════════════════════════════════
           4 · ที่ตั้งและที่อยู่  (cascading Thai address dropdowns)
       ════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 24 }}>
+      <div id="lf-s4" style={{ marginBottom: 24 }}>
         <SectionHead text="4 · ที่ตั้งและที่อยู่" />
         <ThaiAddressSelect
           form={{ address_th: form.address_th, district: form.district, sub_district: form.sub_district, province: form.province, postcode: form.postcode }}
@@ -1595,7 +1613,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       {/* ═══════════════════════════════════════════════════════════════════
           8 · รูปภาพห้อง
       ════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 24 }}>
+      <div id="lf-s8" style={{ marginBottom: 24 }}>
         <SectionHead text="8 · รูปภาพห้อง" />
         <ImageUploadZone images={form.images} onImagesChange={onImagesChange} />
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>รูปแรกจะเป็นรูปหน้าปกของประกาศ</p>
@@ -1829,6 +1847,13 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
 }
 
 // ── Drawer Shell ──────────────────────────────────────────────────────────────
+const DRAWER_TABS = [
+  { id: 'lf-s1', label: '1 ข้อมูล' },
+  { id: 'lf-s2', label: '2 ราคา' },
+  { id: 'lf-s4', label: '3 ที่อยู่' },
+  { id: 'lf-s8', label: '4 รูปภาพ' },
+]
+
 function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel }: {
   title: string; subtitle: string
   form: ListingFormState
@@ -1842,24 +1867,73 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   onSubmit: (e: React.FormEvent) => void
   submitLabel: string
 }) {
+  const w        = useWindowWidth()
+  const isMobile = w < 768
+  const isSmall  = w < 1024   // both tablet and mobile → full-screen
+  const formRef  = useRef<HTMLFormElement>(null)
+  const [activeTab, setActiveTab] = useState('lf-s1')
+
+  function scrollToSection(id: string) {
+    setActiveTab(id)
+    const el = document.getElementById(id)
+    if (el && formRef.current) {
+      const top = el.offsetTop - 8
+      formRef.current.scrollTo({ top, behavior: 'smooth' })
+    }
+  }
+
+  const drawerPad = isMobile ? '16px 14px' : '22px 24px'
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
-      <div style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />
-      <div style={{ width: 620, background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }} onClick={e => e.stopPropagation()}>
+      {/* Overlay — only on desktop */}
+      {!isSmall && <div style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />}
+
+      <div
+        style={{ width: isSmall ? '100%' : 620, background: '#fff', boxShadow: isSmall ? 'none' : '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }}
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
-            <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>{subtitle}</p>
+        <div style={{ padding: isMobile ? '14px 16px' : '20px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Back arrow on small screens */}
+            {isSmall && (
+              <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
+            )}
+            <div>
+              <h2 style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
+              {!isMobile && <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>{subtitle}</p>}
+            </div>
           </div>
           <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
+
+        {/* Section tab strip — tablet and mobile only */}
+        {isSmall && (
+          <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #eef0ef', background: '#fafbfa', flexShrink: 0, scrollbarWidth: 'none' }}>
+            {DRAWER_TABS.map(tab => (
+              <button key={tab.id} type="button" onClick={() => scrollToSection(tab.id)}
+                style={{
+                  padding: isMobile ? '8px 12px' : '9px 16px',
+                  fontSize: isMobile ? 12 : 12.5,
+                  fontWeight: activeTab === tab.id ? 700 : 500,
+                  color: activeTab === tab.id ? '#02402e' : '#94a3b8',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  borderBottom: `2px solid ${activeTab === tab.id ? '#02402e' : 'transparent'}`,
+                  whiteSpace: 'nowrap', transition: 'all .15s',
+                }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Form body */}
-        <form onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+        <form ref={formRef} onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: drawerPad }}>
           <ListingFormFields
             form={form} onChange={setF} onAmenityToggle={toggleAmenity}
             onImagesChange={onImagesChange} onRoomTypesChange={onRoomTypesChange}
-            isAdmin={isAdmin}
+            isAdmin={isAdmin} isMobile={isMobile}
           />
           {error && (
             <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
@@ -1867,12 +1941,33 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
             </div>
           )}
         </form>
+
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
-          <button onClick={onSubmit as any} disabled={saving} style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
-          </button>
+        <div style={{
+          padding: isMobile ? '12px 14px 20px' : '16px 24px',
+          borderTop: '1px solid #eef0ef',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 10,
+          flexShrink: 0,
+        }}>
+          {isMobile ? (
+            // Mobile: Save on top (full width), Cancel below
+            <>
+              <button onClick={onSubmit as any} disabled={saving} style={{ padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
+              </button>
+              <button onClick={onClose} style={{ padding: '11px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
+            </>
+          ) : (
+            // Desktop / Tablet: side-by-side
+            <>
+              <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
+              <button onClick={onSubmit as any} disabled={saving} style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
+              </button>
+            </>
+          )}
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
