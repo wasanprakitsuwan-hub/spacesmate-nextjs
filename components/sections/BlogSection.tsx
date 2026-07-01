@@ -1,10 +1,23 @@
 import Link from 'next/link'
-import { blogPosts, formatThaiDate } from '@/lib/blog-data'
+import { createServerClient } from '@/lib/supabase'
 
-// Show 3 most recent posts on homepage
-const RECENT_POSTS = blogPosts.slice(0, 3)
+function formatThaiDate(iso: string): string {
+  const d = new Date(iso)
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`
+}
 
-export default function BlogSection() {
+export default async function BlogSection() {
+  const supabase = createServerClient()
+  const { data } = await supabase
+    .from('blog_posts')
+    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, published_at')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(3)
+
+  const posts = data ?? []
+
   return (
     <section style={{ maxWidth: 1240, margin: '0 auto', padding: '8px 24px 56px' }}>
 
@@ -21,7 +34,7 @@ export default function BlogSection() {
 
       {/* Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="sm-grid3">
-        {RECENT_POSTS.map(post => (
+        {posts.map(post => (
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
@@ -41,8 +54,8 @@ export default function BlogSection() {
             {/* Image */}
             <div style={{ height: 180, overflow: 'hidden', background: '#f4f8f6', position: 'relative' }}>
               <img
-                src={post.image}
-                alt={post.imageAlt}
+                src={post.thumbnail ?? '/blog/placeholder.jpg'}
+                alt={post.thumbnail_alt ?? post.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }}
                 className="sm-blog-img"
               />
@@ -62,10 +75,12 @@ export default function BlogSection() {
                 {post.title}
               </h3>
               <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {post.excerpt}
+                {post.meta_desc}
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{formatThaiDate(post.date)}</span>
+                <span style={{ fontSize: 11.5, color: '#94a3b8' }}>
+                  {post.published_at ? formatThaiDate(post.published_at) : ''}
+                </span>
                 <span style={{ color: '#048c73', fontSize: 13, fontWeight: 600 }}>อ่านต่อ →</span>
               </div>
             </div>
