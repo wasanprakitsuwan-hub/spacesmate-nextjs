@@ -313,7 +313,7 @@ function RichEditor({ value, onChange, placeholder }: { value: string; onChange:
         <div style={{ width: 1, background: '#eef0ef', margin: '0 2px' }} />
         <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList') }}>• List</button>
         <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertOrderedList') }}>1. List</button>
-        <button type="button" style={{ ...btnStyle, color: '#b91c1c' }} onMouseDown={e => { e.preventDefault(); exec('removeFormat') }}>✕ Clear</button>
+        <button type="button" style={{ ...btnStyle, color: '#b91c1c' }} onMouseDown={e => { e.preventDefault(); exec('removeFormat') }}><span className="msym" style={{ fontSize: 14 }}>close</span> Clear</button>
       </div>
       <div ref={ref} contentEditable suppressContentEditableWarning onInput={() => { if (ref.current) onChange(ref.current.innerHTML) }} data-placeholder={placeholder || 'อธิบายรายละเอียด...'} style={{ minHeight: 120, padding: '12px 14px', fontSize: 13.5, lineHeight: 1.7, color: '#334155', outline: 'none' }} />
       <style>{`[contenteditable]:empty:before{content:attr(data-placeholder);color:#94a3b8;pointer-events:none}[contenteditable] h2{font-size:1.15em;font-weight:700;color:#02402e;margin:.8em 0 .3em}[contenteditable] h3{font-size:1em;font-weight:600;margin:.6em 0 .2em}[contenteditable] ul,[contenteditable] ol{padding-left:1.4em}[contenteditable] li{margin-bottom:3px}`}</style>
@@ -362,7 +362,7 @@ function RoomTypePricingGrid({ rows, onChange, termLabel, isDaily, roomTypeOptio
               {!isDaily && (
                 <input type="number" value={row.price_to} onChange={e => updateRow(row.id, 'price_to', e.target.value)} placeholder="16000" style={{ ...SINP, padding: '7px 10px' }} />
               )}
-              <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+              <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
             </div>
           ))}
         </div>
@@ -417,7 +417,7 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
                   <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
                 </div>
-                <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
               </div>
               {/* Short-term availability */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
@@ -528,7 +528,7 @@ function MapPicker({ lat, lng, onLatLng }: {
     const marker = L.marker([defaultLat, defaultLng], { draggable: true, icon }).addTo(map)
     markerRef.current = marker
 
-    marker.bindPopup('<b style="color:#02402e;font-size:12px">📍 ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
+    marker.bindPopup('<b style="color:#02402e;font-size:12px">ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
 
     marker.on('dragend', () => {
       const pos = markerRef.current.getLatLng()
@@ -647,7 +647,7 @@ function MapPicker({ lat, lng, onLatLng }: {
             <span style={{
               position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
               fontSize: 15, color: urlError ? '#dc2626' : '#048c73', pointerEvents: 'none',
-            }}>🔗</span>
+            }}><span className="msym" style={{ fontVariationSettings: "'wght' 300, 'FILL' 0" }}>link</span></span>
             <input
               value={urlInput}
               onChange={e => { setUrlInput(e.target.value); setUrlError('') }}
@@ -682,7 +682,7 @@ function MapPicker({ lat, lng, onLatLng }: {
           >
             {urlParsing
               ? <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
-              : '📍 ดึงพิกัด'
+              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>location_on</span>ดึงพิกัด</>
             }
           </button>
         </div>
@@ -710,7 +710,7 @@ function MapPicker({ lat, lng, onLatLng }: {
           >
             {searching
               ? <><span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />ค้นหา</>
-              : '🗺️ ค้นหา'
+              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>map</span>ค้นหา</>
             }
           </button>
         </div>
@@ -719,7 +719,7 @@ function MapPicker({ lat, lng, onLatLng }: {
             {results.map((r, i) => (
               <button key={i} type="button" onClick={() => selectResult(r)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 12.5, color: '#334155', borderBottom: i < results.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
-                📍 {r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
+                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle', marginRight: 4 }}>location_on</span>{r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
               </button>
             ))}
             <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>ปิด</button>
@@ -736,7 +736,7 @@ function MapPicker({ lat, lng, onLatLng }: {
       {/* ── Coordinates status ── */}
       {lat && lng ? (
         <div style={{ marginTop: 8, padding: '7px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', fontWeight: 500, display: 'flex', gap: 12, alignItems: 'center' }}>
-          <span>✅ {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73' }}>check_circle</span>{parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}</span>
           <span style={{ color: '#94a3b8', fontWeight: 400 }}>ลากหมุดหรือคลิกบนแผนที่เพื่อปรับ</span>
         </div>
       ) : (
@@ -868,7 +868,7 @@ function ThaiAddressSelect({ form, onChange }: {
           onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectProvince(id) }}
           style={{ ...SINP, cursor: 'pointer' }}
         >
-          <option value="">{provinces.length === 0 ? '⟳ กำลังโหลด…' : 'เลือกจังหวัด'}</option>
+          <option value="">{provinces.length === 0 ? 'กำลังโหลด…' : 'เลือกจังหวัด'}</option>
           {provinces.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </div>
@@ -878,7 +878,7 @@ function ThaiAddressSelect({ form, onChange }: {
         <div>
           <label style={SLBL}>
             เขต / อำเภอ
-            {loadA && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>⟳</span>}
+            {loadA && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', marginLeft: 4, display: 'inline-block', animation: 'spin .8s linear infinite' }}>sync</span>}
           </label>
           <select
             value={amphId ?? ''}
@@ -893,7 +893,7 @@ function ThaiAddressSelect({ form, onChange }: {
         <div>
           <label style={SLBL}>
             แขวง / ตำบล
-            {loadT && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>⟳</span>}
+            {loadT && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', marginLeft: 4, display: 'inline-block', animation: 'spin .8s linear infinite' }}>sync</span>}
           </label>
           <select
             value={form.sub_district || ''}
@@ -916,7 +916,7 @@ function ThaiAddressSelect({ form, onChange }: {
           placeholder="10110"
           style={{ ...SINP, width: 130 }}
         />
-        {form.postcode && <span style={{ fontSize: 11.5, color: '#048c73', marginLeft: 8, fontWeight: 500 }}>✅ {form.postcode}</span>}
+        {form.postcode && <span style={{ fontSize: 11.5, color: '#048c73', marginLeft: 8, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{form.postcode}</span>}
       </div>
     </div>
   )
@@ -963,10 +963,11 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || limit}
         style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: limit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || limit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
-          : limit ? '✅ อัปโหลดครบ 10 รูปแล้ว'
+          : limit ? <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span> อัปโหลดครบ 10 รูปแล้ว</>
+
           : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span> เลือกรูปภาพห้อง (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
       </button>
-      {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>}
+      {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {images.length > 0 && (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
@@ -988,7 +989,7 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
                 {/* Cover badge — always on first image */}
                 {i === 0 && (
                   <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700, letterSpacing: .3 }}>
-                    ★ หน้าปก
+                    <span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 500, 'FILL' 1", verticalAlign: 'middle' }}>star</span> หน้าปก
                   </span>
                 )}
                 {/* Set as cover — hover overlay on non-first images */}
@@ -1012,7 +1013,7 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
                   type="button"
                   onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
                   style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, zIndex: 2 }}
-                >✕</button>
+                ><span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
               </div>
             ))}
           </div>
@@ -1048,7 +1049,7 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
   if (!isPremium) {
     return (
       <div style={{ background: '#f8fafc', border: '1.5px dashed #eef0ef', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 6 }}>🎬</div>
+        <div style={{ marginBottom: 6 }}><span className="msym" style={{ fontSize: 28, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span></div>
         <p style={{ color: '#94a3b8', fontSize: 13, margin: 0, fontWeight: 500 }}>วิดีโอเฉพาะแพ็กเกจ Premium</p>
         <p style={{ color: '#c7d2d0', fontSize: 12, margin: '4px 0 0' }}>เปลี่ยนแพ็กเกจเป็น Premium ด้านบนเพื่อเพิ่มวิดีโอ</p>
       </div>
@@ -1060,16 +1061,16 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
       <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
         style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
-        {uploading ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</> : '📹 อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)'}
+        {uploading ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</> : <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span> อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)</>}
       </button>
       <div>
         <label style={{ ...SLBL, fontSize: 12 }}>หรือวางลิงก์วิดีโอ (YouTube / Vimeo)</label>
         <input value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''} onChange={e => onVideoChange(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={SINP} />
       </div>
-      {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0' }}>⚠️ {uploadError}</p>}
+      {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {videoUrl && (
         <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ flex: 1, wordBreak: 'break-all' }}>✅ {videoUrl.length > 60 ? videoUrl.slice(0, 60) + '…' : videoUrl}</span>
+          <span style={{ flex: 1, wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73', flexShrink: 0 }}>check_circle</span>{videoUrl.length > 60 ? videoUrl.slice(0, 60) + '…' : videoUrl}</span>
           <button type="button" onClick={() => onVideoChange('')} style={{ color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>ลบ</button>
         </div>
       )}
@@ -1218,7 +1219,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
               </div>
             </div>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '5px 0 0' }}>
-              💡 เรียกเก็บ <strong>ราคาที่สูงกว่า</strong> ระหว่าง (ราคา/หน่วย × จำนวนหน่วย) กับราคาขั้นต่ำ
+              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", flexShrink: 0, marginRight: 4 }}>tips_and_updates</span>เรียกเก็บ <strong>ราคาที่สูงกว่า</strong> ระหว่าง (ราคา/หน่วย × จำนวนหน่วย) กับราคาขั้นต่ำ
             </p>
           </div>
         )}
@@ -1471,7 +1472,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
 
         {isApartment && (
           <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
-            💡 ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
+            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>tips_and_updates</span>ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
           </div>
         )}
 
@@ -1918,14 +1919,14 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
         <div style={{ padding: isMobile ? '14px 16px' : '22px 40px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {isSmall && (
-              <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
+              <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>arrow_back</span></button>
             )}
             <div>
               <h2 style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
               <p style={{ fontSize: isMobile ? 11.5 : 13, color: '#94a3b8', margin: 0 }}>{subtitle}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>close</span></button>
         </div>
 
         {/* Section tab strip — all sizes */}
@@ -1956,7 +1957,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
             />
             {error && (
               <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
-                ⚠️ {error}
+                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6, flexShrink: 0 }}>warning</span>{error}
               </div>
             )}
           </div>
@@ -2066,12 +2067,12 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
             </button>
           ))}
         </div>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  ค้นหาชื่อ / ทำเล" style={{ flex: 1, minWidth: 180, padding: '7px 14px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13, outline: 'none' }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาชื่อ / ทำเล" style={{ flex: 1, minWidth: 180, padding: '7px 14px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13, outline: 'none' }} />
       </div>
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -12px rgba(2,64,46,0.08)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredStatic.length + filteredDb.length} จาก {staticProperties.length + dbListings.length} รายการ</span>
-          {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8' }}>⟳ กำลังโหลด…</span>}
+          {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, display: 'inline-block', animation: 'spin .8s linear infinite' }}>sync</span>กำลังโหลด…</span>}
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
@@ -2100,7 +2101,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 <td style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 5 }}>
                     <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                    <button onClick={() => setCreateFromStatic(staticToFormState(p))} title="นำเข้าและแก้ไขเป็น DB listing" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => setCreateFromStatic(staticToFormState(p))} title="นำเข้าและแก้ไขเป็น DB listing" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span></button>
                   </div>
                 </td>
               </tr>
@@ -2144,7 +2145,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 <td style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 5 }}>
                     <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                    <button onClick={() => setEditTarget(p)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => setEditTarget(p)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span></button>
                     <button onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === p.id ? 0.5 : 1 }}>
                       {deleting === p.id ? '…' : 'ลบ'}
                     </button>
@@ -2206,7 +2207,7 @@ function SubmissionsTab() {
   return (
     <div>
       <div style={{ background: '#fff6e9', border: '1px solid #fed7aa', borderRadius: 12, padding: '11px 15px', marginBottom: 14, fontSize: 13, color: '#92400e' }}>
-        📬 ประกาศที่ส่งมาจากฟอร์ม <strong>/ลงประกาศ</strong> — แพ็กเกจที่ชำระแล้วจะเผยแพร่อัตโนมัติ ฟรีทดลองต้องอนุมัติ
+        <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 6, flexShrink: 0 }}>mail</span>ประกาศที่ส่งมาจากฟอร์ม <strong>/ลงประกาศ</strong> — แพ็กเกจที่ชำระแล้วจะเผยแพร่อัตโนมัติ ฟรีทดลองต้องอนุมัติ
       </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {STATUS_OPTS.map(o => (
@@ -2222,7 +2223,7 @@ function SubmissionsTab() {
           </div>
         ) : items.length === 0 ? (
           <div style={{ padding: '50px 40px', textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+            <div style={{ marginBottom: 10 }}><span className="msym" style={{ fontSize: 36, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>inbox</span></div>
             <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>ยังไม่มีคำขอใหม่</div>
           </div>
         ) : (
@@ -2302,10 +2303,10 @@ export default function ListingsPage() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button onClick={() => setTab('published')} style={{ padding: '9px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, background: tab === 'published' ? '#02402e' : '#f4f6f5', color: tab === 'published' ? '#fff' : '#64748b' }}>
-          🏠 เผยแพร่แล้ว
+          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>home</span>เผยแพร่แล้ว
         </button>
         <button onClick={() => setTab('queue')} style={{ padding: '9px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, background: tab === 'queue' ? '#02402e' : '#f4f6f5', color: tab === 'queue' ? '#fff' : '#64748b' }}>
-          📬 คำขอจากฟอร์ม
+          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>mail</span>คำขอจากฟอร์ม
         </button>
       </div>
 

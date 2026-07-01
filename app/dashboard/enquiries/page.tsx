@@ -155,8 +155,8 @@ export default function EnquiriesPage() {
                         <button
                           onClick={() => move(item.id, 'rejected')}
                           disabled={!!actionLoading}
-                          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #eef0ef', background: '#fff', color: '#b91c1c', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
-                        >✕</button>
+                          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #eef0ef', background: '#fff', color: '#b91c1c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        ><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>close</span></button>
                       )}
                     </div>
                   </div>

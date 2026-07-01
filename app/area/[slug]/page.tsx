@@ -116,7 +116,7 @@ export default function AreaPage({ params }: Props) {
                       </span>
                     </div>
                     <div style={{ padding: '14px 16px' }}>
-                      <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500 }}>📍 {p.neighborhood}</p>
+                      <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}</p>
                       <h3 style={{ fontSize: 14, fontWeight: 600, color: '#231f20', margin: '0 0 8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</h3>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 15.5, fontWeight: 700, color: '#d97f11' }}>{p.priceDisplay}</span>
@@ -130,7 +130,7 @@ export default function AreaPage({ params }: Props) {
           </>
         ) : (
           <div style={{ padding: '56px 24px', textAlign: 'center', background: '#f7f9f8', borderRadius: 20, marginBottom: 48 }}>
-            <p style={{ fontSize: 32, margin: '0 0 12px' }}>🔍</p>
+            <p style={{ margin: '0 0 12px' }}><span className="msym" style={{ fontSize: 32, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span></p>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ยังไม่มีประกาศในทำเลนี้</h2>
             <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 24px', fontWeight: 300 }}>
               ทำเล{area.label_th}กำลังเพิ่มจำนวนประกาศ ลองค้นหาทำเลใกล้เคียง

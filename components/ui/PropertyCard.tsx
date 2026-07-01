@@ -31,17 +31,17 @@ export default function PropertyCard({ property, featured = false }: PropertyCar
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-spacemate-brandDark to-spacemate-brandTeal flex items-center justify-center">
-              <span className="text-4xl opacity-30">{typeLabel.icon}</span>
+              <span className="msym" style={{ fontSize: 40, opacity: 0.3, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{typeLabel.icon}</span>
             </div>
           )}
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex gap-2">
             {featured && property.verified && (
-              <span className="badge-gold text-xs">✨ แนะนำ</span>
+              <span className="badge-gold text-xs"><span className="msym" style={{ fontSize: 11, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>auto_awesome</span>แนะนำ</span>
             )}
             {property.verified && (
-              <span className="badge-teal text-xs">✓ ยืนยันแล้ว</span>
+              <span className="badge-teal text-xs"><span className="msym" style={{ fontSize: 11, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 2 }}>check</span>ยืนยันแล้ว</span>
             )}
           </div>
 
@@ -63,7 +63,7 @@ export default function PropertyCard({ property, featured = false }: PropertyCar
 
           {/* Location */}
           <p className="text-xs text-gray-400 mb-3 flex items-center gap-1">
-            <span>📍</span>
+            <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>
             <span>{property.district}, {property.sub_district}</span>
           </p>
 
@@ -71,14 +71,14 @@ export default function PropertyCard({ property, featured = false }: PropertyCar
           <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
             {property.bedrooms > 0 && (
               <span className="flex items-center gap-1">
-                <span>🛏</span> {property.bedrooms} ห้องนอน
+                <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>bed</span> {property.bedrooms} ห้องนอน
               </span>
             )}
             <span className="flex items-center gap-1">
-              <span>🚿</span> {property.bathrooms} ห้องน้ำ
+              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>shower</span> {property.bathrooms} ห้องน้ำ
             </span>
             <span className="flex items-center gap-1">
-              <span>📐</span> {property.area_sqm} ตร.ม.
+              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>square_foot</span> {property.area_sqm} ตร.ม.
             </span>
           </div>
 

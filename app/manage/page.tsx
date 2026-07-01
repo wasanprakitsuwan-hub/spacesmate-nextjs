@@ -144,7 +144,7 @@ export default function ManagePage() {
 
             {/* speech-bubble note */}
             <div style={{ marginTop: 30, background: '#f5f8f6', border: '1px solid #e8edeb', borderRadius: 14, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>💬</span>
+              <span className="msym" style={{ fontSize: 22, flexShrink: 0, marginTop: 1, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>chat_bubble</span>
               <p style={{ fontSize: 13.5, color: '#6b7280', margin: 0, fontWeight: 300, lineHeight: 1.65 }}>
                 สนใจจากเพจหรือโซเชียลของเรา? กรอกฟอร์มนี้ได้เลย — ทีมงานจะโทรกลับเพื่อสอบถามรายละเอียดเพิ่มเติม
               </p>
@@ -203,12 +203,12 @@ export default function ManagePage() {
                     <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 8 }}>ช่องทางติดต่อที่สะดวก</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {(['โทร', 'LINE', 'อีเมล'] as const).map((ch) => {
-                        const icons: Record<string, string> = { โทร: '📞', LINE: '💬', อีเมล: '✉️' }
+                        const icons: Record<string, string> = { โทร: 'call', LINE: 'chat', อีเมล: 'mail' }
                         const active = channel === ch
                         return (
                           <button key={ch} onClick={() => setChannel(ch)}
                             style={{ flex: 1, padding: '10px 6px', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'all .15s', border: `1.5px solid ${active ? '#02402e' : '#dde3e0'}`, background: active ? '#02402e' : '#fff', color: active ? '#fff' : '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                            <span style={{ fontSize: 15 }}>{icons[ch]}</span> {ch}
+                            <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{icons[ch]}</span>{ch}
                           </button>
                         )
                       })}

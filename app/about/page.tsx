@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 }
 
 const TEAM = [
-  { icon: '🏗️', title: 'Asset-Light',        desc: 'เราไม่ได้เป็นเจ้าของทรัพย์สิน เราบริหารแทนเจ้าของและแบ่งรายได้ตามผลจริง' },
-  { icon: '📊', title: 'Performance-Aligned', desc: 'ยิ่งเจ้าของทรัพย์ได้มาก SpacesMate ได้มากด้วย ทุกบาทที่เราได้มาจากผลงานจริง' },
-  { icon: '🤖', title: 'AI-Powered Ops',      desc: 'ทีม AI 14 ตัวจัดการตั้งแต่การตลาด สัญญา ไปจนถึงรายงานการเงินโดยไม่ต้องมีพนักงานมาก' },
-  { icon: '🌏', title: 'Bangkok-Local',        desc: 'รู้จักตลาดกรุงเทพฯ ดี ทั้งโซน BTS/MRT และกลุ่มผู้เช่าทั้ง B2C และ B2B' },
+  { icon: 'construction', title: 'Asset-Light',        desc: 'เราไม่ได้เป็นเจ้าของทรัพย์สิน เราบริหารแทนเจ้าของและแบ่งรายได้ตามผลจริง' },
+  { icon: 'bar_chart',    title: 'Performance-Aligned', desc: 'ยิ่งเจ้าของทรัพย์ได้มาก SpacesMate ได้มากด้วย ทุกบาทที่เราได้มาจากผลงานจริง' },
+  { icon: 'smart_toy',   title: 'AI-Powered Ops',      desc: 'ทีม AI 14 ตัวจัดการตั้งแต่การตลาด สัญญา ไปจนถึงรายงานการเงินโดยไม่ต้องมีพนักงานมาก' },
+  { icon: 'language',    title: 'Bangkok-Local',        desc: 'รู้จักตลาดกรุงเทพฯ ดี ทั้งโซน BTS/MRT และกลุ่มผู้เช่าทั้ง B2C และ B2B' },
 ]
 
 const STATS = [
@@ -101,7 +101,7 @@ export default function AboutPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }} className="sm-2col">
             {TEAM.map(t => (
               <div key={t.title} style={{ padding: '28px 26px', background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 36, flexShrink: 0 }}>{t.icon}</span>
+                <span className="msym" style={{ fontSize: 36, flexShrink: 0, color: '#02402e', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{t.icon}</span>
                 <div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>{t.title}</h3>
                   <p style={{ fontSize: 14, color: '#64748b', margin: 0, lineHeight: 1.65, fontWeight: 300 }}>{t.desc}</p>
@@ -114,7 +114,7 @@ export default function AboutPage() {
         {/* Two revenue streams */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 72 }} className="sm-2col">
           <div style={{ padding: '32px 28px', background: '#f7f9f8', border: '1px solid #eef0ef', borderRadius: 20 }}>
-            <p style={{ fontSize: 26, margin: '0 0 14px' }}>🏢</p>
+            <p style={{ margin: '0 0 14px' }}><span className="msym" style={{ fontSize: 26, color: '#02402e', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>apartment</span></p>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 10px' }}>Stream 1 — แพลตฟอร์มลงประกาศ</h3>
             <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: '0 0 14px', fontWeight: 300 }}>
               เจ้าของทรัพย์สินลงประกาศเช่าบน spacesmate.com SpacesMate เก็บค่าสมัครสมาชิกรายเดือน
@@ -123,7 +123,7 @@ export default function AboutPage() {
             <Link href="/pricing" style={{ color: '#048c73', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>ดูแพ็กเกจ →</Link>
           </div>
           <div style={{ padding: '32px 28px', background: '#02402e', borderRadius: 20 }}>
-            <p style={{ fontSize: 26, margin: '0 0 14px' }}>🔧</p>
+            <p style={{ margin: '0 0 14px' }}><span className="msym" style={{ fontSize: 26, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>build</span></p>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>Stream 2 — บริหารจัดการทรัพย์สิน</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: '0 0 14px', fontWeight: 300 }}>
               SpacesMate บริหารอาคารทั้งหมดแทนเจ้าของ ตั้งแต่หาผู้เช่า เก็บค่าเช่า ไปจนถึงออกรายงาน

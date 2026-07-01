@@ -163,7 +163,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
         <div style={{ padding: '24px 28px 28px' }}>
           {success ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <p style={{ fontSize: 36, margin: '0 0 10px' }}>✅</p>
+              <p style={{ margin: '0 0 10px' }}><span className="msym" style={{ fontSize: 36, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span></p>
               <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>สำเร็จ!</p>
               <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{success}</p>
             </div>
@@ -181,12 +181,12 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 <div style={{ position: 'relative' }}>
                   <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={loginPwd} onChange={e => { setLoginPwd(e.target.value); setError('') }} placeholder="••••••••" autoComplete="current-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
-                    {showPwd ? '🙈' : '👁️'}
+                    <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{showPwd ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>
               </div>
 
-              {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>⚠️ {error}</div>}
+              {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
 
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: '13px', borderRadius: 14, border: 'none',
@@ -219,7 +219,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 <div style={{ position: 'relative' }}>
                   <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={signPwd} onChange={e => { setSignPwd(e.target.value); setError('') }} placeholder="อย่างน้อย 6 ตัวอักษร" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
-                    {showPwd ? '🙈' : '👁️'}
+                    <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{showPwd ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 <input style={INP} type="password" value={signPwd2} onChange={e => { setSignPwd2(e.target.value); setError('') }} placeholder="••••••••" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
 
-              {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>⚠️ {error}</div>}
+              {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
 
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: '13px', borderRadius: 14, border: 'none',

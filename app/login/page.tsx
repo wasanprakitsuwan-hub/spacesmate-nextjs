@@ -156,7 +156,7 @@ export default function LoginPage() {
             {/* ── SIGNUP SUCCESS ── */}
             {tab === 'signup' && success && (
               <div className="text-center py-4 space-y-4">
-                <div className="text-5xl">📧</div>
+                <div><span className="msym" style={{ fontSize: 44, color: '#02402e', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>mail</span></div>
                 <h3 className="text-lg font-bold text-spacemate-brandDark">ตรวจสอบอีเมลของคุณ</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
                   เราได้ส่งลิงก์ยืนยันบัญชีไปที่<br/>

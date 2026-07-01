@@ -141,8 +141,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ lineHeight: 1.2, minWidth: 0, flex: 1 }}>
             <div style={{ color: '#fff', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, marginTop: 2,
-              color: userRole === 'super_admin' ? '#d97f11' : 'rgba(255,255,255,0.45)' }}>
-              {userRole === 'super_admin' ? '⭐ SUPER ADMIN' : 'ADMIN'}
+              color: userRole === 'super_admin' ? '#d97f11' : 'rgba(255,255,255,0.45)',
+              display: 'flex', alignItems: 'center' }}>
+              {userRole === 'super_admin' ? <><span className="msym" style={{ fontSize: 11, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>grade</span>SUPER ADMIN</> : 'ADMIN'}
             </div>
           </div>
           <button onClick={handleLogout} title="ออกจากระบบ" style={{

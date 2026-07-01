@@ -240,7 +240,7 @@ function SearchContent() {
             {/* Empty state */}
             {results.length === 0 && (
               <div style={{ background: '#fff', border: '1px dashed #d5ddd9', borderRadius: 18, padding: '60px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+                <div style={{ marginBottom: 12 }}><span className="msym" style={{ fontSize: 36, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span></div>
                 <p style={{ fontSize: 16, fontWeight: 600, margin: '0 0 6px' }}>ไม่พบประกาศที่ตรงเงื่อนไข</p>
                 <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 18px', fontWeight: 300 }}>ลองปรับช่วงราคาหรือประเภททรัพย์สิน</p>
                 <button onClick={resetFilters}
@@ -293,7 +293,7 @@ function PropertyCard({ property: p }: { property: Property }) {
         </span>
       </div>
       <div style={{ padding: 17 }}>
-        <p style={{ color: '#048c73', fontSize: 12.5, margin: '0 0 4px', fontWeight: 500 }}>📍 {p.neighborhood}</p>
+        <p style={{ color: '#048c73', fontSize: 12.5, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}</p>
         <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 10px', lineHeight: 1.35, color: '#231f20' }}>{p.title}</h3>
         <div className="mono" style={{ display: 'flex', gap: 12, padding: '10px 0', borderTop: '1px solid #f3f5f4', borderBottom: '1px solid #f3f5f4', marginBottom: 12, fontSize: 11, color: '#7a8a85' }}>
           <span>{bedroomLabel}</span>

@@ -229,8 +229,8 @@ export default async function PropertyDetailPage({ params }: Props) {
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>สิ่งอำนวยความสะดวก</h2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {p.amenities.map((a) => (
-                    <span key={a} style={{ fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500, background: '#eaf6f1', color: '#02402e' }}>
-                      ✓ {a}
+                    <span key={a} style={{ fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500, background: '#eaf6f1', color: '#02402e', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span>{a}
                     </span>
                   ))}
                 </div>
@@ -273,7 +273,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                 <span style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#02402e,#048c73)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>S</span>
                 <div>
                   <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>SpacesMate</p>
-                  <p style={{ fontSize: 12, color: '#048c73', fontWeight: 500, margin: 0 }}>ยืนยันตัวตนแล้ว ✓</p>
+                  <p style={{ fontSize: 12, color: '#048c73', fontWeight: 500, margin: 0, display: 'flex', alignItems: 'center', gap: 3 }}>ยืนยันตัวตนแล้ว<span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span></p>
                 </div>
               </div>
 

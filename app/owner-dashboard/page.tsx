@@ -561,7 +561,7 @@ function MapPicker({ lat, lng, onLatLng }: {
     })
     const marker = L.marker([defaultLat, defaultLng], { draggable: true, icon }).addTo(map)
     markerRef.current = marker
-    marker.bindPopup('<b style="color:#02402e;font-size:12px">📍 ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
+    marker.bindPopup('<b style="color:#02402e;font-size:12px">ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
     marker.on('dragend', () => {
       const pos = markerRef.current.getLatLng()
       onLatLngRef.current(pos.lat.toFixed(6), pos.lng.toFixed(6))

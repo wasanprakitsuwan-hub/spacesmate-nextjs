@@ -3,28 +3,28 @@ import type { AreaKeyword, PropertyType } from './types'
 // ─── Property Type Labels ─────────────────────────────────────────────────────
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, { th: string; en: string; icon: string }> = {
-  apartment:  { th: 'อพาร์ทเม้นท์',    en: 'Apartment',       icon: '🏢' },
-  condo:      { th: 'คอนโดมิเนียม',     en: 'Condominium',     icon: '🏙️' },
-  house:      { th: 'บ้าน',             en: 'House',           icon: '🏠' },
-  coworking:  { th: 'โคเวิร์กกิ้งสเปซ', en: 'Co-working Space', icon: '💻' },
-  office:     { th: 'ออฟฟิศ',           en: 'Office',          icon: '🏬' },
+  apartment:  { th: 'อพาร์ทเม้นท์',    en: 'Apartment',       icon: 'apartment' },
+  condo:      { th: 'คอนโดมิเนียม',     en: 'Condominium',     icon: 'location_city' },
+  house:      { th: 'บ้าน',             en: 'House',           icon: 'house' },
+  coworking:  { th: 'โคเวิร์กกิ้งสเปซ', en: 'Co-working Space', icon: 'laptop' },
+  office:     { th: 'ออฟฟิศ',           en: 'Office',          icon: 'business' },
 }
 
 // ─── Amenity Labels ───────────────────────────────────────────────────────────
 
 export const AMENITY_LABELS: Record<string, { th: string; icon: string }> = {
-  pool:        { th: 'สระว่ายน้ำ',          icon: '🏊' },
-  gym:         { th: 'ฟิตเนส',              icon: '💪' },
-  parking:     { th: 'ที่จอดรถ',            icon: '🚗' },
-  furnished:   { th: 'เฟอร์นิเจอร์พร้อม',   icon: '🛋️' },
-  aircon:      { th: 'แอร์',               icon: '❄️' },
-  elevator:    { th: 'ลิฟต์',              icon: '🛗' },
-  security:    { th: 'รปภ 24 ชม.',         icon: '🔒' },
-  cctv:        { th: 'กล้องวงจรปิด',        icon: '📷' },
-  lobby:       { th: 'ล็อบบี้',             icon: '🏛️' },
-  internet:    { th: 'อินเตอร์เน็ต',        icon: '📶' },
-  laundry:     { th: 'ซักรีด',              icon: '👕' },
-  rooftop:     { th: 'รูฟท็อป',             icon: '🌇' },
+  pool:        { th: 'สระว่ายน้ำ',          icon: 'pool' },
+  gym:         { th: 'ฟิตเนส',              icon: 'fitness_center' },
+  parking:     { th: 'ที่จอดรถ',            icon: 'local_parking' },
+  furnished:   { th: 'เฟอร์นิเจอร์พร้อม',   icon: 'weekend' },
+  aircon:      { th: 'แอร์',               icon: 'ac_unit' },
+  elevator:    { th: 'ลิฟต์',              icon: 'elevator' },
+  security:    { th: 'รปภ 24 ชม.',         icon: 'security' },
+  cctv:        { th: 'กล้องวงจรปิด',        icon: 'videocam' },
+  lobby:       { th: 'ล็อบบี้',             icon: 'domain' },
+  internet:    { th: 'อินเตอร์เน็ต',        icon: 'wifi' },
+  laundry:     { th: 'ซักรีด',              icon: 'local_laundry_service' },
+  rooftop:     { th: 'รูฟท็อป',             icon: 'rooftop_access' },
 }
 
 // ─── Bangkok Area SEO Keywords ────────────────────────────────────────────────

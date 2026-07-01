@@ -21,7 +21,7 @@ interface Category {
 const CATEGORIES: Category[] = [
   {
     id: 'about',
-    icon: '🏢',
+    icon: 'apartment',
     title: 'เกี่ยวกับ SpacesMate',
     subtitle: 'SpacesMate คืออะไร ทำงานอย่างไร',
     faqs: [
@@ -45,7 +45,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'tenants',
-    icon: '🔍',
+    icon: 'search',
     title: 'สำหรับผู้เช่า',
     subtitle: 'ค้นหาที่พักและติดต่อเจ้าของ',
     faqs: [
@@ -65,7 +65,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'listing',
-    icon: '📋',
+    icon: 'assignment',
     title: 'ลงประกาศทรัพย์สิน',
     subtitle: 'วิธีลงประกาศ ราคา และแพ็กเกจ',
     faqs: [
@@ -93,7 +93,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'management',
-    icon: '🤝',
+    icon: 'handshake',
     title: 'บริการบริหารทรัพย์ A–Z',
     subtitle: 'Full Property Management สำหรับเจ้าของ',
     faqs: [
@@ -212,8 +212,9 @@ export default function FAQAccordion() {
                 background: 'rgba(255,255,255,0.13)', color: '#fff',
                 fontSize: 13, fontWeight: 500, padding: '8px 18px', borderRadius: 20,
                 textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
               }}>
-                {c.icon} {c.title}
+                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{c.icon}</span>{c.title}
               </a>
             ))}
           </div>
@@ -228,11 +229,11 @@ export default function FAQAccordion() {
             {/* Category heading */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
               <span style={{
-                width: 46, height: 46, borderRadius: 14, fontSize: 22,
+                width: 46, height: 46, borderRadius: 14,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'linear-gradient(140deg,#02402e,#048c73)', flexShrink: 0,
               }}>
-                {cat.icon}
+                <span className="msym" style={{ fontSize: 22, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{cat.icon}</span>
               </span>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: '#02402e', margin: '0 0 2px', letterSpacing: '-0.2px' }}>

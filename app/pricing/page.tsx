@@ -127,7 +127,7 @@ export default function PricingPage() {
                   <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
                 </div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f7f9f8', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, color: '#048c73', fontWeight: 600 }}>
-                  📷 {plan.maxImages}{plan.allowVideo && ' · 🎬 วิดีโอ'}
+                  <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>photo_camera</span>{plan.maxImages}{plan.allowVideo && <><span style={{ margin: '0 4px' }}>·</span><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 2 }}>videocam</span>วิดีโอ</>}
                 </div>
               </div>
 
