@@ -3,9 +3,6 @@ import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import Stripe from 'stripe'
 
-// Required: disable body parsing so we can verify the raw signature
-export const config = { api: { bodyParser: false } }
-
 export async function POST(req: NextRequest) {
   const sig  = req.headers.get('stripe-signature') ?? ''
   const secret = process.env.STRIPE_WEBHOOK_SECRET ?? ''
