@@ -1869,7 +1869,9 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
 }) {
   const w        = useWindowWidth()
   const isMobile = w < 768
-  const isSmall  = w < 1024   // both tablet and mobile → full-screen
+  const isSmall  = w < 1024   // tablet + mobile → full-screen from left: 0
+  // Desktop: fill content area after the 248px sidebar. No overlay.
+  const SIDEBAR  = 248
   const formRef  = useRef<HTMLFormElement>(null)
   const [activeTab, setActiveTab] = useState('lf-s1')
 
@@ -1882,77 +1884,92 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
     }
   }
 
-  const drawerPad = isMobile ? '16px 14px' : '22px 24px'
+  const drawerPad = isMobile ? '20px 16px' : '28px 40px'
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
-      {/* Overlay — only on desktop */}
-      {!isSmall && <div style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />}
+    <>
+      {/* Backdrop for tablet/mobile only */}
+      {isSmall && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.35)' }}
+          onClick={onClose}
+        />
+      )}
 
       <div
-        style={{ width: isSmall ? '100%' : 620, background: '#fff', boxShadow: isSmall ? 'none' : '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', height: '100vh' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: isSmall ? 0 : SIDEBAR,
+          right: 0,
+          bottom: 0,
+          zIndex: 200,
+          background: '#fff',
+          boxShadow: isSmall ? 'none' : '-4px 0 32px rgba(0,0,0,0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: isMobile ? '14px 16px' : '20px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ padding: isMobile ? '14px 16px' : '22px 40px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Back arrow on small screens */}
             {isSmall && (
               <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
             )}
             <div>
-              <h2 style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
-              {!isMobile && <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0 }}>{subtitle}</p>}
+              <h2 style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
+              <p style={{ fontSize: isMobile ? 11.5 : 13, color: '#94a3b8', margin: 0 }}>{subtitle}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
 
-        {/* Section tab strip — tablet and mobile only */}
-        {isSmall && (
-          <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #eef0ef', background: '#fafbfa', flexShrink: 0, scrollbarWidth: 'none' }}>
-            {DRAWER_TABS.map(tab => (
-              <button key={tab.id} type="button" onClick={() => scrollToSection(tab.id)}
-                style={{
-                  padding: isMobile ? '8px 12px' : '9px 16px',
-                  fontSize: isMobile ? 12 : 12.5,
-                  fontWeight: activeTab === tab.id ? 700 : 500,
-                  color: activeTab === tab.id ? '#02402e' : '#94a3b8',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  borderBottom: `2px solid ${activeTab === tab.id ? '#02402e' : 'transparent'}`,
-                  whiteSpace: 'nowrap', transition: 'all .15s',
-                }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Section tab strip — all sizes */}
+        <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #eef0ef', background: '#fafbfa', flexShrink: 0, scrollbarWidth: 'none', padding: isSmall ? '0' : '0 40px' }}>
+          {DRAWER_TABS.map(tab => (
+            <button key={tab.id} type="button" onClick={() => scrollToSection(tab.id)}
+              style={{
+                padding: isMobile ? '8px 12px' : '10px 20px',
+                fontSize: isMobile ? 12 : 13,
+                fontWeight: activeTab === tab.id ? 700 : 500,
+                color: activeTab === tab.id ? '#02402e' : '#94a3b8',
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: `2px solid ${activeTab === tab.id ? '#02402e' : 'transparent'}`,
+                whiteSpace: 'nowrap', transition: 'all .15s',
+              }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Form body */}
+        {/* Form body — centred content column on desktop */}
         <form ref={formRef} onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: drawerPad }}>
-          <ListingFormFields
-            form={form} onChange={setF} onAmenityToggle={toggleAmenity}
-            onImagesChange={onImagesChange} onRoomTypesChange={onRoomTypesChange}
-            isAdmin={isAdmin} isMobile={isMobile}
-          />
-          {error && (
-            <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
-              ⚠️ {error}
-            </div>
-          )}
+          <div style={{ maxWidth: isSmall ? 'none' : 860, margin: '0 auto' }}>
+            <ListingFormFields
+              form={form} onChange={setF} onAmenityToggle={toggleAmenity}
+              onImagesChange={onImagesChange} onRoomTypesChange={onRoomTypesChange}
+              isAdmin={isAdmin} isMobile={isMobile}
+            />
+            {error && (
+              <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
+                ⚠️ {error}
+              </div>
+            )}
+          </div>
         </form>
 
         {/* Footer */}
         <div style={{
-          padding: isMobile ? '12px 14px 20px' : '16px 24px',
+          padding: isMobile ? '12px 14px 20px' : '18px 40px',
           borderTop: '1px solid #eef0ef',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          gap: 10,
+          justifyContent: isSmall ? 'stretch' : 'flex-end',
+          gap: 12,
           flexShrink: 0,
         }}>
           {isMobile ? (
-            // Mobile: Save on top (full width), Cancel below
             <>
               <button onClick={onSubmit as any} disabled={saving} style={{ padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
@@ -1960,10 +1977,10 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
               <button onClick={onClose} style={{ padding: '11px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
             </>
           ) : (
-            // Desktop / Tablet: side-by-side
+            // Desktop / Tablet: right-aligned fixed-width buttons
             <>
-              <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 11, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
-              <button onClick={onSubmit as any} disabled={saving} style={{ flex: 2, padding: '12px 0', borderRadius: 11, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <button onClick={onClose} style={{ width: 140, padding: '13px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
+              <button onClick={onSubmit as any} disabled={saving} style={{ width: 220, padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
               </button>
             </>
@@ -1971,7 +1988,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
