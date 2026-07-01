@@ -1,44 +1,94 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { blogPosts, getBlogPostBySlug, fetchPostContent, formatThaiDate } from '@/lib/blog-data'
 import { notFound } from 'next/navigation'
+import { createServerClient } from '@/lib/supabase'
+import { BLOG_CONTENT } from '@/lib/blog-content'
+
+export const revalidate = 300
+export const dynamicParams = true
+
+// Slug → WP post ID (for static content fallback)
+const SLUG_TO_WP_ID: Record<string, number> = {
+  'thi-pak-yan-dusit': 19865,
+  'asangha-ploy-chao-2026': 19855,
+  'panha-ploy-chao-condo': 19847,
+  'vithi-lueak-phu-chao': 19633,
+  'update-kotmai-asangha-2026': 19628,
+  'ploy-chao-asangha-5-things': 19520,
+  'long-prakat-asangha': 19486,
+  'ha-hong-pak-spacesmate': 19385,
+  'jadkan-asangha-spacesmate': 19331,
+}
 
 interface Props {
   params: { slug: string }
 }
 
-// Pre-render all blog posts at build time
 export async function generateStaticParams() {
-  return blogPosts.map((post) => ({ slug: post.slug }))
+  const supabase = createServerClient()
+  const { data } = await supabase
+    .from('blog_posts')
+    .select('slug')
+    .eq('status', 'published')
+  return (data ?? []).map((p) => ({ slug: p.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = getBlogPostBySlug(params.slug)
+  const supabase = createServerClient()
+  const { data: post } = await supabase
+    .from('blog_posts')
+    .select('title, meta_title, meta_desc, thumbnail, thumbnail_alt, published_at')
+    .eq('slug', params.slug)
+    .eq('status', 'published')
+    .single()
+
   if (!post) return { title: 'ไม่พบบทความ | SpacesMate' }
+
   return {
-    title: `${post.title} | SpacesMate`,
-    description: post.excerpt,
+    title: `${post.meta_title ?? post.title} | SpacesMate`,
+    description: post.meta_desc ?? '',
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
-      images: [{ url: post.image, alt: post.imageAlt }],
+      title: post.meta_title ?? post.title,
+      description: post.meta_desc ?? '',
+      images: post.thumbnail ? [{ url: post.thumbnail, alt: post.thumbnail_alt ?? post.title }] : [],
       type: 'article',
-      publishedTime: post.date,
+      publishedTime: post.published_at ?? undefined,
     },
   }
 }
 
+function formatThaiDate(iso: string): string {
+  const d = new Date(iso)
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`
+}
+
 export default async function BlogPostPage({ params }: Props) {
-  const post = getBlogPostBySlug(params.slug)
+  const supabase = createServerClient()
+
+  const { data: post } = await supabase
+    .from('blog_posts')
+    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, content, published_at, author')
+    .eq('slug', params.slug)
+    .eq('status', 'published')
+    .single()
+
   if (!post) notFound()
 
-  // Fetch full HTML content from WP REST API at build time (cached forever)
-  const content = await fetchPostContent(post.id)
+  // Content: use DB field if populated, else fall back to static BLOG_CONTENT
+  const wpId = SLUG_TO_WP_ID[post.slug]
+  const content = post.content ?? (wpId ? BLOG_CONTENT[wpId] : '') ?? '<p>ไม่พบเนื้อหา</p>'
 
   // Related posts — same category, exclude current
-  const related = blogPosts
-    .filter((p) => p.slug !== post.slug && p.category === post.category)
-    .slice(0, 3)
+  const { data: relatedData } = await supabase
+    .from('blog_posts')
+    .select('slug, title, thumbnail, thumbnail_alt, published_at')
+    .eq('status', 'published')
+    .eq('category', post.category)
+    .neq('slug', post.slug)
+    .limit(3)
+
+  const related = relatedData ?? []
 
   return (
     <div className="bg-white min-h-screen">
@@ -46,8 +96,8 @@ export default async function BlogPostPage({ params }: Props) {
       {/* Hero image */}
       <div className="w-full h-64 md:h-96 overflow-hidden bg-spacemate-bgLight relative">
         <img
-          src={post.image}
-          alt={post.imageAlt}
+          src={post.thumbnail ?? '/blog/placeholder.jpg'}
+          alt={post.thumbnail_alt ?? post.title}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(2,64,46,0.25))' }} />
@@ -75,12 +125,12 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Meta row */}
         <div className="flex items-center gap-3 text-gray-400 text-sm mb-8 pb-8 border-b border-spacemate-borderLight">
           <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>calendar_today</span>
-          <span>{formatThaiDate(post.date)}</span>
+          <span>{post.published_at ? formatThaiDate(post.published_at) : ''}</span>
           <span>·</span>
-          <span>SpacesMate</span>
+          <span>{post.author ?? 'SpacesMate'}</span>
         </div>
 
-        {/* Full content from WP (HTML rendered) */}
+        {/* Full content */}
         <div
           className="blog-content text-gray-700 leading-relaxed text-base"
           dangerouslySetInnerHTML={{ __html: content }}
@@ -130,8 +180,8 @@ export default async function BlogPostPage({ params }: Props) {
                 >
                   <div className="h-32 overflow-hidden bg-spacemate-bgLight">
                     <img
-                      src={p.image}
-                      alt={p.imageAlt}
+                      src={p.thumbnail ?? '/blog/placeholder.jpg'}
+                      alt={p.thumbnail_alt ?? p.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -139,7 +189,9 @@ export default async function BlogPostPage({ params }: Props) {
                     <p className="text-xs font-semibold text-spacemate-brandDark leading-snug line-clamp-3 group-hover:text-spacemate-brandTeal transition-colors">
                       {p.title}
                     </p>
-                    <p className="text-gray-400 text-xs mt-2">{formatThaiDate(p.date)}</p>
+                    <p className="text-gray-400 text-xs mt-2">
+                      {p.published_at ? formatThaiDate(p.published_at) : ''}
+                    </p>
                   </div>
                 </Link>
               ))}
