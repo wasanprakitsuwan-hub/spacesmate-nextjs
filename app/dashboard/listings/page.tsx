@@ -1120,7 +1120,7 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
       </div>
       {/* Price grid */}
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px' }}>💰 ราคาเช่าตามระยะสัญญา</p>
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>payments</span>ราคาเช่าตามระยะสัญญา</p>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 10 }}>
           {([
             { key: 'price_12mo', label: '12 เดือน', ph: '15,000' },
@@ -1257,7 +1257,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
                     background: on ? '#02402e' : '#f8fafc',
                     color: on ? '#fff' : '#64748b',
                     fontWeight: on ? 600 : 400 }}>
-                  {on ? '✓ ' : ''}{o.label}
+                  {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{o.label}
                 </button>
                 {on && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1378,17 +1378,19 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           <label style={SLBL}>ประเภทอสังหาฯ *</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {[
-              { value: 'condo',     label: '🏙 คอนโด' },
-              { value: 'apartment', label: '🏢 อพาร์ทเม้นท์' },
-              { value: 'house',     label: '🏡 บ้าน' },
-              { value: 'office',    label: '🏛 ออฟฟิศ' },
-              { value: 'coworking', label: '💼 Co-Working' },
+              { value: 'condo',     icon: 'apartment',      label: 'คอนโด' },
+              { value: 'apartment', icon: 'domain',         label: 'อพาร์ทเม้นท์' },
+              { value: 'house',     icon: 'home',           label: 'บ้าน' },
+              { value: 'office',    icon: 'corporate_fare', label: 'ออฟฟิศ' },
+              { value: 'coworking', icon: 'hub',            label: 'Co-Working' },
             ].map(o => (
               <button key={o.value} type="button" onClick={() => onChange('property_type', o.value)}
                 style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5,
                   border: `1.5px solid ${form.property_type === o.value ? '#02402e' : '#eef0ef'}`,
                   background: form.property_type === o.value ? '#02402e' : '#fff',
                   color: form.property_type === o.value ? '#fff' : '#64748b', transition: 'all .15s' }}>
+                <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{o.icon}</span>
                 {o.label}
               </button>
             ))}
@@ -1560,7 +1562,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           <>
             <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
             {/* ── ภายในห้อง ── */}
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>🛋 ภายในห้อง</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>chair</span>ภายในห้อง</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
               {AMENITY_ROOM.map(a => {
                 const on = form.amenities.includes(a)
@@ -1569,13 +1571,13 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
                     style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
                       border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
                       color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on ? '✓ ' : ''}{a}
+                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
                   </button>
                 )
               })}
             </div>
             {/* ── ภายในอาคาร ── */}
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>🏢 ภายในอาคาร</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>domain</span>ภายในอาคาร</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {AMENITY_BUILDING.map(a => {
                 const on = form.amenities.includes(a)
@@ -1584,7 +1586,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
                     style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
                       border: on ? 'none' : '1px solid #eef0ef', background: on ? '#048c73' : '#f8fafc',
                       color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on ? '✓ ' : ''}{a}
+                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
                   </button>
                 )
               })}
@@ -1601,7 +1603,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
                     style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
                       border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
                       color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on ? '✓ ' : ''}{a}
+                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
                   </button>
                 )
               })}
@@ -1700,7 +1702,7 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
       saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
-      submitLabel="🏠 เผยแพร่ประกาศ"
+      submitLabel="เผยแพร่ประกาศ" submitIcon="publish"
     />
   )
 }
@@ -1841,7 +1843,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
       saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
-      submitLabel="💾 บันทึกการแก้ไข"
+      submitLabel="บันทึกการแก้ไข" submitIcon="save"
     />
   )
 }
@@ -1854,7 +1856,7 @@ const DRAWER_TABS = [
   { id: 'lf-s8', label: '4 รูปภาพ' },
 ]
 
-function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel }: {
+function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel, submitIcon }: {
   title: string; subtitle: string
   form: ListingFormState
   setF: (k: string, v: any) => void
@@ -1866,6 +1868,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   submitLabel: string
+  submitIcon?: string
 }) {
   const w        = useWindowWidth()
   const isMobile = w < 768
@@ -1972,7 +1975,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
           {isMobile ? (
             <>
               <button onClick={onSubmit as any} disabled={saving} style={{ padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
+                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : <>{submitIcon && <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{submitIcon}</span>}{submitLabel}</>}
               </button>
               <button onClick={onClose} style={{ padding: '11px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
             </>
@@ -1981,7 +1984,7 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
             <>
               <button onClick={onClose} style={{ width: 140, padding: '13px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
               <button onClick={onSubmit as any} disabled={saving} style={{ width: 220, padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : submitLabel}
+                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : <>{submitIcon && <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{submitIcon}</span>}{submitLabel}</>}
               </button>
             </>
           )}
