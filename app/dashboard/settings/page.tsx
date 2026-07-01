@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,16 +36,9 @@ interface AmenityTag {
   category: string
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+// ── Defaults (used as initial state + fallback if API returns nothing) ─────────
 
-const INIT_LOCATION_REQUESTS: LocationRequest[] = [
-  { id: '1', text: 'ห้วยขวาง', type: 'location', submittedBy: 'user@email.com', submittedAt: '2026-06-28', status: 'pending' },
-  { id: '2', text: 'The ESSE Asok', type: 'project', submittedBy: 'owner@gmail.com', submittedAt: '2026-06-27', status: 'pending' },
-  { id: '3', text: 'นวมินทร์', type: 'location', submittedBy: 'tenant@company.com', submittedAt: '2026-06-25', status: 'approved' },
-  { id: '4', text: 'มีนบุรี', type: 'location', submittedBy: 'anon@mail.com', submittedAt: '2026-06-20', status: 'rejected' },
-]
-
-const INIT_EMAIL_TEMPLATES: EmailTemplate[] = [
+const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   { id: '1', name: 'ยืนยันอีเมล (สมัครสมาชิก)', subject: 'ยืนยันอีเมลของคุณ — SpacesMate', trigger: 'เมื่อผู้ใช้สมัครใหม่', enabled: true },
   { id: '2', name: 'ประกาศได้รับการอนุมัติ', subject: 'ประกาศของคุณอนุมัติแล้ว — SpacesMate', trigger: 'เมื่อ admin อนุมัติประกาศ', enabled: true },
   { id: '3', name: 'แพ็กเกจใกล้หมดอายุ (7 วัน)', subject: 'แพ็กเกจของคุณจะหมดอายุใน 7 วัน', trigger: '7 วันก่อนแพ็กเกจหมด', enabled: true },
@@ -53,45 +47,111 @@ const INIT_EMAIL_TEMPLATES: EmailTemplate[] = [
   { id: '6', name: 'ประกาศถูกปฏิเสธ', subject: 'ประกาศของคุณต้องแก้ไข — SpacesMate', trigger: 'เมื่อ admin ปฏิเสธประกาศ', enabled: true },
 ]
 
-const INIT_PROPERTY_TYPES: PropertyType[] = [
-  { id: '1', name_th: 'อพาร์ทเม้นท์', name_en: 'Apartment', active: true },
-  { id: '2', name_th: 'คอนโดมิเนียม', name_en: 'Condo', active: true },
-  { id: '3', name_th: 'บ้าน', name_en: 'House', active: true },
-  { id: '4', name_th: 'ออฟฟิศ', name_en: 'Office', active: true },
-  { id: '5', name_th: 'โคเวิร์กกิ้งสเปซ', name_en: 'Co-Working', active: true },
-  { id: '6', name_th: 'อาคารพาณิชย์', name_en: 'Commercial', active: false },
+const DEFAULT_PROPERTY_TYPES: PropertyType[] = [
+  { id: '1', name_th: 'อพาร์ทเม้นท์',      name_en: 'Apartment',  active: true },
+  { id: '2', name_th: 'คอนโดมิเนียม',       name_en: 'Condo',      active: true },
+  { id: '3', name_th: 'บ้าน',               name_en: 'House',      active: true },
+  { id: '4', name_th: 'ออฟฟิศ',             name_en: 'Office',     active: true },
+  { id: '5', name_th: 'โคเวิร์กกิ้งสเปซ',   name_en: 'Co-Working', active: true },
+  { id: '6', name_th: 'อาคารพาณิชย์',       name_en: 'Commercial', active: false },
 ]
 
 const AMENITY_CATEGORIES = ['ห้องและสิ่งอำนวยความสะดวก', 'บริการส่วนกลาง', 'ความปลอดภัย', 'การเดินทาง']
 
-const INIT_AMENITIES: AmenityTag[] = [
-  { id: '1', name_th: 'เครื่องปรับอากาศ', name_en: 'Air Conditioning', category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '2', name_th: 'เฟอร์นิเจอร์ครบ', name_en: 'Fully Furnished', category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '3', name_th: 'อินเทอร์เน็ต', name_en: 'Internet', category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '4', name_th: 'สระว่ายน้ำ', name_en: 'Swimming Pool', category: 'บริการส่วนกลาง' },
-  { id: '5', name_th: 'ฟิตเนส', name_en: 'Fitness', category: 'บริการส่วนกลาง' },
-  { id: '6', name_th: 'ที่จอดรถ', name_en: 'Parking', category: 'บริการส่วนกลาง' },
-  { id: '7', name_th: 'รักษาความปลอดภัย 24 ชม.', name_en: '24hr Security', category: 'ความปลอดภัย' },
-  { id: '8', name_th: 'กล้องวงจรปิด', name_en: 'CCTV', category: 'ความปลอดภัย' },
-  { id: '9', name_th: 'ใกล้ BTS/MRT', name_en: 'Near BTS/MRT', category: 'การเดินทาง' },
-  { id: '10', name_th: 'ใกล้ห้างสรรพสินค้า', name_en: 'Near Shopping', category: 'การเดินทาง' },
-  { id: '11', name_th: 'รับสัตว์เลี้ยง', name_en: 'Pet Friendly', category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '12', name_th: 'ลิฟต์', name_en: 'Elevator', category: 'บริการส่วนกลาง' },
+const DEFAULT_AMENITIES: AmenityTag[] = [
+  { id: '1',  name_th: 'เครื่องปรับอากาศ',       name_en: 'Air Conditioning', category: 'ห้องและสิ่งอำนวยความสะดวก' },
+  { id: '2',  name_th: 'เฟอร์นิเจอร์ครบ',         name_en: 'Fully Furnished',  category: 'ห้องและสิ่งอำนวยความสะดวก' },
+  { id: '3',  name_th: 'อินเทอร์เน็ต',             name_en: 'Internet',         category: 'ห้องและสิ่งอำนวยความสะดวก' },
+  { id: '4',  name_th: 'สระว่ายน้ำ',               name_en: 'Swimming Pool',    category: 'บริการส่วนกลาง' },
+  { id: '5',  name_th: 'ฟิตเนส',                   name_en: 'Fitness',          category: 'บริการส่วนกลาง' },
+  { id: '6',  name_th: 'ที่จอดรถ',                 name_en: 'Parking',          category: 'บริการส่วนกลาง' },
+  { id: '7',  name_th: 'รักษาความปลอดภัย 24 ชม.', name_en: '24hr Security',    category: 'ความปลอดภัย' },
+  { id: '8',  name_th: 'กล้องวงจรปิด',             name_en: 'CCTV',             category: 'ความปลอดภัย' },
+  { id: '9',  name_th: 'ใกล้ BTS/MRT',             name_en: 'Near BTS/MRT',     category: 'การเดินทาง' },
+  { id: '10', name_th: 'ใกล้ห้างสรรพสินค้า',       name_en: 'Near Shopping',    category: 'การเดินทาง' },
+  { id: '11', name_th: 'รับสัตว์เลี้ยง',            name_en: 'Pet Friendly',     category: 'ห้องและสิ่งอำนวยความสะดวก' },
+  { id: '12', name_th: 'ลิฟต์',                    name_en: 'Elevator',         category: 'บริการส่วนกลาง' },
 ]
+
+const DEFAULT_COMPANY_INFO = {
+  name_th:   'บริษัท เสปซเวิร์คส จำกัด',
+  name_en:   'Space Works Co., Ltd.',
+  reg_no:    '0105569001611',
+  email:     'hello@spacesmate.com',
+  phone:     '',
+  line_oa:   '@spacesmate',
+  facebook:  'https://www.facebook.com/spacesmateTH',
+  instagram: 'https://www.instagram.com/spacesmate/',
+  tiktok:    'https://www.tiktok.com/@spacesmate',
+  address:   '4004/856 ถนนพระรามที่ 4 แขวงพระโขนง เขตคลองเตย กรุงเทพมหานคร',
+}
+
+const DEFAULT_SEO_SETTINGS = {
+  title_template:    '%s | SpacesMate — ที่พักกรุงเทพ อพาร์ทเม้นท์ คอนโด บ้านเช่า',
+  desc_template:     'SpacesMate — ค้นหา%s ในกรุงเทพ ราคาดี ทำเลเด่น ยืนยันแล้วทุกรายการ ไม่มีค่าใช้จ่ายซ่อน',
+  og_sitename:       'SpacesMate',
+  og_image:          'https://spacesmate.com/og-image.jpg',
+  aeo_faq:           true,
+  aeo_breadcrumb:    true,
+  aeo_product:       true,
+  aeo_localBusiness: true,
+  sitemap_freq:      'weekly',
+  canonical_domain:  'https://spacesmate.com',
+  robots_index:      true,
+}
+
+// ── Auth helpers ──────────────────────────────────────────────────────────────
+
+async function getToken(): Promise<string> {
+  const { data: { session } } = await createBrowserClient().auth.getSession()
+  return session?.access_token ?? ''
+}
+
+async function saveSetting(key: string, value: unknown): Promise<void> {
+  const token = await getToken()
+  const r = await fetch('/api/dashboard/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ key, value }),
+  })
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}))
+    throw new Error((d as { error?: string }).error ?? 'บันทึกไม่สำเร็จ')
+  }
+}
 
 // ── Shared Components ─────────────────────────────────────────────────────────
 
-function SaveButton({ onSave, saved }: { onSave: () => void; saved: boolean }) {
+function SaveButton({ onSave, saved, saving, error }: {
+  onSave:  () => void
+  saved:   boolean
+  saving?: boolean
+  error?:  string
+}) {
   return (
-    <button onClick={onSave} style={{
-      padding: '10px 24px', borderRadius: 11, border: 'none',
-      background: saved ? '#22c55e' : '#02402e', color: '#fff', fontWeight: 600,
-      fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit',
-      display: 'flex', alignItems: 'center', gap: 8, transition: 'background .25s',
-    }}>
-      <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>{saved ? 'check' : 'save'}</span>
-      {saved ? 'บันทึกแล้ว' : 'บันทึกการตั้งค่า'}
-    </button>
+    <div>
+      {error && (
+        <div style={{ color: '#ef4444', fontSize: 12.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>error</span>
+          {error}
+        </div>
+      )}
+      <button onClick={onSave} disabled={!!saving} style={{
+        padding: '10px 24px', borderRadius: 11, border: 'none',
+        background: saved ? '#22c55e' : '#02402e', color: '#fff', fontWeight: 600,
+        fontSize: 13.5, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+        display: 'flex', alignItems: 'center', gap: 8, transition: 'background .25s',
+        opacity: saving ? 0.7 : 1,
+      }}>
+        <span className="msym" style={{
+          fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0",
+          ...(saving ? { animation: 'spin .8s linear infinite', display: 'inline-block' } : {}),
+        }}>
+          {saving ? 'progress_activity' : saved ? 'check' : 'save'}
+        </span>
+        {saving ? 'กำลังบันทึก...' : saved ? 'บันทึกแล้ว' : 'บันทึกการตั้งค่า'}
+      </button>
+    </div>
   )
 }
 
@@ -105,10 +165,33 @@ const inputStyle: React.CSSProperties = {
 // ── Section 1: คำขอเพิ่มทำเล / ชื่อโครงการ ──────────────────────────────────
 
 function LocationRequests() {
-  const [requests, setRequests] = useState<LocationRequest[]>(INIT_LOCATION_REQUESTS)
+  const [requests, setRequests] = useState<LocationRequest[]>([])
 
-  function update(id: string, status: 'approved' | 'rejected') {
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const token = await getToken()
+        const r = await fetch('/api/dashboard/settings/location-requests', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const { requests: rows } = await r.json()
+        setRequests(rows ?? [])
+      } catch { /* fall through with empty list */ }
+    })()
+  }, [])
+
+  async function update(id: string, status: 'approved' | 'rejected') {
     setRequests(r => r.map(req => req.id === id ? { ...req, status } : req))
+    try {
+      const token = await getToken()
+      await fetch('/api/dashboard/settings/location-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, status }),
+      })
+    } catch (e) {
+      console.error('Failed to update location request:', e)
+    }
   }
 
   const pending  = requests.filter(r => r.status === 'pending')
@@ -125,7 +208,6 @@ function LocationRequests() {
         <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ผู้ใช้เสนอคำค้นใหม่ — อนุมัติเพื่อสร้างหน้า SEO Landing Page อัตโนมัติ</p>
       </div>
 
-      {/* Info banner */}
       <div style={{ background: '#f0f7f4', border: '1px solid #c8e6da', borderRadius: 13, padding: '14px 18px', marginBottom: 22, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <span className="msym" style={{ fontSize: 20, color: '#048c73', flexShrink: 0, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>info</span>
         <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
@@ -134,7 +216,6 @@ function LocationRequests() {
         </div>
       </div>
 
-      {/* Pending */}
       {pending.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
@@ -166,7 +247,6 @@ function LocationRequests() {
         </div>
       )}
 
-      {/* Resolved */}
       {resolved.length > 0 && (
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>ประวัติ</div>
@@ -204,14 +284,33 @@ function LocationRequests() {
 // ── Section 2: การแจ้งเตือนทางอีเมล์ ────────────────────────────────────────
 
 function EmailNotifications() {
-  const [templates, setTemplates]   = useState<EmailTemplate[]>(INIT_EMAIL_TEMPLATES)
-  const [editing, setEditing]       = useState<EmailTemplate | null>(null)
-  const [saved, setSaved]           = useState(false)
+  const [templates, setTemplates] = useState<EmailTemplate[]>(DEFAULT_EMAIL_TEMPLATES)
+  const [editing, setEditing]     = useState<EmailTemplate | null>(null)
+  const [saved, setSaved]         = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/dashboard/settings?key=email_templates')
+      .then(r => r.json())
+      .then(({ data }) => { if (Array.isArray(data)) setTemplates(data) })
+      .catch(() => {})
+  }, [])
 
   function toggle(id: string) {
     setTemplates(t => t.map(tpl => tpl.id === id ? { ...tpl, enabled: !tpl.enabled } : tpl))
   }
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+
+  async function handleSave() {
+    setSaving(true); setSaveError('')
+    try {
+      await saveSetting('email_templates', templates)
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    }
+    setSaving(false)
+  }
 
   return (
     <div>
@@ -226,7 +325,6 @@ function EmailNotifications() {
             padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16,
             borderBottom: i < templates.length - 1 ? '1px solid #f1f5f4' : 'none',
           }}>
-            {/* Toggle */}
             <button onClick={() => toggle(tpl.id)} style={{
               width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer', flexShrink: 0,
               background: tpl.enabled ? '#02402e' : '#e2e8f0', position: 'relative', transition: 'background .2s',
@@ -262,9 +360,8 @@ function EmailNotifications() {
         ))}
       </div>
 
-      <SaveButton onSave={handleSave} saved={saved} />
+      <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />
 
-      {/* Edit subject modal */}
       {editing && (
         <>
           <div onClick={() => setEditing(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.18)', zIndex: 100 }} />
@@ -299,13 +396,38 @@ function EmailNotifications() {
 // ── Section 3: ประเภทและสิ่งอำนวยความสะดวก ──────────────────────────────────
 
 function TypesAndAmenities() {
-  const [propTypes, setPropTypes] = useState<PropertyType[]>(INIT_PROPERTY_TYPES)
-  const [amenities, setAmenities] = useState<AmenityTag[]>(INIT_AMENITIES)
+  const [propTypes, setPropTypes] = useState<PropertyType[]>(DEFAULT_PROPERTY_TYPES)
+  const [amenities, setAmenities] = useState<AmenityTag[]>(DEFAULT_AMENITIES)
   const [newType, setNewType]     = useState({ th: '', en: '' })
   const [newAm, setNewAm]         = useState({ th: '', en: '', cat: AMENITY_CATEGORIES[0] })
   const [saved, setSaved]         = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
 
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/dashboard/settings?key=property_types').then(r => r.json()),
+      fetch('/api/dashboard/settings?key=amenities').then(r => r.json()),
+    ]).then(([ptRes, amRes]) => {
+      if (Array.isArray(ptRes.data)) setPropTypes(ptRes.data)
+      if (Array.isArray(amRes.data)) setAmenities(amRes.data)
+    }).catch(() => {})
+  }, [])
+
+  async function handleSave() {
+    setSaving(true); setSaveError('')
+    try {
+      await Promise.all([
+        saveSetting('property_types', propTypes),
+        saveSetting('amenities', amenities),
+      ])
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    }
+    setSaving(false)
+  }
+
   function addType() {
     if (!newType.th || !newType.en) return
     setPropTypes(t => [...t, { id: String(Date.now()), name_th: newType.th, name_en: newType.en, active: true }])
@@ -421,7 +543,7 @@ function TypesAndAmenities() {
         </div>
       </div>
 
-      <SaveButton onSave={handleSave} saved={saved} />
+      <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />
     </div>
   )
 }
@@ -429,46 +551,57 @@ function TypesAndAmenities() {
 // ── Section 4: ข้อมูลบริษัท ──────────────────────────────────────────────────
 
 function CompanyInfo() {
-  const [form, setForm] = useState({
-    name_th: 'บริษัท เสปซเวิร์คส จำกัด',
-    name_en: 'Space Works Co., Ltd.',
-    reg_no:  '0105569001611',
-    email:   'hello@spacesmate.com',
-    phone:   '',
-    line_oa: '@spacesmate',
-    facebook:'https://www.facebook.com/spacesmateTH',
-    instagram:'https://www.instagram.com/spacesmate/',
-    tiktok:  'https://www.tiktok.com/@spacesmate',
-    address: '4004/856 ถนนพระรามที่ 4 แขวงพระโขนง เขตคลองเตย กรุงเทพมหานคร',
-  })
-  const [saved, setSaved] = useState(false)
+  const [form, setForm]           = useState(DEFAULT_COMPANY_INFO)
+  const [saved, setSaved]         = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/dashboard/settings?key=company_info')
+      .then(r => r.json())
+      .then(({ data }) => {
+        if (data && typeof data === 'object') setForm({ ...DEFAULT_COMPANY_INFO, ...data as typeof DEFAULT_COMPANY_INFO })
+      })
+      .catch(() => {})
+  }, [])
+
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+
+  async function handleSave() {
+    setSaving(true); setSaveError('')
+    try {
+      await saveSetting('company_info', form)
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    }
+    setSaving(false)
+  }
 
   const groups = [
     {
       title: 'ข้อมูลทางกฎหมาย',
       fields: [
-        { k: 'name_th', l: 'ชื่อบริษัท (ไทย)', ph: 'บริษัท เสปซเวิร์คส จำกัด' },
-        { k: 'name_en', l: 'ชื่อบริษัท (อังกฤษ)', ph: 'Space Works Co., Ltd.' },
-        { k: 'reg_no',  l: 'เลขทะเบียนนิติบุคคล', ph: '0105569001611' },
-        { k: 'address', l: 'ที่อยู่จดทะเบียน', ph: '4004/856 ถนนพระรามที่ 4...' },
+        { k: 'name_th', l: 'ชื่อบริษัท (ไทย)',      ph: 'บริษัท เสปซเวิร์คส จำกัด' },
+        { k: 'name_en', l: 'ชื่อบริษัท (อังกฤษ)',    ph: 'Space Works Co., Ltd.' },
+        { k: 'reg_no',  l: 'เลขทะเบียนนิติบุคคล',   ph: '0105569001611' },
+        { k: 'address', l: 'ที่อยู่จดทะเบียน',        ph: '4004/856 ถนนพระรามที่ 4...' },
       ],
     },
     {
       title: 'ช่องทางติดต่อ',
       fields: [
-        { k: 'email',   l: 'อีเมลติดต่อ', ph: 'hello@spacesmate.com' },
-        { k: 'phone',   l: 'เบอร์โทรศัพท์', ph: '+66 x xxxx xxxx' },
-        { k: 'line_oa', l: 'LINE Official Account', ph: '@spacesmate' },
+        { k: 'email',   l: 'อีเมลติดต่อ',              ph: 'hello@spacesmate.com' },
+        { k: 'phone',   l: 'เบอร์โทรศัพท์',             ph: '+66 x xxxx xxxx' },
+        { k: 'line_oa', l: 'LINE Official Account',     ph: '@spacesmate' },
       ],
     },
     {
       title: 'โซเชียลมีเดีย',
       fields: [
-        { k: 'facebook',  l: 'Facebook URL', ph: 'https://www.facebook.com/spacesmateTH' },
+        { k: 'facebook',  l: 'Facebook URL',  ph: 'https://www.facebook.com/spacesmateTH' },
         { k: 'instagram', l: 'Instagram URL', ph: 'https://www.instagram.com/spacesmate/' },
-        { k: 'tiktok',    l: 'TikTok URL', ph: 'https://www.tiktok.com/@spacesmate' },
+        { k: 'tiktok',    l: 'TikTok URL',    ph: 'https://www.tiktok.com/@spacesmate' },
       ],
     },
   ]
@@ -511,14 +644,14 @@ function CompanyInfo() {
             {g.fields.map(f => (
               <div key={f.k} style={f.k === 'address' ? { gridColumn: '1 / -1' } : {}}>
                 <label style={labelStyle}>{f.l}</label>
-                <input value={(form as any)[f.k]} onChange={e => set(f.k, e.target.value)} placeholder={f.ph} style={inputStyle} />
+                <input value={(form as Record<string, string>)[f.k] ?? ''} onChange={e => set(f.k, e.target.value)} placeholder={f.ph} style={inputStyle} />
               </div>
             ))}
           </div>
         </div>
       ))}
 
-      <SaveButton onSave={handleSave} saved={saved} />
+      <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />
     </div>
   )
 }
@@ -526,22 +659,32 @@ function CompanyInfo() {
 // ── Section 5: SEO & AEO เริ่มต้น ────────────────────────────────────────────
 
 function SeoAeoSettings() {
-  const [form, setForm] = useState({
-    title_template:    '%s | SpacesMate — ที่พักกรุงเทพ อพาร์ทเม้นท์ คอนโด บ้านเช่า',
-    desc_template:     'SpacesMate — ค้นหา%s ในกรุงเทพ ราคาดี ทำเลเด่น ยืนยันแล้วทุกรายการ ไม่มีค่าใช้จ่ายซ่อน',
-    og_sitename:       'SpacesMate',
-    og_image:          'https://spacesmate.com/og-image.jpg',
-    aeo_faq:           true,
-    aeo_breadcrumb:    true,
-    aeo_product:       true,
-    aeo_localBusiness: true,
-    sitemap_freq:      'weekly',
-    canonical_domain:  'https://spacesmate.com',
-    robots_index:      true,
-  })
-  const [saved, setSaved] = useState(false)
+  const [form, setForm]           = useState(DEFAULT_SEO_SETTINGS)
+  const [saved, setSaved]         = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/dashboard/settings?key=seo_settings')
+      .then(r => r.json())
+      .then(({ data }) => {
+        if (data && typeof data === 'object') setForm({ ...DEFAULT_SEO_SETTINGS, ...data as typeof DEFAULT_SEO_SETTINGS })
+      })
+      .catch(() => {})
+  }, [])
+
   function set(k: string, v: string | boolean) { setForm(f => ({ ...f, [k]: v })) }
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+
+  async function handleSave() {
+    setSaving(true); setSaveError('')
+    try {
+      await saveSetting('seo_settings', form)
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    }
+    setSaving(false)
+  }
 
   const toggleStyle = (on: boolean): React.CSSProperties => ({
     width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer', flexShrink: 0,
@@ -604,14 +747,14 @@ function SeoAeoSettings() {
         <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 18px' }}>เปิดใช้ JSON-LD Schema ที่เกี่ยวข้องในแต่ละหน้า — ช่วยให้ Google และ AI Answer Engine อ่านข้อมูลได้ถูกต้อง</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {[
-            { k: 'aeo_faq',           l: 'FAQ Schema',           desc: 'หน้า FAQ, บทความ — เพิ่มโอกาสได้ Featured Snippet ใน Google' },
-            { k: 'aeo_breadcrumb',    l: 'Breadcrumb Schema',    desc: 'แสดง path navigation ใน Google Search results' },
+            { k: 'aeo_faq',           l: 'FAQ Schema',              desc: 'หน้า FAQ, บทความ — เพิ่มโอกาสได้ Featured Snippet ใน Google' },
+            { k: 'aeo_breadcrumb',    l: 'Breadcrumb Schema',       desc: 'แสดง path navigation ใน Google Search results' },
             { k: 'aeo_product',       l: 'RealEstateListing Schema', desc: 'ข้อมูลประกาศแต่ละรายการ — ราคา, ทำเล, คุณสมบัติ' },
-            { k: 'aeo_localBusiness', l: 'LocalBusiness Schema', desc: 'ข้อมูลบริษัท SpacesMate สำหรับ Google Business Profile' },
+            { k: 'aeo_localBusiness', l: 'LocalBusiness Schema',    desc: 'ข้อมูลบริษัท SpacesMate สำหรับ Google Business Profile' },
           ].map(s => (
             <div key={s.k} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', background: '#f8fafc', borderRadius: 12 }}>
-              <button onClick={() => set(s.k, !(form as any)[s.k])} style={toggleStyle((form as any)[s.k])}>
-                <span style={{ position: 'absolute', top: 3, left: (form as any)[s.k] ? 20 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
+              <button onClick={() => set(s.k, !(form as Record<string, unknown>)[s.k])} style={toggleStyle(!!(form as Record<string, unknown>)[s.k])}>
+                <span style={{ position: 'absolute', top: 3, left: (form as Record<string, unknown>)[s.k] ? 20 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
               </button>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e' }}>{s.l}</div>
@@ -619,9 +762,9 @@ function SeoAeoSettings() {
               </div>
               <span style={{
                 fontSize: 11.5, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
-                background: (form as any)[s.k] ? '#dcfce7' : '#f1f5f9',
-                color: (form as any)[s.k] ? '#15803d' : '#94a3b8',
-              }}>{(form as any)[s.k] ? 'เปิด' : 'ปิด'}</span>
+                background: (form as Record<string, unknown>)[s.k] ? '#dcfce7' : '#f1f5f9',
+                color:      (form as Record<string, unknown>)[s.k] ? '#15803d' : '#94a3b8',
+              }}>{(form as Record<string, unknown>)[s.k] ? 'เปิด' : 'ปิด'}</span>
             </div>
           ))}
         </div>
@@ -639,12 +782,15 @@ function SeoAeoSettings() {
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>robots.txt: {form.robots_index ? 'Allow all / index, follow' : 'Disallow all (ซ่อนจาก Google)'}</div>
           </div>
           {!form.robots_index && (
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: '#fee2e2', color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>ซ่อนจาก Google</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: '#fee2e2', color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>
+              ซ่อนจาก Google
+            </span>
           )}
         </div>
       </div>
 
-      <SaveButton onSave={handleSave} saved={saved} />
+      <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />
     </div>
   )
 }
@@ -654,16 +800,15 @@ function SeoAeoSettings() {
 type SettingsTab = 'locations' | 'emails' | 'types' | 'company' | 'seo'
 
 const SIDEBAR_NAV: Array<{ k: SettingsTab; label: string; icon: string; desc: string }> = [
-  { k: 'locations', label: 'คำขอเพิ่มทำเล',      icon: 'add_location',      desc: 'อนุมัติทำเล / โครงการ' },
-  { k: 'emails',    label: 'แจ้งเตือนอีเมล',      icon: 'mail',              desc: 'เทมเพลทอีเมล' },
-  { k: 'types',     label: 'ประเภทและสิ่งอำนวยฯ', icon: 'tune',              desc: 'ตัวเลือกในฟอร์ม' },
-  { k: 'company',   label: 'ข้อมูลบริษัท',         icon: 'business',          desc: 'โลโก้ ที่อยู่ โซเชียล' },
-  { k: 'seo',       label: 'SEO & AEO เริ่มต้น',  icon: 'manage_search',     desc: 'Meta, Schema, Robots' },
+  { k: 'locations', label: 'คำขอเพิ่มทำเล',      icon: 'add_location',  desc: 'อนุมัติทำเล / โครงการ' },
+  { k: 'emails',    label: 'แจ้งเตือนอีเมล',      icon: 'mail',          desc: 'เทมเพลทอีเมล' },
+  { k: 'types',     label: 'ประเภทและสิ่งอำนวยฯ', icon: 'tune',          desc: 'ตัวเลือกในฟอร์ม' },
+  { k: 'company',   label: 'ข้อมูลบริษัท',         icon: 'business',      desc: 'โลโก้ ที่อยู่ โซเชียล' },
+  { k: 'seo',       label: 'SEO & AEO เริ่มต้น',  icon: 'manage_search', desc: 'Meta, Schema, Robots' },
 ]
 
 export default function SettingsPage() {
   const [active, setActive] = useState<SettingsTab>('locations')
-  const current = SIDEBAR_NAV.find(n => n.k === active)!
 
   return (
     <div>
