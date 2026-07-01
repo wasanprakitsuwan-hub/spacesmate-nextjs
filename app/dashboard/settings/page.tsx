@@ -158,7 +158,7 @@ function LocationRequests() {
                   <button onClick={() => update(req.id, 'approved')} style={{
                     padding: '7px 16px', borderRadius: 9, border: 'none',
                     background: '#02402e', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  }}>อนุมัติ → สร้างหน้า SEO</button>
+                  }}>อนุมัติ<span className="msym" style={{ fontSize: 14, margin: '0 3px', fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle' }}>arrow_forward</span>สร้างหน้า SEO</button>
                 </div>
               </div>
             ))}
@@ -639,7 +639,7 @@ function SeoAeoSettings() {
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>robots.txt: {form.robots_index ? 'Allow all / index, follow' : 'Disallow all (ซ่อนจาก Google)'}</div>
           </div>
           {!form.robots_index && (
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: '#fee2e2', color: '#b91c1c' }}>⚠ ซ่อนจาก Google</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: '#fee2e2', color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>ซ่อนจาก Google</span>
           )}
         </div>
       </div>

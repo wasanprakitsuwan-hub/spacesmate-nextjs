@@ -24,9 +24,9 @@ interface UserRow {
 type CallerRole = 'admin' | 'super_admin'
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; label: string; icon: string }> = {
-  super_admin: { bg: '#fdf3e3', color: '#d97f11', label: 'Super Admin', icon: '⭐' },
-  admin:       { bg: '#fff1e6', color: '#c2560c', label: 'Admin',       icon: '🔑' },
-  landlord:    { bg: '#eaf6f1', color: '#048c73', label: 'เจ้าของ',     icon: '🏠' },
+  super_admin: { bg: '#fdf3e3', color: '#d97f11', label: 'Super Admin', icon: 'grade' },
+  admin:       { bg: '#fff1e6', color: '#c2560c', label: 'Admin',       icon: 'key' },
+  landlord:    { bg: '#eaf6f1', color: '#048c73', label: 'เจ้าของ',     icon: 'home' },
 }
 
 const PACKAGE_STYLE: Record<string, { bg: string; color: string; label: string }> = {
@@ -146,7 +146,7 @@ function EditDrawer({
                 const rs = ROLE_STYLE[user.role] ?? ROLE_STYLE.landlord
                 return (
                   <span style={{ fontSize: 11, padding: '2px 9px', borderRadius: 8, background: rs.bg, color: rs.color, fontWeight: 700 }}>
-                    {rs.icon} {rs.label}
+                    <span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>{rs.icon}</span>{rs.label}
                   </span>
                 )
               })()}
@@ -154,7 +154,7 @@ function EditDrawer({
                 const ps = PACKAGE_STYLE[user.package!] ?? PACKAGE_STYLE.free
                 return (
                   <span style={{ fontSize: 11, padding: '2px 9px', borderRadius: 8, background: ps.bg, color: ps.color, fontWeight: 700 }}>
-                    📦 {ps.label}
+                    <span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>inventory_2</span>{ps.label}
                   </span>
                 )
               })()}
@@ -246,13 +246,13 @@ function EditDrawer({
             >
               {availableRoles.map(r => (
                 <option key={r} value={r}>
-                  {r === 'super_admin' ? '⭐ Super Admin' : r === 'admin' ? '🔑 Admin' : '🏠 เจ้าของ (Landlord)'}
+                  {r === 'super_admin' ? 'Super Admin' : r === 'admin' ? 'Admin' : 'เจ้าของ (Landlord)'}
                 </option>
               ))}
             </select>
             {callerRole === 'super_admin' && (
-              <p style={{ margin: '6px 0 0', fontSize: 11, color: '#94a3b8' }}>
-                ⚠️ การเปลี่ยนบทบาทมีผลทันที
+              <p style={{ margin: '6px 0 0', fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>การเปลี่ยนบทบาทมีผลทันที
               </p>
             )}
           </div>
@@ -262,7 +262,7 @@ function EditDrawer({
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>แพ็กเกจปัจจุบัน</label>
             <div style={{ padding: '10px 13px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8faf9', fontSize: 13.5, color: '#94a3b8' }}>
               {user.package
-                ? (() => { const ps = PACKAGE_STYLE[user.package!] ?? PACKAGE_STYLE.free; return <span style={{ color: ps.color, fontWeight: 600 }}>📦 {ps.label}</span> })()
+                ? (() => { const ps = PACKAGE_STYLE[user.package!] ?? PACKAGE_STYLE.free; return <span style={{ color: ps.color, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>inventory_2</span>{ps.label}</span> })()
                 : '— ไม่มีแพ็กเกจ'}
             </div>
           </div>
@@ -304,7 +304,7 @@ function EditDrawer({
             background: saving ? '#94a3b8' : '#02402e', color: '#fff',
             fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
           }}>
-            {saving ? 'กำลังบันทึก...' : '💾 บันทึกข้อมูล'}
+            {saving ? 'กำลังบันทึก...' : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6 }}>save</span>บันทึกข้อมูล</>}
           </button>
         </div>
       </div>
@@ -377,26 +377,26 @@ export default function UsersPage() {
   // Role filter tabs — super_admin sees all; admin sees only landlords
   const roleTabs = callerRole === 'super_admin'
     ? [
-        { key: 'all',         label: 'ทั้งหมด' },
-        { key: 'landlord',    label: '🏠 เจ้าของ' },
-        { key: 'admin',       label: '🔑 Admin' },
-        { key: 'super_admin', label: '⭐ Super Admin' },
+        { key: 'all',         label: 'ทั้งหมด',    icon: '' },
+        { key: 'landlord',    label: 'เจ้าของ',     icon: 'home' },
+        { key: 'admin',       label: 'Admin',        icon: 'key' },
+        { key: 'super_admin', label: 'Super Admin',  icon: 'grade' },
       ]
-    : [{ key: 'all', label: 'ทั้งหมด' }, { key: 'landlord', label: '🏠 เจ้าของ' }]
+    : [{ key: 'all', label: 'ทั้งหมด', icon: '' }, { key: 'landlord', label: 'เจ้าของ', icon: 'home' }]
 
   // KPI cards — differ by role
   const kpiCards = callerRole === 'super_admin'
     ? [
-        { label: 'ผู้ใช้ทั้งหมด',    value: users.length,    icon: '👥', bg: '#e8f5f0', color: '#048c73' },
-        { label: 'เจ้าของทรัพย์',    value: landlordCount,   icon: '🏠', bg: '#e0f2f9', color: '#0284c7' },
-        { label: 'ผู้ดูแลระบบ',      value: adminCount,      icon: '🔑', bg: '#fff1e6', color: '#c2560c' },
-        { label: 'Super Admin',       value: superAdminCount, icon: '⭐', bg: '#fdf3e3', color: '#d97f11' },
+        { label: 'ผู้ใช้ทั้งหมด',    value: users.length,    icon: 'group',     bg: '#e8f5f0', color: '#048c73' },
+        { label: 'เจ้าของทรัพย์',    value: landlordCount,   icon: 'home',      bg: '#e0f2f9', color: '#0284c7' },
+        { label: 'ผู้ดูแลระบบ',      value: adminCount,      icon: 'key',       bg: '#fff1e6', color: '#c2560c' },
+        { label: 'Super Admin',       value: superAdminCount, icon: 'grade',     bg: '#fdf3e3', color: '#d97f11' },
       ]
     : [
-        { label: 'เจ้าของทรัพย์',    value: landlordCount,   icon: '🏠', bg: '#e8f5f0', color: '#048c73' },
-        { label: 'ประกาศทั้งหมด',    value: totalListings,   icon: '📋', bg: '#e0f2f9', color: '#0284c7' },
-        { label: 'เฉลี่ยประกาศ/คน',  value: avgListings,     icon: '📊', bg: '#f1f5f9', color: '#64748b' },
-        { label: 'แพ็กเกจ Active',   value: users.filter(u => u.package && u.package !== 'free').length, icon: '💳', bg: '#fdf3e3', color: '#d97f11' },
+        { label: 'เจ้าของทรัพย์',    value: landlordCount,   icon: 'home',      bg: '#e8f5f0', color: '#048c73' },
+        { label: 'ประกาศทั้งหมด',    value: totalListings,   icon: 'list_alt',  bg: '#e0f2f9', color: '#0284c7' },
+        { label: 'เฉลี่ยประกาศ/คน',  value: avgListings,     icon: 'bar_chart', bg: '#f1f5f9', color: '#64748b' },
+        { label: 'แพ็กเกจ Active',   value: users.filter(u => u.package && u.package !== 'free').length, icon: 'credit_card', bg: '#fdf3e3', color: '#d97f11' },
       ]
 
   return (
@@ -427,7 +427,7 @@ export default function UsersPage() {
           color: callerRole === 'super_admin' ? '#d97f11' : '#c2560c',
           letterSpacing: 0.5,
         }}>
-          {callerRole === 'super_admin' ? '⭐ Super Admin' : '🔑 Admin'}
+          <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>{callerRole === 'super_admin' ? 'grade' : 'key'}</span>{callerRole === 'super_admin' ? 'Super Admin' : 'Admin'}
         </span>
       </div>
 
@@ -435,7 +435,7 @@ export default function UsersPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
         {kpiCards.map(k => (
           <div key={k.label} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.07)' }}>
-            <span style={{ width: 40, height: 40, borderRadius: 11, background: k.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{k.icon}</span>
+            <span style={{ width: 40, height: 40, borderRadius: 11, background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{k.icon}</span></span>
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, color: '#02402e', lineHeight: 1, letterSpacing: '-0.5px' }}>{k.value}</div>
               <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>{k.label}</div>
@@ -448,7 +448,7 @@ export default function UsersPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="🔍  ค้นหาชื่อ, อีเมล, เบอร์โทร"
+          placeholder="ค้นหาชื่อ, อีเมล, เบอร์โทร"
           style={{ flex: 1, minWidth: 220, padding: '10px 14px', borderRadius: 12, border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none', background: '#fff', fontFamily: 'inherit' }}
         />
         <div style={{ display: 'flex', gap: 6 }}>
@@ -459,7 +459,7 @@ export default function UsersPage() {
               background: roleFilter === t.key ? '#02402e' : '#fff',
               color: roleFilter === t.key ? '#fff' : '#64748b',
               fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>{t.label}</button>
+            }}>{t.icon && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4 }}>{t.icon}</span>}{t.label}</button>
           ))}
         </div>
       </div>
@@ -473,7 +473,7 @@ export default function UsersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '64px 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 36, margin: '0 0 10px' }}>👥</p>
+            <p style={{ margin: '0 0 10px' }}><span className="msym" style={{ fontSize: 36, color: '#c7d2d0', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>group</span></p>
             <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>
               {search || roleFilter !== 'all' ? 'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข' : 'ยังไม่มีผู้ใช้ในระบบ'}
             </p>
@@ -483,7 +483,7 @@ export default function UsersPage() {
             <div style={{ padding: '12px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>แสดง {filtered.length} จาก {users.length} ผู้ใช้</span>
               {callerRole === 'admin' && (
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>📋 แสดงเฉพาะเจ้าของทรัพย์</span>
+                <span style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 13 }}>list_alt</span>แสดงเฉพาะเจ้าของทรัพย์</span>
               )}
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -525,7 +525,7 @@ export default function UsersPage() {
                         {/* Role */}
                         <td style={{ padding: '13px 16px' }}>
                           <span style={{ fontSize: 11.5, padding: '3px 10px', borderRadius: 10, background: rs.bg, color: rs.color, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            {rs.icon} {rs.label}
+                            <span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>{rs.icon}</span>{rs.label}
                           </span>
                         </td>
 
@@ -564,11 +564,11 @@ export default function UsersPage() {
                               onClick={() => setEditingUser(u)}
                               style={{ padding: '5px 11px', borderRadius: 7, border: '1px solid #048c73', background: '#eaf6f1', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
                             >
-                              ✏️ แก้ไข
+                              <span className="msym" style={{ fontSize: 13, marginRight: 4 }}>edit</span>แก้ไข
                             </button>
                             {u.listings.total > 0 && (
                               <a href={`/dashboard/listings?landlord=${u.id}`} style={{ padding: '5px 9px', borderRadius: 7, background: '#f1f5f9', color: '#64748b', fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                                🏠 ประกาศ
+                                <span className="msym" style={{ fontSize: 13, marginRight: 4 }}>home</span>ประกาศ
                               </a>
                             )}
                           </div>
@@ -586,7 +586,7 @@ export default function UsersPage() {
       {/* Info note for admin */}
       {callerRole === 'admin' && (
         <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 12, background: '#f8faf9', border: '1px solid #eef0ef', fontSize: 12.5, color: '#94a3b8', display: 'flex', gap: 8 }}>
-          <span>ℹ️</span>
+          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>info</span>
           <span>Admin สามารถดูและแก้ไขข้อมูลเจ้าของทรัพย์ได้เท่านั้น การเปลี่ยนบทบาทและจัดการ Admin/Super Admin ต้องใช้สิทธิ์ Super Admin</span>
         </div>
       )}

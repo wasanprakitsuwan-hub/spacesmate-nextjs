@@ -94,7 +94,7 @@ export default function SubmitPage() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/submit/new"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 28px', textDecoration: 'none' }}>
-                เริ่มลงประกาศเลย →
+                เริ่มลงประกาศเลย<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </Link>
               <Link href="/manage"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 24px', textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.5)' }}>
@@ -170,7 +170,7 @@ export default function SubmitPage() {
           </p>
           {/* Green promo note */}
           <p style={{ textAlign: 'center', fontSize: 14, color: '#02402e', fontWeight: 500, margin: '0 0 36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <span style={{ color: '#d97f11' }}>✅</span>
+            <span className="msym" style={{ fontSize: 16, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
             แพ็กเกจสูงสุด 12 เดือน เพื่อให้ประกาศได้รับการอัปเดตเสมอ — ข้อมูลแม่นกว่าเว็บอื่น
           </p>
 
@@ -199,7 +199,7 @@ export default function SubmitPage() {
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                   {pkg.features.map((f, j) => (
                     <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, color: '#374151', lineHeight: 1.45, fontWeight: 300 }}>
-                      <span style={{ color: '#048c73', fontWeight: 600, flexShrink: 0 }}>✓</span>
+                      <span className="msym" style={{ fontSize: 14, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>check</span>
                       {f}
                     </li>
                   ))}

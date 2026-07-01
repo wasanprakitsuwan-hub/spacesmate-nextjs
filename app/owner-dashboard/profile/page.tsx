@@ -130,7 +130,7 @@ export default function ProfilePage() {
         {/* Avatar / header */}
         <div style={{ background: 'linear-gradient(135deg, #02402e 0%, #048c73 100%)', padding: '28px 28px 22px', display: 'flex', alignItems: 'center', gap: 18 }}>
           <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '2px solid rgba(255,255,255,0.35)' }}>
-            <span style={{ fontSize: 28, color: '#fff' }}>👤</span>
+            <span className="msym" style={{ fontSize: 28, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>person</span>
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
@@ -188,13 +188,13 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '11px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16 }}>
-              ⚠️ {error}
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '11px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}
             </div>
           )}
           {saved && (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '11px 14px', color: '#15803d', fontSize: 13, marginBottom: 16 }}>
-              ✅ บันทึกข้อมูลสำเร็จแล้ว
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '11px 14px', color: '#15803d', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>บันทึกข้อมูลสำเร็จแล้ว
             </div>
           )}
 
@@ -212,7 +212,7 @@ export default function ProfilePage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#d97f11,#fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 18 }}>⭐</span>
+                <span className="msym" style={{ fontSize: 18, color: '#fff', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>grade</span>
               </div>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#334155' }}>{PKG_LABEL[profile.active_package!] ?? profile.active_package}</div>
@@ -231,8 +231,8 @@ export default function ProfilePage() {
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 14px' }}>คุณยังไม่มีแพ็กเกจที่ใช้งานอยู่</p>
             <a href="/pricing"
-              style={{ background: '#d97f11', color: '#fff', borderRadius: 22, padding: '11px 24px', fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'inline-block', boxShadow: '0 4px 12px -4px rgba(217,127,17,0.45)' }}>
-              🛒 ดูแพ็กเกจทั้งหมด
+              style={{ background: '#d97f11', color: '#fff', borderRadius: 22, padding: '11px 24px', fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, boxShadow: '0 4px 12px -4px rgba(217,127,17,0.45)' }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>ดูแพ็กเกจทั้งหมด
             </a>
           </div>
         )}
@@ -266,13 +266,13 @@ export default function ProfilePage() {
             </div>
 
             {pwdErr && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>
-                ⚠️ {pwdErr}
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{pwdErr}
               </div>
             )}
             {pwdMsg && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', color: '#15803d', fontSize: 13, marginBottom: 14 }}>
-                ✅ {pwdMsg}
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', color: '#15803d', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{pwdMsg}
               </div>
             )}
 

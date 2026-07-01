@@ -92,7 +92,7 @@ export default function ContactPage() {
           <div>
             {submitted ? (
               <div className="text-center py-16">
-                <div className="text-5xl mb-4">✅</div>
+                <div className="mb-4"><span className="msym" style={{ fontSize: 44, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span></div>
                 <h3 className="text-xl font-semibold text-spacemate-brandDark mb-2">ได้รับข้อความแล้ว!</h3>
                 <p className="text-gray-500 text-sm">ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง</p>
               </div>
@@ -158,7 +158,7 @@ export default function ContactPage() {
                 </div>
 
                 <button type="submit" className="btn-primary w-full">
-                  ส่งข้อความ →
+                  ส่งข้อความ<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 6, verticalAlign: 'middle' }}>arrow_forward</span>
                 </button>
 
                 <p className="text-xs text-gray-400 text-center">

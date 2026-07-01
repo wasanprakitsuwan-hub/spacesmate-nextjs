@@ -174,7 +174,7 @@ export default function SubmitNewPage() {
             <span className="msym" style={{ fontSize: 38, color: '#fff' }}>{isPaid ? 'verified' : 'check_circle'}</span>
           </div>
           <h2 style={{ fontSize: 23, fontWeight: 600, color: '#02402e', margin: '0 0 10px' }}>
-            {isPaid ? 'ประกาศเผยแพร่แล้ว! 🎉' : 'ประกาศของคุณถูกส่งแล้ว!'}
+            {isPaid ? <>ประกาศเผยแพร่แล้ว! <span className="msym" style={{ fontSize: 22, fontVariationSettings: "'wght' 400, 'FILL' 1", verticalAlign: 'middle', color: '#d97f11' }}>celebration</span></> : 'ประกาศของคุณถูกส่งแล้ว!'}
           </h2>
           <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 8px' }}>
             {isPaid
@@ -253,7 +253,7 @@ export default function SubmitNewPage() {
                         <span style={{ position: 'absolute', top: 12, right: 12, background: '#d97f11', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>{pkg.badge}</span>
                       )}
                       {selected && (
-                        <span style={{ position: 'absolute', top: 12, right: 12, background: '#048c73', color: '#fff', fontSize: 18, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</span>
+                        <span style={{ position: 'absolute', top: 12, right: 12, background: '#048c73', color: '#fff', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span></span>
                       )}
                       <div style={{ fontSize: 16, fontWeight: 700, color: '#02402e', marginBottom: 4 }}>{pkg.name}</div>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#d97f11', marginBottom: 2 }}>
@@ -271,7 +271,7 @@ export default function SubmitNewPage() {
                 })}
               </div>
               <div style={{ marginTop: 18, padding: '14px 16px', background: '#f7f9f8', borderRadius: 12, fontSize: 13, color: '#64748b' }}>
-                💡 1 แพ็กเกจ = 1 ประกาศ · ต้องการลงหลายประกาศ? ซื้อหลายแพ็กเกจได้เลย · ทีมงานจะติดต่อยืนยันการชำระเงินหลังกด "เผยแพร่"
+                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5, verticalAlign: 'middle' }}>tips_and_updates</span>1 แพ็กเกจ = 1 ประกาศ · ต้องการลงหลายประกาศ? ซื้อหลายแพ็กเกจได้เลย · ทีมงานจะติดต่อยืนยันการชำระเงินหลังกด "เผยแพร่"
               </div>
             </div>
           )}
@@ -473,7 +473,9 @@ export default function SubmitNewPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <p style={{ color: selectedPkg.id === 'free_trial' ? '#d97f11' : '#048c73', fontWeight: 700, fontSize: 15, margin: '0 0 2px' }}>
-                      {selectedPkg.id === 'free_trial' ? '🎉 ทดลองฟรี 30 วัน' : `✅ แพ็กเกจ ${selectedPkg.name} — ${selectedPkg.durationLabel}`}
+                      {selectedPkg.id === 'free_trial'
+                        ? <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>celebration</span>ทดลองฟรี 30 วัน</>
+                        : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>check_circle</span>แพ็กเกจ {selectedPkg.name} — {selectedPkg.durationLabel}</>}
                     </p>
                     <p style={{ color: '#94a3b8', fontSize: 12.5, margin: 0 }}>
                       {selectedPkg.id === 'free_trial' ? 'ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง · ไม่ต้องใช้บัตรเครดิต' : `หลังกด "เผยแพร่" ทีมงานจะติดต่อยืนยันการชำระเงิน ${selectedPkg.priceLabel}`}
@@ -485,7 +487,7 @@ export default function SubmitNewPage() {
 
               {error && (
                 <div style={{ marginTop: 16, padding: '12px 16px', background: '#fff0f0', border: '1px solid #fca5a5', borderRadius: 10, fontSize: 14, color: '#dc2626' }}>
-                  ⚠️ {error}
+                  <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>warning</span>{error}
                 </div>
               )}
             </div>
@@ -496,13 +498,13 @@ export default function SubmitNewPage() {
             {step > 0 && (
               <button type="button" onClick={() => setStep(s => s - 1)} disabled={loading}
                 style={{ background: 'transparent', color: '#02402e', fontWeight: 600, fontSize: 14.5, border: '1.5px solid #02402e', borderRadius: 24, padding: '12px 26px', cursor: 'pointer', transition: 'all .2s', opacity: loading ? .5 : 1 }}>
-                ← ย้อนกลับ
+                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>arrow_back</span>ย้อนกลับ
               </button>
             )}
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={() => setStep(s => s + 1)}
                 style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: 'pointer' }}>
-                ถัดไป →
+                ถัดไป<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </button>
             ) : (
               <button type="button" onClick={handleSubmit} disabled={loading}
