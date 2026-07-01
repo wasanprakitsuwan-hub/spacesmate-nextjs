@@ -146,20 +146,21 @@ export default function SubmitNewPage() {
     setError(null)
     setLoading(true)
     try {
-      const res = await fetch('/api/submit-listing', {
+      // Save listing + create Stripe Checkout Session
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || 'Server error')
-      setSubmittedPkg(form.packageId)
-      setSubmitted(true)
+      // Redirect to Stripe Checkout — user pays, then comes back to /submit/success
+      if (json.url) window.location.href = json.url
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
-    } finally {
       setLoading(false)
     }
+    // Note: don't setLoading(false) on success — page is redirecting to Stripe
   }
 
   const selectedPkg = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
@@ -510,9 +511,9 @@ export default function SubmitNewPage() {
               <button type="button" onClick={handleSubmit} disabled={loading}
                 style={{ background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {loading ? (
-                  <><span className="msym" style={{ fontSize: 18, animation: 'spin 1s linear infinite' }}>autorenew</span>กำลังส่ง...</>
+                  <><span className="msym" style={{ fontSize: 18, animation: 'spin 1s linear infinite' }}>autorenew</span>กำลังโหลด Stripe...</>
                 ) : (
-                  <><span className="msym" style={{ fontSize: 18 }}>publish</span>เผยแพร่ประกาศ</>
+                  <><span className="msym" style={{ fontSize: 18 }}>payment</span>ชำระเงินและเผยแพร่</>
                 )}
               </button>
             )}
