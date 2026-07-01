@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,14 +23,6 @@ interface BlogPost {
 }
 
 const CATEGORIES = ['คู่มือผู้เช่า', 'ความรู้การลงทุน', 'เกี่ยวกับเรา', 'PropTech', 'ทำเลน่าอยู่', 'เจ้าของทรัพย์']
-
-const MOCK_POSTS: BlogPost[] = [
-  { id: '1', title: 'วิธีหาอพาร์ทเม้นท์ในกรุงเทพฯ สำหรับชาวต่างชาติ', slug: 'find-apartment-bangkok-expats', category: 'คู่มือผู้เช่า', status: 'published', seoScore: 87, views: 1240, date: '2026-06-10', author: 'SpacesMate', content: '<h2>บทนำ</h2><p>การหาที่พักในกรุงเทพเป็นเรื่องสำคัญสำหรับชาวต่างชาติ...</p>', metaTitle: 'วิธีหาอพาร์ทเม้นท์กรุงเทพ | SpacesMate', metaDesc: 'คู่มือครบถ้วนสำหรับชาวต่างชาติที่ต้องการหาอพาร์ทเม้นท์ในกรุงเทพฯ ทำเล ราคา และขั้นตอนเช่า' },
-  { id: '2', title: '5 ทำเลทองสำหรับลงทุนอสังหาริมทรัพย์กรุงเทพฯ 2026', slug: 'bangkok-investment-locations-2026', category: 'ความรู้การลงทุน', status: 'published', seoScore: 92, views: 3410, date: '2026-05-28', author: 'SpacesMate', content: '' },
-  { id: '3', title: 'SpacesMate คืออะไร? แพลตฟอร์มบริหารทรัพย์สินแบบ Asset-Light', slug: 'what-is-spacesmate', category: 'เกี่ยวกับเรา', status: 'published', seoScore: 78, views: 890, date: '2026-05-15', author: 'SpacesMate', content: '' },
-  { id: '4', title: 'PropTech Trends ที่น่าจับตาในไทย 2026', slug: 'proptech-trends-thailand-2026', category: 'PropTech', status: 'draft', seoScore: 45, views: 0, date: '2026-06-20', author: 'SpacesMate', content: '' },
-  { id: '5', title: 'ข้อดีของการเช่าคอนโดแทนการซื้อในกรุงเทพฯ', slug: 'rent-vs-buy-condo-bangkok', category: 'คู่มือผู้เช่า', status: 'review', seoScore: 65, views: 0, date: '2026-06-18', author: 'SpacesMate', content: '' },
-]
 
 const STATUS_MAP = {
   published: { bg: '#dcfce7', color: '#15803d', label: 'เผยแพร่แล้ว' },
@@ -75,6 +68,25 @@ function generateSlug(title: string): string {
 function autoAlt(fileName: string, postTitle = ''): string {
   if (postTitle) return postTitle
   return fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+}
+
+/** Retrieve the current user's JWT for authenticated API calls */
+async function getToken(): Promise<string> {
+  const { data: { session } } = await createBrowserClient().auth.getSession()
+  return session?.access_token ?? ''
+}
+
+/** Compute an SEO score (0–100) from post fields */
+function calcSeoScore(post: Partial<BlogPost>): number {
+  let score = 0
+  if (post.metaTitle && post.metaTitle.length >= 20) score += 25
+  if (post.metaDesc  && post.metaDesc.length  >= 80) score += 25
+  const chars = (post.content ?? '').replace(/<[^>]*>/g, '').length
+  if (chars >= 800)      score += 30
+  else if (chars >= 300) score += 15
+  if (post.thumbnail)    score += 10
+  if (post.thumbnailAlt) score += 10
+  return Math.min(score, 100)
 }
 
 // ── ThumbnailUploader ─────────────────────────────────────────────────────────
@@ -323,12 +335,14 @@ function SeoBar({ score }: { score: number }) {
 function EditDrawer({ post, onClose, onSave }: {
   post: BlogPost
   onClose: () => void
-  onSave: (updated: BlogPost) => void
+  onSave: (updated: BlogPost) => Promise<void>
 }) {
-  const [form, setForm]         = useState<BlogPost>({ ...post })
+  const [form, setForm]             = useState<BlogPost>({ ...post })
   const [slugEdited, setSlugEdited] = useState(!!post.slug && post.id !== 'NEW')
-  const [saved, setSaved]       = useState(false)
-  const [activeTab, setActiveTab] = useState<'content' | 'seo'>('content')
+  const [saved, setSaved]           = useState(false)
+  const [saving, setSaving]         = useState(false)
+  const [saveError, setSaveError]   = useState('')
+  const [activeTab, setActiveTab]   = useState<'content' | 'seo'>('content')
 
   function setF(k: keyof BlogPost, v: string) {
     setForm(f => {
@@ -343,10 +357,18 @@ function EditDrawer({ post, onClose, onSave }: {
     })
   }
 
-  function handleSave() {
-    onSave(form)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2200)
+  async function handleSave() {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await onSave({ ...form, seoScore: calcSeoScore(form) })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2200)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -554,20 +576,29 @@ function EditDrawer({ post, onClose, onSave }: {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 26px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
-          <button onClick={onClose} style={{
-            padding: '10px 22px', borderRadius: 11, border: '1px solid #e2e8f0',
-            background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit',
-          }}>ยกเลิก</button>
-          <button onClick={handleSave} style={{
-            padding: '10px 28px', borderRadius: 11, border: 'none',
-            background: saved ? '#22c55e' : '#02402e', color: '#fff', fontWeight: 600,
-            fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: 8, transition: 'background .25s',
-          }}>
-            <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>{saved ? 'check' : 'save'}</span>
-            {saved ? 'บันทึกแล้ว' : 'บันทึก'}
-          </button>
+        <div style={{ padding: '14px 26px', borderTop: '1px solid #eef0ef', flexShrink: 0 }}>
+          {saveError && (
+            <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 10, textAlign: 'right' }}>{saveError}</div>
+          )}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button onClick={onClose} disabled={saving} style={{
+              padding: '10px 22px', borderRadius: 11, border: '1px solid #e2e8f0',
+              background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13.5,
+              cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', opacity: saving ? 0.5 : 1,
+            }}>ยกเลิก</button>
+            <button onClick={handleSave} disabled={saving} style={{
+              padding: '10px 28px', borderRadius: 11, border: 'none',
+              background: saved ? '#22c55e' : '#02402e', color: '#fff', fontWeight: 600,
+              fontSize: 13.5, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 8, transition: 'background .25s',
+              opacity: saving ? 0.75 : 1,
+            }}>
+              <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0", animation: saving ? 'spin .8s linear infinite' : 'none' }}>
+                {saving ? 'progress_activity' : saved ? 'check' : 'save'}
+              </span>
+              {saving ? 'กำลังบันทึก...' : saved ? 'บันทึกแล้ว' : 'บันทึก'}
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -577,11 +608,21 @@ function EditDrawer({ post, onClose, onSave }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function BlogPage() {
-  const [posts, setPosts]     = useState<BlogPost[]>(MOCK_POSTS)
-  const [filter, setFilter]   = useState('')
-  const [search, setSearch]   = useState('')
-  const [editing, setEditing] = useState<BlogPost | null>(null)
+  const [posts, setPosts]           = useState<BlogPost[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [filter, setFilter]         = useState('')
+  const [search, setSearch]         = useState('')
+  const [editing, setEditing]       = useState<BlogPost | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+
+  // ── Load posts from Supabase on mount ──────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/dashboard/blog')
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.posts)) setPosts(d.posts) })
+      .catch(err => console.error('Failed to load blog posts:', err))
+      .finally(() => setLoading(false))
+  }, [])
 
   const displayed = posts.filter(p => {
     if (filter && p.status !== filter) return false
@@ -589,20 +630,64 @@ export default function BlogPage() {
     return true
   })
 
-  function handleSave(updated: BlogPost) {
+  // ── Create or update a post via API ────────────────────────────────────────
+  async function handleSave(updated: BlogPost): Promise<void> {
+    const token = await getToken()
     if (updated.id === 'NEW') {
-      const newPost = { ...updated, id: String(Date.now()), date: new Date().toISOString().slice(0, 10) }
-      setPosts(prev => [newPost, ...prev])
+      const r = await fetch('/api/dashboard/blog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updated),
+      })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        throw new Error((d as { error?: string }).error ?? 'บันทึกไม่สำเร็จ')
+      }
+      const { post } = await r.json() as { post: BlogPost }
+      setPosts(prev => [post, ...prev])
       setShowCreate(false)
     } else {
+      const r = await fetch(`/api/dashboard/blog/${updated.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updated),
+      })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        throw new Error((d as { error?: string }).error ?? 'บันทึกไม่สำเร็จ')
+      }
       setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))
       setEditing(null)
     }
   }
 
+  // ── Quick-publish from the post list ───────────────────────────────────────
+  async function quickPublish(post: BlogPost) {
+    const token = await getToken()
+    await fetch(`/api/dashboard/blog/${post.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: 'published' }),
+    })
+    setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'published' } : p))
+  }
+
+  // ── Delete a post ───────────────────────────────────────────────────────────
+  async function deletePost(post: BlogPost) {
+    if (!confirm(`ลบบทความ "${post.title}"?\nการลบไม่สามารถยกเลิกได้`)) return
+    const token = await getToken()
+    await fetch(`/api/dashboard/blog/${post.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    setPosts(prev => prev.filter(p => p.id !== post.id))
+  }
+
   const published  = posts.filter(p => p.status === 'published').length
   const totalViews = posts.reduce((s, p) => s + p.views, 0)
-  const avgSeo     = Math.round(posts.reduce((s, p) => s + p.seoScore, 0) / posts.length)
+  const avgSeo     = posts.length > 0
+    ? Math.round(posts.reduce((s, p) => s + p.seoScore, 0) / posts.length)
+    : 0
 
   const KPI = [
     { label: 'เผยแพร่แล้ว',    value: published,                    icon: 'check_circle', bg: '#dcfce7', color: '#15803d' },
@@ -714,11 +799,18 @@ export default function BlogPage() {
                         แก้ไข
                       </button>
                       {post.status === 'draft' && (
-                        <button onClick={() => setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'published' } : p))}
+                        <button onClick={() => quickPublish(post)}
                           style={{ padding: '7px 14px', borderRadius: 9, border: 'none', background: '#02402e', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                           เผยแพร่
                         </button>
                       )}
+                      <button onClick={() => deletePost(post)} style={{
+                        padding: '7px 10px', borderRadius: 9, border: '1px solid #fecaca',
+                        background: '#fff', color: '#ef4444', fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center',
+                      }}>
+                        <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>delete</span>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -726,14 +818,16 @@ export default function BlogPage() {
             })}
           </tbody>
         </table>
-        {displayed.length === 0 && (
+        {loading && (
+          <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+            <div style={{ width: 28, height: 28, border: '3px solid #eef0ef', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 10px' }} />
+            กำลังโหลดบทความ...
+          </div>
+        )}
+        {!loading && displayed.length === 0 && (
           <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>ไม่พบบทความ</div>
         )}
       </div>
-
-      <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 14, textAlign: 'center' }}>
-        * Mock data — เชื่อมต่อ WordPress REST API หรือ Supabase เพื่อดึงบทความจริง
-      </p>
 
       {/* Drawer */}
       {(editing || showCreate) && (
