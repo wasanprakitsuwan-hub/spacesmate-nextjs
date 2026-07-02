@@ -835,23 +835,43 @@ function ThaiAddressSelect({ form, onChange }: {
   )
 }
 
+// ── Image limits per package ──────────────────────────────────────────────────
+const IMAGE_LIMITS: Record<string, number> = { basic: 5, standard: 10, premium: 20 }
+
 // ── Image Upload Zone ─────────────────────────────────────────────────────────
-function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImagesChange: (imgs: string[]) => void }) {
+function ImageUploadZone({ images, onImagesChange, packageType = 'basic' }: {
+  images: string[]
+  onImagesChange: (imgs: string[]) => void
+  packageType?: string
+}) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const imageLimit = IMAGE_LIMITS[packageType] ?? IMAGE_LIMITS.basic
+  const atLimit    = images.length >= imageLimit
+  const remaining  = imageLimit - images.length
+
   async function handleFiles(files: FileList) {
     setUploading(true); setUploadError('')
     const { data: { session: upSess } } = await createBrowserClient().auth.getSession()
     const added: string[] = []
+    let currentCount = images.length
     for (const file of Array.from(files)) {
-      const fd = new FormData(); fd.append('file', file); fd.append('type', 'image')
+      if (currentCount >= imageLimit) {
+        setUploadError(`แพ็กเกจนี้อัปโหลดได้สูงสุด ${imageLimit} รูป`)
+        break
+      }
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'image')
+      fd.append('packageType', packageType)
+      fd.append('currentCount', String(currentCount))
       try {
         const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${upSess?.access_token}` }, body: fd })
         const d = await r.json()
-        if (d.url) added.push(d.url)
+        if (d.url) { added.push(d.url); currentCount++ }
         else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
       } catch { setUploadError('เชื่อมต่อ API ไม่ได้') }
     }
@@ -867,17 +887,32 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
     onImagesChange(next)
   }
 
-  const limit = images.length >= 10
   return (
     <div>
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) handleFiles(e.target.files) }} />
-      <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || limit}
-        style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: limit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || limit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
-          : limit ? <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>อัปโหลดครบ 10 รูปแล้ว</>
-
-          : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span> เลือกรูปภาพ (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || atLimit}
+        style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (atLimit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: atLimit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || atLimit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {uploading
+          ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
+          : atLimit
+            ? <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>อัปโหลดครบ {imageLimit} รูปแล้ว (สูงสุดของแพ็กเกจนี้)</>
+            : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>เลือกรูปภาพ (JPG · PNG · WebP)</>
+        }
       </button>
+
+      {/* Live counter */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+          {images.length} / {imageLimit} รูป · แพ็กเกจ {packageType}
+          {!atLimit && remaining > 0 && <span style={{ color: '#048c73' }}> · เพิ่มได้อีก {remaining} รูป</span>}
+        </p>
+        {atLimit && (
+          <span style={{ fontSize: 11, color: '#d97f11', fontWeight: 600 }}>
+            อัปเกรดแพ็กเกจเพื่อเพิ่มรูปมากขึ้น
+          </span>
+        )}
+      </div>
+
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {images.length > 0 && (
         <>
@@ -1183,7 +1218,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange }: 
       {/* ── 8 · รูปภาพห้อง ── */}
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="8 · รูปภาพห้อง" />
-        <ImageUploadZone images={form.images} onImagesChange={onImagesChange} />
+        <ImageUploadZone images={form.images} onImagesChange={onImagesChange} packageType={form.package_type} />
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>รูปแรกจะเป็นรูปหน้าปกของประกาศ</p>
       </div>
 

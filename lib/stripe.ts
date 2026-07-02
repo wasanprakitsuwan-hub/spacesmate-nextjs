@@ -19,3 +19,10 @@ export const PACKAGE_DAYS: Record<string, number> = {
   standard: 90,
   premium:  365,
 }
+
+// Max images per listing per package
+export const PACKAGE_IMAGE_LIMITS: Record<string, number> = {
+  basic:    5,
+  standard: 10,
+  premium:  20,
+}

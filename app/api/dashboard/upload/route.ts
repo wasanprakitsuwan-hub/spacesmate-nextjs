@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
+import { PACKAGE_IMAGE_LIMITS } from '@/lib/stripe'
 import sharp from 'sharp'
 
 // ── Bucket names ──────────────────────────────────────────────────────────────
@@ -46,6 +47,25 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    // ── Image count enforcement ───────────────────────────────────────────────
+    // Only enforce for image uploads (videos have no per-package cap)
+    if (mediaType !== 'video') {
+      const packageType   = (formData.get('packageType') as string) || 'basic'
+      const currentCount  = parseInt((formData.get('currentCount') as string) || '0', 10)
+      const imageLimit    = PACKAGE_IMAGE_LIMITS[packageType] ?? PACKAGE_IMAGE_LIMITS.basic
+
+      if (currentCount >= imageLimit) {
+        return NextResponse.json(
+          {
+            error: `แพ็กเกจ ${packageType} อัปโหลดรูปได้สูงสุด ${imageLimit} รูป`,
+            limit: imageLimit,
+            current: currentCount,
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // ── VIDEO: pass through unchanged ────────────────────────────────────────
