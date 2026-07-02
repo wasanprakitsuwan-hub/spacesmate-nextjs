@@ -23,6 +23,7 @@ const STEPS = [
 
 const PACKAGES = [
   {
+    id: 'basic',
     period: 'Basic',
     price: '299',
     sub: '1 ประกาศ · แสดงผล 1 เดือน',
@@ -30,12 +31,13 @@ const PACKAGES = [
     highlight: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 8 รูป',
+      'รูปภาพสูงสุด 5 รูป',
       'แสดงผล 30 วัน',
       'เผยแพร่ทันทีหลังชำระ',
     ],
   },
   {
+    id: 'standard',
     period: 'Standard',
     price: '699',
     sub: '1 ประกาศ · แสดงผล 3 เดือน',
@@ -43,13 +45,14 @@ const PACKAGES = [
     highlight: true,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 12 รูป',
+      'รูปภาพสูงสุด 10 รูป',
       'แสดงผล 90 วัน',
       'เผยแพร่ทันทีหลังชำระ',
       'ประหยัดกว่า Basic 22%',
     ],
   },
   {
+    id: 'premium',
     period: 'Premium',
     price: '2,499',
     sub: '1 ประกาศ · แสดงผล 12 เดือน',
@@ -206,7 +209,7 @@ export default function SubmitPage() {
                 </ul>
 
                 {/* CTA */}
-                <Link href="/submit/new"
+                <Link href={`/submit/new?package=${pkg.id}`}
                   style={{
                     display: 'block', textAlign: 'center', fontWeight: 600, fontSize: 15,
                     borderRadius: 28, padding: '13px 0', textDecoration: 'none', transition: 'all .2s',

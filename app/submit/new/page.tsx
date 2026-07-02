@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { num: 1, label: 'เลือกแพ็กเกจ' },
-  { num: 2, label: 'ข้อมูลทรัพย์สิน' },
-  { num: 3, label: 'ที่ตั้ง' },
-  { num: 4, label: 'รูปภาพ & ติดต่อ' },
+  { num: 1, label: 'ข้อมูลทรัพย์สิน' },
+  { num: 2, label: 'ที่ตั้ง' },
+  { num: 3, label: 'รูปภาพ & ติดต่อ' },
 ]
 
 const PACKAGES = [
@@ -23,9 +23,9 @@ const PACKAGES = [
     badge: null as string | null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 8,
+    maxImages: 5,
     allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 8 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 5 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
   },
   {
     id: 'standard',
@@ -37,9 +37,9 @@ const PACKAGES = [
     badge: 'ยอดนิยม' as string | null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 12,
+    maxImages: 10,
     allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 12 รูป', 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 22%'],
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 10 รูป', 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 22%'],
   },
   {
     id: 'premium',
@@ -115,15 +115,19 @@ const INITIAL: FormData = {
   contactName: '', contactPhone: '', contactEmail: '',
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Inner Form (reads URL search params) ─────────────────────────────────────
 
-export default function SubmitNewPage() {
-  const [step, setStep]         = useState(0)
-  const [form, setForm]         = useState<FormData>(INITIAL)
-  const [loading, setLoading]   = useState(false)
+function SubmitNewForm() {
+  const searchParams  = useSearchParams()
+  const urlPkg        = searchParams.get('package') || 'basic'
+  const initialPkg    = PACKAGES.find(p => p.id === urlPkg) ? urlPkg : 'basic'
+
+  const [step, setStep]           = useState(0)
+  const [form, setForm]           = useState<FormData>({ ...INITIAL, packageId: initialPkg })
+  const [loading, setLoading]     = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [submittedPkg, setSubmittedPkg] = useState<string>('free_trial')
-  const [error, setError]       = useState<string | null>(null)
+  const [submittedPkg, setSubmittedPkg] = useState<string>(initialPkg)
+  const [error, setError]         = useState<string | null>(null)
 
   function set<K extends keyof FormData>(field: K, value: FormData[K]) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -164,32 +168,24 @@ export default function SubmitNewPage() {
   }
 
   const selectedPkg = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
-  const isPaid = true // all packages are paid
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
       <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center', maxWidth: 460 }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: isPaid ? 'linear-gradient(140deg,#d97f11,#b36010)' : 'linear-gradient(140deg,#06a487,#02402e)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <span className="msym" style={{ fontSize: 38, color: '#fff' }}>{isPaid ? 'verified' : 'check_circle'}</span>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(140deg,#d97f11,#b36010)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <span className="msym" style={{ fontSize: 38, color: '#fff' }}>verified</span>
           </div>
           <h2 style={{ fontSize: 23, fontWeight: 600, color: '#02402e', margin: '0 0 10px' }}>
-            {isPaid ? <>ประกาศเผยแพร่แล้ว! <span className="msym" style={{ fontSize: 22, fontVariationSettings: "'wght' 400, 'FILL' 1", verticalAlign: 'middle', color: '#d97f11' }}>celebration</span></> : 'ประกาศของคุณถูกส่งแล้ว!'}
+            ประกาศเผยแพร่แล้ว! <span className="msym" style={{ fontSize: 22, fontVariationSettings: "'wght' 400, 'FILL' 1", verticalAlign: 'middle', color: '#d97f11' }}>celebration</span>
           </h2>
           <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 8px' }}>
-            {isPaid
-              ? `ประกาศของคุณกำลังเผยแพร่บน SpacesMate แล้ว มีระยะเวลา ${PACKAGES.find(p=>p.id===submittedPkg)?.durationLabel} ทีมงานจะติดต่อเพื่อยืนยันการชำระเงิน`
-              : 'ทีมงาน SpacesMate จะตรวจสอบและติดต่อกลับภายใน 24 ชั่วโมง'}
+            ประกาศของคุณกำลังเผยแพร่บน SpacesMate แล้ว มีระยะเวลา {PACKAGES.find(p=>p.id===submittedPkg)?.durationLabel} ทีมงานจะติดต่อเพื่อยืนยันการชำระเงิน
           </p>
-          {!isPaid && (
-            <p style={{ color: '#64748b', fontSize: 14.5, fontWeight: 300, lineHeight: 1.65, margin: '0 0 12px' }}>
-              คุณจะได้รับสิทธิ์ทดลองใช้ฟรี 30 วัน
-            </p>
-          )}
           <div style={{ background: '#f7f9f8', border: '1px solid #eef0ef', borderRadius: 14, padding: '14px 18px', marginBottom: 24, fontSize: 13.5, color: '#475569' }}>
             แพ็กเกจที่เลือก: <strong style={{ color: '#02402e' }}>{PACKAGES.find(p=>p.id===submittedPkg)?.name}</strong>
-            {isPaid && <> · <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: '#048c73' }}>ติดต่อทีมงานผ่าน LINE เพื่อชำระเงิน</a></>}
+            {' · '}<a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: '#048c73' }}>ติดต่อทีมงานผ่าน LINE เพื่อชำระเงิน</a>
           </div>
           <Link href="/" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, borderRadius: 24, padding: '13px 28px', textDecoration: 'none', display: 'inline-block' }}>
             กลับหน้าแรก
@@ -234,51 +230,23 @@ export default function SubmitNewPage() {
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '34px 24px 64px' }}>
         <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: 32, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
 
-          {/* ── STEP 0: Package selection ──────────────────────────────── */}
-          {step === 0 && (
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 6px', color: '#02402e' }}>เลือกแพ็กเกจ</h2>
-              <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 24px' }}>เลือกแพ็กเกจที่เหมาะกับคุณ — ทดลองฟรีก่อนได้เลย ไม่ต้องชำระเงินทันที</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }} className="sm-pkg-grid">
-                {PACKAGES.map(pkg => {
-                  const selected = form.packageId === pkg.id
-                  return (
-                    <button key={pkg.id} type="button" onClick={() => set('packageId', pkg.id)}
-                      style={{
-                        textAlign: 'left', cursor: 'pointer', padding: 18, borderRadius: 16, transition: 'all .2s',
-                        border: `2px solid ${selected ? '#048c73' : pkg.highlight ? '#d97f11' : '#eef0ef'}`,
-                        background: selected ? '#eaf6f1' : pkg.highlight ? '#fef9f0' : '#fff',
-                        position: 'relative',
-                      }}>
-                      {pkg.badge && (
-                        <span style={{ position: 'absolute', top: 12, right: 12, background: '#d97f11', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>{pkg.badge}</span>
-                      )}
-                      {selected && (
-                        <span style={{ position: 'absolute', top: 12, right: 12, background: '#048c73', color: '#fff', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span></span>
-                      )}
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#02402e', marginBottom: 4 }}>{pkg.name}</div>
-                      <div style={{ fontSize: 22, fontWeight: 700, color: '#d97f11', marginBottom: 2 }}>
-                        {pkg.priceLabel}{pkg.price > 0 && <span style={{ fontSize: 13, fontWeight: 400, color: '#94a3b8' }}>/ครั้ง</span>}
-                      </div>
-                      <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 10 }}>ระยะเวลา {pkg.durationLabel}</div>
-                      <div style={{ fontSize: 12, color: pkg.id === 'free_trial' ? '#a16207' : '#15803d', fontWeight: 600, marginBottom: 10, padding: '4px 8px', borderRadius: 6, background: pkg.id === 'free_trial' ? '#fef9c3' : '#dcfce7', display: 'inline-block' }}>
-                        {pkg.note}
-                      </div>
-                      <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: 12.5, color: '#475569', lineHeight: 1.8 }}>
-                        {pkg.features.map(f => <li key={f}>{f}</li>)}
-                      </ul>
-                    </button>
-                  )
-                })}
-              </div>
-              <div style={{ marginTop: 18, padding: '14px 16px', background: '#f7f9f8', borderRadius: 12, fontSize: 13, color: '#64748b' }}>
-                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5, verticalAlign: 'middle' }}>tips_and_updates</span>1 แพ็กเกจ = 1 ประกาศ · ต้องการลงหลายประกาศ? ซื้อหลายแพ็กเกจได้เลย · ทีมงานจะติดต่อยืนยันการชำระเงินหลังกด "เผยแพร่"
-              </div>
-            </div>
-          )}
+          {/* ── Package banner — always visible, read-only ───────────────── */}
+          <div style={{ marginBottom: 24, padding: '11px 16px', background: selectedPkg.highlight ? '#fef9f0' : '#f0faf6', border: `1px solid ${selectedPkg.highlight ? '#fde68a' : '#a7f3d0'}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13.5, color: '#475569', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73' }}>check_circle</span>
+              แพ็กเกจ: <strong style={{ color: '#02402e' }}>{selectedPkg.name}</strong>
+              <span style={{ color: '#cbd5e1' }}>·</span>
+              <span>{selectedPkg.durationLabel}</span>
+              <span style={{ color: '#cbd5e1' }}>·</span>
+              <span style={{ color: '#d97f11', fontWeight: 600 }}>{selectedPkg.priceLabel}</span>
+            </span>
+            <Link href="/submit" style={{ fontSize: 12, color: '#048c73', fontWeight: 600, textDecoration: 'none', padding: '4px 10px', border: '1px solid #a7f3d0', borderRadius: 8, whiteSpace: 'nowrap' }}>
+              เปลี่ยนแพ็กเกจ
+            </Link>
+          </div>
 
-          {/* ── STEP 1: Property Info ───────────────────────────────────── */}
-          {step === 1 && (
+          {/* ── STEP 0: Property Info ───────────────────────────────────── */}
+          {step === 0 && (
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>ข้อมูลทรัพย์สิน</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -355,18 +323,12 @@ export default function SubmitNewPage() {
                     })}
                   </div>
                 </div>
-
-                {/* Selected package reminder */}
-                <div style={{ padding: '12px 16px', background: selectedPkg.highlight ? '#fef9f0' : '#f7f9f8', border: `1px solid ${selectedPkg.highlight ? '#fed7aa' : '#eef0ef'}`, borderRadius: 12, fontSize: 13, color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>แพ็กเกจที่เลือก: <strong style={{ color: '#02402e' }}>{selectedPkg.name}</strong> · {selectedPkg.durationLabel}</span>
-                  <button type="button" onClick={() => setStep(0)} style={{ fontSize: 12, color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>เปลี่ยน</button>
-                </div>
               </div>
             </div>
           )}
 
-          {/* ── STEP 2: Location ────────────────────────────────────────── */}
-          {step === 2 && (
+          {/* ── STEP 1: Location ────────────────────────────────────────── */}
+          {step === 1 && (
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>ที่ตั้ง</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -422,8 +384,8 @@ export default function SubmitNewPage() {
             </div>
           )}
 
-          {/* ── STEP 3: Photos + Contact ─────────────────────────────────── */}
-          {step === 3 && (
+          {/* ── STEP 2: Photos + Contact ─────────────────────────────────── */}
+          {step === 2 && (
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>รูปภาพ & ข้อมูลติดต่อ</h2>
 
@@ -432,7 +394,7 @@ export default function SubmitNewPage() {
                 onClick={() => document.getElementById('img-input')?.click()}>
                 <span className="msym" style={{ fontSize: 44, color: '#048c73', opacity: .5 }}>photo_library</span>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '12px 0 6px' }}>ลากรูปภาพมาวางที่นี่</p>
-                <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>หรือคลิกเพื่อเลือกไฟล์ · JPG, PNG · สูงสุด 10 รูป</p>
+                <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>หรือคลิกเพื่อเลือกไฟล์ · JPG, PNG · สูงสุด {selectedPkg.maxImages} รูป</p>
                 <input id="img-input" type="file" multiple accept="image/*" style={{ display: 'none' }} />
               </div>
 
@@ -470,20 +432,14 @@ export default function SubmitNewPage() {
               </div>
 
               {/* Package summary */}
-              <div style={{ marginTop: 22, background: selectedPkg.id === 'free_trial' ? 'linear-gradient(135deg,#fef9f0,#fef3e2)' : 'linear-gradient(135deg,#eaf6f1,#d1fae5)', border: `1px solid ${selectedPkg.id === 'free_trial' ? 'rgba(217,127,17,0.2)' : 'rgba(4,140,115,0.2)'}`, borderRadius: 16, padding: '18px 22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <p style={{ color: selectedPkg.id === 'free_trial' ? '#d97f11' : '#048c73', fontWeight: 700, fontSize: 15, margin: '0 0 2px' }}>
-                      {selectedPkg.id === 'free_trial'
-                        ? <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>celebration</span>ทดลองฟรี 30 วัน</>
-                        : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>check_circle</span>แพ็กเกจ {selectedPkg.name} — {selectedPkg.durationLabel}</>}
-                    </p>
-                    <p style={{ color: '#94a3b8', fontSize: 12.5, margin: 0 }}>
-                      {selectedPkg.id === 'free_trial' ? 'ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง · ไม่ต้องใช้บัตรเครดิต' : `หลังกด "เผยแพร่" ทีมงานจะติดต่อยืนยันการชำระเงิน ${selectedPkg.priceLabel}`}
-                    </p>
-                  </div>
-                  <button type="button" onClick={() => setStep(0)} style={{ fontSize: 12, color: '#048c73', fontWeight: 600, background: 'none', border: '1px solid #048c73', padding: '5px 12px', borderRadius: 8, cursor: 'pointer' }}>เปลี่ยนแพ็กเกจ</button>
-                </div>
+              <div style={{ marginTop: 22, background: 'linear-gradient(135deg,#eaf6f1,#d1fae5)', border: '1px solid rgba(4,140,115,0.2)', borderRadius: 16, padding: '18px 22px' }}>
+                <p style={{ color: '#048c73', fontWeight: 700, fontSize: 15, margin: '0 0 2px' }}>
+                  <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>check_circle</span>
+                  แพ็กเกจ {selectedPkg.name} — {selectedPkg.durationLabel}
+                </p>
+                <p style={{ color: '#94a3b8', fontSize: 12.5, margin: 0 }}>
+                  หลังกด &ldquo;ชำระเงิน&rdquo; ระบบจะพาไปยัง Stripe เพื่อชำระ {selectedPkg.priceLabel} — เผยแพร่ทันที
+                </p>
               </div>
 
               {error && (
@@ -495,13 +451,20 @@ export default function SubmitNewPage() {
           )}
 
           {/* ── Navigation buttons ──────────────────────────────────────── */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 26, justifyContent: step > 0 ? 'space-between' : 'flex-end' }}>
-            {step > 0 && (
+          <div style={{ display: 'flex', gap: 12, marginTop: 26, justifyContent: 'space-between' }}>
+            {/* Back: step 0 → /submit (change package), step > 0 → previous step */}
+            {step === 0 ? (
+              <Link href="/submit"
+                style={{ background: 'transparent', color: '#02402e', fontWeight: 600, fontSize: 14.5, border: '1.5px solid #02402e', borderRadius: 24, padding: '12px 26px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>arrow_back</span>เปลี่ยนแพ็กเกจ
+              </Link>
+            ) : (
               <button type="button" onClick={() => setStep(s => s - 1)} disabled={loading}
                 style={{ background: 'transparent', color: '#02402e', fontWeight: 600, fontSize: 14.5, border: '1.5px solid #02402e', borderRadius: 24, padding: '12px 26px', cursor: 'pointer', transition: 'all .2s', opacity: loading ? .5 : 1 }}>
                 <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>arrow_back</span>ย้อนกลับ
               </button>
             )}
+
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={() => setStep(s => s + 1)}
                 style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: 'pointer' }}>
@@ -525,10 +488,19 @@ export default function SubmitNewPage() {
         @media (max-width: 700px) {
           .sm-form2 { grid-template-columns: 1fr !important; }
           .sm-form4 { grid-template-columns: 1fr 1fr !important; }
-          .sm-pkg-grid { grid-template-columns: 1fr !important; }
         }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
+  )
+}
+
+// ─── Page export (Suspense required for useSearchParams in App Router) ─────────
+
+export default function SubmitNewPage() {
+  return (
+    <Suspense>
+      <SubmitNewForm />
+    </Suspense>
   )
 }
