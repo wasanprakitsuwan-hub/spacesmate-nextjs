@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import Stripe from 'stripe'
-import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
+import { sendNewListingAlert, sendListingConfirmation, sendPaymentConfirmation } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const sig  = req.headers.get('stripe-signature') ?? ''
@@ -106,13 +106,34 @@ export async function POST(req: NextRequest) {
     const expiresAt    = new Date()
     expiresAt.setDate(expiresAt.getDate() + durationDays)
 
-    const { error } = await supabase
+    const { data: renewedSub, error } = await supabase
       .from('submissions')
       .update({ status: 'approved', expires_at: expiresAt.toISOString() })
       .eq('stripe_subscription_id', subscriptionId)
+      .select('title, contact_email, contact_name, package_type')
+      .single()
 
-    if (error) console.error('Failed to renew submission:', error)
-    else console.log(`Subscription ${subscriptionId} renewed`)
+    if (error) {
+      console.error('Failed to renew submission:', error)
+    } else {
+      console.log(`Subscription ${subscriptionId} renewed`)
+      // Send payment confirmation email
+      try {
+        const amountPaid = (invoice.amount_paid ?? 0) / 100 // Stripe amount is in satang
+        if (renewedSub?.contact_email) {
+          await sendPaymentConfirmation({
+            contactEmail:  renewedSub.contact_email,
+            contactName:   renewedSub.contact_name ?? null,
+            packageType:   renewedSub.package_type ?? packageId,
+            amount:        amountPaid,
+            expiresAt:     expiresAt.toISOString(),
+            listingTitle:  renewedSub.title ?? null,
+          })
+        }
+      } catch (emailErr) {
+        console.error('[email] payment confirmation error (non-fatal):', emailErr)
+      }
+    }
   }
 
   // Payment failed → mark as expired (listing hidden)
