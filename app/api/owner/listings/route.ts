@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
+import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
 const PACKAGE_DAYS: Record<string, number> = {
   basic:    30,
@@ -115,6 +116,37 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'DB permission denied — run fix-permissions.sql in Supabase' }, { status: 500 })
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // ── Send email notifications ──────────────────────────────────────────────
+    try {
+      const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
+      const slug     = data?.slug ?? ''
+      const emailData = {
+        id:           String(data?.id ?? ''),
+        title:        data?.title_th ?? fields.title_th ?? null,
+        type:         data?.property_type ?? null,
+        price:        data?.price_from ?? null,
+        rentSuffix:   '/เดือน',
+        sizeSqm:      data?.area_sqm ?? null,
+        bedrooms:     data?.bedrooms ?? null,
+        bathrooms:    data?.bathrooms ?? null,
+        address:      data?.address_th ?? null,
+        district:     data?.district ?? null,
+        province:     data?.province ?? null,
+        contactName:  fields.full_name || null,
+        contactPhone: fields.contact_phone || null,
+        contactEmail: resolvedEmail || null,
+        packageType:  pkg,
+        listingUrl:   slug ? `${siteUrl}/property/${slug}` : null,
+        source:       'owner_dashboard' as const,
+      }
+      await Promise.all([
+        sendNewListingAlert(emailData),
+        sendListingConfirmation(emailData),
+      ])
+    } catch (emailErr) {
+      console.error('[email] notification error (non-fatal):', emailErr)
     }
 
     return NextResponse.json({ success: true, listing: data })

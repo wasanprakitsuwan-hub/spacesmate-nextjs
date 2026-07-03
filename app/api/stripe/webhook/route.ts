@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import Stripe from 'stripe'
+import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const sig  = req.headers.get('stripe-signature') ?? ''
@@ -46,8 +47,50 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', submissionId)
 
-    if (error) console.error('Failed to activate submission:', error)
-    else console.log(`Submission ${submissionId} activated (${packageId})`)
+    if (error) {
+      console.error('Failed to activate submission:', error)
+    } else {
+      console.log(`Submission ${submissionId} activated (${packageId})`)
+
+      // ── Send email notifications ──────────────────────────────────────────
+      try {
+        const { data: sub } = await supabase
+          .from('submissions')
+          .select('id, title, type, price, rent_type, size, bedrooms, bathrooms, address, district, province, contact_name, contact_phone, contact_email, package_type')
+          .eq('id', submissionId)
+          .single()
+
+        if (sub) {
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
+          const emailData = {
+            id:           String(sub.id),
+            title:        sub.title,
+            type:         sub.type,
+            price:        sub.price,
+            rentSuffix:   sub.rent_type === 'day' ? '/วัน' : '/เดือน',
+            sizeSqm:      sub.size,
+            bedrooms:     sub.bedrooms,
+            bathrooms:    sub.bathrooms,
+            address:      sub.address,
+            district:     sub.district,
+            province:     sub.province,
+            contactName:  sub.contact_name,
+            contactPhone: sub.contact_phone,
+            contactEmail: sub.contact_email,
+            packageType:  sub.package_type,
+            listingUrl:   `${siteUrl}/search`,
+            source:       'public_submit' as const,
+          }
+          await Promise.all([
+            sendNewListingAlert(emailData),
+            sendListingConfirmation(emailData),
+          ])
+        }
+      } catch (emailErr) {
+        // Email failure must never fail the webhook — Stripe will retry otherwise
+        console.error('[email] notification error (non-fatal):', emailErr)
+      }
+    }
   }
 
   // Subscription renewed → extend expires_at

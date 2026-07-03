@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,80 +55,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'บันทึกข้อมูลไม่สำเร็จ' }, { status: 500 })
     }
 
-    // ── Email notification via Resend ───────────────────────────────────────
-    const resendKey = process.env.RESEND_API_KEY
-    if (resendKey) {
-      const amenitiesText = (body.amenities || []).join(', ') || '—'
-      const priceLabel = body.price
-        ? `฿${parseInt(body.price).toLocaleString()}/${body.rentType === 'day' ? 'วัน' : 'เดือน'}`
-        : '—'
-
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'SpacesMate <onboarding@resend.dev>',
-          to: ['wasan.prakitsuwan@gmail.com'],
-          subject: `🏠 ประกาศใหม่รอตรวจสอบ: ${body.title || 'ไม่ระบุชื่อ'}`,
-          html: `
-<!DOCTYPE html>
-<html lang="th">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f7f9f8;font-family:'Prompt',Arial,sans-serif">
-  <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(2,64,46,0.08)">
-
-    <!-- Header -->
-    <div style="background:#02402e;padding:28px 32px">
-      <p style="color:#d97f11;font-size:13px;font-weight:600;margin:0 0 6px;text-transform:uppercase;letter-spacing:1px">SpacesMate</p>
-      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0">ประกาศใหม่รอตรวจสอบ</h1>
-    </div>
-
-    <!-- Body -->
-    <div style="padding:32px">
-      <table style="width:100%;border-collapse:collapse;font-size:14.5px">
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8;width:130px">ชื่อประกาศ</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef;font-weight:600;color:#02402e">${body.title || '—'}</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">ประเภท</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef">${body.type || '—'}</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">ราคาเช่า</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#d97f11;font-weight:700">${priceLabel}</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">ขนาด</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef">${body.size ? body.size + ' ตร.ม.' : '—'}</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">ห้องนอน / ห้องน้ำ</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef">${body.bedrooms || '—'} นอน · ${body.bathrooms || '—'} น้ำ</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">ที่อยู่</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef">${[body.address, body.district, body.province].filter(Boolean).join(' · ') || '—'}</td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #eef0ef;color:#94a3b8">สิ่งอำนวยฯ</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eef0ef">${amenitiesText}</td></tr>
-      </table>
-
-      <!-- Contact -->
-      <div style="margin-top:24px;padding:20px;background:#f7f9f8;border-radius:12px;border:1px solid #eef0ef">
-        <p style="font-size:13px;font-weight:700;color:#02402e;margin:0 0 12px;text-transform:uppercase;letter-spacing:.5px">ข้อมูลผู้ติดต่อ</p>
-        <p style="margin:0 0 6px;font-size:14.5px"><strong>${body.contactName || '—'}</strong></p>
-        <p style="margin:0 0 4px;font-size:14px;color:#475569">📞 ${body.contactPhone || '—'}</p>
-        <p style="margin:0;font-size:14px;color:#475569">✉️ ${body.contactEmail || '—'}</p>
-      </div>
-
-      ${body.description ? `
-      <div style="margin-top:20px">
-        <p style="font-size:13px;font-weight:600;color:#475569;margin:0 0 8px">รายละเอียด</p>
-        <p style="font-size:14px;color:#64748b;line-height:1.65;margin:0">${body.description}</p>
-      </div>` : ''}
-    </div>
-
-    <!-- Footer -->
-    <div style="background:#f7f9f8;border-top:1px solid #eef0ef;padding:20px 32px;text-align:center">
-      <p style="font-size:13px;color:#94a3b8;margin:0">Submission ID: ${data?.id || '—'} · SpacesMate Admin</p>
-    </div>
-  </div>
-</body>
-</html>`,
-        }),
-      }).catch(err => console.error('Resend error:', err))
+    // ── Email notifications via shared lib/email.ts ─────────────────────────
+    try {
+      const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
+      const emailData = {
+        id:           String(data?.id ?? ''),
+        title:        body.title ?? null,
+        type:         body.type ?? null,
+        price:        body.price ? parseInt(body.price) : null,
+        rentSuffix:   body.rentType === 'day' ? '/วัน' : '/เดือน',
+        sizeSqm:      body.size ?? null,
+        bedrooms:     body.bedrooms ? parseInt(body.bedrooms) : null,
+        bathrooms:    body.bathrooms ? parseInt(body.bathrooms) : null,
+        address:      body.address ?? null,
+        district:     body.district ?? null,
+        province:     body.province ?? null,
+        contactName:  body.contactName ?? null,
+        contactPhone: body.contactPhone ?? null,
+        contactEmail: body.contactEmail ?? null,
+        packageType:  packageId,
+        listingUrl:   `${siteUrl}/search`,
+        source:       'public_submit' as const,
+      }
+      await Promise.all([
+        sendNewListingAlert(emailData),
+        sendListingConfirmation(emailData),
+      ])
+    } catch (emailErr) {
+      console.error('[email] notification error (non-fatal):', emailErr)
     }
 
     return NextResponse.json({ success: true, id: data?.id })
