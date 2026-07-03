@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { properties as staticProperties } from '@/lib/property-data'
+import { searchCondoRegistry } from '@/lib/condo-registry'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface RoomTypeRow {
@@ -1107,6 +1108,65 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
 }
 
 // ── Condo / House Rental Detail ───────────────────────────────────────────────
+// ── Condo name autocomplete — matches against SEO registry ───────────────────
+function PropertyNameAutocomplete({ value, onChange }: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const suggestions = searchCondoRegistry(value)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => { if (value.length >= 2) setOpen(true) }}
+        placeholder="เช่น Lumpini Place Suanplu-Sathorn"
+        style={SINP}
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute', zIndex: 200, top: 'calc(100% + 3px)', left: 0, right: 0,
+          background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(2,64,46,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '6px 14px 5px', borderBottom: '1px solid #f1f5f9', fontSize: 10.5, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            ชื่อ SEO แนะนำ
+          </div>
+          {suggestions.map(s => (
+            <button key={s.name} type="button"
+              onMouseDown={() => { onChange(s.name); setOpen(false) }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left', border: 'none',
+                padding: '10px 14px', fontSize: 13, color: '#1e293b', background: 'none',
+                borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#eaf6f1')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={{ fontWeight: 600, color: '#02402e' }}>{s.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
   detail: CondoRentalDetail
   propertyType: string
@@ -1143,9 +1203,23 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
         </div>
       </div>
       <div style={{ marginBottom: 16 }}>
-        <label style={SLBL}>{isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}</label>
-        <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
-          placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'} style={SINP} />
+        <label style={SLBL}>
+          {isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}
+          {!isHouse && (
+            <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 400, color: '#048c73' }}>
+              — เลือกจากรายการ SEO เพื่อ ranking ที่ดีขึ้น
+            </span>
+          )}
+        </label>
+        {isHouse ? (
+          <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
+            placeholder="เช่น บ้านปลายฟ้า พระราม 9" style={SINP} />
+        ) : (
+          <PropertyNameAutocomplete
+            value={detail.property_name}
+            onChange={v => u('property_name', v)}
+          />
+        )}
       </div>
       {/* Price grid */}
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
@@ -1547,6 +1621,23 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
               onChange={d => onChange('condo_rental', d)}
               isMobile={isMobile}
             />
+            {/* Condo: beds/baths inline here (section 3 removed for condo) */}
+            {form.property_type === 'condo' && (
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 14 }}>
+                <div>
+                  <label style={SLBL}>ห้องนอน</label>
+                  <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
+                    {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={SLBL}>ห้องน้ำ</label>
+                  <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
+                    {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -1569,49 +1660,45 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          3 · ขนาดและลักษณะ  (conditional per property type)
+          3 · ขนาดและลักษณะ
+          Apartment: area_sqm (average across units)
+          House: bedrooms + bathrooms
+          Condo / Office / Co-Working: section hidden (data lives in their own sections)
       ════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionHead text="3 · ขนาดและลักษณะ" />
+      {(isApartment || form.property_type === 'house') && (
+        <div style={{ marginBottom: 24 }}>
+          <SectionHead text="3 · ขนาดและลักษณะ" />
 
-        {isApartment && (
-          <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
-            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>tips_and_updates</span>ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
-          </div>
-        )}
-
-        {showAreaSqm && (
-          <div style={{ ...g2, marginBottom: showBedsBaths || showFloorSect3 ? 12 : 0 }}>
-            <div>
-              <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
-              <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder={isApartment ? '28 (ขนาดเฉลี่ย)' : '28'} style={SINP} />
-            </div>
-            {showFloorSect3 && (
-              <div>
-                <label style={SLBL}>ชั้นที่ตั้ง</label>
-                <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={SINP} />
+          {isApartment && (
+            <>
+              <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
+                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>tips_and_updates</span>ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
               </div>
-            )}
-          </div>
-        )}
+              <div>
+                <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) — ขนาดเฉลี่ย</label>
+                <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28 (ขนาดเฉลี่ย)" style={{ ...SINP, maxWidth: 180 }} />
+              </div>
+            </>
+          )}
 
-        {showBedsBaths && (
-          <div style={g2}>
-            <div>
-              <label style={SLBL}>ห้องนอน</label>
-              <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
-                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
-              </select>
+          {form.property_type === 'house' && (
+            <div style={g2}>
+              <div>
+                <label style={SLBL}>ห้องนอน</label>
+                <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
+                  {['1','2','3','4','5','6'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={SLBL}>ห้องน้ำ</label>
+                <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
+                  {['1','2','3','4','5'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={SLBL}>ห้องน้ำ</label>
-              <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
-                {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
-              </select>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           3B · รายละเอียดการเช่า  (Apartment only)
