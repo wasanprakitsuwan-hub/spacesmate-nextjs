@@ -53,8 +53,10 @@ export async function PATCH(req: NextRequest) {
 
     if (error) throw error
     return NextResponse.json({ ok: true })
-  } catch (err) {
-    console.error('settings PATCH error:', err)
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : String(err)
+    console.error('settings PATCH error:', detail)
+    // Return the actual DB error so the dashboard can show it (dev-friendly)
+    return NextResponse.json({ error: 'Failed to save settings', detail }, { status: 500 })
   }
 }

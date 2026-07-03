@@ -115,8 +115,8 @@ async function saveSetting(key: string, value: unknown): Promise<void> {
     body: JSON.stringify({ key, value }),
   })
   if (!r.ok) {
-    const d = await r.json().catch(() => ({}))
-    throw new Error((d as { error?: string }).error ?? 'บันทึกไม่สำเร็จ')
+    const d = await r.json().catch(() => ({})) as { error?: string; detail?: string }
+    throw new Error(d.detail || d.error || 'บันทึกไม่สำเร็จ')
   }
 }
 
