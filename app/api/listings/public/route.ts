@@ -9,7 +9,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('properties')
-      .select('id,slug,title_th,title_en,description_th,property_type,price_from,price_to,bedrooms,bathrooms,area_sqm,floor,address_th,district,sub_district,province,lat,lng,amenities,rental_term,created_at')
+      .select('id,slug,title_th,title_en,description_th,property_type,price_from,price_to,bedrooms,bathrooms,area_sqm,floor,address_th,district,sub_district,province,lat,lng,amenities,rental_term,created_at,images,contact_name,contact_phone,contact_line')
       .eq('listing_status', 'active')
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order('created_at', { ascending: false })

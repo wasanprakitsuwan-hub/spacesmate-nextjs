@@ -62,7 +62,8 @@ function normalizeDbListing(raw: any): Property {
     neighborhood: raw.district || raw.province || 'กรุงเทพมหานคร',
     lat: raw.lat ? String(raw.lat) : '',
     lng: raw.lng ? String(raw.lng) : '',
-    image: '',
+    image: Array.isArray(raw.images) && raw.images.length > 0 ? raw.images[0] : '',
+    images: Array.isArray(raw.images) ? raw.images : [],
     propertyType: DB_TYPE_MAP[raw.property_type] ?? 'Condo',
     listingType: 'Rent',
     amenities: raw.amenities || [],
@@ -110,6 +111,9 @@ export default async function PropertyDetailPage({ params }: Props) {
   let p: Property
   let content: string | null = null
 
+  // Contact info from DB (null for static listings — shows SpacesMate defaults)
+  let dbContact: { name: string | null; phone: string | null; line: string | null } | null = null
+
   if (staticP) {
     p = staticP
     // Fetch WP HTML content at runtime (cached by Next.js)
@@ -120,6 +124,11 @@ export default async function PropertyDetailPage({ params }: Props) {
     if (!raw) notFound()
     p = normalizeDbListing(raw)
     content = raw.description_th || null
+    dbContact = {
+      name:  raw.contact_name  || null,
+      phone: raw.contact_phone || null,
+      line:  raw.contact_line  || null,
+    }
   }
 
   const hasContent = content && !content.includes('เนื้อหาไม่พร้อม') && !content.includes('ไม่พบเนื้อหา')
@@ -278,14 +287,30 @@ export default async function PropertyDetailPage({ params }: Props) {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
-                  style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                  <span className="msym" style={{ fontSize: 18 }}>chat</span>สอบถามผ่าน LINE
-                </a>
-                <a href="tel:+66621524526"
-                  style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                  <span className="msym" style={{ fontSize: 18 }}>call</span>โทร 062-152-4526
-                </a>
+                {/* LINE button — listing-specific or SpacesMate default */}
+                {dbContact?.line ? (
+                  <a href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 18 }}>chat</span>สอบถามผ่าน LINE
+                  </a>
+                ) : (
+                  <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 18 }}>chat</span>สอบถามผ่าน LINE
+                  </a>
+                )}
+                {/* Phone button — listing-specific or SpacesMate default */}
+                {dbContact?.phone ? (
+                  <a href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
+                    style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 18 }}>call</span>โทร {dbContact.phone}
+                  </a>
+                ) : (
+                  <a href="tel:+66621524526"
+                    style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 18 }}>call</span>โทร 062-152-4526
+                  </a>
+                )}
               </div>
 
               <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', margin: '14px 0 0' }}>

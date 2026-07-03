@@ -56,14 +56,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Auto-generate slug if not provided
+    // Auto-generate slug — prefer title_en (ASCII-safe); fallback to title_th stripped to ASCII
+    const titleForSlug = (body.title_en || body.title_th || 'listing') as string
     const rawSlug =
       body.slug?.trim() ||
-      ((body.title_th || 'listing') as string)
+      titleForSlug
         .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
+        .replace(/[^\w\s-]/g, '')   // keep only ASCII word chars, spaces, hyphens
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')   // trim leading / trailing hyphens
         .slice(0, 80) +
       '-' + Date.now().toString(36)
 
@@ -94,9 +96,12 @@ export async function POST(req: NextRequest) {
       rental_term:    body.rental_term   || '1_month',
       package_type:   body.package_type  || 'admin',
       expires_at:     body.expires_at    || null,
-      listing_status: 'active',
-      verified:       true,
-      verified_at:    new Date().toISOString(),
+      listing_status:  'active',
+      verified:        true,
+      verified_at:     new Date().toISOString(),
+      contact_name:    body.contact_name  || null,
+      contact_phone:   body.contact_phone || null,
+      contact_line:    body.contact_line  || null,
     }
 
     // Only add landlord_id if userId exists (FK may be optional)
@@ -159,6 +164,8 @@ export async function PATCH(req: NextRequest) {
       'package_type', 'expires_at',
       // extended columns (run supabase/fix-permissions.sql to enable)
       'room_types', 'images', 'video_url',
+      // contact fields (run supabase/migrations/20260703_contact_fields.sql)
+      'contact_name', 'contact_phone', 'contact_line',
     ]
 
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }

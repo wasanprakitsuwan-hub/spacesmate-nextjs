@@ -135,6 +135,9 @@ interface ListingFormState {
   amenities: string[]
   images: string[]
   video_url: string
+  contact_name: string
+  contact_phone: string
+  contact_line: string
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -258,6 +261,7 @@ const BLANK_FORM: ListingFormState = {
   lat: '', lng: '',
   description_th: '', amenities: [],
   images: [], video_url: '',
+  contact_name: '', contact_phone: '', contact_line: '',
 }
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -1623,10 +1627,32 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          9 · วิดีโอ (Premium)
+          9 · ข้อมูลติดต่อ (แสดงในประกาศ)
+      ════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionHead text="9 · ข้อมูลติดต่อ (แสดงบนหน้าประกาศ)" />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={SLBL}>ชื่อผู้ติดต่อ</label>
+            <input value={form.contact_name} onChange={e => onChange('contact_name', e.target.value)} placeholder="เช่น คุณสมชาย" style={SINP} />
+          </div>
+          <div>
+            <label style={SLBL}>เบอร์โทรศัพท์</label>
+            <input value={form.contact_phone} onChange={e => onChange('contact_phone', e.target.value)} placeholder="0812345678" style={SINP} />
+          </div>
+          <div>
+            <label style={SLBL}>LINE ID</label>
+            <input value={form.contact_line} onChange={e => onChange('contact_line', e.target.value)} placeholder="@lineID หรือ lineID" style={SINP} />
+          </div>
+        </div>
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '6px 0 0' }}>หากเว้นว่าง จะแสดงเบอร์และ LINE ของ SpacesMate แทน</p>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          10 · วิดีโอ (Premium)
       ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 8 }}>
-        <SectionHead text="9 · วิดีโอประกาศ (Premium เท่านั้น)" />
+        <SectionHead text="10 · วิดีโอประกาศ (Premium เท่านั้น)" />
         <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} />
       </div>
     </>
@@ -1790,6 +1816,9 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     amenities:     listing.amenities ?? [],
     images:        listing.images ?? [],
     video_url:     listing.video_url ?? '',
+    contact_name:  (listing as any).contact_name  ?? '',
+    contact_phone: (listing as any).contact_phone ?? '',
+    contact_line:  (listing as any).contact_line  ?? '',
   })
 
   function setF(k: string, v: any) { setForm(f => ({ ...f, [k]: v })) }
