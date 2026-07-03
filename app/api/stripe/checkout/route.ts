@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
       },
       success_url: `${siteUrl}/submit/success?session_id={CHECKOUT_SESSION_ID}&id=${submissionId}`,
       cancel_url:  `${siteUrl}/submit/cancel?id=${submissionId}`,
+      allow_promotion_codes: true,
       locale: 'auto',
       custom_text: {
         submit: {
