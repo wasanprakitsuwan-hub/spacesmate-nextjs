@@ -54,9 +54,19 @@ export async function PATCH(req: NextRequest) {
     if (error) throw error
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    const detail = err instanceof Error ? err.message : String(err)
+    // Supabase PostgrestError is NOT an Error instance — it has .message/.details/.hint/.code
+    let detail: string
+    if (err instanceof Error) {
+      detail = err.message
+    } else if (err && typeof err === 'object' && 'message' in err) {
+      const pg = err as Record<string, unknown>
+      detail = [pg.message, pg.details, pg.hint, pg.code]
+        .filter(Boolean)
+        .join(' | ')
+    } else {
+      detail = JSON.stringify(err)
+    }
     console.error('settings PATCH error:', detail)
-    // Return the actual DB error so the dashboard can show it (dev-friendly)
     return NextResponse.json({ error: 'Failed to save settings', detail }, { status: 500 })
   }
 }
