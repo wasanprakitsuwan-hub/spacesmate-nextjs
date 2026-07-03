@@ -6,12 +6,14 @@ import { createServerClient } from '@/lib/supabase'
 import PropertyGallery from '@/components/property/PropertyGallery'
 
 interface Props {
-  params: { slug: string }
+  params: { slug: string[] }
 }
 
 // Static slugs rendered at build time; all other slugs resolved at runtime
+// slug is string[] because this is a catch-all route ([...slug])
+// e.g. /property/lumpini-place/condo-abc → ['lumpini-place', 'condo-abc']
 export async function generateStaticParams() {
-  return properties.map((p) => ({ slug: p.slug }))
+  return properties.map((p) => ({ slug: p.slug.split('/') }))
 }
 
 // Allow runtime resolution of slugs not in generateStaticParams (e.g. DB listings)
@@ -74,7 +76,8 @@ function normalizeDbListing(raw: any): Property {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const staticP = getPropertyBySlug(params.slug)
+  const slug = params.slug.join('/')
+  const staticP = getPropertyBySlug(slug)
   if (staticP) {
     return {
       title: `${staticP.title} | SpacesMate`,
@@ -87,7 +90,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     }
   }
-  const raw = await getDbPropertyRaw(params.slug)
+  const raw = await getDbPropertyRaw(slug)
   if (!raw) return { title: 'ไม่พบประกาศ | SpacesMate' }
   const title = raw.title_th || raw.title_en || 'ประกาศ'
   return {
@@ -105,8 +108,11 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export default async function PropertyDetailPage({ params }: Props) {
+  // Join catch-all segments: ['lumpini-place', 'condo-abc'] → 'lumpini-place/condo-abc'
+  const slug = params.slug.join('/')
+
   // 1. Try static data first (builds fast from property-data.ts)
-  const staticP = getPropertyBySlug(params.slug)
+  const staticP = getPropertyBySlug(slug)
 
   let p: Property
   let content: string | null = null
@@ -120,7 +126,7 @@ export default async function PropertyDetailPage({ params }: Props) {
     content = await fetchPropertyContent(p.id)
   } else {
     // 2. Fall back to Supabase for admin-created / user-submitted listings
-    const raw = await getDbPropertyRaw(params.slug)
+    const raw = await getDbPropertyRaw(slug)
     if (!raw) notFound()
     p = normalizeDbListing(raw)
     content = raw.description_th || null

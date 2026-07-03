@@ -190,6 +190,29 @@ const OTHER_CHARGES_OPTIONS = [
   { value: 'tv',        label: 'ค่าเช่าโทรทัศน์' },
   { value: 'microwave', label: 'ค่าเช่าไมโครเวฟ' },
 ]
+
+// ── Slug helpers ──────────────────────────────────────────────────────────────
+function slugifyText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')   // strip non-ASCII (Thai chars, symbols)
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 55)
+}
+
+function buildAutoSlug(titleEn: string, titleTh: string, propertyType: string): string {
+  const shortId = Math.random().toString(36).slice(2, 7)
+  const base = slugifyText(titleEn || titleTh || 'listing') || 'listing'
+  if (['condo', 'house'].includes(propertyType)) {
+    // nested: building-name/type-shortid  → e.g. lumpini-place-suanplu/condo-ab3xy
+    const typePart = propertyType === 'condo' ? 'condo' : 'house'
+    return `${base}/${typePart}-${shortId}`
+  }
+  // flat: title-shortid  → e.g. the-room-apartment-ab3xy
+  return `${base}-${shortId}`
+}
 const RENTAL_TERM_OPTIONS = [
   { value: 'daily',     label: 'รายวัน' },
   { value: '1_month',   label: '1 เดือน' },
@@ -1410,7 +1433,38 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           <label style={SLBL}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
           <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={SINP} />
         </div>
-        {/* Slug hidden — auto-generated server-side from title_th */}
+
+        {/* ── Slug (editable, auto-generated from title_en → title_th) ── */}
+        <div style={{ marginTop: 14 }}>
+          <label style={SLBL}>
+            Slug (URL)
+            {['condo', 'house'].includes(form.property_type) && (
+              <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 400, color: '#94a3b8' }}>
+                คอนโด/บ้าน → ใช้รูปแบบ ชื่ออาคาร/ประเภท-unique
+              </span>
+            )}
+          </label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none', whiteSpace: 'nowrap' }}>/property/</span>
+              <input
+                value={form.slug}
+                onChange={e => onChange('slug', e.target.value.replace(/\s+/g, '-').replace(/[^\w/-]/g, '').toLowerCase())}
+                placeholder="building-name/condo-abc123"
+                style={{ ...SINP, paddingLeft: 72 }}
+              />
+            </div>
+            <button type="button"
+              onClick={() => onChange('slug', buildAutoSlug(form.title_en, form.title_th, form.property_type))}
+              title="สร้าง Slug ใหม่"
+              style={{ padding: '0 12px', borderRadius: 8, border: '1.5px solid #eef0ef', background: '#f8fafc', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle' }}>refresh</span>
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+            URL จริง: spacesmate.com/property/{form.slug || 'ชื่อ-อาคาร-unique'}
+          </p>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -1668,10 +1722,17 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
   function setF(k: string, v: any) {
     setForm(f => {
       const next = { ...f, [k]: v }
-      // Auto-generate slug from title_th (only when slug is still empty or matches previous auto-gen)
-      if (k === 'title_th' && !f.title_en) {
-        // Keep slug empty — server will generate it
-        next.slug = ''
+      // Auto-generate slug when title changes, only if slug still looks auto-generated
+      // (i.e. user hasn't manually overridden it with something custom)
+      const isAutoSlug = !f.slug || /^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(f.slug)
+      if ((k === 'title_en' || k === 'title_th' || k === 'property_type') && isAutoSlug) {
+        const titleEn = k === 'title_en' ? v : f.title_en
+        const titleTh = k === 'title_th' ? v : f.title_th
+        const type    = k === 'property_type' ? v : f.property_type
+        // Only regenerate if the base text changed (not on property_type flip alone when titles are blank)
+        if (titleEn || titleTh) {
+          next.slug = buildAutoSlug(titleEn, titleTh, type)
+        }
       }
       return next
     })
@@ -1706,7 +1767,7 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
         body: JSON.stringify({
           ...form,
           ...extra,
-          slug: '',  // server auto-generates from title_th
+          slug: form.slug.trim() || '',  // use client slug if set, server fallback if empty
           bedrooms:  parseInt(form.bedrooms),
           bathrooms: parseInt(form.bathrooms),
           lat: form.lat ? parseFloat(form.lat) : null,

@@ -56,18 +56,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Auto-generate slug — prefer title_en (ASCII-safe); fallback to title_th stripped to ASCII
+    // Auto-generate slug — prefer client-provided slug (already formatted correctly by the form)
+    // Fallback: build from title_en (ASCII-safe), then title_th stripped to ASCII
+    const clientSlug = (body.slug as string | undefined)?.trim()
     const titleForSlug = (body.title_en || body.title_th || 'listing') as string
-    const rawSlug =
-      body.slug?.trim() ||
-      titleForSlug
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')   // keep only ASCII word chars, spaces, hyphens
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '')   // trim leading / trailing hyphens
-        .slice(0, 80) +
-      '-' + Date.now().toString(36)
+    const propertyType  = (body.property_type as string | undefined) || 'condo'
+    const shortId = Date.now().toString(36)
+    const baseSlugPart  = titleForSlug
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 55)
+    const fallbackSlug = ['condo', 'house'].includes(propertyType)
+      ? `${baseSlugPart || 'listing'}/${propertyType}-${shortId}`
+      : `${baseSlugPart || 'listing'}-${shortId}`
+    const rawSlug = clientSlug || fallbackSlug
 
     // Pass room_types as-is (JSONB — contains _type markers for apt_unit, charges, rental_detail)
     const roomTypes = Array.isArray(body.room_types) ? body.room_types : []
