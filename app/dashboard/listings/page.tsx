@@ -49,6 +49,7 @@ interface RentalCharges {
   electricity_min_rate: string  // minimum bill amount (for min_rate mode)
   security_deposit: string
   advance_deposit: string
+  key_deposit: string           // fixed baht amount (optional, e.g. key deposit)
   other_charges: string[]
   other_charges_fees: Record<string, string>  // monthly fee per charge key
 }
@@ -266,7 +267,7 @@ const BLANK_CONDO_RENTAL: CondoRentalDetail = {
 const BLANK_CHARGES: RentalCharges = {
   water_type: 'ask', water_fixed: '', water_min_rate: '',
   electricity_type: 'ask', electricity_fixed: '', electricity_min_rate: '',
-  security_deposit: '2', advance_deposit: '1',
+  security_deposit: '2', advance_deposit: '1', key_deposit: '',
   other_charges: [], other_charges_fees: {},
 }
 
@@ -1309,6 +1310,49 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
   )
 }
 
+// ── Deposit section — for condo / house / office / coworking ─────────────────
+// Shows only security deposit, advance deposit, and optional key deposit.
+// (Apartment uses the full RentalChargesSection which also covers utilities.)
+function DepositSection({ charges, onChange, isMobile }: {
+  charges: RentalCharges
+  onChange: (c: RentalCharges) => void
+  isMobile?: boolean
+}) {
+  function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
+  return (
+    <div>
+      {/* เงินประกัน + เงินล่วงหน้า */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 14 }}>
+        <div>
+          <label style={SLBL}>เงินประกัน (เดือน)</label>
+          <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 2 เดือน</p>
+        </div>
+        <div>
+          <label style={SLBL}>เงินล่วงหน้า (เดือน)</label>
+          <input type="number" value={charges.advance_deposit} onChange={e => u('advance_deposit', e.target.value)} placeholder="1" style={SINP} />
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 1 เดือน</p>
+        </div>
+      </div>
+      {/* เงินมัดจำกุญแจ (ไม่บังคับ) */}
+      <div>
+        <label style={SLBL}>เงินมัดจำกุญแจ (บาท) — ไม่บังคับ</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            type="number"
+            value={charges.key_deposit}
+            onChange={e => u('key_deposit', e.target.value)}
+            placeholder="เช่น 500"
+            style={{ ...SINP, maxWidth: 180 }}
+          />
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท</span>
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>หากเว้นว่าง จะไม่แสดงรายการนี้บนหน้าประกาศ</p>
+      </div>
+    </div>
+  )
+}
+
 // ── Submit data serializer (shared between Create and Edit) ───────────────────
 function prepareSubmitData(form: ListingFormState) {
   let price_from = parseInt(form.price_from) || 0
@@ -1321,18 +1365,20 @@ function prepareSubmitData(form: ListingFormState) {
     const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
     price_from = prices.length > 0 ? Math.min(...prices) : 0
     price_to   = prices.length > 1 ? Math.max(...prices) : (prices[0] ?? null)
-    // Apartment: prefix with charges block; Office/Coworking: no charges block
-    room_types = form.property_type === 'apartment'
-      ? [
-          { _type: 'charges', ...form.rental_charges },
-          ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
-        ]
-      : form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u }))
+    // All three types now prefix with a charges block (deposit info) + unit rows
+    room_types = [
+      { _type: 'charges', ...form.rental_charges },
+      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
+    ]
   } else if (['condo', 'house'].includes(form.property_type)) {
     const r = form.condo_rental
     price_from = parseFloat(r.price_12mo || r.price_1mo || '0') || 0
     price_to   = r.price_1mo ? parseFloat(r.price_1mo) : null
-    room_types = [{ _type: 'rental_detail', ...r }]
+    // Prefix with charges block (deposit info), then rental detail
+    room_types = [
+      { _type: 'charges', ...form.rental_charges },
+      { _type: 'rental_detail', ...r },
+    ]
     floor      = r.floor ? parseInt(r.floor) : null
     area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
   }
@@ -1575,6 +1621,22 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
           <SectionHead text="3B · รายละเอียดการเช่า" />
           <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>ค่าสาธารณูปโภค เงินมัดจำ และค่าใช้จ่ายอื่น ๆ ที่เรียกเก็บ</p>
           <RentalChargesSection
+            charges={form.rental_charges}
+            onChange={c => onChange('rental_charges', c)}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          3B · รายละเอียดการเช่า  (Condo / House / Office / Co-Working)
+          Deposit info — no utility rates (those are building-level for apartments)
+      ════════════════════════════════════════════════════════════════════ */}
+      {!isApartment && (
+        <div style={{ marginBottom: 24 }}>
+          <SectionHead text="3B · รายละเอียดการเช่า" />
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>เงินประกัน เงินล่วงหน้า และค่ามัดจำอื่น ๆ (เช่น กุญแจ)</p>
+          <DepositSection
             charges={form.rental_charges}
             onChange={c => onChange('rental_charges', c)}
             isMobile={isMobile}
@@ -1845,6 +1907,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     electricity_min_rate: String(chargesRaw.electricity_min_rate ?? ''),
     security_deposit:    String(chargesRaw.security_deposit ?? '2'),
     advance_deposit:     String(chargesRaw.advance_deposit ?? '1'),
+    key_deposit:         String(chargesRaw.key_deposit ?? ''),
     other_charges:       chargesRaw.other_charges ?? [],
     other_charges_fees:  chargesRaw.other_charges_fees ?? {},
   } : { ...BLANK_CHARGES }
