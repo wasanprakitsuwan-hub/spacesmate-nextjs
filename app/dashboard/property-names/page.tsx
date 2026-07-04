@@ -47,29 +47,29 @@ function NameForm({
     setSaving(false)
   }
 
-  const inp = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 13.5, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
+  const inp = { width: '100%', padding: '13px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
 
   return (
-    <div style={{ background: '#f8faf9', borderRadius: 14, padding: '18px 20px', border: '1.5px solid #048c73' }}>
-      <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: '#02402e' }}>
+    <div style={{ background: '#f8faf9', borderRadius: 14, padding: '22px 24px', border: '1.5px solid #048c73' }}>
+      <h4 style={{ margin: '0 0 18px', fontSize: 16, fontWeight: 700, color: '#02402e' }}>
         {initial ? 'แก้ไขชื่ออสังหาริมทรัพย์' : 'เพิ่มชื่อใหม่'}
       </h4>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>ชื่อภาษาไทย *</label>
+          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>ชื่อภาษาไทย *</label>
           <input value={nameTh} onChange={e => setNameTh(e.target.value)} placeholder="เช่น บ้านไพรวัลย์" style={inp}
             onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>ชื่อภาษาอังกฤษ</label>
+          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>ชื่อภาษาอังกฤษ</label>
           <input value={nameEn} onChange={e => setNameEn(e.target.value)} placeholder="e.g. Baan Praiwan" style={inp}
             onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
         </div>
       </div>
-      {error && <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', fontSize: 12.5 }}>{error}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onCancel} style={{ padding: '8px 18px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
-        <button onClick={submit} disabled={saving} style={{ padding: '8px 20px', borderRadius: 9, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+      {error && <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', fontSize: 14 }}>{error}</div>}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={onCancel} style={{ padding: '12px 24px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
+        <button onClick={submit} disabled={saving} style={{ padding: '12px 24px', borderRadius: 9, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
           {saving ? 'กำลังบันทึก...' : <><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4 }}>save</span>{initial ? 'บันทึกการแก้ไข' : 'เพิ่มชื่อ'}</>}
         </button>
       </div>

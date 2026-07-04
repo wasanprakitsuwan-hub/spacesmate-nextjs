@@ -81,30 +81,30 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
     setSaving(false)
   }
 
-  const inp = { width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid #e2e8f0', fontSize: 13, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
+  const inp = { width: '100%', padding: '13px 16px', borderRadius: 9, border: '1.5px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
 
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.25)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 460, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 680, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
         <div style={{ padding: '22px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#02402e' }}>แก้ไข SEO Page</h2>
-            <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#94a3b8', fontFamily: 'monospace' }}>/{page.slug}</p>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#02402e' }}>แก้ไข SEO Page</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8', fontFamily: 'monospace' }}>/{page.slug}</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', padding: 4 }}>×</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Status */}
           <div>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>สถานะ</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>สถานะ</label>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {Object.entries(STATUS_STYLE).map(([key, s]) => (
                 <button key={key} onClick={() => setStatus(key)} style={{
-                  padding: '7px 14px', borderRadius: 9, border: `1.5px solid ${status === key ? s.color : '#e2e8f0'}`,
+                  padding: '10px 18px', borderRadius: 9, border: `1.5px solid ${status === key ? s.color : '#e2e8f0'}`,
                   background: status === key ? s.bg : '#fff', color: status === key ? s.color : '#64748b',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                 }}>
                   <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4 }}>{s.icon}</span>
                   {s.label}
@@ -115,19 +115,19 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
 
           {/* Titles */}
           <div>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>Title (TH)</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Title (TH)</label>
             <input value={titleTh} onChange={e => setTitleTh(e.target.value)} placeholder="คอนโดให้เช่า BTS อโศก" style={inp}
               onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>Title (EN)</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Title (EN)</label>
             <input value={titleEn} onChange={e => setTitleEn(e.target.value)} placeholder="Condo for Rent BTS Asok" style={inp}
               onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
           </div>
 
           {/* Meta */}
           <div>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>
               Meta Description <span style={{ color: metaDesc.length > 160 ? '#dc2626' : '#94a3b8', fontWeight: 400 }}>({metaDesc.length}/160)</span>
             </label>
             <textarea value={metaDesc} onChange={e => setMetaDesc(e.target.value)} rows={3}
@@ -139,14 +139,14 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
           {/* Content + Score */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#02402e', fontWeight: 500 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 15, color: '#02402e', fontWeight: 500 }}>
                 <input type="checkbox" checked={hasContent} onChange={e => setHasContent(e.target.checked)}
-                  style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                  style={{ width: 18, height: 18, cursor: 'pointer' }} />
                 มีเนื้อหา (content)
               </label>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>Page Score (0–100)</label>
+              <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Page Score (0–100)</label>
               <input type="number" min={0} max={100} value={pageScore} onChange={e => setPageScore(e.target.value)} placeholder="—" style={{ ...inp, width: '100%' }}
                 onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
             </div>
@@ -154,7 +154,7 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
 
           {/* Notes */}
           <div>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>หมายเหตุ</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>หมายเหตุ</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
               placeholder="บันทึกเพิ่มเติม..."
               style={{ ...inp, resize: 'vertical' }}
@@ -164,9 +164,9 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
           {error && <div style={{ padding: '10px 13px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>{error}</div>}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
-          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: 11, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+        <div style={{ padding: '18px 28px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
+          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '14px', borderRadius: 11, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
             {saving ? 'กำลังบันทึก...' : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6 }}>save</span>บันทึก</>}
           </button>
         </div>

@@ -248,12 +248,12 @@ function getRoomTypeOptions(propType: string): string[] {
 
 // ── Shared form styles ────────────────────────────────────────────────────────
 const SINP: React.CSSProperties = {
-  width: '100%', padding: '9px 13px', borderRadius: 10,
-  border: '1px solid #eef0ef', fontSize: 13.5, outline: 'none',
+  width: '100%', padding: '13px 16px', borderRadius: 10,
+  border: '1px solid #eef0ef', fontSize: 16, outline: 'none',
   boxSizing: 'border-box' as const, background: '#fff',
 }
 const SLBL: React.CSSProperties = {
-  fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 5, display: 'block',
+  fontSize: 14, fontWeight: 600, color: '#334155', marginBottom: 8, display: 'block',
 }
 
 function computeExpiry(packageId: string): string | null {

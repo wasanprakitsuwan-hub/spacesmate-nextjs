@@ -256,16 +256,16 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
 
   const canChangeRole  = callerRole === 'super_admin'
   const availableRoles = callerRole === 'super_admin' ? ['landlord', 'admin', 'super_admin'] : ['landlord']
-  const inp = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 13.5, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
+  const inp = { width: '100%', padding: '13px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
 
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.25)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 420, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
-        <div style={{ padding: '22px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 680, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+        <div style={{ padding: '22px 28px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#02402e' }}>แก้ไขข้อมูลผู้ใช้</h2>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94a3b8' }}>{user.email}</p>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#02402e' }}>แก้ไขข้อมูลผู้ใช้</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>{user.email}</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', padding: 4 }}>×</button>
         </div>
@@ -283,15 +283,15 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>อีเมล</label><input value={user.email} readOnly style={{ ...inp, background: '#f8faf9', color: '#94a3b8' }} /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>ชื่อ</label><input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="ชื่อจริง" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
-            <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>นามสกุล</label><input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="นามสกุล" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div><label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>อีเมล</label><input value={user.email} readOnly style={{ ...inp, background: '#f8faf9', color: '#94a3b8' }} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div><label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>ชื่อ</label><input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="ชื่อจริง" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
+            <div><label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>นามสกุล</label><input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="นามสกุล" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
           </div>
-          <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>เบอร์โทรศัพท์</label><input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0xx-xxx-xxxx" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
+          <div><label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>เบอร์โทรศัพท์</label><input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0xx-xxx-xxxx" style={inp} onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} /></div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>บทบาท {!canChangeRole && <span style={{ color: '#cbd5e1', fontWeight: 400 }}>(เฉพาะ Super Admin)</span>}</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>บทบาท {!canChangeRole && <span style={{ color: '#cbd5e1', fontWeight: 400 }}>(เฉพาะ Super Admin)</span>}</label>
             <select value={role} onChange={e => setRole(e.target.value)} disabled={!canChangeRole} style={{ ...inp, cursor: canChangeRole ? 'pointer' : 'not-allowed', background: canChangeRole ? '#fff' : '#f8faf9', color: canChangeRole ? '#02402e' : '#94a3b8' }}>
               {availableRoles.map(r => <option key={r} value={r}>{r === 'super_admin' ? 'Super Admin' : r === 'admin' ? 'Admin' : 'เจ้าของ (Landlord)'}</option>)}
             </select>
@@ -305,10 +305,10 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
           {error && <div style={{ padding: '10px 13px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>{error}</div>}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
-          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: 11, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-            {saving ? 'กำลังบันทึก...' : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6 }}>save</span>บันทึกข้อมูล</>}
+        <div style={{ padding: '18px 28px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
+          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '14px', borderRadius: 11, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {saving ? 'กำลังบันทึก...' : <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6 }}>save</span>บันทึกข้อมูล</>}
           </button>
         </div>
       </div>
@@ -342,11 +342,11 @@ function DetailDrawer({ userId, onClose }: { userId: string; onClose: () => void
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.25)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 480, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
-        <div style={{ padding: '22px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 680, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+        <div style={{ padding: '22px 28px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#02402e' }}>รายละเอียดผู้ใช้</h2>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94a3b8' }}>คลิกแถวเพื่อดูข้อมูลและประกาศทั้งหมด</p>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#02402e' }}>รายละเอียดผู้ใช้</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>คลิกแถวเพื่อดูข้อมูลและประกาศทั้งหมด</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', padding: 4 }}>×</button>
         </div>

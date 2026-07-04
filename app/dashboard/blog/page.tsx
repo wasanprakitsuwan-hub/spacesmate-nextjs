@@ -122,7 +122,7 @@ function ThumbnailUploader({
 
   return (
     <div>
-      <label style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginBottom: 8, display: 'block' }}>
+      <label style={{ fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8, display: 'block' }}>
         Thumbnail / รูปปก
       </label>
 
@@ -182,7 +182,7 @@ function ThumbnailUploader({
             value={valueAlt}
             onChange={e => onChange(value, e.target.value)}
             placeholder="คำอธิบายรูปภาพ — สำหรับ SEO และ Accessibility"
-            style={{ width: '100%', padding: '9px 13px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '13px 16px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
       )}
@@ -269,18 +269,18 @@ function EditDrawer({ post, onClose, onSave }: {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: 11,
-    border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
+    width: '100%', padding: '13px 16px', borderRadius: 11,
+    border: '1px solid #e2e8f0', fontSize: 16, outline: 'none',
     boxSizing: 'border-box', fontFamily: 'inherit', color: '#02402e',
   }
-  const labelStyle: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: '#64748b', marginBottom: 6, display: 'block' }
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8, display: 'block' }
 
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.18)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
 
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 640,
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 680,
         background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column',
         boxShadow: '-10px 0 50px rgba(2,64,46,0.14)',
       }}>
@@ -288,16 +288,16 @@ function EditDrawer({ post, onClose, onSave }: {
         {/* Header */}
         <div style={{ padding: '18px 26px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 12 }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 15.5, fontWeight: 700, color: '#02402e' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#02402e' }}>
               {post.id === 'NEW' ? 'เพิ่มบทความใหม่' : 'แก้ไขบทความ'}
             </div>
-            <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               spacesmate.com/blog/{form.slug || '...'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
             <select value={form.status} onChange={e => setF('status', e.target.value)}
-              style={{ padding: '7px 12px', borderRadius: 9, border: '1px solid #e2e8f0', fontSize: 13, fontFamily: 'inherit', color: '#02402e', background: '#fff', cursor: 'pointer' }}>
+              style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid #e2e8f0', fontSize: 15, fontFamily: 'inherit', color: '#02402e', background: '#fff', cursor: 'pointer' }}>
               <option value="draft">แบบร่าง</option>
               <option value="review">รอตรวจสอบ</option>
               <option value="published">เผยแพร่</option>
@@ -313,7 +313,7 @@ function EditDrawer({ post, onClose, onSave }: {
           {([['content','เนื้อหา & รูปภาพ'],['seo','SEO']] as const).map(([k, l]) => (
             <button key={k} onClick={() => setActiveTab(k)} style={{
               padding: '11px 18px', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit',
+              fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
               color: activeTab === k ? '#02402e' : '#94a3b8',
               borderBottom: activeTab === k ? '2px solid #02402e' : '2px solid transparent',
               marginBottom: -1,
