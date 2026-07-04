@@ -336,3 +336,237 @@ export async function sendPaymentConfirmation(data: PaymentEmailData): Promise<v
     html
   )
 }
+
+// ── 4. Package expiring soon — 7-day warning ──────────────────────────────────
+
+export interface ExpiryEmailData {
+  contactEmail:  string
+  contactName?:  string | null
+  packageType?:  string | null
+  expiresAt:     string          // ISO date string
+  listingTitle?: string | null
+  renewUrl?:     string | null
+}
+
+export async function sendPackageExpiringAlert(data: ExpiryEmailData): Promise<void> {
+  if (!data.contactEmail) return
+
+  const pkgLabel  = data.packageType ? (PACKAGE_LABEL[data.packageType] ?? data.packageType) : 'แพ็กเกจของคุณ'
+  const expiryStr = new Date(data.expiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+  const renewLink = data.renewUrl ?? 'https://spacesmate.com/owner-dashboard'
+
+  const html = layout(`
+  <!-- Header -->
+  <div style="background:#02402e;padding:30px 32px 26px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate</p>
+    <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 6px;line-height:1.3">แพ็กเกจใกล้หมดอายุ</h1>
+    <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">อีก 7 วัน ประกาศของคุณจะหยุดแสดงบนเว็บ</p>
+  </div>
+
+  <!-- Warning banner -->
+  <div style="background:#fff8f0;padding:14px 32px;border-bottom:1px solid #f5ddb3">
+    <p style="font-size:13.5px;color:#78350f;font-weight:600;margin:0">
+      แพ็กเกจ ${pkgLabel} จะหมดอายุวันที่ ${expiryStr}
+    </p>
+  </div>
+
+  <!-- Listing info -->
+  <div style="padding:24px 32px 0">
+    ${data.listingTitle
+      ? `<p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px">ประกาศ <strong style="color:#02402e">"${data.listingTitle}"</strong> จะหยุดแสดงในระบบและผู้เช่าจะไม่สามารถค้นหาพบหากแพ็กเกจหมดอายุ</p>`
+      : '<p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px">ประกาศของคุณจะหยุดแสดงในระบบและผู้เช่าจะไม่สามารถค้นหาพบหากแพ็กเกจหมดอายุ</p>'}
+    <p style="font-size:14px;color:#334155;line-height:1.75;margin:0">
+      ต่ออายุแพ็กเกจตอนนี้เพื่อให้ประกาศของคุณแสดงต่อเนื่องโดยไม่มีสะดุด
+    </p>
+  </div>
+
+  <!-- Expiry highlight box -->
+  <div style="margin:20px 32px 0;padding:16px 20px;background:#f8fafc;border-radius:12px;border:1.5px solid #e2e8f0">
+    <p style="font-size:12px;font-weight:700;color:#94a3b8;margin:0 0 6px;text-transform:uppercase;letter-spacing:.5px">วันหมดอายุ</p>
+    <p style="font-size:18px;font-weight:700;color:#d97f11;margin:0">${expiryStr}</p>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:24px 32px 0;text-align:center">
+    <a href="${renewLink}"
+       style="display:inline-block;background:#d97f11;color:#fff;font-size:14px;font-weight:700;padding:13px 32px;border-radius:10px;text-decoration:none">
+      ต่ออายุแพ็กเกจ
+    </a>
+  </div>
+
+  <!-- Support -->
+  <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
+    <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
+      ต้องการความช่วยเหลือ ติดต่อเราได้ที่<br>
+      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
+    </p>
+  </div>`)
+
+  await sendEmail(
+    [data.contactEmail],
+    `แพ็กเกจของคุณจะหมดอายุใน 7 วัน — SpacesMate`,
+    html
+  )
+}
+
+// ── 5. Package expired — listing now hidden ───────────────────────────────────
+
+export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<void> {
+  if (!data.contactEmail) return
+
+  const pkgLabel  = data.packageType ? (PACKAGE_LABEL[data.packageType] ?? data.packageType) : 'แพ็กเกจของคุณ'
+  const expiryStr = new Date(data.expiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+  const renewLink = data.renewUrl ?? 'https://spacesmate.com/owner-dashboard'
+
+  const html = layout(`
+  <!-- Header -->
+  <div style="background:#02402e;padding:30px 32px 26px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate</p>
+    <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 6px;line-height:1.3">แพ็กเกจหมดอายุแล้ว</h1>
+    <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">ประกาศของคุณถูกซ่อนชั่วคราว</p>
+  </div>
+
+  <!-- Alert banner -->
+  <div style="background:#fef2f2;padding:14px 32px;border-bottom:1px solid #fecaca">
+    <p style="font-size:13.5px;color:#991b1b;font-weight:600;margin:0">
+      แพ็กเกจ ${pkgLabel} หมดอายุเมื่อวันที่ ${expiryStr} — ประกาศของคุณไม่แสดงบนเว็บแล้ว
+    </p>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:24px 32px 0">
+    ${data.listingTitle
+      ? `<p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px">ประกาศ <strong style="color:#02402e">"${data.listingTitle}"</strong> ถูกซ่อนออกจากระบบค้นหาแล้ว ผู้เช่าจะไม่สามารถพบประกาศของคุณจนกว่าจะต่ออายุ</p>`
+      : '<p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px">ประกาศของคุณถูกซ่อนออกจากระบบค้นหาแล้ว ผู้เช่าจะไม่สามารถพบประกาศของคุณจนกว่าจะต่ออายุ</p>'}
+    <p style="font-size:14px;color:#334155;line-height:1.75;margin:0">
+      ต่ออายุแพ็กเกจเพื่อให้ประกาศกลับมาแสดงทันที ข้อมูลทั้งหมดของคุณยังอยู่ครบถ้วน
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:24px 32px 0;text-align:center">
+    <a href="${renewLink}"
+       style="display:inline-block;background:#02402e;color:#fff;font-size:14px;font-weight:700;padding:13px 32px;border-radius:10px;text-decoration:none">
+      ต่ออายุเพื่อเผยแพร่อีกครั้ง
+    </a>
+  </div>
+
+  <!-- Reassurance -->
+  <div style="margin:20px 32px 0;padding:16px 20px;background:#f8fafc;border-radius:12px">
+    <p style="font-size:13px;color:#64748b;margin:0;line-height:1.7">
+      ข้อมูลประกาศ รูปภาพ และรายละเอียดทั้งหมดยังคงอยู่ในระบบ — เพียงแค่ต่ออายุแพ็กเกจและประกาศจะกลับมาแสดงทันที
+    </p>
+  </div>
+
+  <!-- Support -->
+  <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
+    <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
+      ต้องการความช่วยเหลือ ติดต่อเราได้ที่<br>
+      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
+    </p>
+  </div>`)
+
+  await sendEmail(
+    [data.contactEmail],
+    `แพ็กเกจหมดอายุแล้ว — ประกาศของคุณถูกซ่อนชั่วคราว`,
+    html
+  )
+}
+
+// ── 6. Welcome — after email confirmation ─────────────────────────────────────
+
+export interface WelcomeEmailData {
+  contactEmail: string
+  contactName?: string | null
+}
+
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
+  if (!data.contactEmail) return
+
+  const name = data.contactName ? `คุณ${data.contactName}` : 'คุณ'
+
+  const html = layout(`
+  <!-- Header -->
+  <div style="background:#02402e;padding:30px 32px 26px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate</p>
+    <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 6px;line-height:1.3">ยินดีต้อนรับ ${name}!</h1>
+    <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">บัญชีของคุณพร้อมใช้งานแล้ว</p>
+  </div>
+
+  <!-- Welcome banner -->
+  <div style="background:#eaf6f1;padding:14px 32px;border-bottom:1px solid #c9eedd">
+    <p style="font-size:13.5px;color:#02402e;font-weight:600;margin:0">
+      ยืนยันอีเมลสำเร็จ — คุณพร้อมลงประกาศบน SpacesMate แล้ว
+    </p>
+  </div>
+
+  <!-- Intro -->
+  <div style="padding:24px 32px 0">
+    <p style="font-size:14.5px;color:#334155;line-height:1.8;margin:0 0 20px">
+      SpacesMate คือแพลตฟอร์มลงประกาศเช่าอสังหาริมทรัพย์ที่ช่วยให้เจ้าของทรัพย์ในกรุงเทพฯ เข้าถึงผู้เช่าที่ใช้งานจริงได้ง่ายและรวดเร็ว
+    </p>
+  </div>
+
+  <!-- 3-step guide -->
+  <div style="margin:0 32px;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden">
+    <div style="background:#f8fafc;padding:12px 20px;border-bottom:1px solid #e2e8f0">
+      <p style="font-size:11px;font-weight:700;color:#94a3b8;margin:0;text-transform:uppercase;letter-spacing:.5px">เริ่มต้น 3 ขั้นตอน</p>
+    </div>
+    <div style="padding:18px 20px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;vertical-align:top;width:32px">
+            <span style="display:inline-block;background:#02402e;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px">1</span>
+          </td>
+          <td style="padding:10px 0 10px 12px;border-bottom:1px solid #f1f5f9">
+            <p style="font-size:14px;font-weight:600;color:#1e293b;margin:0 0 3px">เลือกแพ็กเกจ</p>
+            <p style="font-size:13px;color:#64748b;margin:0">Basic 1 เดือน · Standard 3 เดือน · Premium 12 เดือน</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;vertical-align:top">
+            <span style="display:inline-block;background:#048c73;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px">2</span>
+          </td>
+          <td style="padding:10px 0 10px 12px;border-bottom:1px solid #f1f5f9">
+            <p style="font-size:14px;font-weight:600;color:#1e293b;margin:0 0 3px">ลงประกาศ</p>
+            <p style="font-size:13px;color:#64748b;margin:0">กรอกรายละเอียด เพิ่มรูปภาพ และตำแหน่งที่ตั้ง</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;vertical-align:top">
+            <span style="display:inline-block;background:#d97f11;color:#fff;font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px">3</span>
+          </td>
+          <td style="padding:10px 0 10px 12px">
+            <p style="font-size:14px;font-weight:600;color:#1e293b;margin:0 0 3px">รอผู้เช่าติดต่อ</p>
+            <p style="font-size:13px;color:#64748b;margin:0">ประกาศของคุณจะแสดงบน spacesmate.com ทันที</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:24px 32px 0;text-align:center">
+    <a href="https://spacesmate.com/submit"
+       style="display:inline-block;background:#048c73;color:#fff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;text-decoration:none">
+      เริ่มลงประกาศ
+    </a>
+  </div>
+
+  <!-- Support -->
+  <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
+    <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
+      มีคำถาม? ติดต่อเราได้ที่<br>
+      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
+    </p>
+  </div>`)
+
+  await sendEmail(
+    [data.contactEmail],
+    `ยินดีต้อนรับสู่ SpacesMate — เริ่มลงประกาศได้เลย`,
+    html
+  )
+}
