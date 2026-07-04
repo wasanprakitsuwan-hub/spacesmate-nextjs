@@ -260,9 +260,9 @@ export default function RichEditor({
         [contenteditable] h3 {
           font-size: 1.08em; font-weight: 600; color: #1e293b; margin: .6em 0 .25em;
         }
-        [contenteditable] ul,
-        [contenteditable] ol  { padding-left: 1.4em; margin: .4em 0; }
-        [contenteditable] li  { margin-bottom: 3px; }
+        [contenteditable] ul  { padding-left: 1.6em; margin: .4em 0; list-style-type: disc; }
+        [contenteditable] ol  { padding-left: 1.6em; margin: .4em 0; list-style-type: decimal; }
+        [contenteditable] li  { margin-bottom: 3px; display: list-item; }
         [contenteditable] a   { color: #048c73; text-decoration: underline; }
         [contenteditable] hr  { border: none; border-top: 1.5px solid #e2e8f0; margin: 16px 0; }
         [contenteditable] img { max-width: 100%; border-radius: 10px; margin: 12px 0; display: block; }
