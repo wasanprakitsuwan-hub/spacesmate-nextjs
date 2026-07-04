@@ -1,5 +1,18 @@
 'use client'
 
+/**
+ * AuthModal — login / signup popup.
+ *
+ * Anti-spam layers on signup:
+ *   1. Honeypot hidden field — bots fill it, humans don't
+ *   2. Pre-register API call (/api/auth/pre-register):
+ *        - Disposable email domain blocklist
+ *        - Bot-pattern username detection
+ *        - IP rate limit (3/hour)
+ *        - Cloudflare Turnstile token verification (when NEXT_PUBLIC_TURNSTILE_SITE_KEY is set)
+ *   3. Actual Supabase signUp only runs if pre-register returns { ok: true }
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -18,6 +31,54 @@ const INP: React.CSSProperties = {
 const LBL: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }
 const FG: React.CSSProperties  = { marginBottom: 14 }
 
+// ── Cloudflare Turnstile widget ────────────────────────────────────────────────
+// Only rendered when NEXT_PUBLIC_TURNSTILE_SITE_KEY env var is present.
+// Uses Turnstile's implicit rendering via data attributes.
+function TurnstileWidget({ onToken }: { onToken: (t: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Load Turnstile script once
+    const existing = document.getElementById('cf-turnstile-script')
+    if (!existing) {
+      const s = document.createElement('script')
+      s.id  = 'cf-turnstile-script'
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+      s.async = true
+      s.defer = true
+      document.head.appendChild(s)
+    }
+
+    // Wait for Turnstile to be available, then render
+    let attempts = 0
+    const poll = setInterval(() => {
+      attempts++
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any
+      if (w.turnstile && ref.current && !ref.current.dataset.rendered) {
+        ref.current.dataset.rendered = 'true'
+        w.turnstile.render(ref.current, {
+          sitekey:  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+          callback: (token: string) => onToken(token),
+          'expired-callback': () => onToken(''),
+          theme: 'light',
+          size: 'flexible',
+        })
+        clearInterval(poll)
+      }
+      if (attempts > 40) clearInterval(poll)  // give up after 4s
+    }, 100)
+
+    return () => clearInterval(poll)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div ref={ref} style={{ margin: '4px 0 14px', minHeight: 65, borderRadius: 10, overflow: 'hidden' }} />
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const router  = useRouter()
   const overlay = useRef<HTMLDivElement>(null)
@@ -37,6 +98,12 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const [signEmail,  setSignEmail]  = useState('')
   const [signPwd,    setSignPwd]    = useState('')
   const [signPwd2,   setSignPwd2]   = useState('')
+
+  // Anti-spam fields
+  const [honeypot,        setHoneypot]        = useState('')   // must stay empty
+  const [turnstileToken,  setTurnstileToken]  = useState('')   // set by Turnstile widget
+
+  const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   // Close on backdrop click
   function handleOverlay(e: React.MouseEvent) {
@@ -98,8 +165,29 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
     if (!signName || !signEmail || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
     if (signPwd !== signPwd2) { setError('รหัสผ่านไม่ตรงกัน'); return }
     if (signPwd.length < 6)  { setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return }
+
     setLoading(true); setError('')
+
     try {
+      // ── Step 1: Pre-register validation (spam / rate limit / Turnstile) ──
+      const preRes = await fetch('/api/auth/pre-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: signEmail,
+          honeypot,
+          turnstileToken: turnstileEnabled ? turnstileToken : undefined,
+        }),
+      })
+      const preData = await preRes.json() as { ok?: boolean; error?: string }
+
+      if (!preRes.ok || !preData.ok) {
+        setError(preData.error ?? 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่')
+        setLoading(false)
+        return
+      }
+
+      // ── Step 2: Actual Supabase sign-up ───────────────────────────────────
       const supabase = createBrowserClient()
       const { data, error: authErr } = await supabase.auth.signUp({
         email:    signEmail,
@@ -206,6 +294,20 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
             </form>
           ) : (
             <form onSubmit={handleSignup}>
+              {/* ── Honeypot: hidden from humans, but bots fill it ── */}
+              <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+                <label htmlFor="sm_website">Website</label>
+                <input
+                  id="sm_website"
+                  name="website"
+                  type="text"
+                  value={honeypot}
+                  onChange={e => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <div style={FG}>
                 <label style={LBL}>ชื่อ-นามสกุล</label>
                 <input style={INP} type="text" value={signName} onChange={e => { setSignName(e.target.value); setError('') }} placeholder="สมชาย ใจดี" autoFocus autoComplete="name" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
@@ -227,6 +329,11 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 <label style={LBL}>ยืนยันรหัสผ่าน</label>
                 <input style={INP} type="password" value={signPwd2} onChange={e => { setSignPwd2(e.target.value); setError('') }} placeholder="••••••••" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
+
+              {/* ── Cloudflare Turnstile (shows only when site key configured) ── */}
+              {turnstileEnabled && (
+                <TurnstileWidget onToken={setTurnstileToken} />
+              )}
 
               {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
 
