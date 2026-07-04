@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import RichEditor from '@/components/RichEditor'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -192,128 +193,24 @@ function ThumbnailUploader({
   )
 }
 
-// ── RichEditor ────────────────────────────────────────────────────────────────
+// ── Blog image inserter (WebP conversion + inject via RichEditor callback) ────
 
-function RichEditor({ initialValue, onChange }: { initialValue: string; onChange: (html: string) => void }) {
-  const editorRef  = useRef<HTMLDivElement>(null)
-  const mountedVal = useRef(initialValue)
-
-  // Init on mount only — do NOT re-set on every render (breaks cursor position)
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = mountedVal.current || ''
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const exec = useCallback((cmd: string, val?: string) => {
-    editorRef.current?.focus()
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand(cmd, false, val)
-    onChange(editorRef.current?.innerHTML ?? '')
-  }, [onChange])
-
-  async function insertBodyImage() {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      if (!file) return
-      try {
-        const webp = await fileToWebP(file, 1200, 0.85)
-        const alt  = autoAlt(file.name)
-        exec('insertHTML', `<img src="${webp}" alt="${alt}" style="max-width:100%;border-radius:10px;margin:14px 0;display:block;" data-autoalt="${!file.name ? 'true' : 'false'}" />`)
-      } catch { /* ignore */ }
-    }
-    input.click()
+async function insertBodyImageBlog(insertHtml: (html: string) => void) {
+  const input = document.createElement('input')
+  input.type  = 'file'
+  input.accept = 'image/*'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    try {
+      const webp = await fileToWebP(file, 1200, 0.85)
+      const alt  = autoAlt(file.name)
+      insertHtml(
+        `<img src="${webp}" alt="${alt}" style="max-width:100%;border-radius:10px;margin:14px 0;display:block;" />`
+      )
+    } catch { /* ignore */ }
   }
-
-  function insertLink() {
-    const url = prompt('ใส่ URL:', 'https://')
-    if (url) exec('createLink', url)
-  }
-
-  const ToolBtn = ({ icon, cmd, val, title, onClick }: {
-    icon: string; cmd?: string; val?: string; title: string; onClick?: () => void
-  }) => (
-    <button
-      onMouseDown={e => { e.preventDefault(); onClick ? onClick() : exec(cmd!, val) }}
-      title={title}
-      style={{
-        width: 32, height: 32, border: 'none', background: 'none', borderRadius: 7,
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#334155', transition: 'background .12s',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f0f7f4' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none' }}
-    >
-      {icon.length <= 3
-        ? <span style={{ fontSize: 13, fontWeight: 800 }}>{icon}</span>
-        : <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{icon}</span>
-      }
-    </button>
-  )
-
-  const Sep = () => <div style={{ width: 1, height: 22, background: '#e2e8f0', margin: '0 4px', flexShrink: 0 }} />
-
-  return (
-    <div style={{ border: '1px solid #e2e8f0', borderRadius: 13, overflow: 'hidden', background: '#fff' }}>
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 2, padding: '8px 12px',
-        borderBottom: '1px solid #eef0ef', background: '#fafafa', flexWrap: 'wrap',
-      }}>
-        <ToolBtn icon="B" cmd="bold" title="Bold (Ctrl+B)" />
-        <ToolBtn icon="I" cmd="italic" title="Italic (Ctrl+I)" />
-        <ToolBtn icon="U" cmd="underline" title="Underline" />
-        <Sep />
-        <ToolBtn icon="H2" cmd="formatBlock" val="h2" title="Heading 2" />
-        <ToolBtn icon="H3" cmd="formatBlock" val="h3" title="Heading 3" />
-        <ToolBtn icon="P" cmd="formatBlock" val="p" title="ย่อหน้า" />
-        <Sep />
-        <ToolBtn icon="format_list_bulleted" cmd="insertUnorderedList" title="รายการ (•)" />
-        <ToolBtn icon="format_list_numbered" cmd="insertOrderedList" title="รายการ (1.)" />
-        <Sep />
-        <ToolBtn icon="link" onClick={insertLink} title="ใส่ลิงก์" />
-        <ToolBtn icon="add_photo_alternate" onClick={insertBodyImage} title="แทรกรูปภาพ (แปลงเป็น WebP อัตโนมัติ)" />
-        <ToolBtn icon="horizontal_rule" cmd="insertHorizontalRule" title="เส้นคั่น" />
-        <Sep />
-        <ToolBtn icon="format_clear" cmd="removeFormat" title="ล้างรูปแบบ" />
-        <ToolBtn icon="undo" cmd="undo" title="Undo" />
-        <ToolBtn icon="redo" cmd="redo" title="Redo" />
-      </div>
-
-      {/* Editable area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => onChange(editorRef.current?.innerHTML ?? '')}
-        style={{
-          minHeight: 280, padding: '18px 20px', outline: 'none',
-          fontSize: 14.5, lineHeight: 1.8, color: '#334155',
-          fontFamily: "'Prompt', -apple-system, sans-serif",
-        }}
-        onKeyDown={e => {
-          // Tab → indent
-          if (e.key === 'Tab') { e.preventDefault(); exec('insertHTML', '&nbsp;&nbsp;&nbsp;&nbsp;') }
-        }}
-      />
-
-      {/* Style for editor content */}
-      <style>{`
-        [contenteditable] h2 { font-size:1.35em; font-weight:700; color:#02402e; margin:16px 0 8px; }
-        [contenteditable] h3 { font-size:1.12em; font-weight:700; color:#02402e; margin:14px 0 6px; }
-        [contenteditable] ul, [contenteditable] ol { padding-left:24px; margin:8px 0; }
-        [contenteditable] li { margin:4px 0; }
-        [contenteditable] a { color:#048c73; text-decoration:underline; }
-        [contenteditable] img { max-width:100%; border-radius:10px; margin:12px 0; display:block; }
-        [contenteditable] hr { border:none; border-top:2px solid #eef0ef; margin:18px 0; }
-        [contenteditable]:empty:before { content:attr(data-ph); color:#94a3b8; pointer-events:none; }
-      `}</style>
-    </div>
-  )
+  input.click()
 }
 
 // ── SeoBar ────────────────────────────────────────────────────────────────────
@@ -488,6 +385,12 @@ function EditDrawer({ post, onClose, onSave }: {
                   key={form.id}
                   initialValue={form.content ?? ''}
                   onChange={html => setForm(f => ({ ...f, content: html }))}
+                  showLink
+                  showImage
+                  onImageClick={insertBodyImageBlog}
+                  showHr
+                  showUndoRedo
+                  minHeight={280}
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
                   <span style={{ fontSize: 11.5, color: '#94a3b8' }}>

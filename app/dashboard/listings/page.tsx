@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { properties as staticProperties } from '@/lib/property-data'
 import { searchCondoRegistry } from '@/lib/condo-registry'
+import RichEditor from '@/components/RichEditor'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface RoomTypeRow {
@@ -315,37 +316,6 @@ function SectionHead({ text }: { text: string }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 4 }}>
       <span style={{ fontSize: 11, fontWeight: 700, color: '#048c73', letterSpacing: 1.2, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' }}>{text}</span>
       <div style={{ flex: 1, height: 1, background: '#eef0ef' }} />
-    </div>
-  )
-}
-
-// ── Rich Text Editor ──────────────────────────────────────────────────────────
-function RichEditor({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value }, [])
-  function exec(cmd: string, arg?: string) {
-    document.execCommand(cmd, false, arg)
-    ref.current?.focus()
-    if (ref.current) onChange(ref.current.innerHTML)
-  }
-  const btnStyle: React.CSSProperties = { padding: '4px 8px', borderRadius: 6, border: '1px solid #eef0ef', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontSize: 12, fontWeight: 600, lineHeight: 1 }
-  return (
-    <div style={{ border: '1px solid #eef0ef', borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', gap: 4, padding: '8px 10px', background: '#f8fafc', borderBottom: '1px solid #eef0ef', flexWrap: 'wrap' }}>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('bold') }}><b>B</b></button>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('italic') }}><i>I</i></button>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('underline') }}><u>U</u></button>
-        <div style={{ width: 1, background: '#eef0ef', margin: '0 2px' }} />
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h2') }}>H2</button>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h3') }}>H3</button>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'p') }}>¶</button>
-        <div style={{ width: 1, background: '#eef0ef', margin: '0 2px' }} />
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList') }}>• List</button>
-        <button type="button" style={btnStyle} onMouseDown={e => { e.preventDefault(); exec('insertOrderedList') }}>1. List</button>
-        <button type="button" style={{ ...btnStyle, color: '#b91c1c' }} onMouseDown={e => { e.preventDefault(); exec('removeFormat') }}><span className="msym" style={{ fontSize: 14 }}>close</span> Clear</button>
-      </div>
-      <div ref={ref} contentEditable suppressContentEditableWarning onInput={() => { if (ref.current) onChange(ref.current.innerHTML) }} data-placeholder={placeholder || 'อธิบายรายละเอียด...'} style={{ minHeight: 120, padding: '12px 14px', fontSize: 13.5, lineHeight: 1.7, color: '#334155', outline: 'none' }} />
-      <style>{`[contenteditable]:empty:before{content:attr(data-placeholder);color:#94a3b8;pointer-events:none}[contenteditable] h2{font-size:1.15em;font-weight:700;color:#02402e;margin:.8em 0 .3em}[contenteditable] h3{font-size:1em;font-weight:600;margin:.6em 0 .2em}[contenteditable] ul,[contenteditable] ol{padding-left:1.4em}[contenteditable] li{margin-bottom:3px}`}</style>
     </div>
   )
 }
