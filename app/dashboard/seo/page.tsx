@@ -175,6 +175,172 @@ function EditDrawer({ page, onClose, onSaved }: { page: SeoPage; onClose: () => 
   )
 }
 
+// ── Add Drawer ────────────────────────────────────────────────────────────────
+function AddDrawer({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [slug,     setSlug]     = useState('')
+  const [titleTh,  setTitleTh]  = useState('')
+  const [titleEn,  setTitleEn]  = useState('')
+  const [areaType, setAreaType] = useState('bts')
+  const [status,   setStatus]   = useState('planned')
+  const [notes,    setNotes]    = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [error,    setError]    = useState('')
+
+  async function create() {
+    setSaving(true); setError('')
+    try {
+      const token = await getToken()
+      const r = await fetch('/api/dashboard/seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ slug: slug.trim(), title_th: titleTh.trim() || null, title_en: titleEn.trim() || null, area_type: areaType, status, notes: notes.trim() || null }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'Create failed')
+      onSaved(); onClose()
+    } catch (e: any) { setError(e.message) }
+    setSaving(false)
+  }
+
+  const inp = { width: '100%', padding: '13px 16px', borderRadius: 9, border: '1.5px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.25)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 680, background: '#fff', zIndex: 101, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+        <div style={{ padding: '22px 24px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#02402e' }}>เพิ่มหน้า SEO ใหม่</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>กรอก slug และข้อมูลเบื้องต้น</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', padding: 4 }}>×</button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Slug */}
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>
+              Slug (URL) <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94a3b8', pointerEvents: 'none' }}>/</span>
+              <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="condo-for-rent-bts-nana"
+                style={{ ...inp, paddingLeft: 24 }}
+                onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: '#94a3b8' }}>ใช้ตัวพิมพ์เล็ก, ตัวเลข และ - เท่านั้น</p>
+          </div>
+
+          {/* Area type */}
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>ประเภทพื้นที่</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {Object.entries(AREA_TYPE_LABEL).map(([key, label]) => (
+                <button key={key} onClick={() => setAreaType(key)} style={{
+                  padding: '10px 18px', borderRadius: 9, border: `1.5px solid ${areaType === key ? '#02402e' : '#e2e8f0'}`,
+                  background: areaType === key ? '#02402e' : '#fff', color: areaType === key ? '#fff' : '#64748b',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>สถานะเริ่มต้น</label>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {Object.entries(STATUS_STYLE).map(([key, s]) => (
+                <button key={key} onClick={() => setStatus(key)} style={{
+                  padding: '10px 18px', borderRadius: 9, border: `1.5px solid ${status === key ? s.color : '#e2e8f0'}`,
+                  background: status === key ? s.bg : '#fff', color: status === key ? s.color : '#64748b',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4 }}>{s.icon}</span>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Titles */}
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Title (TH)</label>
+            <input value={titleTh} onChange={e => setTitleTh(e.target.value)} placeholder="คอนโดให้เช่า BTS นานา" style={inp}
+              onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Title (EN)</label>
+            <input value={titleEn} onChange={e => setTitleEn(e.target.value)} placeholder="Condo for Rent BTS Nana" style={inp}
+              onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>หมายเหตุ</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+              placeholder="บันทึกเพิ่มเติม..."
+              style={{ ...inp, resize: 'vertical' }}
+              onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+          </div>
+
+          {error && <div style={{ padding: '10px 13px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>{error}</div>}
+        </div>
+
+        <div style={{ padding: '18px 28px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
+          <button onClick={create} disabled={saving || !slug.trim()} style={{ flex: 2, padding: '14px', borderRadius: 11, border: 'none', background: (saving || !slug.trim()) ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 600, cursor: (saving || !slug.trim()) ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {saving ? 'กำลังเพิ่ม...' : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6 }}>add</span>เพิ่มหน้า SEO</>}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Delete Modal ──────────────────────────────────────────────────────────────
+function DeleteModal({ page, onClose, onDeleted }: { page: SeoPage; onClose: () => void; onDeleted: () => void }) {
+  const [deleting, setDeleting] = useState(false)
+  const [error,    setError]    = useState('')
+
+  async function confirmDelete() {
+    setDeleting(true); setError('')
+    try {
+      const token = await getToken()
+      const r = await fetch(`/api/dashboard/seo?id=${page.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'Delete failed')
+      onDeleted(); onClose()
+    } catch (e: any) { setError(e.message) }
+    setDeleting(false)
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.3)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '32px', width: 420, boxShadow: '0 20px 60px rgba(2,64,46,0.2)' }}>
+        <div style={{ width: 52, height: 52, borderRadius: 14, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+          <span className="msym" style={{ fontSize: 28, color: '#dc2626', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>delete</span>
+        </div>
+        <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#02402e' }}>ลบหน้า SEO นี้?</h3>
+        <p style={{ margin: '0 0 6px', fontSize: 14, color: '#64748b' }}>คุณกำลังจะลบหน้า:</p>
+        <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#048c73', background: '#f0fdf4', padding: '8px 12px', borderRadius: 8, marginBottom: 8 }}>/{page.slug}</div>
+        {page.title_th && <p style={{ margin: '0 0 12px', fontSize: 13, color: '#94a3b8' }}>{page.title_th}</p>}
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#dc2626', fontWeight: 500 }}>การกระทำนี้ไม่สามารถยกเลิกได้</p>
+        {error && <div style={{ padding: '10px 13px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
+          <button onClick={confirmDelete} disabled={deleting} style={{ flex: 1, padding: '13px', borderRadius: 11, border: 'none', background: deleting ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 15, fontWeight: 600, cursor: deleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {deleting ? 'กำลังลบ...' : 'ลบออก'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function SeoPage() {
   const [pages,       setPages]       = useState<SeoPage[]>([])
@@ -182,7 +348,9 @@ export default function SeoPage() {
   const [search,      setSearch]      = useState('')
   const [typeFilter,  setTypeFilter]  = useState<string>('all')
   const [statusFilt,  setStatusFilt]  = useState<string>('all')
-  const [editingPage, setEditingPage] = useState<SeoPage | null>(null)
+  const [editingPage,  setEditingPage]  = useState<SeoPage | null>(null)
+  const [deletingPage, setDeletingPage] = useState<SeoPage | null>(null)
+  const [addingNew,    setAddingNew]    = useState(false)
 
   async function load() {
     setLoading(true)
@@ -230,7 +398,9 @@ export default function SeoPage() {
     <div style={{ fontFamily: "'Prompt', -apple-system, sans-serif" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      {editingPage && <EditDrawer page={editingPage} onClose={() => setEditingPage(null)} onSaved={load} />}
+      {addingNew    && <AddDrawer onClose={() => setAddingNew(false)} onSaved={load} />}
+      {deletingPage && <DeleteModal page={deletingPage} onClose={() => setDeletingPage(null)} onDeleted={load} />}
+      {editingPage  && <EditDrawer page={editingPage}  onClose={() => setEditingPage(null)}  onSaved={load} />}
 
       {/* Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -238,12 +408,18 @@ export default function SeoPage() {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 3px', color: '#02402e' }}>SEO Pages Tracker</h1>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ติดตามสถานะหน้า SEO ทุกพื้นที่ในกรุงเทพ · {pages.length} หน้า</p>
         </div>
-        {avgScore !== null && (
-          <div style={{ padding: '10px 20px', borderRadius: 12, background: '#f8faf9', border: '1px solid #eef0ef', textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: avgScore >= 80 ? '#15803d' : avgScore >= 50 ? '#a16207' : '#dc2626' }}>{avgScore}</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>คะแนนเฉลี่ย</div>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={() => setAddingNew(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '11px 20px', borderRadius: 11, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+            <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>add</span>
+            เพิ่มหน้า SEO
+          </button>
+          {avgScore !== null && (
+            <div style={{ padding: '10px 20px', borderRadius: 12, background: '#f8faf9', border: '1px solid #eef0ef', textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: avgScore >= 80 ? '#15803d' : avgScore >= 50 ? '#a16207' : '#dc2626' }}>{avgScore}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>คะแนนเฉลี่ย</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI */}
@@ -368,9 +544,14 @@ export default function SeoPage() {
                             : <span style={{ color: '#cbd5e1', fontSize: 12 }}>ว่าง</span>}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <button onClick={() => setEditingPage(p)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid #048c73', background: '#eaf6f1', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                            <span className="msym" style={{ fontSize: 13, marginRight: 4 }}>edit</span>แก้ไข
-                          </button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => setEditingPage(p)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid #048c73', background: '#eaf6f1', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                              <span className="msym" style={{ fontSize: 13, marginRight: 4 }}>edit</span>แก้ไข
+                            </button>
+                            <button onClick={() => setDeletingPage(p)} style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>delete</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
