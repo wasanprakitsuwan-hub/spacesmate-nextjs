@@ -2255,13 +2255,13 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
     setDeleting(null)
   }
 
-  const allTypes = Array.from(new Set([...staticProperties.map(p => p.propertyType), ...dbListings.map(p => p.property_type)]))
+  const allTypes = Array.from(new Set([...staticProperties.map(p => p.propertyType.toLowerCase()), ...dbListings.map(p => p.property_type)]))
   const ok = (title: string, type: string, loc: string) => {
     if (typeFilter && type !== typeFilter) return false
     if (search) { const q = search.toLowerCase(); return title.toLowerCase().includes(q) || loc.toLowerCase().includes(q) }
     return true
   }
-  const filteredStatic = staticProperties.filter(p => ok(p.title, p.propertyType, p.neighborhood + p.address))
+  const filteredStatic = staticProperties.filter(p => ok(p.title, p.propertyType.toLowerCase(), p.neighborhood + p.address))
   const filteredDb     = dbListings.filter(p => ok(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
 
   return (
