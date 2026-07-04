@@ -133,6 +133,16 @@ function SubmitNewForm() {
   const [error, setError]         = useState<string | null>(null)
   const [consent, setConsent]     = useState(false)
 
+  // ── Promo code state ──────────────────────────────────────────────────────
+  const [promoInput,  setPromoInput]  = useState('')
+  const [promoStatus, setPromoStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
+  const [promoData,   setPromoData]   = useState<{
+    promotionCodeId: string
+    discountTHB?:    number
+    percentOff?:     number
+  } | null>(null)
+  const [promoError,  setPromoError]  = useState('')
+
   // ── Image upload state ────────────────────────────────────────────────────
   const [uploadingCount, setUploadingCount] = useState(0)
   const [uploadError, setUploadError]       = useState<string | null>(null)
@@ -199,6 +209,32 @@ function SubmitNewForm() {
     setForm(prev => ({ ...prev, images: prev.images.filter(u => u !== url) }))
   }
 
+  async function applyPromo() {
+    const code = promoInput.trim().toUpperCase()
+    if (!code) return
+    setPromoStatus('checking')
+    setPromoError('')
+    setPromoData(null)
+    try {
+      const res  = await fetch('/api/stripe/validate-promo', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ code }),
+      })
+      const json = await res.json()
+      if (json.valid) {
+        setPromoStatus('valid')
+        setPromoData({ promotionCodeId: json.promotionCodeId, discountTHB: json.discountTHB, percentOff: json.percentOff })
+      } else {
+        setPromoStatus('invalid')
+        setPromoError(json.error || 'โค้ดไม่ถูกต้อง')
+      }
+    } catch {
+      setPromoStatus('invalid')
+      setPromoError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+    }
+  }
+
   // ── Condo autocomplete handlers ───────────────────────────────────────────
   function onTitleChange(val: string) {
     set('title', val)
@@ -239,7 +275,10 @@ function SubmitNewForm() {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          promotionCodeId: promoData?.promotionCodeId ?? '',
+        }),
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || 'Server error')
@@ -252,7 +291,13 @@ function SubmitNewForm() {
     // Note: don't setLoading(false) on success — page is redirecting to Stripe
   }
 
-  const selectedPkg = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
+  const selectedPkg  = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
+
+  // Compute final price after promo discount
+  const discountTHB = promoData
+    ? (promoData.discountTHB ?? Math.round(selectedPkg.price * (promoData.percentOff ?? 0) / 100))
+    : 0
+  const finalPrice = Math.max(0, selectedPkg.price - discountTHB)
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
@@ -623,14 +668,70 @@ function SubmitNewForm() {
                 </div>
               </div>
 
+              {/* ── Promo code ─────────────────────────────────────────────── */}
+              <div style={{ marginTop: 22 }}>
+                <label style={labelStyle}>โค้ดส่วนลด (ถ้ามี)</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={promoInput}
+                    onChange={e => {
+                      setPromoInput(e.target.value.toUpperCase())
+                      if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoData(null); setPromoError('') }
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                    placeholder="เช่น FREEMONTH"
+                    disabled={promoStatus === 'valid'}
+                    style={{ ...fieldStyle, flex: 1, letterSpacing: 1.5, fontWeight: 600,
+                      borderColor: promoStatus === 'valid' ? '#048c73' : promoStatus === 'invalid' ? '#dc2626' : '#eef0ef',
+                      background: promoStatus === 'valid' ? '#f0fdf4' : '#fff',
+                    }}
+                    onFocus={focusOn} onBlur={focusOff}
+                  />
+                  {promoStatus === 'valid' ? (
+                    <button type="button"
+                      onClick={() => { setPromoStatus('idle'); setPromoInput(''); setPromoData(null); setPromoError('') }}
+                      style={{ padding: '10px 16px', borderRadius: 12, border: '1px solid #eef0ef', background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      ลบ
+                    </button>
+                  ) : (
+                    <button type="button" onClick={applyPromo} disabled={promoStatus === 'checking' || !promoInput.trim()}
+                      style={{ padding: '10px 18px', borderRadius: 12, border: 'none', background: promoInput.trim() ? '#02402e' : '#e2e8f0', color: promoInput.trim() ? '#fff' : '#94a3b8', fontWeight: 600, fontSize: 13, cursor: promoInput.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap', transition: 'all .15s' }}>
+                      {promoStatus === 'checking' ? (
+                        <span className="msym" style={{ fontSize: 16, animation: 'spin 1s linear infinite' }}>autorenew</span>
+                      ) : 'ใช้โค้ด'}
+                    </button>
+                  )}
+                </div>
+                {promoStatus === 'valid' && promoData && (
+                  <p style={{ marginTop: 6, fontSize: 13, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
+                    ส่วนลด ฿{discountTHB.toLocaleString()} — ราคาที่ต้องชำระ ฿{finalPrice.toLocaleString()}
+                  </p>
+                )}
+                {promoStatus === 'invalid' && promoError && (
+                  <p style={{ marginTop: 6, fontSize: 13, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>error</span>
+                    {promoError}
+                  </p>
+                )}
+              </div>
+
               {/* Package summary */}
-              <div style={{ marginTop: 22, background: 'linear-gradient(135deg,#eaf6f1,#d1fae5)', border: '1px solid rgba(4,140,115,0.2)', borderRadius: 16, padding: '18px 22px' }}>
+              <div style={{ marginTop: 16, background: 'linear-gradient(135deg,#eaf6f1,#d1fae5)', border: '1px solid rgba(4,140,115,0.2)', borderRadius: 16, padding: '18px 22px' }}>
                 <p style={{ color: '#048c73', fontWeight: 700, fontSize: 15, margin: '0 0 2px' }}>
                   <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>check_circle</span>
                   แพ็กเกจ {selectedPkg.name} — {selectedPkg.durationLabel}
                 </p>
                 <p style={{ color: '#94a3b8', fontSize: 12.5, margin: 0 }}>
-                  หลังกด &ldquo;ชำระเงิน&rdquo; ระบบจะพาไปยัง Stripe เพื่อชำระ {selectedPkg.priceLabel} — เผยแพร่ทันที
+                  {promoStatus === 'valid' ? (
+                    <>
+                      ราคาปกติ <span style={{ textDecoration: 'line-through' }}>฿{selectedPkg.price.toLocaleString()}</span>
+                      {' '}→{' '}
+                      <strong style={{ color: '#048c73' }}>฿{finalPrice.toLocaleString()}</strong> — เผยแพร่ทันทีหลังชำระ
+                    </>
+                  ) : (
+                    <>หลังกด &ldquo;ชำระเงิน&rdquo; ระบบจะพาไปยัง Stripe เพื่อชำระ {selectedPkg.priceLabel} — เผยแพร่ทันที</>
+                  )}
                 </p>
               </div>
 

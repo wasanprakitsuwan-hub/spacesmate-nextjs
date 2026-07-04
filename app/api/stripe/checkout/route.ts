@@ -5,7 +5,8 @@ import { createServerClient } from '@/lib/supabase'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const packageId: string = body.packageId || 'basic'
+    const packageId:       string = body.packageId       || 'basic'
+    const promotionCodeId: string = body.promotionCodeId || ''
 
     const priceId = STRIPE_PRICES[packageId]
     if (!priceId) {
@@ -86,7 +87,11 @@ export async function POST(req: NextRequest) {
       },
       success_url: `${siteUrl}/submit/success?session_id={CHECKOUT_SESSION_ID}&id=${submissionId}`,
       cancel_url:  `${siteUrl}/submit/cancel?id=${submissionId}`,
-      allow_promotion_codes: true,
+      // If a promo code was validated on our page, apply it directly.
+      // Otherwise let Stripe show the promo code field at checkout.
+      ...(promotionCodeId
+        ? { discounts: [{ promotion_code: promotionCodeId }] }
+        : { allow_promotion_codes: true }),
       locale: 'auto',
       custom_text: {
         submit: {
