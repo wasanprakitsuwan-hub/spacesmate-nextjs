@@ -131,6 +131,7 @@ function SubmitNewForm() {
   const [submitted, setSubmitted] = useState(false)
   const [submittedPkg, setSubmittedPkg] = useState<string>(initialPkg)
   const [error, setError]         = useState<string | null>(null)
+  const [consent, setConsent]     = useState(false)
 
   // ── Image upload state ────────────────────────────────────────────────────
   const [uploadingCount, setUploadingCount] = useState(0)
@@ -641,6 +642,26 @@ function SubmitNewForm() {
             </div>
           )}
 
+          {/* ── Consent tick (last step only) ───────────────────────────── */}
+          {step === STEPS.length - 1 && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={e => setConsent(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: '#02402e', flexShrink: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+                ฉันยืนยันว่าฉันเป็นเจ้าของหรือมีสิทธิ์ในการลงประกาศทรัพย์สินนี้
+                และยอมรับ{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#048c73', fontWeight: 600, textDecoration: 'underline' }}>ข้อกำหนดการใช้งาน</a>
+                {' '}และ{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#048c73', fontWeight: 600, textDecoration: 'underline' }}>นโยบายความเป็นส่วนตัว</a>
+                {' '}ของ SpacesMate
+              </span>
+            </label>
+          )}
+
           {/* ── Navigation buttons ──────────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 12, marginTop: 26, justifyContent: 'space-between' }}>
             {/* Back: step 0 → /submit (change package), step > 0 → previous step */}
@@ -662,8 +683,9 @@ function SubmitNewForm() {
                 ถัดไป<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </button>
             ) : (
-              <button type="button" onClick={handleSubmit} disabled={loading}
-                style={{ background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={handleSubmit} disabled={loading || !consent}
+                title={!consent ? 'กรุณายืนยันเงื่อนไขก่อนชำระเงิน' : undefined}
+                style={{ background: (loading || !consent) ? '#94a3b8' : '#02402e', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: (loading || !consent) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background .2s' }}>
                 {loading ? (
                   <><span className="msym" style={{ fontSize: 18, animation: 'spin 1s linear infinite' }}>autorenew</span>กำลังโหลด Stripe...</>
                 ) : (
