@@ -14,17 +14,18 @@ const PLANS = [
     description: 'สำหรับเจ้าของที่ต้องการเริ่มต้น ทดลองใช้งานก่อนได้',
     highlight: false,
     badge: null as string | null,
-    maxImages: '8 รูป',
+    savings: null as string | null,
+    maxImages: '5 รูป',
     allowVideo: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 8 รูป',
+      'รูปภาพสูงสุด 5 รูป',
       'แสดงผล 1 เดือน',
       'เผยแพร่ทันทีหลังชำระ',
       'ต่ออายุได้ทุกเดือน',
     ],
     cta: 'ลงประกาศ ฿299',
-    ctaHref: '/submit/new',
+    ctaHref: '/submit/new?package=basic',
   },
   {
     name: 'Standard',
@@ -33,17 +34,17 @@ const PLANS = [
     description: 'เหมาะสำหรับเจ้าของที่ต้องการลงประกาศต่อเนื่อง 3 เดือน',
     highlight: false,
     badge: 'ยอดนิยม' as string | null,
-    maxImages: '12 รูป',
+    savings: '22%' as string | null,
+    maxImages: '10 รูป',
     allowVideo: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 12 รูป',
+      'รูปภาพสูงสุด 10 รูป',
       'แสดงผล 3 เดือน',
       'เผยแพร่ทันทีหลังชำระ',
-      'ประหยัดกว่า Basic 22%',
     ],
     cta: 'ลงประกาศ ฿699',
-    ctaHref: '/submit/new',
+    ctaHref: '/submit/new?package=standard',
   },
   {
     name: 'Premium',
@@ -52,6 +53,7 @@ const PLANS = [
     description: 'สำหรับเจ้าของที่ต้องการประกาศตลอดทั้งปี พร้อมอัปโหลดวิดีโอ',
     highlight: true,
     badge: 'คุ้มที่สุด' as string | null,
+    savings: '30%' as string | null,
     maxImages: '20 รูป + วิดีโอ',
     allowVideo: true,
     features: [
@@ -60,21 +62,20 @@ const PLANS = [
       'อัปโหลดวิดีโอได้',
       'แสดงผล 12 เดือน',
       'เผยแพร่ทันทีหลังชำระ',
-      'ประหยัดกว่า Basic 30%',
     ],
     cta: 'ลงประกาศ ฿2,499',
-    ctaHref: '/submit/new',
+    ctaHref: '/submit/new?package=premium',
   },
 ]
 
 const FAQS = [
   {
     q: '1 แพ็กเกจ = 1 ประกาศ หมายความว่าอย่างไร?',
-    a: 'แต่ละแพ็กเกจรองรับ 1 ประกาศ ถ้าต้องการลงหลายห้องหรือหลายทรัพย์ สามารถซื้อหลายแพ็กเกจแยกกันได้ ไม่จำกัดจำนวน หรือสอบถาม Building Bundle สำหรับราคาพิเศษ 5 ประกาศขึ้นไป',
+    a: 'แต่ละแพ็กเกจรองรับ 1 ประกาศ ถ้าต้องการลงหลายห้องหรือหลายทรัพย์ สามารถซื้อหลายแพ็กเกจแยกกันได้ไม่จำกัดจำนวน แต่ละประกาศนับและจัดการแยกกันในแดชบอร์ด',
   },
   {
     q: 'ชำระเงินอย่างไร?',
-    a: 'หลังกดลงประกาศ ทีมงาน SpacesMate จะติดต่อผ่าน LINE เพื่อยืนยันและแจ้งช่องทางชำระ (โอนบัญชี / PromptPay) ประกาศจะเผยแพร่ทันทีหลังยืนยันการชำระ',
+    a: 'ชำระผ่าน Stripe — รองรับบัตรเครดิต/เดบิตทุกธนาคาร ปลอดภัย 100% ประกาศจะเผยแพร่ทันทีอัตโนมัติหลังชำระสำเร็จ ไม่ต้องรอทีมงาน',
   },
   {
     q: 'แพ็กเกจหมดอายุแล้ว ต่ออายุหรืออัปเกรดได้ไหม?',
@@ -83,10 +84,6 @@ const FAQS = [
   {
     q: 'SpacesMate ต่างจากเว็บประกาศอสังหาทั่วไปอย่างไร?',
     a: 'SpacesMate ใช้ระบบ Fair Rotation — ประกาศจะหมุนขึ้นหน้าแรกแบบสุ่มโดยอัตโนมัติ ไม่มีระบบจ่ายเงินเพื่อขึ้นอันดับ ทุกประกาศมีโอกาสเท่าเทียมกัน',
-  },
-  {
-    q: 'Building Bundle คืออะไร?',
-    a: 'แพ็กเกจพิเศษสำหรับเจ้าของอาคารหรือนายหน้าที่มี 5 ห้องขึ้นไป ราคา ฿9,999 สำหรับ 5 ประกาศ ระยะเวลา 12 เดือน (ประหยัดกว่า 5 × Premium ถึง ฿2,496) ติดต่อทีมงานผ่าน LINE @spacesmate',
   },
 ]
 
@@ -104,7 +101,21 @@ export default function PricingPage() {
 
       {/* Plans */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+
+        {/* SM299 Promo banner */}
+        <div style={{ maxWidth: 860, margin: '0 auto 32px', padding: '14px 22px', background: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: '1.5px solid #fde68a', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span className="msym" style={{ fontSize: 26, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>sell</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#92400e' }}>ลงประกาศฟรีเดือนแรก!</p>
+            <p style={{ margin: '3px 0 0', fontSize: 13.5, color: '#78350f' }}>
+              ใช้โค้ด{' '}
+              <strong style={{ letterSpacing: 2, color: '#02402e', background: '#fff', padding: '2px 10px', borderRadius: 7, fontSize: 14, border: '1px solid #d97f11', fontFamily: 'monospace' }}>SM299</strong>
+              {' '}ขั้นตอนสุดท้าย — ลดทันที ฿299 สำหรับแพ็กเกจแรก
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
@@ -122,9 +133,16 @@ export default function PricingPage() {
               <div className="mb-5">
                 <h3 className="font-bold text-spacemate-brandDark text-lg mb-1">{plan.name}</h3>
                 <p className="text-gray-400 text-xs mb-4">{plan.description}</p>
-                <div className="flex items-end gap-1 mb-3">
-                  <span className="text-3xl font-bold text-spacemate-brandDark">฿{plan.price}</span>
-                  <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+                    <span className="text-3xl font-bold text-spacemate-brandDark">฿{plan.price}</span>
+                    <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
+                  </div>
+                  {plan.savings && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: '#048c73', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap', marginBottom: 2 }}>
+                      ประหยัด {plan.savings}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f7f9f8', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, color: '#048c73', fontWeight: 600 }}>
                   <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>photo_camera</span>{plan.maxImages}{plan.allowVideo && <><span style={{ margin: '0 4px' }}>·</span><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 2 }}>videocam</span>วิดีโอ</>}
@@ -154,53 +172,6 @@ export default function PricingPage() {
               </Link>
             </div>
           ))}
-        </div>
-
-        {/* Building Bundle */}
-        <div className="mb-16 rounded-2xl border border-spacemate-brandDark/20 bg-gradient-to-r from-spacemate-brandDark to-spacemate-brandTeal p-8 text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #d97f11 0%, transparent 60%)' }} />
-          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
-            <div className="flex-1">
-              <span className="inline-block bg-spacemate-brandGold text-white text-xs font-bold px-3 py-1 rounded-full mb-3">สำหรับเจ้าของอาคาร & นายหน้า</span>
-              <h2 className="text-2xl font-bold mb-2">Building Bundle</h2>
-              <p className="text-white/70 text-sm leading-relaxed mb-4">มี 5 ห้องขึ้นไป? รับส่วนลดพิเศษทันที — ซื้อ 5 ประกาศ Premium รวมกันในราคาเดียว ประหยัดทันที ฿2,496</p>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>5 ประกาศ</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>20 รูป + วิดีโอ ต่อประกาศ</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>แสดงผล 12 เดือน</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-spacemate-brandGold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Account Manager ส่วนตัว</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex-shrink-0 text-center">
-              <div className="mb-1">
-                <span className="text-white/50 text-sm line-through">฿12,495</span>
-              </div>
-              <div className="flex items-end gap-1 justify-center mb-1">
-                <span className="text-4xl font-bold">฿9,999</span>
-              </div>
-              <p className="text-white/60 text-xs mb-5">5 ประกาศ / 12 เดือน</p>
-              <a
-                href="https://line.me/R/ti/p/@spacesmate"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-white text-spacemate-brandDark font-bold text-sm py-3 px-8 rounded-xl hover:bg-spacemate-brandGold hover:text-white transition-all"
-              >
-                ติดต่อผ่าน LINE
-              </a>
-            </div>
-          </div>
         </div>
 
         {/* FAQs */}
