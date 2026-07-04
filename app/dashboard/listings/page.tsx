@@ -1295,7 +1295,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
         </div>
         {type === 'fixed' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="number" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="6.50"
+            <input type="text" inputMode="decimal" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="6.50"
               style={{ ...SINP, width: 130 }} />
             <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท / หน่วย</span>
           </div>
@@ -1306,7 +1306,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div>
                   <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาต่อหน่วย (บาท)</label>
-                  <input type="number" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="3.50"
+                  <input type="text" inputMode="decimal" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="3.50"
                     style={{ ...SINP, width: 120 }} />
                 </div>
                 <span style={{ fontSize: 18, color: '#c7d2d0', paddingBottom: 4 }}>×</span>
@@ -1315,7 +1315,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div>
                   <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาขั้นต่ำ (บาท/เดือน)</label>
-                  <input type="number" value={minRate} onChange={e => onMinRate(e.target.value)} placeholder="200"
+                  <input type="text" inputMode="decimal" value={minRate} onChange={e => onMinRate(e.target.value)} placeholder="200"
                     style={{ ...SINP, width: 130 }} />
                 </div>
               </div>
