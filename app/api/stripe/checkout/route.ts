@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         contact_name:  body.contactName   || null,
         contact_phone: body.contactPhone  || null,
         contact_email: body.contactEmail  || null,
+        images:        Array.isArray(body.images) ? body.images : [],
         package_type:  packageId,
         status:        'pending_payment', // activated by webhook after payment
       }])

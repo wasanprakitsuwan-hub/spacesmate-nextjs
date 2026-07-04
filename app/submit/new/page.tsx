@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useRef, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { searchCondoRegistry, type CondoEntry } from '@/lib/condo-registry'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -104,6 +105,7 @@ interface FormData {
   description: string; amenities: string[]
   address: string; province: string; district: string; subdistrict: string; postcode: string
   contactName: string; contactPhone: string; contactEmail: string
+  images: string[]   // uploaded image URLs
 }
 
 const INITIAL: FormData = {
@@ -113,6 +115,7 @@ const INITIAL: FormData = {
   description: '', amenities: [],
   address: '', province: 'กรุงเทพมหานคร', district: 'คลองเตย', subdistrict: 'คลองเตย', postcode: '',
   contactName: '', contactPhone: '', contactEmail: '',
+  images: [],
 }
 
 // ─── Inner Form (reads URL search params) ─────────────────────────────────────
@@ -129,6 +132,16 @@ function SubmitNewForm() {
   const [submittedPkg, setSubmittedPkg] = useState<string>(initialPkg)
   const [error, setError]         = useState<string | null>(null)
 
+  // ── Image upload state ────────────────────────────────────────────────────
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const [uploadError, setUploadError]       = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // ── Condo autocomplete state ──────────────────────────────────────────────
+  const [condoSuggestions, setCondoSuggestions] = useState<CondoEntry[]>([])
+  const [showSuggestions, setShowSuggestions]   = useState(false)
+  const suggestionBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   function set<K extends keyof FormData>(field: K, value: FormData[K]) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
@@ -140,6 +153,77 @@ function SubmitNewForm() {
         ? prev.amenities.filter(x => x !== a)
         : [...prev.amenities, a],
     }))
+  }
+
+  // ── Image upload handler ──────────────────────────────────────────────────
+  const handleFiles = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setUploadError(null)
+
+    const pkg = PACKAGES.find(p => p.id === form.packageId) ?? PACKAGES[0]
+    const remaining = pkg.maxImages - form.images.length
+    if (remaining <= 0) {
+      setUploadError(`แพ็กเกจ ${pkg.name} อัปโหลดรูปได้สูงสุด ${pkg.maxImages} รูปแล้ว`)
+      return
+    }
+
+    const toUpload = Array.from(files).slice(0, remaining)
+    setUploadingCount(c => c + toUpload.length)
+
+    const results = await Promise.all(
+      toUpload.map(async (file, idx) => {
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('packageId', form.packageId)
+        fd.append('currentCount', String(form.images.length + idx))
+        const res = await fetch('/api/public-upload', { method: 'POST', body: fd })
+        const j   = await res.json()
+        if (!res.ok) throw new Error(j.error || 'Upload failed')
+        return j.url as string
+      })
+    ).catch(err => {
+      setUploadError(err instanceof Error ? err.message : 'อัปโหลดไม่สำเร็จ กรุณาลองใหม่')
+      return [] as string[]
+    })
+
+    setUploadingCount(c => c - toUpload.length)
+    if (results.length > 0) {
+      setForm(prev => ({ ...prev, images: [...prev.images, ...results] }))
+    }
+    // Reset file input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [form.packageId, form.images])
+
+  function removeImage(url: string) {
+    setForm(prev => ({ ...prev, images: prev.images.filter(u => u !== url) }))
+  }
+
+  // ── Condo autocomplete handlers ───────────────────────────────────────────
+  function onTitleChange(val: string) {
+    set('title', val)
+    if (form.type === 'คอนโดมิเนียม') {
+      const suggestions = searchCondoRegistry(val, 7)
+      setCondoSuggestions(suggestions)
+      setShowSuggestions(suggestions.length > 0)
+    }
+  }
+
+  function selectCondo(entry: CondoEntry) {
+    set('title', entry.name)
+    setCondoSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  function onTitleBlur() {
+    suggestionBlurTimer.current = setTimeout(() => setShowSuggestions(false), 180)
+  }
+
+  function onTitleFocus(e: React.FocusEvent<HTMLInputElement>) {
+    focusOn(e)
+    if (suggestionBlurTimer.current) clearTimeout(suggestionBlurTimer.current)
+    if (form.type === 'คอนโดมิเนียม' && condoSuggestions.length > 0) {
+      setShowSuggestions(true)
+    }
   }
 
   async function handleSubmit() {
@@ -251,12 +335,47 @@ function SubmitNewForm() {
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>ข้อมูลทรัพย์สิน</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-                <div>
-                  <label style={labelStyle}>ชื่อประกาศ *</label>
-                  <input style={fieldStyle} value={form.title}
-                    onChange={e => set('title', e.target.value)}
-                    placeholder="เช่น คอนโด เมโทร ลักซ์ พระราม 4 ห้องสตูดิโอ"
-                    onFocus={focusOn} onBlur={focusOff} />
+                <div style={{ position: 'relative' }}>
+                  <label style={labelStyle}>
+                    ชื่อประกาศ *
+                    {form.type === 'คอนโดมิเนียม' && (
+                      <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 6 }}>— พิมพ์ชื่อคอนโดเพื่อดูคำแนะนำ</span>
+                    )}
+                  </label>
+                  <input
+                    style={fieldStyle}
+                    value={form.title}
+                    onChange={e => onTitleChange(e.target.value)}
+                    placeholder={form.type === 'คอนโดมิเนียม' ? 'เช่น Lumpini 24, IDEO Q Sukhumvit 36' : 'เช่น อพาร์ทเม้นท์ศรีนครินทร์ ห้องสตูดิโอ'}
+                    onFocus={onTitleFocus}
+                    onBlur={e => { focusOff(e); onTitleBlur() }}
+                  />
+                  {showSuggestions && condoSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                      background: '#fff', border: '1px solid #eef0ef', borderRadius: 12,
+                      boxShadow: '0 8px 24px -8px rgba(2,64,46,0.18)', marginTop: 4, overflow: 'hidden',
+                    }}>
+                      {condoSuggestions.map(entry => (
+                        <button
+                          key={entry.name}
+                          type="button"
+                          onMouseDown={() => selectCondo(entry)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            width: '100%', padding: '11px 14px', background: 'none', border: 'none',
+                            textAlign: 'left', cursor: 'pointer', fontSize: 14, color: '#231f20',
+                            borderBottom: '1px solid #f4f6f5', transition: 'background .15s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f0faf6'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
+                        >
+                          <span className="msym" style={{ fontSize: 16, color: '#048c73', flexShrink: 0 }}>apartment</span>
+                          <span>{entry.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="sm-form2">
@@ -390,12 +509,84 @@ function SubmitNewForm() {
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 22px', color: '#02402e' }}>รูปภาพ & ข้อมูลติดต่อ</h2>
 
               {/* Photo upload */}
-              <div style={{ border: '2px dashed #048c73', borderRadius: 16, padding: '36px 24px', textAlign: 'center', cursor: 'pointer', background: '#f7f9f8', marginBottom: 24 }}
-                onClick={() => document.getElementById('img-input')?.click()}>
-                <span className="msym" style={{ fontSize: 44, color: '#048c73', opacity: .5 }}>photo_library</span>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '12px 0 6px' }}>ลากรูปภาพมาวางที่นี่</p>
-                <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>หรือคลิกเพื่อเลือกไฟล์ · JPG, PNG · สูงสุด {selectedPkg.maxImages} รูป</p>
-                <input id="img-input" type="file" multiple accept="image/*" style={{ display: 'none' }} />
+              <div style={{ marginBottom: 20 }}>
+                {/* Drop zone — only show when below limit */}
+                {form.images.length < selectedPkg.maxImages && (
+                  <div
+                    style={{
+                      border: `2px dashed ${uploadingCount > 0 ? '#d97f11' : '#048c73'}`,
+                      borderRadius: 16, padding: '28px 24px', textAlign: 'center',
+                      cursor: uploadingCount > 0 ? 'wait' : 'pointer',
+                      background: uploadingCount > 0 ? '#fffbf0' : '#f7f9f8', marginBottom: 12,
+                    }}
+                    onClick={() => { if (uploadingCount === 0) fileInputRef.current?.click() }}
+                    onDragOver={e => { e.preventDefault() }}
+                    onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
+                  >
+                    {uploadingCount > 0 ? (
+                      <>
+                        <span className="msym" style={{ fontSize: 40, color: '#d97f11', animation: 'spin 1s linear infinite', display: 'block' }}>autorenew</span>
+                        <p style={{ fontSize: 14.5, fontWeight: 600, color: '#d97f11', margin: '10px 0 4px' }}>
+                          กำลังอัปโหลด {uploadingCount} รูป...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="msym" style={{ fontSize: 44, color: '#048c73', opacity: .5 }}>photo_library</span>
+                        <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '10px 0 5px' }}>คลิกหรือลากรูปภาพมาวางที่นี่</p>
+                        <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>
+                          JPG, PNG, WebP · สูงสุด 30 MB / รูป · เหลือ {selectedPkg.maxImages - form.images.length} รูป (แพ็กเกจ {selectedPkg.name}: {selectedPkg.maxImages} รูป)
+                        </p>
+                      </>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => handleFiles(e.target.files)}
+                    />
+                  </div>
+                )}
+
+                {/* Image limit reached notice */}
+                {form.images.length >= selectedPkg.maxImages && (
+                  <div style={{ padding: '12px 16px', background: '#f0faf6', border: '1px solid #a7f3d0', borderRadius: 12, fontSize: 13.5, color: '#02402e', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73' }}>check_circle</span>
+                    อัปโหลดครบ {selectedPkg.maxImages} รูปแล้ว · <a href="/submit" style={{ color: '#048c73', fontWeight: 600 }}>อัปเกรดแพ็กเกจ</a>เพื่อเพิ่มรูป
+                  </div>
+                )}
+
+                {/* Upload error */}
+                {uploadError && (
+                  <div style={{ padding: '10px 14px', background: '#fff0f0', border: '1px solid #fca5a5', borderRadius: 10, fontSize: 13.5, color: '#dc2626', marginBottom: 10 }}>
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5 }}>warning</span>
+                    {uploadError}
+                  </div>
+                )}
+
+                {/* Preview grid */}
+                {form.images.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(110px,1fr))', gap: 10 }}>
+                    {form.images.map((url, idx) => (
+                      <div key={url} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '1', border: '1px solid #eef0ef' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`รูป ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {idx === 0 && (
+                          <span style={{ position: 'absolute', top: 5, left: 5, background: '#02402e', color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 5 }}>หลัก</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImage(url)}
+                          style={{ position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: 0 }}
+                        >
+                          <span className="msym" style={{ fontSize: 14 }}>close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Contact fields */}

@@ -1,9 +1,28 @@
 'use client'
 
-import { useState, useMemo, useEffect, Suspense } from 'react'
+import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { properties, PRICE_RANGES, type Property } from '@/lib/property-data'
+
+// ── Haversine distance (km) between two lat/lng points ───────────────────────
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const RADIUS_OPTIONS = [
+  { km: 1,   label: 'ภายใน 1 กม.' },
+  { km: 2,   label: 'ภายใน 2 กม.' },
+  { km: 5,   label: 'ภายใน 5 กม.' },
+  { km: 10,  label: 'ภายใน 10 กม.' },
+]
 
 const TYPE_FILTERS = [
   { key: '', label: 'ทุกประเภท' },
@@ -67,6 +86,12 @@ function SearchContent() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [dbListings, setDbListings] = useState<Property[]>([])
 
+  // ── Geolocation state ─────────────────────────────────────────────────────
+  const [userLatLng, setUserLatLng]     = useState<{ lat: number; lng: number } | null>(null)
+  const [radiusKm, setRadiusKm]         = useState<number | null>(null)
+  const [geoLoading, setGeoLoading]     = useState(false)
+  const [geoError, setGeoError]         = useState<string | null>(null)
+
   // Fetch DB listings and merge with static on mount
   useEffect(() => {
     fetch('/api/listings/public')
@@ -76,6 +101,34 @@ function SearchContent() {
       })
       .catch(() => {})
   }, [])
+
+  // ── Geolocation handler ───────────────────────────────────────────────────
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGeoError('เบราว์เซอร์ของคุณไม่รองรับ Geolocation')
+      return
+    }
+    setGeoLoading(true)
+    setGeoError(null)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserLatLng({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        if (!radiusKm) setRadiusKm(2)  // default 2 km
+        setGeoLoading(false)
+      },
+      () => {
+        setGeoError('ไม่สามารถระบุตำแหน่งได้ กรุณาอนุญาต Location')
+        setGeoLoading(false)
+      },
+      { timeout: 8000 },
+    )
+  }, [radiusKm])
+
+  function clearGeo() {
+    setUserLatLng(null)
+    setRadiusKm(null)
+    setGeoError(null)
+  }
 
   const label = activeType ? (TYPE_LABELS[activeType] || activeType) : 'ที่พักทั้งหมด'
 
@@ -103,11 +156,26 @@ function SearchContent() {
     if (range.min > 0 || range.max !== Infinity) {
       list = list.filter(p => p.priceMin >= range.min && p.priceMin <= range.max)
     }
+    // ── Radius filter ───────────────────────────────────────────────────────
+    if (userLatLng && radiusKm) {
+      list = list.filter(p => {
+        const pLat = parseFloat(p.lat || '')
+        const pLng = parseFloat(p.lng || '')
+        if (isNaN(pLat) || isNaN(pLng)) return false
+        return haversineKm(userLatLng.lat, userLatLng.lng, pLat, pLng) <= radiusKm
+      })
+    }
     if (sortBy === 'priceLow') list.sort((a, b) => a.priceMin - b.priceMin)
     else if (sortBy === 'priceHigh') list.sort((a, b) => b.priceMin - a.priceMin)
-    else list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    else if (sortBy === 'nearest' && userLatLng) {
+      list.sort((a, b) => {
+        const dA = haversineKm(userLatLng.lat, userLatLng.lng, parseFloat(a.lat || '0'), parseFloat(a.lng || '0'))
+        const dB = haversineKm(userLatLng.lat, userLatLng.lng, parseFloat(b.lat || '0'), parseFloat(b.lng || '0'))
+        return dA - dB
+      })
+    } else list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     return list
-  }, [activeType, keyword, priceRangeIdx, sortBy, dbListings])
+  }, [activeType, keyword, priceRangeIdx, sortBy, dbListings, userLatLng, radiusKm])
 
   function selectType(t: string) {
     setActiveType(t)
@@ -120,6 +188,7 @@ function SearchContent() {
     setActiveType('')
     setPriceRangeIdx(0)
     setSortBy('recent')
+    clearGeo()
     router.replace('/search')
   }
 
@@ -204,6 +273,51 @@ function SearchContent() {
               </div>
             </div>
 
+            <div style={{ height: 1, background: '#eef0ef', margin: '0 0 20px' }} />
+
+            {/* Geolocation filter */}
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>ตำแหน่งของฉัน</p>
+
+              {!userLatLng ? (
+                <button
+                  onClick={requestLocation}
+                  disabled={geoLoading}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, fontSize: 13.5, fontWeight: 600, cursor: geoLoading ? 'wait' : 'pointer', border: '1.5px solid #048c73', background: '#eaf6f1', color: '#02402e', transition: 'all .2s' }}
+                >
+                  <span className="msym" style={{ fontSize: 18, fontVariationSettings: geoLoading ? "'wght' 300, 'FILL' 0" : "'wght' 400, 'FILL' 1", color: '#048c73', animation: geoLoading ? 'spin 1s linear infinite' : 'none' }}>
+                    {geoLoading ? 'autorenew' : 'near_me'}
+                  </span>
+                  {geoLoading ? 'กำลังระบุตำแหน่ง...' : 'ค้นหาใกล้ฉัน'}
+                </button>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: '#eaf6f1', borderRadius: 9, marginBottom: 8, fontSize: 13, color: '#02402e', fontWeight: 600 }}>
+                    <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73' }}>location_on</span>
+                    ตำแหน่งของคุณ
+                    <button onClick={clearGeo} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <span className="msym" style={{ fontSize: 16 }}>close</span>
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    {RADIUS_OPTIONS.map(opt => {
+                      const on = radiusKm === opt.km
+                      return (
+                        <button key={opt.km} onClick={() => setRadiusKm(opt.km)}
+                          style={{ textAlign: 'left', padding: '8px 12px', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', transition: 'all .2s', border: `1px solid ${on ? '#048c73' : '#eef0ef'}`, background: on ? '#eaf6f1' : '#fff', color: on ? '#02402e' : '#475569', fontWeight: on ? 600 : 400 }}>
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {geoError && (
+                <p style={{ fontSize: 12, color: '#dc2626', margin: '8px 0 0', lineHeight: 1.5 }}>{geoError}</p>
+              )}
+            </div>
+
             <button onClick={resetFilters}
               style={{ width: '100%', marginTop: 6, background: '#f4f6f5', color: '#475569', fontWeight: 500, fontSize: 13.5, border: 'none', borderRadius: 11, padding: '11px 0', cursor: 'pointer', transition: 'all .2s' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e9edeb'}
@@ -215,9 +329,20 @@ function SearchContent() {
           {/* Results */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-              <p style={{ fontSize: 14.5, color: '#475569', margin: 0 }}>
-                พบ <strong className="mono" style={{ color: '#231f20' }}>{results.length}</strong> ประกาศ
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <p style={{ fontSize: 14.5, color: '#475569', margin: 0 }}>
+                  พบ <strong className="mono" style={{ color: '#231f20' }}>{results.length}</strong> ประกาศ
+                </p>
+                {userLatLng && radiusKm && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eaf6f1', border: '1px solid #a7f3d0', borderRadius: 20, padding: '4px 10px', fontSize: 12.5, color: '#02402e', fontWeight: 600 }}>
+                    <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73' }}>near_me</span>
+                    ภายใน {radiusKm} กม.
+                    <button onClick={clearGeo} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex', alignItems: 'center', marginLeft: 2 }}>
+                      <span className="msym" style={{ fontSize: 13 }}>close</span>
+                    </button>
+                  </span>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 13.5, color: '#64748b' }}>เรียงตาม:</span>
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -225,6 +350,7 @@ function SearchContent() {
                   <option value="recent">ล่าสุด</option>
                   <option value="priceLow">ราคาต่ำ - สูง</option>
                   <option value="priceHigh">ราคาสูง - ต่ำ</option>
+                  {userLatLng && <option value="nearest">ใกล้ที่สุด</option>}
                 </select>
               </div>
             </div>
