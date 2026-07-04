@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Build query — super_admin sees everyone, admin sees only landlords
     let query = supabase
       .from('user_profiles')
-      .select('id, email, first_name, last_name, full_name, phone, role, created_at, updated_at')
+      .select('id, email, first_name, last_name, full_name, phone, role, status, created_at, updated_at')
       .order('created_at', { ascending: false })
 
     if (callerRole === 'admin') {
@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
         full_name:    displayName,
         phone:        p.phone      ?? null,
         role:         p.role ?? 'landlord',
+        status:       p.status ?? 'active',
         package:      agg.package,
         created_at:   p.created_at,
         updated_at:   p.updated_at,
@@ -128,7 +129,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { id, first_name, last_name, phone, role } = body
+    const { id, first_name, last_name, phone, role, status } = body
     // Role authorization from verified JWT — never trust client body
     const callerRole = auth.role
 
@@ -146,6 +147,20 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // Validate status changes — super_admin only
+    if (status !== undefined) {
+      if (!['active', 'suspended'].includes(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      if (callerRole !== 'super_admin') {
+        return NextResponse.json({ error: 'Insufficient permissions to change status' }, { status: 403 })
+      }
+      // Cannot suspend yourself
+      if (id === auth.id) {
+        return NextResponse.json({ error: 'Cannot suspend your own account' }, { status: 400 })
+      }
+    }
+
     const supabase = createServerClient()
 
     // Build update payload — only include provided fields
@@ -154,6 +169,7 @@ export async function PATCH(req: NextRequest) {
     if (last_name  !== undefined) updates.last_name  = last_name
     if (phone      !== undefined) updates.phone       = phone
     if (role       !== undefined) updates.role        = role
+    if (status     !== undefined) updates.status      = status
 
     // Also keep full_name in sync
     if (first_name !== undefined || last_name !== undefined) {

@@ -22,11 +22,15 @@ export async function requireAdmin(req: NextRequest): Promise<AuthUser | NextRes
     if (error || !user) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
 
     const svc = createServerClient()
-    const { data: profile } = await svc.from('user_profiles').select('role').eq('id', user.id).single()
+    const { data: profile } = await svc.from('user_profiles').select('role, status').eq('id', user.id).single()
     const role = profile?.role
 
     if (role !== 'admin' && role !== 'super_admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    if (profile?.status === 'suspended') {
+      return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
     }
 
     return { id: user.id, email: user.email!, role: role as AuthUser['role'] }
