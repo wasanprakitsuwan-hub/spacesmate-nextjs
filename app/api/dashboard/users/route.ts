@@ -81,6 +81,45 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// ── DELETE — permanently remove a user (super_admin only) ────────────────────
+// Steps: (1) unpublish their listings, (2) delete user_profile row,
+//         (3) delete Supabase Auth record. Cannot delete own account.
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
+  if (auth.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Super admin access required' }, { status: 403 })
+  }
+
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+    if (id === auth.id) return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
+
+    const supabase = createServerClient()
+
+    // 1. Unpublish all listings owned by this user
+    await supabase
+      .from('properties')
+      .update({ listing_status: 'inactive' })
+      .eq('landlord_id', id)
+
+    // 2. Delete the user_profile row
+    await supabase.from('user_profiles').delete().eq('id', id)
+
+    // 3. Hard-delete from Supabase Auth (requires service role)
+    const { error: authErr } = await supabase.auth.admin.deleteUser(id)
+    if (authErr) throw authErr
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('dashboard/users DELETE error:', err)
+    return NextResponse.json({ error: err.message ?? 'Delete failed' }, { status: 500 })
+  }
+}
+
 // ── PATCH — update user profile fields ───────────────────────────────────────
 // Fields: first_name, last_name, phone, role (super_admin only for role)
 export async function PATCH(req: NextRequest) {

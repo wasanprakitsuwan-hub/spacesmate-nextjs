@@ -50,6 +50,119 @@ function timeAgo(iso: string) {
   return `${Math.floor(days / 30)} เดือนที่แล้ว`
 }
 
+// ── Delete Confirm Modal ──────────────────────────────────────────────────────
+function DeleteConfirmModal({
+  user,
+  onClose,
+  onDeleted,
+}: {
+  user: UserRow
+  onClose: () => void
+  onDeleted: () => void
+}) {
+  const [deleting, setDeleting] = useState(false)
+  const [error,    setError]    = useState('')
+  const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.full_name || user.email
+
+  async function confirm() {
+    setDeleting(true)
+    setError('')
+    try {
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch(`/api/dashboard/users?id=${user.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'Delete failed')
+      onDeleted()
+      onClose()
+    } catch (e: any) {
+      setError(e.message)
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,64,46,0.3)', zIndex: 200, backdropFilter: 'blur(3px)' }} />
+
+      {/* Modal */}
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        width: 420, background: '#fff', borderRadius: 20, zIndex: 201,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.18)', fontFamily: "'Prompt', -apple-system, sans-serif",
+        overflow: 'hidden',
+      }}>
+        {/* Red header bar */}
+        <div style={{ background: '#fef2f2', borderBottom: '1px solid #fecaca', padding: '20px 24px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          <span className="msym" style={{ fontSize: 28, color: '#dc2626', flexShrink: 0, fontVariationSettings: "'wght' 400, 'FILL' 1", marginTop: 2 }}>delete_forever</span>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#991b1b' }}>ลบผู้ใช้งาน</h3>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#b91c1c' }}>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '20px 24px' }}>
+          {/* User info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8faf9', borderRadius: 12, marginBottom: 16 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+              background: ROLE_STYLE[user.role]?.bg ?? '#eaf6f1',
+              color: ROLE_STYLE[user.role]?.color ?? '#048c73',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: 16,
+            }}>
+              {(user.first_name || user.email || '?').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: '#02402e' }}>{displayName}</div>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{user.email}</div>
+            </div>
+          </div>
+
+          {/* Consequences */}
+          <div style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.7 }}>
+            <p style={{ margin: '0 0 8px' }}>การลบจะดำเนินการดังนี้:</p>
+            <ul style={{ margin: 0, paddingLeft: '1.4em' }}>
+              <li>ลบบัญชีออกจากระบบทั้งหมด (ถาวร)</li>
+              <li>ประกาศทั้งหมด <strong style={{ color: '#c2410c' }}>{user.listings.total} รายการ</strong> จะถูกซ่อนจากเว็บไซต์โดยอัตโนมัติ</li>
+              <li>ผู้ใช้จะไม่สามารถเข้าสู่ระบบได้อีก</li>
+            </ul>
+          </div>
+
+          {error && (
+            <div style={{ marginTop: 14, padding: '10px 13px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f4', display: 'flex', gap: 10 }}>
+          <button onClick={onClose} disabled={deleting} style={{
+            flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0',
+            background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>ยกเลิก</button>
+          <button onClick={confirm} disabled={deleting} style={{
+            flex: 2, padding: '11px', borderRadius: 11, border: 'none',
+            background: deleting ? '#94a3b8' : '#dc2626', color: '#fff',
+            fontSize: 14, fontWeight: 600, cursor: deleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            {deleting
+              ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .8s linear infinite', display: 'inline-block' }} />กำลังลบ...</>
+              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>delete_forever</span>ยืนยันการลบ</>
+            }
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ── Edit Drawer ───────────────────────────────────────────────────────────────
 function EditDrawer({
   user,
@@ -321,12 +434,15 @@ export default function UsersPage() {
   const [callerRole,   setCallerRole]   = useState<CallerRole>('admin')
   const [totalListings,setTotalListings]= useState(0)
   const [editingUser,  setEditingUser]  = useState<UserRow | null>(null)
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null)
+  const [myId,         setMyId]         = useState<string>('')
 
   // Determine own role via service-role API — bypasses RLS
   useEffect(() => {
     const supabase = createBrowserClient()
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return
+      setMyId(session.user.id)
       try {
         const r = await fetch('/api/auth/role', {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -409,6 +525,14 @@ export default function UsersPage() {
           callerRole={callerRole}
           onClose={() => setEditingUser(null)}
           onSaved={load}
+        />
+      )}
+
+      {deletingUser && (
+        <DeleteConfirmModal
+          user={deletingUser}
+          onClose={() => setDeletingUser(null)}
+          onDeleted={() => { setDeletingUser(null); load() }}
         />
       )}
 
@@ -570,6 +694,15 @@ export default function UsersPage() {
                               <a href={`/dashboard/listings?landlord=${u.id}`} style={{ padding: '5px 9px', borderRadius: 7, background: '#f1f5f9', color: '#64748b', fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                                 <span className="msym" style={{ fontSize: 13, marginRight: 4 }}>home</span>ประกาศ
                               </a>
+                            )}
+                            {callerRole === 'super_admin' && u.id !== myId && (
+                              <button
+                                onClick={() => setDeletingUser(u)}
+                                title="ลบผู้ใช้งาน"
+                                style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>delete</span>
+                              </button>
                             )}
                           </div>
                         </td>
