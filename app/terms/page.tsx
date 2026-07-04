@@ -89,7 +89,7 @@ SpacesMate ไม่รับผิดชอบต่อความเสีย
     content: `หากมีคำถามเกี่ยวกับเงื่อนไขการใช้งาน:
 
 บริษัท เสปซเวิร์คส จำกัด (Space Works Co., Ltd.)
-อีเมล: legal@spacesmate.com
+อีเมล: support@spacesmate.com
 เว็บไซต์: www.spacesmate.com
 ที่อยู่: Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง เขตคลองเตย กรุงเทพฯ 10110`,
   },
@@ -110,7 +110,7 @@ export default function TermsPage() {
         <div style={{ padding: '24px', background: '#f7f9f8', borderRadius: 16, border: '1px solid #eef0ef', marginBottom: 40 }}>
           <p style={{ fontSize: 15, color: '#475569', lineHeight: 1.75, margin: 0, fontWeight: 300 }}>
             โปรดอ่านเงื่อนไขการใช้งานนี้อย่างละเอียดก่อนใช้บริการ spacesmate.com
-            หากคุณมีคำถาม กรุณาติดต่อ <strong>legal@spacesmate.com</strong>
+            หากคุณมีคำถาม กรุณาติดต่อ <strong>support@spacesmate.com</strong>
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>

@@ -60,7 +60,7 @@ export default function SubmitSuccessPage() {
 
         <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 24 }}>
           มีคำถาม? ติดต่อ{' '}
-          <a href="mailto:hello@spacesmate.com" style={{ color: '#048c73', textDecoration: 'none' }}>hello@spacesmate.com</a>
+          <a href="mailto:support@spacesmate.com" style={{ color: '#048c73', textDecoration: 'none' }}>support@spacesmate.com</a>
         </p>
       </div>
     </div>

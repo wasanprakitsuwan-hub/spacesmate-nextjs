@@ -77,7 +77,7 @@ const DEFAULT_COMPANY_INFO = {
   name_th:   'บริษัท เสปซเวิร์คส จำกัด',
   name_en:   'Space Works Co., Ltd.',
   reg_no:    '0105569001611',
-  email:     'hello@spacesmate.com',
+  email:     'support@spacesmate.com',
   phone:     '',
   line_oa:   '@spacesmate',
   facebook:  'https://www.facebook.com/spacesmateTH',
@@ -591,7 +591,7 @@ function CompanyInfo() {
     {
       title: 'ช่องทางติดต่อ',
       fields: [
-        { k: 'email',   l: 'อีเมลติดต่อ',              ph: 'hello@spacesmate.com' },
+        { k: 'email',   l: 'อีเมลติดต่อ',              ph: 'support@spacesmate.com' },
         { k: 'phone',   l: 'เบอร์โทรศัพท์',             ph: '+66 x xxxx xxxx' },
         { k: 'line_oa', l: 'LINE Official Account',     ph: '@spacesmate' },
       ],

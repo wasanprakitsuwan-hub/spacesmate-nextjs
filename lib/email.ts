@@ -233,7 +233,7 @@ export async function sendListingConfirmation(data: ListingEmailData): Promise<v
   <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
     <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
       ต้องการแก้ไขประกาศหรือต้องการความช่วยเหลือ?<br>
-      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      <a href="mailto:support@spacesmate.com" style="color:#048c73;text-decoration:none">support@spacesmate.com</a>
       &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
     </p>
   </div>`)
@@ -325,7 +325,7 @@ export async function sendPaymentConfirmation(data: PaymentEmailData): Promise<v
   <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
     <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
       หากมีคำถามเกี่ยวกับการชำระเงิน ติดต่อเราได้ที่<br>
-      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      <a href="mailto:support@spacesmate.com" style="color:#048c73;text-decoration:none">support@spacesmate.com</a>
       &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
     </p>
   </div>`)
@@ -398,7 +398,7 @@ export async function sendPackageExpiringAlert(data: ExpiryEmailData): Promise<v
   <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
     <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
       ต้องการความช่วยเหลือ ติดต่อเราได้ที่<br>
-      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      <a href="mailto:support@spacesmate.com" style="color:#048c73;text-decoration:none">support@spacesmate.com</a>
       &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
     </p>
   </div>`)
@@ -463,7 +463,7 @@ export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<vo
   <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
     <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
       ต้องการความช่วยเหลือ ติดต่อเราได้ที่<br>
-      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      <a href="mailto:support@spacesmate.com" style="color:#048c73;text-decoration:none">support@spacesmate.com</a>
       &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
     </p>
   </div>`)
@@ -664,7 +664,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   <div style="margin:22px 32px 28px;padding-top:20px;border-top:1px solid #f1f5f9">
     <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.75">
       มีคำถาม? ติดต่อเราได้ที่<br>
-      <a href="mailto:info@spacesmate.com" style="color:#048c73;text-decoration:none">info@spacesmate.com</a>
+      <a href="mailto:support@spacesmate.com" style="color:#048c73;text-decoration:none">support@spacesmate.com</a>
       &nbsp;·&nbsp; LINE: <strong style="color:#334155">@spacesmate</strong>
     </p>
   </div>`)
