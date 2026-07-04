@@ -375,6 +375,17 @@ function SubmitNewForm() {
             </Link>
           </div>
 
+          {/* ── Promo announcement banner ───────────────────────────────── */}
+          <div style={{ marginBottom: 20, padding: '12px 18px', background: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: '1.5px solid #fde68a', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="msym" style={{ fontSize: 22, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>sell</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#92400e' }}>ลงประกาศฟรีเดือนแรก!</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: '#78350f' }}>
+                ใช้โค้ด <strong style={{ letterSpacing: 1.5, color: '#02402e', background: '#fff', padding: '1px 8px', borderRadius: 6, fontSize: 13.5, border: '1px solid #d97f11' }}>SM299</strong> ในขั้นตอนสุดท้าย — ลดทันที ฿299
+              </p>
+            </div>
+          </div>
+
           {/* ── STEP 0: Property Info ───────────────────────────────────── */}
           {step === 0 && (
             <div>
@@ -670,7 +681,19 @@ function SubmitNewForm() {
 
               {/* ── Promo code ─────────────────────────────────────────────── */}
               <div style={{ marginTop: 22 }}>
-                <label style={labelStyle}>โค้ดส่วนลด (ถ้ามี)</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>โค้ดส่วนลด (ถ้ามี)</label>
+                  {promoStatus !== 'valid' && (
+                    <button
+                      type="button"
+                      onClick={() => { setPromoInput('SM299'); setPromoStatus('idle'); setPromoData(null); setPromoError('') }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 700, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '3px 10px', cursor: 'pointer', letterSpacing: .5, lineHeight: 1.4 }}
+                    >
+                      <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>sell</span>
+                      SM299 — ลด ฿299
+                    </button>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input
                     value={promoInput}
