@@ -1,27 +1,55 @@
 'use client'
 
 import { useState } from 'react'
-import type { Metadata } from 'next'
 
-const SERVICES = [
-  'บริหารจัดการอพาร์ทเม้นท์',
-  'บริหารจัดการคอนโด',
-  'ลงประกาศเช่า/ขาย',
-  'ปรึกษาเรื่องทรัพย์สิน',
-  'อื่นๆ',
+const INTENTS = [
+  { value: 'นักลงทุน',        label: 'นักลงทุน',          icon: 'finance' },
+  { value: 'พันธมิตรธุรกิจ', label: 'พันธมิตรธุรกิจ',   icon: 'handshake' },
 ]
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', service: '', message: '' })
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
+  const [form,      setForm]      = useState({ name: '', phone: '', email: '', intent: '', message: '' })
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const { name, value } = e.target
+    if (name === 'phone') {
+      setForm(prev => ({ ...prev, phone: value.replace(/\D/g, '').slice(0, 10) }))
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }))
+    }
+    if (error) setError('')
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitted(true)
+    setError('')
+
+    // Validate phone
+    const digits = form.phone.replace(/\D/g, '')
+    if (!digits)              { setError('กรุณากรอกเบอร์โทรศัพท์'); return }
+    if (digits.length !== 10) { setError('เบอร์โทรศัพท์ต้องมี 10 หลัก'); return }
+    if (!/^0[2-9]/.test(digits)) { setError('รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0)'); return }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/contact-lead', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ...form, phone: digits }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || `HTTP ${res.status}`)
+      }
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -30,8 +58,8 @@ export default function ContactPage() {
       {/* Header */}
       <div className="bg-spacemate-brandDark py-14">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">ติดต่อเรา</h1>
-          <p className="text-white/70 text-base font-light">ทีมงาน SpacesMate พร้อมให้คำปรึกษาและตอบกลับภายใน 24 ชั่วโมง</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">ร่วมเติบโตกับ SpacesMate</h1>
+          <p className="text-white/70 text-base font-light">สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจ — ทีมงานตอบกลับภายใน 24 ชั่วโมง</p>
         </div>
       </div>
 
@@ -104,14 +132,17 @@ export default function ContactPage() {
           <div>
             {submitted ? (
               <div className="text-center py-16">
-                <div className="mb-4"><span className="msym" style={{ fontSize: 44, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span></div>
+                <div className="mb-4">
+                  <span className="msym" style={{ fontSize: 44, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
+                </div>
                 <h3 className="text-xl font-semibold text-spacemate-brandDark mb-2">ได้รับข้อความแล้ว!</h3>
                 <p className="text-gray-500 text-sm">ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <h2 className="text-xl font-semibold text-spacemate-brandDark mb-6">ส่งข้อความถึงเรา</h2>
 
+                {/* Name */}
                 <div>
                   <label className="label block mb-1.5">ชื่อ – นามสกุล *</label>
                   <input
@@ -124,6 +155,7 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {/* Phone + Email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="label block mb-1.5">เบอร์โทรศัพท์ *</label>
@@ -132,7 +164,8 @@ export default function ContactPage() {
                       value={form.phone}
                       onChange={handleChange}
                       required
-                      placeholder="08X-XXX-XXXX"
+                      inputMode="numeric"
+                      placeholder="0XXXXXXXXX"
                       className="input-field w-full"
                     />
                   </div>
@@ -149,14 +182,43 @@ export default function ContactPage() {
                   </div>
                 </div>
 
+                {/* Intent pills */}
                 <div>
-                  <label className="label block mb-1.5">บริการที่สนใจ</label>
-                  <select name="service" value={form.service} onChange={handleChange} className="input-field w-full">
-                    <option value="">เลือกบริการ...</option>
-                    {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <label className="label block mb-2">ความสนใจ</label>
+                  <div className="flex gap-3 flex-wrap">
+                    {INTENTS.map(opt => {
+                      const active = form.intent === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, intent: active ? '' : opt.value }))}
+                          style={{
+                            display:       'flex',
+                            alignItems:    'center',
+                            gap:           8,
+                            padding:       '10px 20px',
+                            borderRadius:  100,
+                            border:        active ? '2px solid #02402e' : '1.5px solid #e2e8f0',
+                            background:    active ? '#02402e' : '#fff',
+                            color:         active ? '#fff' : '#475569',
+                            fontWeight:    active ? 600 : 400,
+                            fontSize:      14,
+                            cursor:        'pointer',
+                            transition:    'all .15s',
+                          }}
+                        >
+                          <span className="msym" style={{ fontSize: 18, fontVariationSettings: active ? "'wght' 400, 'FILL' 1" : "'wght' 300, 'FILL' 0" }}>
+                            {opt.icon}
+                          </span>
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
 
+                {/* Message */}
                 <div>
                   <label className="label block mb-1.5">รายละเอียดเพิ่มเติม</label>
                   <textarea
@@ -164,13 +226,27 @@ export default function ContactPage() {
                     value={form.message}
                     onChange={handleChange}
                     rows={4}
-                    placeholder="บอกเราเพิ่มเติมเกี่ยวกับทรัพย์สินหรือความต้องการของคุณ..."
+                    placeholder="บอกเราเพิ่มเติมเกี่ยวกับความสนใจหรือแนวคิดของคุณ..."
                     className="input-field w-full resize-none"
                   />
                 </div>
 
-                <button type="submit" className="btn-primary w-full">
-                  ส่งข้อความ<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 6, verticalAlign: 'middle' }}>arrow_forward</span>
+                {/* Error */}
+                {error && (
+                  <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full"
+                  style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+                >
+                  {loading ? (
+                    <><span className="msym" style={{ fontSize: 16, animation: 'spin 1s linear infinite', marginRight: 6, verticalAlign: 'middle' }}>autorenew</span>กำลังส่ง...</>
+                  ) : (
+                    <>ส่งข้อความ<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 6, verticalAlign: 'middle' }}>arrow_forward</span></>
+                  )}
                 </button>
 
                 <p className="text-xs text-gray-400 text-center">

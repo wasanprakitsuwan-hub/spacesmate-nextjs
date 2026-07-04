@@ -528,6 +528,58 @@ export async function sendManagementEnquiry(data: ManagementEnquiryData): Promis
   )
 }
 
+// ── 7. Contact / Investor-Partner enquiry ────────────────────────────────────
+
+export interface ContactEnquiryData {
+  name:    string
+  phone:   string
+  email:   string
+  intent:  string   // 'นักลงทุน' | 'พันธมิตรธุรกิจ' | ''
+  message: string
+}
+
+export async function sendContactEnquiry(data: ContactEnquiryData): Promise<void> {
+  const html = layout(`
+  <!-- Header -->
+  <div style="background:#02402e;padding:28px 32px 22px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate · Contact Alert</p>
+    <h1 style="color:#fff;font-size:21px;font-weight:700;margin:0 0 6px;line-height:1.3">ข้อความจากนักลงทุน / พันธมิตร</h1>
+    <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">ส่งผ่านฟอร์มหน้า /contact</p>
+  </div>
+
+  <!-- Details -->
+  <div style="padding:28px 32px 0">
+    <table style="width:100%;border-collapse:collapse">
+      ${tableRow('ชื่อ-นามสกุล', `<strong style="color:#02402e">${data.name}</strong>`)}
+      ${tableRow('เบอร์โทรศัพท์', `<strong style="color:#d97f11">${data.phone}</strong>`)}
+      ${tableRow('อีเมล', data.email || '—')}
+      ${tableRow('ประเภทความสนใจ', data.intent || '—')}
+    </table>
+  </div>
+
+  <!-- Message -->
+  ${data.message ? `
+  <div style="margin:20px 32px 0;padding:16px 20px;background:#f0f7f4;border-radius:12px;border:1px solid #c6ddd7">
+    <p style="font-size:12px;font-weight:700;color:#02402e;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px">รายละเอียด</p>
+    <p style="font-size:14px;color:#374151;margin:0;line-height:1.75;white-space:pre-wrap">${data.message}</p>
+  </div>` : ''}
+
+  <!-- CTA -->
+  <div style="padding:24px 32px 28px;text-align:center">
+    <a href="https://spacesmate.com/dashboard"
+       style="display:inline-block;background:#02402e;color:#fff;font-size:14px;font-weight:700;padding:13px 30px;border-radius:10px;text-decoration:none">
+      เปิด Dashboard
+    </a>
+  </div>`,
+  `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Contact · spacesmate.com/contact</p>`)
+
+  await sendEmail(
+    [FOUNDER_EMAIL],
+    `Contact: ${data.name}${data.intent ? ` · ${data.intent}` : ''}`,
+    html
+  )
+}
+
 // ── 7. Welcome — after email confirmation ─────────────────────────────────────
 
 export interface WelcomeEmailData {
