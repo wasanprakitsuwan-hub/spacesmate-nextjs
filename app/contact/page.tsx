@@ -59,7 +59,7 @@ export default function ContactPage() {
       <div className="bg-spacemate-brandDark py-14">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">ร่วมเติบโตกับ SpacesMate</h1>
-          <p className="text-white/70 text-base font-light">สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจ — ทีมงานตอบกลับภายใน 24 ชั่วโมง</p>
+          <p className="text-white/70 text-base font-light">สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจ — ทีมงานติดต่อกลับโดยเร็วที่สุด</p>
         </div>
       </div>
 
@@ -136,7 +136,7 @@ export default function ContactPage() {
                   <span className="msym" style={{ fontSize: 44, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
                 </div>
                 <h3 className="text-xl font-semibold text-spacemate-brandDark mb-2">ได้รับข้อความแล้ว!</h3>
-                <p className="text-gray-500 text-sm">ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง</p>
+                <p className="text-gray-500 text-sm">ทีมงานจะติดต่อกลับโดยเร็วที่สุด</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
