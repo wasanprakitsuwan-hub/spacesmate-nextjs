@@ -475,7 +475,60 @@ export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<vo
   )
 }
 
-// ── 6. Welcome — after email confirmation ─────────────────────────────────────
+// ── 6. Management enquiry — /manage lead form submission ─────────────────────
+
+export interface ManagementEnquiryData {
+  name:     string
+  phone:    string
+  type:     string
+  location: string
+  channel:  string
+}
+
+export async function sendManagementEnquiry(data: ManagementEnquiryData): Promise<void> {
+  const html = layout(`
+  <!-- Header -->
+  <div style="background:#02402e;padding:28px 32px 22px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate · Lead Alert</p>
+    <h1 style="color:#fff;font-size:21px;font-weight:700;margin:0 0 6px;line-height:1.3">คำขอรับฝากบริหารทรัพย์ใหม่</h1>
+    <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">มีเจ้าของทรัพย์ส่งฟอร์มผ่าน /manage</p>
+  </div>
+
+  <!-- Lead details -->
+  <div style="padding:28px 32px 0">
+    <table style="width:100%;border-collapse:collapse">
+      ${tableRow('ชื่อ-นามสกุล', `<strong style="color:#02402e">${data.name}</strong>`)}
+      ${tableRow('เบอร์โทรศัพท์', `<strong style="color:#d97f11">${data.phone}</strong>`)}
+      ${tableRow('ประเภททรัพย์สิน', data.type)}
+      ${tableRow('ทำเล', data.location || '—')}
+      ${tableRow('ช่องทางติดต่อ', data.channel)}
+    </table>
+  </div>
+
+  <!-- Action note -->
+  <div style="margin:20px 32px 0;padding:16px 20px;background:#fff8f0;border-radius:12px;border:1px solid #f5ddb3">
+    <p style="font-size:13px;color:#78350f;margin:0;line-height:1.7;font-weight:600">
+      โทรกลับภายใน 24 ชั่วโมง — ${data.channel === 'LINE' ? 'ติดต่อผ่าน LINE' : data.channel === 'อีเมล' ? 'ติดต่อผ่านอีเมล' : 'โทรหาลูกค้า'}
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:24px 32px 28px;text-align:center">
+    <a href="https://spacesmate.com/dashboard"
+       style="display:inline-block;background:#02402e;color:#fff;font-size:14px;font-weight:700;padding:13px 30px;border-radius:10px;text-decoration:none">
+      เปิด Dashboard
+    </a>
+  </div>`,
+  `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Management Lead · spacesmate.com/manage</p>`)
+
+  await sendEmail(
+    [FOUNDER_EMAIL],
+    `Lead ใหม่: ${data.name} (${data.type} · ${data.location || 'ไม่ระบุทำเล'})`,
+    html
+  )
+}
+
+// ── 7. Welcome — after email confirmation ─────────────────────────────────────
 
 export interface WelcomeEmailData {
   contactEmail: string

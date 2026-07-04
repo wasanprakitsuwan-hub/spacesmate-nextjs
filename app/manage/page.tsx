@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -47,8 +47,39 @@ const STEPS = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ManagePage() {
-  const [sent, setSent] = useState(false)
-  const [channel, setChannel] = useState<'โทร' | 'LINE' | 'อีเมล'>('โทร')
+  const [sent, setSent]       = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+
+  const [name,     setName]     = useState('')
+  const [phone,    setPhone]    = useState('')
+  const [type,     setType]     = useState('คอนโด')
+  const [location, setLocation] = useState('')
+  const [channel,  setChannel]  = useState<'โทร' | 'LINE' | 'อีเมล'>('โทร')
+
+  const handleSubmit = useCallback(async () => {
+    if (!name.trim()) { setError('กรุณากรอกชื่อ-นามสกุล'); return }
+    if (!phone.trim()) { setError('กรุณากรอกเบอร์โทรศัพท์'); return }
+
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/manage-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, type, location, channel }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+      }
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setLoading(false)
+    }
+  }, [name, phone, type, location, channel])
 
   return (
     <div>
@@ -164,7 +195,10 @@ export default function ManagePage() {
                   {/* Name */}
                   <div>
                     <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>ชื่อ-นามสกุล</label>
-                    <input placeholder="ชื่อของคุณ"
+                    <input
+                      value={name}
+                      onChange={e => { setName(e.target.value); setError('') }}
+                      placeholder="ชื่อของคุณ"
                       style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
                       onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
                       onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
@@ -173,7 +207,11 @@ export default function ManagePage() {
                   {/* Phone */}
                   <div>
                     <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>เบอร์โทรศัพท์</label>
-                    <input placeholder="08X-XXX-XXXX"
+                    <input
+                      value={phone}
+                      onChange={e => { setPhone(e.target.value); setError('') }}
+                      placeholder="08X-XXX-XXXX"
+                      inputMode="tel"
                       style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
                       onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
                       onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
@@ -183,7 +221,10 @@ export default function ManagePage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
                       <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>ประเภททรัพย์สิน</label>
-                      <select style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 12px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                      <select
+                        value={type}
+                        onChange={e => setType(e.target.value)}
+                        style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 12px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' as const }}
                         onFocus={e => { e.target.style.borderColor = '#048c73' }}
                         onBlur={e => { e.target.style.borderColor = '#dde3e0' }}>
                         {['คอนโด', 'อพาร์ทเม้นท์', 'บ้าน', 'ออฟฟิศ'].map(t => <option key={t}>{t}</option>)}
@@ -191,7 +232,10 @@ export default function ManagePage() {
                     </div>
                     <div>
                       <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>ทำเล</label>
-                      <input placeholder="เช่น สุขุมวิท"
+                      <input
+                        value={location}
+                        onChange={e => setLocation(e.target.value)}
+                        placeholder="เช่น สุขุมวิท"
                         style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
                         onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
                         onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
@@ -206,7 +250,7 @@ export default function ManagePage() {
                         const icons: Record<string, string> = { โทร: 'call', LINE: 'chat', อีเมล: 'mail' }
                         const active = channel === ch
                         return (
-                          <button key={ch} onClick={() => setChannel(ch)}
+                          <button key={ch} onClick={() => setChannel(ch)} type="button"
                             style={{ flex: 1, padding: '10px 6px', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'all .15s', border: `1.5px solid ${active ? '#02402e' : '#dde3e0'}`, background: active ? '#02402e' : '#fff', color: active ? '#fff' : '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                             <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{icons[ch]}</span>{ch}
                           </button>
@@ -216,10 +260,22 @@ export default function ManagePage() {
                   </div>
                 </div>
 
+                {/* Error message */}
+                {error && (
+                  <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13.5, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontWeight: 400 }}>
+                    {error}
+                  </p>
+                )}
+
                 {/* Submit */}
-                <button onClick={() => setSent(true)}
-                  style={{ width: '100%', marginTop: 20, background: '#d97f11', color: '#fff', fontWeight: 700, fontSize: 15.5, border: 'none', borderRadius: 28, padding: '14px 0', cursor: 'pointer' }}>
-                  ส่งข้อมูล — ให้เราติดต่อกลับ
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  style={{ width: '100%', marginTop: 18, background: loading ? '#b5c9c3' : '#d97f11', color: '#fff', fontWeight: 700, fontSize: 15.5, border: 'none', borderRadius: 28, padding: '14px 0', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {loading && (
+                    <span style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
+                  )}
+                  {loading ? 'กำลังส่ง...' : 'ส่งข้อมูล — ให้เราติดต่อกลับ'}
                 </button>
                 <p style={{ textAlign: 'center', fontSize: 12.5, color: '#9ca3af', margin: '10px 0 0', fontWeight: 300 }}>
                   ข้อมูลของคุณจะถูกเก็บเป็นความลับ
@@ -234,7 +290,7 @@ export default function ManagePage() {
                 <p style={{ fontSize: 14.5, color: '#6b7280', margin: '0 0 22px', fontWeight: 300, lineHeight: 1.65 }}>
                   ทีมงาน SpacesMate จะโทรกลับ<br /><strong style={{ color: '#02402e' }}>ภายใน 24 ชั่วโมง</strong>
                 </p>
-                <button onClick={() => setSent(false)}
+                <button onClick={() => { setSent(false); setName(''); setPhone(''); setType('คอนโด'); setLocation(''); setChannel('โทร') }}
                   style={{ background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, border: '1px solid #dde3e0', borderRadius: 24, padding: '11px 24px', cursor: 'pointer' }}>
                   ส่งข้อมูลอีกรายการ
                 </button>
@@ -254,6 +310,7 @@ export default function ManagePage() {
           .sm-why4  { grid-template-columns: 1fr !important; }
           .sm-svc3  { grid-template-columns: 1fr !important; }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )
