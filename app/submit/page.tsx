@@ -27,7 +27,8 @@ const PACKAGES = [
     period: 'Basic',
     price: '299',
     sub: '1 ประกาศ · แสดงผล 1 เดือน',
-    badge: null,
+    badge: null as string | null,
+    savings: null as string | null,
     highlight: false,
     features: [
       '1 ประกาศ',
@@ -41,14 +42,14 @@ const PACKAGES = [
     period: 'Standard',
     price: '699',
     sub: '1 ประกาศ · แสดงผล 3 เดือน',
-    badge: 'ยอดนิยม',
+    badge: 'ยอดนิยม' as string | null,
+    savings: '22%' as string | null,
     highlight: true,
     features: [
       '1 ประกาศ',
       'รูปภาพสูงสุด 10 รูป',
       'แสดงผล 90 วัน',
       'เผยแพร่ทันทีหลังชำระ',
-      'ประหยัดกว่า Basic 22%',
     ],
   },
   {
@@ -56,7 +57,8 @@ const PACKAGES = [
     period: 'Premium',
     price: '2,499',
     sub: '1 ประกาศ · แสดงผล 12 เดือน',
-    badge: null,
+    badge: null as string | null,
+    savings: '30%' as string | null,
     highlight: false,
     features: [
       '1 ประกาศ',
@@ -172,10 +174,23 @@ export default function SubmitPage() {
             1 ประกาศ/แพ็กเกจ — เผยแพร่ทันทีหลังชำระ ไม่ต้องรอ
           </p>
           {/* Green promo note */}
-          <p style={{ textAlign: 'center', fontSize: 14, color: '#02402e', fontWeight: 500, margin: '0 0 36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#02402e', fontWeight: 500, margin: '0 0 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <span className="msym" style={{ fontSize: 16, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
             แพ็กเกจสูงสุด 12 เดือน เพื่อให้ประกาศได้รับการอัปเดตเสมอ — ข้อมูลแม่นกว่าเว็บอื่น
           </p>
+
+          {/* ── SM299 Promo banner ──────────────────────────────────────────── */}
+          <div style={{ maxWidth: 860, margin: '0 auto 32px', padding: '14px 22px', background: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: '1.5px solid #fde68a', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span className="msym" style={{ fontSize: 26, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>sell</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#92400e' }}>ลงประกาศฟรีเดือนแรก!</p>
+              <p style={{ margin: '3px 0 0', fontSize: 13.5, color: '#78350f' }}>
+                ใช้โค้ด{' '}
+                <strong style={{ letterSpacing: 2, color: '#02402e', background: '#fff', padding: '2px 10px', borderRadius: 7, fontSize: 14, border: '1px solid #d97f11', fontFamily: 'monospace' }}>SM299</strong>
+                {' '}ขั้นตอนสุดท้าย — ลดทันที ฿299 สำหรับแพ็กเกจแรก
+              </p>
+            </div>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18, maxWidth: 860, margin: '0 auto' }} className="sm-pkg3">
             {PACKAGES.map((pkg) => (
@@ -192,9 +207,16 @@ export default function SubmitPage() {
                 <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 10px', color: '#374151' }}>{pkg.period}</h3>
 
                 {/* Price */}
-                <div style={{ marginBottom: 6 }}>
-                  <span style={{ fontSize: 38, fontWeight: 700, color: '#111827', lineHeight: 1 }}>{pkg.price}</span>
-                  <span style={{ fontSize: 16, fontWeight: 500, color: '#111827', marginLeft: 4 }}>บาท</span>
+                <div style={{ marginBottom: 6, display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+                  <div>
+                    <span style={{ fontSize: 38, fontWeight: 700, color: '#111827', lineHeight: 1 }}>{pkg.price}</span>
+                    <span style={{ fontSize: 16, fontWeight: 500, color: '#111827', marginLeft: 4 }}>บาท</span>
+                  </div>
+                  {pkg.savings && (
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', background: '#048c73', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap', marginBottom: 4 }}>
+                      ประหยัด {pkg.savings}
+                    </span>
+                  )}
                 </div>
                 <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 22px', fontWeight: 300 }}>{pkg.sub}</p>
 

@@ -375,17 +375,6 @@ function SubmitNewForm() {
             </Link>
           </div>
 
-          {/* ── Promo announcement banner ───────────────────────────────── */}
-          <div style={{ marginBottom: 20, padding: '12px 18px', background: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: '1.5px solid #fde68a', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span className="msym" style={{ fontSize: 22, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>sell</span>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#92400e' }}>ลงประกาศฟรีเดือนแรก!</p>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: '#78350f' }}>
-                ใช้โค้ด <strong style={{ letterSpacing: 1.5, color: '#02402e', background: '#fff', padding: '1px 8px', borderRadius: 6, fontSize: 13.5, border: '1px solid #d97f11' }}>SM299</strong> ในขั้นตอนสุดท้าย — ลดทันที ฿299
-              </p>
-            </div>
-          </div>
-
           {/* ── STEP 0: Property Info ───────────────────────────────────── */}
           {step === 0 && (
             <div>
