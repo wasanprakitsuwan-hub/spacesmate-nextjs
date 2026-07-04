@@ -55,11 +55,14 @@ export default function ManagePage() {
   const [phone,    setPhone]    = useState('')
   const [type,     setType]     = useState('คอนโด')
   const [location, setLocation] = useState('')
-  const [channel,  setChannel]  = useState<'โทร' | 'LINE' | 'อีเมล'>('โทร')
+  const [channel,  setChannel]  = useState<'โทร' | 'LINE'>('โทร')
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim()) { setError('กรุณากรอกชื่อ-นามสกุล'); return }
-    if (!phone.trim()) { setError('กรุณากรอกเบอร์โทรศัพท์'); return }
+    const digits = phone.replace(/\D/g, '')
+    if (!digits)                   { setError('กรุณากรอกเบอร์โทรศัพท์'); return }
+    if (digits.length !== 10)      { setError('เบอร์โทรศัพท์ต้องมี 10 หลัก'); return }
+    if (!/^0[2-9]/.test(digits))   { setError('รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0)'); return }
 
     setError('')
     setLoading(true)
@@ -67,7 +70,7 @@ export default function ManagePage() {
       const res = await fetch('/api/manage-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, type, location, channel }),
+        body: JSON.stringify({ name, phone: digits, type, location, channel }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -209,9 +212,9 @@ export default function ManagePage() {
                     <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>เบอร์โทรศัพท์</label>
                     <input
                       value={phone}
-                      onChange={e => { setPhone(e.target.value); setError('') }}
-                      placeholder="08X-XXX-XXXX"
-                      inputMode="tel"
+                      onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError('') }}
+                      placeholder="0XXXXXXXXX"
+                      inputMode="numeric"
                       style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
                       onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
                       onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
@@ -246,8 +249,8 @@ export default function ManagePage() {
                   <div>
                     <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 8 }}>ช่องทางติดต่อที่สะดวก</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {(['โทร', 'LINE', 'อีเมล'] as const).map((ch) => {
-                        const icons: Record<string, string> = { โทร: 'call', LINE: 'chat', อีเมล: 'mail' }
+                      {(['โทร', 'LINE'] as const).map((ch) => {
+                        const icons: Record<string, string> = { โทร: 'call', LINE: 'chat' }
                         const active = channel === ch
                         return (
                           <button key={ch} onClick={() => setChannel(ch)} type="button"
