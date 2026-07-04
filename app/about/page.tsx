@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const TEAM = [
   { icon: 'construction', title: 'Asset-Light',        desc: 'เราไม่ได้เป็นเจ้าของทรัพย์สิน เราบริหารแทนเจ้าของและแบ่งรายได้ตามผลจริง' },
   { icon: 'bar_chart',    title: 'Performance-Aligned', desc: 'ยิ่งเจ้าของทรัพย์ได้มาก SpacesMate ได้มากด้วย ทุกบาทที่เราได้มาจากผลงานจริง' },
-  { icon: 'smart_toy',   title: 'AI-Powered Ops',      desc: 'ทีม AI 14 ตัวจัดการตั้งแต่การตลาด สัญญา ไปจนถึงรายงานการเงินโดยไม่ต้องมีพนักงานมาก' },
+  { icon: 'smart_toy',   title: 'AI-Powered Ops',      desc: 'ใช้ AI ยกระดับทุกขั้นตอน ตั้งแต่การตลาด สัญญา ไปจนถึงรายงานการเงิน เพื่อให้บริการที่รวดเร็วและแม่นยำยิ่งขึ้น' },
   { icon: 'language',    title: 'Bangkok-Local',        desc: 'รู้จักตลาดกรุงเทพฯ ดี ทั้งโซน BTS/MRT และกลุ่มผู้เช่าทั้ง B2C และ B2B' },
 ]
 
@@ -54,8 +54,8 @@ export default function AboutPage() {
               เพราะเจ้าของไม่มีเวลาหรือไม่รู้วิธีบริหาร SpacesMate เข้ามาเติมเต็มช่องว่างนี้
             </p>
             <p style={{ color: '#475569', fontSize: 15.5, lineHeight: 1.8, margin: 0, fontWeight: 300 }}>
-              เราใช้ระบบ SOP มาตรฐาน ติดตาม P&L รายอาคาร และทีม AI 14 ตัว
-              เพื่อให้การบริหารทรัพย์สินเป็นแบบ lean และ scalable — โดยไม่ต้องมีพนักงานจำนวนมาก
+              เราใช้ระบบ SOP มาตรฐาน ติดตาม P&L รายอาคาร และ AI
+              เพื่อให้การบริหารทรัพย์สินเป็นแบบ lean และ scalable — บริการที่ดีกว่า โดยไม่ซับซ้อน
             </p>
           </div>
           <div style={{ background: 'radial-gradient(120% 140% at 80% 10%,#055c43,#02402e 60%)', borderRadius: 24, padding: '40px 36px', color: '#fff' }}>
