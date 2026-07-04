@@ -83,7 +83,7 @@ const DEFAULT_COMPANY_INFO = {
   facebook:  'https://www.facebook.com/spacesmateTH',
   instagram: 'https://www.instagram.com/spacesmate/',
   tiktok:    'https://www.tiktok.com/@spacesmate',
-  address:   '4004/856 ถนนพระรามที่ 4 แขวงพระโขนง เขตคลองเตย กรุงเทพมหานคร',
+  address:   'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง เขตคลองเตย กรุงเทพฯ 10110',
 }
 
 const DEFAULT_SEO_SETTINGS = {
@@ -585,7 +585,7 @@ function CompanyInfo() {
         { k: 'name_th', l: 'ชื่อบริษัท (ไทย)',      ph: 'บริษัท เสปซเวิร์คส จำกัด' },
         { k: 'name_en', l: 'ชื่อบริษัท (อังกฤษ)',    ph: 'Space Works Co., Ltd.' },
         { k: 'reg_no',  l: 'เลขทะเบียนนิติบุคคล',   ph: '0105569001611' },
-        { k: 'address', l: 'ที่อยู่จดทะเบียน',        ph: '4004/856 ถนนพระรามที่ 4...' },
+        { k: 'address', l: 'ที่ตั้งสำนักงาน',          ph: 'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท...' },
       ],
     },
     {

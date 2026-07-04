@@ -66,7 +66,7 @@ export default function AboutPage() {
                 ['ชื่อบริษัท (อังกฤษ)', 'Space Works Co., Ltd.'],
                 ['เลขทะเบียน',        '0105569001611'],
                 ['ก่อตั้ง',          '6 มกราคม 2568'],
-                ['ที่ตั้ง',           'คลองเตย กรุงเทพมหานคร'],
+                ['ที่ตั้งสำนักงาน',   'Summer Hill (unit 3026), สุขุมวิท คลองเตย กรุงเทพฯ'],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', flexShrink: 0 }}>{k}</span>
