@@ -100,3 +100,12 @@
     @apply text-spacemate-brandGold font-semibold border-b-2 border-spacemate-brandGold;
   }
 }
+
+/* Property description rich text (dangerouslySetInnerHTML) — restore Tailwind-reset list styles */
+.property-content ul { list-style: disc; padding-left: 1.5em; margin: .5em 0; }
+.property-content ol { list-style: decimal; padding-left: 1.5em; margin: .5em 0; }
+.property-content li { display: list-item; margin-bottom: 3px; }
+.property-content h2, .property-content h3, .property-content h4 { font-weight: 600; color: #02402e; margin: 1em 0 .4em; line-height: 1.4; }
+.property-content p { margin: .4em 0; }
+.property-content strong, .property-content b { font-weight: 600; }
+.property-content a { color: #048c73; text-decoration: underline; }

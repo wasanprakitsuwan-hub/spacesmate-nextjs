@@ -119,6 +119,8 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   // Contact info from DB (null for static listings — shows SpacesMate defaults)
   let dbContact: { name: string | null; phone: string | null; line: string | null } | null = null
+  // Raw room_types JSONB from DB (for apartment units, charges, etc.)
+  let rawRoomTypes: any[] = []
 
   if (staticP) {
     p = staticP
@@ -135,6 +137,7 @@ export default async function PropertyDetailPage({ params }: Props) {
       phone: raw.contact_phone || null,
       line:  raw.contact_line  || null,
     }
+    rawRoomTypes = Array.isArray(raw.room_types) ? raw.room_types : []
   }
 
   const hasContent = content && !content.includes('เนื้อหาไม่พร้อม') && !content.includes('ไม่พบเนื้อหา')
@@ -146,6 +149,39 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   const bedroomLabel = p.bedrooms === 0 ? 'สตูดิโอ' : `${p.bedrooms} ห้องนอน`
   const typeLabel = TYPE_LABELS[p.propertyType] || p.propertyType
+
+  // ── Structured data from room_types JSONB ─────────────────────────────────
+  const aptUnits = rawRoomTypes.filter((r: any) => r._type === 'apt_unit')
+  const chargesRow: any = rawRoomTypes.find((r: any) => r._type === 'charges') ?? null
+
+  // Build flat list of charge rows for display
+  type ChargeDisplayRow = { label: string; value: string }
+  const chargesDisplay: ChargeDisplayRow[] = []
+  if (chargesRow) {
+    const rateLabel = (type: string, fixed: string, minRate: string): string => {
+      if (type === 'fixed') return fixed ? `฿${fixed}/หน่วย` : 'แจ้งตามจริง'
+      if (type === 'min_rate') return minRate ? `ขั้นต่ำ ฿${minRate}` : 'แจ้งตามจริง'
+      return 'แจ้งตามจริง'
+    }
+    if (chargesRow.security_deposit)
+      chargesDisplay.push({ label: 'เงินประกัน', value: `${chargesRow.security_deposit} เดือน` })
+    if (chargesRow.advance_deposit)
+      chargesDisplay.push({ label: 'ค่าเช่าล่วงหน้า', value: `${chargesRow.advance_deposit} เดือน` })
+    if (chargesRow.key_deposit)
+      chargesDisplay.push({ label: 'ค่ากุญแจ', value: `฿${chargesRow.key_deposit}` })
+    if (chargesRow.water_type)
+      chargesDisplay.push({ label: 'ค่าน้ำ', value: rateLabel(chargesRow.water_type, chargesRow.water_fixed ?? '', chargesRow.water_min_rate ?? '') })
+    if (chargesRow.electricity_type)
+      chargesDisplay.push({ label: 'ค่าไฟ', value: rateLabel(chargesRow.electricity_type, chargesRow.electricity_fixed ?? '', chargesRow.electricity_min_rate ?? '') })
+    const OTHER_LABELS: Record<string, string> = {
+      parking: 'ค่าจอดรถ', internet: 'ค่าอินเทอร์เน็ต',
+      fridge: 'ค่าเช่าตู้เย็น', tv: 'ค่าเช่าโทรทัศน์', microwave: 'ค่าเช่าไมโครเวฟ',
+    }
+    for (const k of (chargesRow.other_charges ?? [])) {
+      const fee = chargesRow.other_charges_fees?.[k]
+      chargesDisplay.push({ label: OTHER_LABELS[k] ?? k, value: fee ? `฿${Number(fee).toLocaleString()}/เดือน` : 'แจ้งตามจริง' })
+    }
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -236,6 +272,46 @@ export default async function PropertyDetailPage({ params }: Props) {
                 style={{ color: '#475569', lineHeight: 1.75, fontSize: 15, marginBottom: 32 }}
                 dangerouslySetInnerHTML={{ __html: content ?? '' }}
               />
+            )}
+
+            {/* Apartment Unit Pricing Table */}
+            {aptUnits.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>ราคาเช่าต่อห้อง</h2>
+                <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', padding: '9px 16px', background: '#f7f9f8', fontSize: 11, fontWeight: 600, color: '#94a3b8', gap: 8 }}>
+                    <span>ประเภทห้อง</span>
+                    <span>ขนาด</span>
+                    <span>ราคา/เดือน</span>
+                    <span>ราคา/วัน</span>
+                  </div>
+                  {aptUnits.map((u: any, i: number) => (
+                    <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, color: '#231f20' }}>{u.room_type || '—'}</span>
+                      <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? `${u.size_sqm} ตร.ม.` : '—'}</span>
+                      <span style={{ fontWeight: 700, color: '#d97f11' }}>{u.price_1mo ? `฿${Number(u.price_1mo).toLocaleString()}` : '—'}</span>
+                      <span style={{ color: u.price_daily ? '#d97f11' : '#94a3b8', fontWeight: u.price_daily ? 600 : 400 }}>
+                        {u.price_daily ? `฿${Number(u.price_daily).toLocaleString()}` : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rental Charges & Conditions */}
+            {chargesDisplay.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>ค่าใช้จ่ายและเงื่อนไข</h2>
+                <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
+                  {chargesDisplay.map((row, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < chargesDisplay.length - 1 ? '1px solid #f0f4f3' : 'none', fontSize: 14 }}>
+                      <span style={{ color: '#475569' }}>{row.label}</span>
+                      <span style={{ fontWeight: 600, color: '#231f20' }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Amenities */}
