@@ -13,12 +13,6 @@ const TEAM = [
   { icon: 'language',    title: 'Bangkok-Local',        desc: 'รู้จักตลาดกรุงเทพฯ ดี ทั้งโซน BTS/MRT และกลุ่มผู้เช่าทั้ง B2C และ B2B' },
 ]
 
-const STATS = [
-  { num: '2026',   label: 'ก่อตั้ง' },
-  { num: '฿500K', label: 'ทุนจดทะเบียน' },
-  { num: '14',     label: 'AI Agents ในทีม' },
-  { num: '2',      label: 'สตรีมรายได้หลัก' },
-]
 
 export default function AboutPage() {
   return (
@@ -48,16 +42,6 @@ export default function AboutPage() {
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px' }}>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20, marginBottom: 72 }} className="sm-stats4">
-          {STATS.map(s => (
-            <div key={s.label} style={{ textAlign: 'center', padding: '32px 20px', background: '#f7f9f8', borderRadius: 20, border: '1px solid #eef0ef' }}>
-              <p style={{ fontSize: 38, fontWeight: 700, color: '#02402e', margin: '0 0 6px', lineHeight: 1 }}>{s.num}</p>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 400 }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Mission */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 72 }} className="sm-2col">
           <div>
@@ -82,7 +66,6 @@ export default function AboutPage() {
                 ['ชื่อบริษัท (อังกฤษ)', 'Space Works Co., Ltd.'],
                 ['เลขทะเบียน',        '0105569001611'],
                 ['ก่อตั้ง',          '6 มกราคม 2568'],
-                ['ทุนจดทะเบียน',     '฿500,000'],
                 ['ที่ตั้ง',           'คลองเตย กรุงเทพมหานคร'],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -150,7 +133,6 @@ export default function AboutPage() {
 
       <style>{`
         @media (max-width: 768px) {
-          .sm-stats4 { grid-template-columns: repeat(2,1fr) !important; }
           .sm-2col { grid-template-columns: 1fr !important; }
         }
       `}</style>
