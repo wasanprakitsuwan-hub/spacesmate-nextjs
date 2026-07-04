@@ -20,6 +20,7 @@ interface ApartmentUnitRow {
   room_type: string
   size_sqm: string
   price_1mo: string      // base / default monthly rate (shown in search)
+  price_daily: string    // daily rate (optional, for short-stay / Airbnb pricing)
   available_1mo: boolean // 1-month short-term tenancy available
   available_3mo: boolean
   price_3mo: string
@@ -383,7 +384,7 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
   function addRow() {
     onChange([...rows, {
       id: `au-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio',
-      size_sqm: '', price_1mo: '',
+      size_sqm: '', price_1mo: '', price_daily: '',
       available_1mo: false,
       available_3mo: false, price_3mo: '',
       available_6mo: false, price_6mo: '',
@@ -399,15 +400,15 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           {/* Column headers */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 0.85fr 1fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'ราคา/เดือน', ''].map(h => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
+            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'ราคา/เดือน', 'ราคา/วัน', ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
           {rows.map(row => (
             <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
               {/* Main row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 0.85fr 1fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
                 <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
                   {roomTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -415,6 +416,10 @@ function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
                   <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
+                  <input type="number" value={row.price_daily} onChange={e => upd(row.id, 'price_daily', e.target.value)} placeholder="900" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
                 </div>
                 <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
               </div>
@@ -923,26 +928,43 @@ function ThaiAddressSelect({ form, onChange }: {
 
 // ── Image Upload Zone ─────────────────────────────────────────────────────────
 function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImagesChange: (imgs: string[]) => void }) {
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const [uploading,       setUploading]       = useState(false)
+  const [uploadProgress,  setUploadProgress]  = useState(0)   // 0–100
+  const [uploadStatus,    setUploadStatus]    = useState('')   // e.g. "1/3"
+  const [uploadError,     setUploadError]     = useState('')
+  const [hoveredIdx,      setHoveredIdx]      = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  function uploadFileXHR(fd: FormData, token: string, onProgress: (pct: number) => void): Promise<{ url?: string; error?: string }> {
+    return new Promise(resolve => {
+      const xhr = new XMLHttpRequest()
+      xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)) }
+      xhr.onload  = () => { try { resolve(JSON.parse(xhr.responseText)) } catch { resolve({ error: 'Parse error' }) } }
+      xhr.onerror = () => resolve({ error: 'เชื่อมต่อ API ไม่ได้' })
+      xhr.open('POST', '/api/dashboard/upload')
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.send(fd)
+    })
+  }
+
   async function handleFiles(files: FileList) {
-    setUploading(true); setUploadError('')
+    setUploading(true); setUploadError(''); setUploadProgress(0)
     const { data: { session: upSess } } = await createBrowserClient().auth.getSession()
+    const token    = upSess?.access_token ?? ''
+    const fileArr  = Array.from(files)
+    const total    = fileArr.length
     const added: string[] = []
-    for (const file of Array.from(files)) {
-      const fd = new FormData(); fd.append('file', file); fd.append('type', 'image')
-      try {
-        const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${upSess?.access_token}` }, body: fd })
-        const d = await r.json()
-        if (d.url) added.push(d.url)
-        else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
-      } catch { setUploadError('เชื่อมต่อ API ไม่ได้') }
+    for (let i = 0; i < total; i++) {
+      setUploadStatus(`${i + 1}/${total}`)
+      const fd = new FormData(); fd.append('file', fileArr[i]); fd.append('type', 'image')
+      const d = await uploadFileXHR(fd, token, pct => {
+        setUploadProgress(Math.round((i * 100 + pct) / total))
+      })
+      if (d.url) added.push(d.url)
+      else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
     }
     if (added.length) onImagesChange([...images, ...added])
-    setUploading(false)
+    setUploading(false); setUploadProgress(0); setUploadStatus('')
   }
 
   // Promote clicked image to index 0 (becomes thumbnail/cover)
@@ -961,11 +983,19 @@ function ImageUploadZone({ images, onImagesChange }: { images: string[]; onImage
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) handleFiles(e.target.files) }} />
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || limit}
         style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (limit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: limit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || limit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</>
+        {uploading ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด{uploadStatus ? ` ${uploadStatus}` : ''}…</>
           : limit ? <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span> อัปโหลดครบ 10 รูปแล้ว</>
-
           : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span> เลือกรูปภาพห้อง (JPG · PNG · WebP  •  สูงสุด 10 รูป)</>}
       </button>
+      {/* Upload progress bar */}
+      {uploading && (
+        <div style={{ marginTop: 6 }}>
+          <div style={{ height: 5, borderRadius: 4, background: '#e8f5f0', overflow: 'hidden' }}>
+            <div style={{ height: '100%', borderRadius: 4, background: 'linear-gradient(to right, #048c73, #02402e)', width: `${uploadProgress}%`, transition: 'width .2s ease' }} />
+          </div>
+          <p style={{ fontSize: 11, color: '#048c73', margin: '3px 0 0', textAlign: 'right' }}>{uploadProgress}%</p>
+        </div>
+      )}
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {images.length > 0 && (
         <>
@@ -1931,6 +1961,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
           room_type: r.room_type || 'Studio',
           size_sqm:  String(r.size_sqm ?? ''),
           price_1mo: String(r.price_1mo ?? r.price_from ?? ''),
+          price_daily: String(r.price_daily ?? ''),
           available_1mo: r.available_1mo ?? false,
           available_3mo: r.available_3mo ?? false,
           price_3mo: String(r.price_3mo ?? ''),
@@ -2234,6 +2265,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
   const [typeFilter,       setTypeFilter]       = useState('')
   const [editTarget,       setEditTarget]       = useState<DbListing | null>(null)
   const [deleting,         setDeleting]         = useState<string | null>(null)
+  const [toggling,         setToggling]         = useState<Set<string>>(new Set())
   const [createFromStatic, setCreateFromStatic] = useState<Partial<ListingFormState> | null>(null)
 
   const loadDb = useCallback(async () => {
@@ -2253,6 +2285,19 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
     await fetch('/api/dashboard/listings', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${delSess?.access_token}` }, body: JSON.stringify({ id }) })
     await loadDb()
     setDeleting(null)
+  }
+
+  async function togglePublish(id: string, currentStatus: string) {
+    setToggling(prev => new Set(prev).add(id))
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    const { data: { session: tSess } } = await createBrowserClient().auth.getSession()
+    await fetch('/api/dashboard/listings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tSess?.access_token}` },
+      body: JSON.stringify({ id, listing_status: newStatus }),
+    })
+    setDbListings(prev => prev.map(p => p.id === id ? { ...p, listing_status: newStatus } : p))
+    setToggling(prev => { const s = new Set(prev); s.delete(id); return s })
   }
 
   const allTypes = Array.from(new Set([...staticProperties.map(p => p.propertyType.toLowerCase()), ...dbListings.map(p => p.property_type)]))
@@ -2350,12 +2395,25 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                   ) : <span style={{ color: '#94a3b8' }}>ไม่จำกัด</span>}
                 </td>
                 <td style={{ padding: '12px 14px' }}>
-                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Dashboard</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600, alignSelf: 'flex-start' }}>Dashboard</span>
+                    {p.listing_status === 'inactive'
+                      ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 7, background: '#fef3c7', color: '#92400e', fontWeight: 600, alignSelf: 'flex-start' }}>ซ่อนอยู่</span>
+                      : <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 7, background: '#dcfce7', color: '#15803d', fontWeight: 600, alignSelf: 'flex-start' }}>เผยแพร่</span>
+                    }
+                  </div>
                 </td>
                 <td style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 5 }}>
                     <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
                     <button onClick={() => setEditTarget(p)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span></button>
+                    <button
+                      onClick={() => togglePublish(p.id, p.listing_status)}
+                      disabled={toggling.has(p.id)}
+                      title={p.listing_status === 'active' ? 'ซ่อนประกาศ' : 'เผยแพร่ประกาศ'}
+                      style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${p.listing_status === 'active' ? '#c7d2d0' : '#86efac'}`, background: '#fff', color: p.listing_status === 'active' ? '#334155' : '#15803d', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: toggling.has(p.id) ? 0.5 : 1 }}>
+                      <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{toggling.has(p.id) ? 'sync' : p.listing_status === 'active' ? 'visibility_off' : 'visibility'}</span>
+                    </button>
                     <button onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === p.id ? 0.5 : 1 }}>
                       {deleting === p.id ? '…' : 'ลบ'}
                     </button>
