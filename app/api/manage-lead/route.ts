@@ -34,13 +34,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ชื่อและเบอร์โทรศัพท์จำเป็น' }, { status: 400 })
   }
 
-  // NOTE: Google Forms submission is handled client-side (hidden iframe) to
-  // avoid Google's bot detection which blocks server-side cloud IP submissions.
-  // This route handles email notification only.
-
   const errors: string[] = []
 
-  // ── Email notification to founder ─────────────────────────────────────────
+  // ── 1. Google Apps Script → writes directly to Google Sheet ──────────────
+  // Set GOOGLE_SCRIPT_URL in Vercel env vars to the deployed web app URL.
+  // Script must be deployed as "Anyone" access with doPost(e) handler.
+  const scriptUrl = process.env.GOOGLE_SCRIPT_URL
+  if (scriptUrl) {
+    try {
+      const res = await fetch(scriptUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, phone, type, location, channel }),
+        redirect: 'follow',
+      })
+      if (!res.ok) {
+        errors.push(`sheets: HTTP ${res.status}`)
+        console.error('[manage-lead] Apps Script error:', res.status)
+      } else {
+        console.log('[manage-lead] Google Sheet row written')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      errors.push(`sheets: ${msg}`)
+      console.error('[manage-lead] Apps Script fetch error:', msg)
+    }
+  } else {
+    console.warn('[manage-lead] GOOGLE_SCRIPT_URL not set — skipping Sheet write')
+  }
+
+  // ── 2. Email notification to founder ──────────────────────────────────────
   try {
     await sendManagementEnquiry({ name, phone, type, location, channel })
     console.log('[manage-lead] Founder email sent')
