@@ -44,6 +44,35 @@ const STEPS = [
   { n: '5', title: 'รับรายได้สบายใจ',         desc: 'เราดูแลเก็บค่าเช่า ซ่อมบำรุง และรายงานผลให้คุณทุกเดือน' },
 ]
 
+// ─── Google Forms config (client-side iframe submission) ──────────────────────
+// Submitting from the browser avoids Google's bot detection on server IPs.
+
+const GF_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSdZLcLLH7wceIOjatD8LDkK5vkHqEtkmv0dbuNuPfe9nF4e4Q/formResponse'
+const GF_ENTRIES = {
+  name:     'entry.229209152',
+  phone:    'entry.1797026062',
+  type:     'entry.2133807510',
+  location: 'entry.894141692',
+  channel:  'entry.1247005767',
+}
+
+function submitToGoogleForms(data: { name: string; phone: string; type: string; location: string; channel: string }) {
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = GF_ACTION
+  form.target = 'gf_iframe'
+  Object.entries(GF_ENTRIES).forEach(([key, entryName]) => {
+    const input = document.createElement('input')
+    input.type  = 'hidden'
+    input.name  = entryName
+    input.value = data[key as keyof typeof data]
+    form.appendChild(input)
+  })
+  document.body.appendChild(form)
+  form.submit()
+  document.body.removeChild(form)
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ManagePage() {
@@ -73,6 +102,8 @@ export default function ManagePage() {
         const j = await res.json().catch(() => ({}))
         throw new Error(j.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
       }
+      // Submit to Google Forms from the browser (avoids server-side bot detection)
+      submitToGoogleForms({ name, phone, type, location, channel })
       setSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
@@ -299,6 +330,9 @@ export default function ManagePage() {
           </div>
         </div>
       </section>
+
+      {/* Hidden iframe — target for browser-side Google Forms submission */}
+      <iframe name="gf_iframe" title="gf" style={{ display: 'none' }} />
 
       <style>{`
         @media (max-width: 960px) {

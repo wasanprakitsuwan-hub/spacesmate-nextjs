@@ -34,36 +34,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ชื่อและเบอร์โทรศัพท์จำเป็น' }, { status: 400 })
   }
 
+  // NOTE: Google Forms submission is handled client-side (hidden iframe) to
+  // avoid Google's bot detection which blocks server-side cloud IP submissions.
+  // This route handles email notification only.
+
   const errors: string[] = []
 
-  // ── 1. Google Forms submission ────────────────────────────────────────────
-  const formId = process.env.GOOGLE_FORM_ID
-  if (formId) {
-    try {
-      const params = new URLSearchParams()
-      if (process.env.GOOGLE_ENTRY_NAME)     params.append(`entry.${process.env.GOOGLE_ENTRY_NAME}`,     name)
-      if (process.env.GOOGLE_ENTRY_PHONE)    params.append(`entry.${process.env.GOOGLE_ENTRY_PHONE}`,    phone)
-      if (process.env.GOOGLE_ENTRY_TYPE)     params.append(`entry.${process.env.GOOGLE_ENTRY_TYPE}`,     type)
-      if (process.env.GOOGLE_ENTRY_LOCATION) params.append(`entry.${process.env.GOOGLE_ENTRY_LOCATION}`, location)
-      if (process.env.GOOGLE_ENTRY_CHANNEL)  params.append(`entry.${process.env.GOOGLE_ENTRY_CHANNEL}`,  channel)
-
-      await fetch(`https://docs.google.com/forms/d/e/${formId}/formResponse`, {
-        method:   'POST',
-        headers:  { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body:     params.toString(),
-        redirect: 'follow',
-      })
-      console.log('[manage-lead] Google Forms submitted')
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      errors.push(`google-forms: ${msg}`)
-      console.error('[manage-lead] Google Forms error:', msg)
-    }
-  } else {
-    console.warn('[manage-lead] GOOGLE_FORM_ID not set — skipping Google Forms submission')
-  }
-
-  // ── 2. Email notification to founder ─────────────────────────────────────
+  // ── Email notification to founder ─────────────────────────────────────────
   try {
     await sendManagementEnquiry({ name, phone, type, location, channel })
     console.log('[manage-lead] Founder email sent')
