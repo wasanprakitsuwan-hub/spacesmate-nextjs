@@ -109,8 +109,8 @@ export default function AboutPage() {
             <p style={{ margin: '0 0 14px' }}><span className="msym" style={{ fontSize: 26, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>build</span></p>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>Stream 2 — บริหารจัดการทรัพย์สิน</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: '0 0 14px', fontWeight: 300 }}>
-              SpacesMate บริหารอาคารทั้งหมดแทนเจ้าของ ตั้งแต่หาผู้เช่า เก็บค่าเช่า ไปจนถึงออกรายงาน
-              รายได้ 10% สำหรับอพาร์ทเม้นท์ / 15% สำหรับคอนโด
+              SpacesMate บริหารทรัพย์สินที่มีศักยภาพสูงแทนเจ้าของ ตั้งแต่หาผู้เช่า เก็บค่าเช่า จนถึงออกรายงาน
+              รูปแบบ Profit Sharing — SpacesMate ได้รับส่วนแบ่งจากรายได้จริงเท่านั้น
             </p>
             <Link href="/manage" style={{ color: '#d97f11', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>ฝากบริหารทรัพย์สิน →</Link>
           </div>
