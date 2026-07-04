@@ -385,12 +385,9 @@ function EditDrawer({ post, onClose, onSave }: {
                   key={form.id}
                   initialValue={form.content ?? ''}
                   onChange={html => setForm(f => ({ ...f, content: html }))}
-                  showLink
                   showImage
                   onImageClick={insertBodyImageBlog}
-                  showHr
-                  showUndoRedo
-                  minHeight={280}
+                  minHeight={320}
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
                   <span style={{ fontSize: 11.5, color: '#94a3b8' }}>

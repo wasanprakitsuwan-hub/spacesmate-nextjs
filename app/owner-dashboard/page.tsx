@@ -1125,7 +1125,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange }: 
       {/* ── 6 · รายละเอียดประกาศ ── */}
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="6 · รายละเอียดประกาศ" />
-        <RichEditor value={form.description_th} onChange={v => onChange('description_th', v)} placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..." />
+        <RichEditor value={form.description_th} onChange={v => onChange('description_th', v)} placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..." minHeight={220} />
       </div>
 
       {/* ── 7 · สิ่งอำนวยความสะดวก ── */}
