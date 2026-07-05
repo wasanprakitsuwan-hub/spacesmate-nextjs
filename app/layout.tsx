@@ -1,9 +1,19 @@
 import type { Metadata } from 'next'
+import { Prompt } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
 
 const GTM_ID = 'GTM-PJ6X4NHS'
+
+// ── Prompt font — self-hosted via next/font (eliminates render-blocking external request)
+const prompt = Prompt({
+  subsets: ['latin', 'thai'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-prompt',
+  preload: true,
+})
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th">
+    <html lang="th" className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
         {/* GTM noscript fallback — immediately after <body> */}
         <noscript>
@@ -49,6 +59,22 @@ new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${GTM_ID}');`,
+          }}
+        />
+
+        {/* Material Symbols Rounded — loaded non-blocking after page is interactive.
+            The 5.2 MB variable font must NOT block initial render.
+            Icons appear shortly after hydration; FCP/LCP are unaffected. */}
+        <Script
+          id="load-material-symbols"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              var l = document.createElement('link');
+              l.rel = 'stylesheet';
+              l.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap';
+              document.head.appendChild(l);
+            `,
           }}
         />
       </body>

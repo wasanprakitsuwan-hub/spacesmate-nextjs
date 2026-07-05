@@ -20,7 +20,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Prompt', 'sans-serif'],
+        sans: ['var(--font-prompt)', 'sans-serif'],
       },
       boxShadow: {
         'premium':       '0 4px 20px -2px rgba(2, 64, 46, 0.04)',
