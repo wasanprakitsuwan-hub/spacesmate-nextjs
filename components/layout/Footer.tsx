@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Footer() {
   return (
@@ -10,13 +11,13 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-spacemate-brandTeal rounded-lg flex items-center justify-center text-white font-bold text-sm">S</div>
-              <span className="font-bold text-lg">SpacesMate</span>
+            <div className="mb-4">
+              <Image src="/logo-white.png" alt="SpacesMate" width={148} height={46} style={{ height: 46, width: 'auto' }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               Smarter spaces. Better returns.<br />
-              แพลตฟอร์มเช่า-ขายสังหาฯ ที่โปร่งใสและเป็นธรรม
+              แพลตฟอร์มเช่าอสังหาฯ ที่โปร่งใสและเป็นธรรม
             </p>
           </div>
 
@@ -44,7 +45,7 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {[
                 { label: 'ลงประกาศปล่อยเช่า', href: '/submit' },
-                { label: 'รับฝากบริหาร', href: '/services' },
+                { label: 'รับฝากบริหาร', href: '/manage' },
                 { label: 'แพ็กเกจราคา', href: '/pricing' },
               ].map((item) => (
                 <li key={item.label}>
