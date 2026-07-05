@@ -7,7 +7,7 @@ import { AREA_CONTENT } from '@/lib/area-content'
 
 interface Props { params: { slug: string } }
 
-// Map area slug → property matching terms
+// Same area matching as Thai page
 const AREA_MATCH: Record<string, { type: string; terms: string[] }> = {
   'condo-rent-bts-asok':            { type: 'Condo',      terms: ['asok','อโศก','sukhumvit 21','สุขุมวิท 21'] },
   'apartment-rent-sukhumvit':       { type: 'Apartment',  terms: ['sukhumvit','สุขุมวิท'] },
@@ -34,22 +34,22 @@ export const dynamicParams = true
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const area = AREA_KEYWORDS.find(a => a.slug === params.slug)
-  if (!area) return { title: 'ไม่พบหน้า | SpacesMate' }
+  if (!area) return { title: 'Page not found | SpacesMate' }
   const content = AREA_CONTENT[params.slug]
+  const title = content ? `${content.headline_en} | SpacesMate` : `${area.label_en} | SpacesMate`
   const description = content
-    ? content.body_th[0].slice(0, 155)
-    : `${area.label_th} ในกรุงเทพมหานคร — ดูรายการที่พักและราคาที่ SpacesMate`
-  const title = content ? `${content.headline_th} | SpacesMate` : `${area.label_en} | SpacesMate`
+    ? content.body_en[0].slice(0, 155)
+    : `${area.label_en} in Bangkok — browse verified rentals and pricing on SpacesMate`
   return {
     title,
     description,
     openGraph: { title, description, type: 'website' },
-    alternates: { canonical: `/area/${params.slug}`, languages: { 'en': `/en/area/${params.slug}` } },
+    alternates: { canonical: `/en/area/${params.slug}`, languages: { 'th': `/area/${params.slug}` } },
   }
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโดมิเนียม', Office: 'ออฟฟิศ', 'Co-Working': 'โคเวิร์กกิ้ง',
+  Apartment: 'Apartment', Condo: 'Condominium', Office: 'Office Space', 'Co-Working': 'Co-Working Space',
 }
 const GRADS: Record<string, string> = {
   Apartment: 'linear-gradient(135deg,#02402e,#036b56)',
@@ -59,7 +59,7 @@ const GRADS: Record<string, string> = {
   default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
-export default function AreaPage({ params }: Props) {
+export default function AreaPageEn({ params }: Props) {
   const area = AREA_KEYWORDS.find(a => a.slug === params.slug)
   if (!area) notFound()
 
@@ -73,7 +73,6 @@ export default function AreaPage({ params }: Props) {
       })
     : []
 
-  // Related areas (same property type)
   const related = AREA_KEYWORDS
     .filter(a => a.slug !== params.slug && a.property_type === area.property_type)
     .slice(0, 4)
@@ -84,29 +83,29 @@ export default function AreaPage({ params }: Props) {
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '52px 24px 60px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
-            <Link href="/" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>หน้าแรก</Link>
+            <Link href="/en" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Home</Link>
             <span>/</span>
-            <Link href="/search" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>ค้นหาที่พัก</Link>
+            <Link href="/search" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Search Rentals</Link>
             <span>/</span>
-            <span style={{ color: '#fff' }}>{area.label_th}</span>
+            <span style={{ color: '#fff' }}>{area.label_en}</span>
           </div>
           <h1 style={{ fontSize: 'clamp(22px,3.2vw,40px)', fontWeight: 700, color: '#fff', margin: '0 0 10px', letterSpacing: '-0.3px' }}>
-            {content ? content.headline_th : area.label_th}
+            {content ? content.headline_en : area.label_en}
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15, margin: '0 0 20px', fontWeight: 300 }}>
-            {area.label_en} — กรุงเทพมหานคร ประเทศไทย
+            {area.label_th} — Bangkok, Thailand
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 13, fontWeight: 500, padding: '7px 16px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>
-              {areaProps.length > 0 ? `${areaProps.length} ประกาศ` : 'ทำเลยอดนิยม'}
+              {areaProps.length > 0 ? `${areaProps.length} listings` : 'Popular Area'}
             </span>
             {content && (
               <span style={{ display: 'inline-block', background: 'rgba(217,127,17,0.85)', color: '#fff', fontSize: 13, fontWeight: 600, padding: '7px 16px', borderRadius: 20 }}>
-                {content.price_from_th}
+                {content.price_from_en}
               </span>
             )}
-            <Link href={`/en/area/${params.slug}`} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 20, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>
-              🇬🇧 English
+            <Link href={`/area/${params.slug}`} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 20, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>
+              🇹🇭 ภาษาไทย
             </Link>
           </div>
         </div>
@@ -118,7 +117,7 @@ export default function AreaPage({ params }: Props) {
         {areaProps.length > 0 ? (
           <>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#02402e', margin: '0 0 24px' }}>
-              ประกาศในทำเล{area.label_th}
+              Listings in {area.label_en}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }} className="sm-area-grid">
               {areaProps.map(p => {
@@ -138,7 +137,7 @@ export default function AreaPage({ params }: Props) {
                       <h3 style={{ fontSize: 14, fontWeight: 600, color: '#231f20', margin: '0 0 8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</h3>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 15.5, fontWeight: 700, color: '#d97f11' }}>{p.priceDisplay}</span>
-                        <span style={{ color: '#048c73', fontSize: 12, fontWeight: 600 }}>ดูรายละเอียด →</span>
+                        <span style={{ color: '#048c73', fontSize: 12, fontWeight: 600 }}>View details →</span>
                       </div>
                     </div>
                   </Link>
@@ -149,12 +148,12 @@ export default function AreaPage({ params }: Props) {
         ) : (
           <div style={{ padding: '56px 24px', textAlign: 'center', background: '#f7f9f8', borderRadius: 20, marginBottom: 48 }}>
             <p style={{ margin: '0 0 12px' }}><span className="msym" style={{ fontSize: 32, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span></p>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ยังไม่มีประกาศในทำเลนี้</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>No listings yet in this area</h2>
             <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 24px', fontWeight: 300 }}>
-              ทำเล{area.label_th}กำลังเพิ่มจำนวนประกาศ ลองค้นหาทำเลใกล้เคียง
+              {area.label_en} is growing — explore nearby areas in the meantime.
             </p>
             <Link href="/search" style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '12px 28px', borderRadius: 24, textDecoration: 'none', display: 'inline-block' }}>
-              ดูประกาศทั้งหมด
+              Browse all listings
             </Link>
           </div>
         )}
@@ -167,10 +166,10 @@ export default function AreaPage({ params }: Props) {
                 {/* Highlights */}
                 <div style={{ background: '#f7f9f8', borderRadius: 20, padding: '24px 28px', marginBottom: 20 }}>
                   <h2 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>
-                    ทำไมถึงนิยมเช่าในย่านนี้?
+                    Why rent in this area?
                   </h2>
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {content.highlights_th.map((h, i) => (
+                    {content.highlights_en.map((h, i) => (
                       <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: '#374151', lineHeight: 1.6 }}>
                         <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: '50%', background: '#e6f4ef', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                           <span className="msym" style={{ fontSize: 13, color: '#048c73', fontVariationSettings: "'FILL' 1" }}>check</span>
@@ -184,21 +183,21 @@ export default function AreaPage({ params }: Props) {
                 {/* Body text */}
                 <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: '24px 28px', marginBottom: 20 }}>
                   <h2 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>
-                    ข้อมูลเพิ่มเติมเกี่ยวกับทำเลนี้
+                    About this area
                   </h2>
-                  {content.body_th.map((para, i) => (
-                    <p key={i} style={{ fontSize: 14.5, color: '#475569', lineHeight: 1.85, margin: i < content.body_th.length - 1 ? '0 0 14px' : 0, fontWeight: 300 }}>
+                  {content.body_en.map((para, i) => (
+                    <p key={i} style={{ fontSize: 14.5, color: '#475569', lineHeight: 1.85, margin: i < content.body_en.length - 1 ? '0 0 14px' : 0, fontWeight: 300 }}>
                       {para}
                     </p>
                   ))}
                 </div>
 
                 {/* FAQ */}
-                {content.faq_th.length > 0 && (
+                {content.faq_en.length > 0 && (
                   <div style={{ background: '#f7f9f8', borderRadius: 20, padding: '24px 28px' }}>
-                    <h2 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>คำถามที่พบบ่อย</h2>
-                    {content.faq_th.map((faq, i) => (
-                      <div key={i} style={{ marginBottom: i < content.faq_th.length - 1 ? 18 : 0 }}>
+                    <h2 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>Frequently Asked Questions</h2>
+                    {content.faq_en.map((faq, i) => (
+                      <div key={i} style={{ marginBottom: i < content.faq_en.length - 1 ? 18 : 0 }}>
                         <p style={{ fontSize: 14.5, fontWeight: 600, color: '#231f20', margin: '0 0 6px' }}>{faq.q}</p>
                         <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{faq.a}</p>
                       </div>
@@ -207,19 +206,17 @@ export default function AreaPage({ params }: Props) {
                 )}
               </>
             ) : (
-              /* Fallback generic content */
-              <div style={{ background: '#f7f9f8', borderRadius: 20, padding: '28px 28px' }}>
+              <div style={{ background: '#f7f9f8', borderRadius: 20, padding: '28px' }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>
-                  ทำไมถึงนิยมเช่าในย่านนี้?
+                  Why rent in {area.label_en}?
                 </h2>
                 <p style={{ fontSize: 14.5, color: '#475569', lineHeight: 1.8, margin: '0 0 16px', fontWeight: 300 }}>
-                  ทำเลนี้เป็นหนึ่งในทำเลที่มีความต้องการสูงในกรุงเทพมหานคร
-                  {area.station && ` สถานี ${area.station} เชื่อมต่อระบบขนส่งสาธารณะอย่างสะดวก`}
-                  {area.district && ` ย่าน${area.district} มีสิ่งอำนวยความสะดวกครบครัน ทั้งห้างสรรพสินค้า ร้านอาหาร และสถานที่ทำงาน`}
+                  This is one of the most in-demand rental locations in Bangkok
+                  {area.station && ` — ${area.station} station offers easy public transit access`}
+                  {area.district && ` and the ${area.district} district has everything you need: malls, restaurants, and workplaces`}.
                 </p>
                 <p style={{ fontSize: 14.5, color: '#475569', lineHeight: 1.8, margin: 0, fontWeight: 300 }}>
-                  SpacesMate คัดสรรประกาศที่ผ่านการตรวจสอบแล้วสำหรับทำเลนี้
-                  เพื่อให้คุณพบที่พักที่ตรงความต้องการได้อย่างรวดเร็ว
+                  SpacesMate lists only verified rentals in this area so you can find the right property quickly.
                 </p>
               </div>
             )}
@@ -228,22 +225,22 @@ export default function AreaPage({ params }: Props) {
           {/* Owner CTA sidebar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ background: '#02402e', borderRadius: 20, padding: '28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>มีทรัพย์สินในย่านนี้?</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>Own a property here?</h3>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.6, fontWeight: 300 }}>
-                ลงประกาศหรือฝากบริหารกับ SpacesMate เข้าถึงผู้เช่าหลายพันคน
+                List or manage your property with SpacesMate — reach thousands of renters.
               </p>
               <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '12px 0', borderRadius: 22, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
-                ลงประกาศ ฿299
+                List your property ฿299
               </Link>
               <Link href="/manage" style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13, padding: '10px 0', borderRadius: 22, textAlign: 'center', textDecoration: 'none', display: 'block', border: '1px solid rgba(255,255,255,0.25)' }}>
-                ฝากบริหาร A–Z
+                Full management A–Z
               </Link>
             </div>
             {content && (
               <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: '20px 22px' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>ราคาเช่าในย่านนี้</p>
-                <p style={{ fontSize: 16, fontWeight: 700, color: '#d97f11', margin: '0 0 4px' }}>{content.price_from_th}</p>
-                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>{content.price_from_en}</p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>Rental pricing here</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: '#d97f11', margin: '0 0 4px' }}>{content.price_from_en}</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>{content.price_from_th}</p>
               </div>
             )}
           </div>
@@ -252,14 +249,14 @@ export default function AreaPage({ params }: Props) {
         {/* Related areas */}
         {related.length > 0 && (
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>ทำเลใกล้เคียงที่น่าสนใจ</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>Explore nearby areas</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }} className="sm-related4">
               {related.map(r => (
-                <Link key={r.slug} href={`/area/${r.slug}`}
+                <Link key={r.slug} href={`/en/area/${r.slug}`}
                   style={{ padding: '14px 16px', background: '#f7f9f8', border: '1px solid #eef0ef', borderRadius: 14, textDecoration: 'none', display: 'block', transition: 'all .2s' }}
                   className="sm-area-related">
-                  <p style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', margin: '0 0 4px' }}>{r.label_th}</p>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{r.label_en}</p>
+                  <p style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', margin: '0 0 4px' }}>{r.label_en}</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{r.label_th}</p>
                 </Link>
               ))}
             </div>
