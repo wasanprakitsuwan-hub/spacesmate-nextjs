@@ -52,11 +52,11 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`Submission ${submissionId} activated (${packageId})`)
 
-      // ── Sync package info to user_profiles ────────────────────────────────
-      // The owner dashboard reads from user_profiles, not submissions.
-      // Find the user by Stripe customer email and update their profile.
+      // ── Sync package info to user_profiles + stamp user_id ───────────────
+      const customerEmail = session.customer_details?.email ?? session.customer_email ?? null
+      let resolvedUserId: string | null = null
+
       try {
-        const customerEmail = session.customer_details?.email ?? session.customer_email ?? null
         if (customerEmail) {
           const { data: profile } = await supabase
             .from('user_profiles')
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
             .single()
 
           if (profile?.id) {
+            resolvedUserId = profile.id
             await supabase.from('user_profiles').update({
               package_type:           packageId,
               package_expires_at:     expiresAt.toISOString(),
@@ -82,6 +83,60 @@ export async function POST(req: NextRequest) {
         }
       } catch (profileErr) {
         console.error('[profile sync] error (non-fatal):', profileErr)
+      }
+
+      // ── Auto-create a properties row so the listing is publicly visible ───
+      // Paid submissions stay in `submissions` but public search reads `properties`.
+      // We create the property here so it appears live immediately after payment.
+      try {
+        const { data: sub } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('id', submissionId)
+          .single()
+
+        if (sub) {
+          const slug = ((sub.title || 'listing') as string)
+            .toLowerCase()
+            .replace(/[^฀-๿\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+            .slice(0, 60) + '-' + Date.now().toString(36)
+
+          const { error: propErr } = await supabase.from('properties').insert({
+            slug,
+            source_submission_id: submissionId,
+            landlord_id:          resolvedUserId,
+            title_th:             sub.title       || '',
+            description_th:       sub.description || null,
+            property_type:        sub.type        || 'คอนโดมิเนียม',
+            price_from:           sub.price       || 0,
+            area_sqm:             sub.size ? parseFloat(String(sub.size)) : null,
+            bedrooms:             sub.bedrooms    || null,
+            bathrooms:            sub.bathrooms   || null,
+            floor:                sub.floor       || null,
+            address_th:           sub.address     || null,
+            district:             sub.district    || null,
+            sub_district:         sub.subdistrict || null,
+            province:             sub.province    || 'กรุงเทพมหานคร',
+            postcode:             sub.postcode    || null,
+            amenities:            Array.isArray(sub.amenities) ? sub.amenities : [],
+            images:               Array.isArray(sub.images)    ? sub.images    : [],
+            rental_term:          sub.rental_term || 'monthly',
+            contact_name:         sub.contact_name  || null,
+            contact_phone:        sub.contact_phone || null,
+            package_type:         packageId,
+            expires_at:           expiresAt.toISOString(),
+            listing_status:       'active',
+            verified:             false,
+          })
+
+          if (propErr) console.error('[webhook] auto-create property error:', propErr)
+          else console.log(`Property auto-created from submission ${submissionId} → slug=${slug}`)
+        }
+      } catch (propCreateErr) {
+        console.error('[webhook] auto-create property (non-fatal):', propCreateErr)
       }
 
       // ── Send email notifications ──────────────────────────────────────────

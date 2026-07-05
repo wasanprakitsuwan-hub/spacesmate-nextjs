@@ -16,8 +16,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── 1. Save submission as pending_payment ───────────────────────────────
+    // ── 0. Capture logged-in user_id if present (non-fatal) ─────────────────
     const supabase = createServerClient()
+    let userId: string | null = null
+    const authToken = req.headers.get('authorization')?.replace('Bearer ', '')
+    if (authToken) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser(authToken)
+        userId = user?.id ?? null
+      } catch { /* no-op — guest checkout is allowed */ }
+    }
+
+    // ── 1. Save submission as pending_payment ───────────────────────────────
     const { data: submission, error: dbError } = await supabase
       .from('submissions')
       .insert([{
@@ -42,6 +52,7 @@ export async function POST(req: NextRequest) {
         contact_email: body.contactEmail  || null,
         images:        Array.isArray(body.images) ? body.images : [],
         package_type:  packageId,
+        user_id:       userId,             // stamped immediately if logged in
         status:        'pending_payment', // activated by webhook after payment
       }])
       .select('id')

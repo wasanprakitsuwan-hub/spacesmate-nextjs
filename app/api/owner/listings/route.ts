@@ -24,10 +24,39 @@ export async function GET(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    // userId from verified JWT — never trust query params
-    const userId = auth.id
+    const userId    = auth.id
+    const userEmail = auth.email ?? ''
+    const supabase  = createServerClient()
 
-    const supabase = createServerClient()
+    // ── Auto-claim orphaned submissions (paid before account existed) ──────
+    // Find any approved submissions with matching email but no user_id.
+    if (userEmail) {
+      const { data: orphaned } = await supabase
+        .from('submissions')
+        .select('id')
+        .eq('contact_email', userEmail)
+        .is('user_id', null)
+        .eq('status', 'approved')
+
+      if (orphaned && orphaned.length > 0) {
+        const orphanIds = orphaned.map((s: { id: string }) => s.id)
+
+        // Stamp user_id on submissions
+        await supabase.from('submissions')
+          .update({ user_id: userId })
+          .in('id', orphanIds)
+
+        // Claim the corresponding properties rows (linked by source_submission_id)
+        await supabase.from('properties')
+          .update({ landlord_id: userId })
+          .in('source_submission_id', orphanIds)
+          .is('landlord_id', null)
+
+        console.log(`[auto-claim] ${orphanIds.length} orphaned submission(s) claimed for ${userEmail}`)
+      }
+    }
+
+    // ── Return all properties owned by this user ───────────────────────────
     const { data, error } = await supabase
       .from('properties')
       .select('id, slug, title_th, title_en, property_type, price_from, price_to, district, address_th, images, listing_status, package_type, expires_at, created_at, bedrooms, bathrooms, area_sqm, rental_term, verified')

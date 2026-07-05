@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { searchCondoRegistry, type CondoEntry } from '@/lib/condo-registry'
 import { trackEvent } from '@/lib/analytics'
+import { createBrowserClient } from '@/lib/supabase'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -272,10 +273,15 @@ function SubmitNewForm() {
     setError(null)
     setLoading(true)
     try {
+      // Attach auth token if user is logged in — stamps user_id on submission immediately
+      const { data: { session: authSession } } = await createBrowserClient().auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (authSession?.access_token) headers['Authorization'] = `Bearer ${authSession.access_token}`
+
       // Save listing + create Stripe Checkout Session
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...form,
           promotionCodeId: promoData?.promotionCodeId ?? '',
