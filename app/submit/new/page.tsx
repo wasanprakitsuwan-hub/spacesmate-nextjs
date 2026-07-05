@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { searchCondoRegistry, type CondoEntry } from '@/lib/condo-registry'
+import { trackEvent } from '@/lib/analytics'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -283,7 +284,10 @@ function SubmitNewForm() {
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || 'Server error')
       // Redirect to Stripe Checkout — user pays, then comes back to /submit/success
-      if (json.url) window.location.href = json.url
+      if (json.url) {
+        trackEvent('listing_checkout', { package_id: form.packageId, property_type: form.type })
+        window.location.href = json.url
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
       setLoading(false)
@@ -791,7 +795,11 @@ function SubmitNewForm() {
             )}
 
             {step < STEPS.length - 1 ? (
-              <button type="button" onClick={() => setStep(s => s + 1)}
+              <button type="button" onClick={() => {
+                const next = step + 1
+                trackEvent(`listing_step_${next + 1}`, { from_step: step + 1, package_id: form.packageId })
+                setStep(next)
+              }}
                 style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, border: 'none', borderRadius: 24, padding: '13px 30px', cursor: 'pointer' }}>
                 ถัดไป<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </button>

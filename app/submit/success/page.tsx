@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import TrackOnMount from '@/components/TrackOnMount'
 
 export const metadata: Metadata = {
   title: 'ชำระเงินสำเร็จ | SpacesMate',
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 export default function SubmitSuccessPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px' }}>
+      <TrackOnMount eventName="listing_complete" />
       <div style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', maxWidth: 520, width: '100%', textAlign: 'center', boxShadow: '0 4px 24px rgba(2,64,46,0.08)' }}>
 
         {/* Icon */}

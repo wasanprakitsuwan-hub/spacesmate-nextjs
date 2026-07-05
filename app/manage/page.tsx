@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { trackEvent } from '@/lib/analytics'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ export default function ManagePage() {
         const j = await res.json().catch(() => ({}))
         throw new Error(j.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
       }
+      trackEvent('management_form_submit', { property_type: type, preferred_channel: channel })
       setSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { trackEvent } from '@/lib/analytics'
 
 const INTENTS = [
   { value: 'นักลงทุน',        label: 'นักลงทุน',          icon: 'finance' },
@@ -44,6 +45,7 @@ export default function ContactPage() {
         const json = await res.json().catch(() => ({}))
         throw new Error(json.error || `HTTP ${res.status}`)
       }
+      trackEvent('contact_form_submit', { intent: form.intent })
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่')
