@@ -9,6 +9,7 @@ const NAV = [
   { href: '/dashboard',                  label: 'ภาพรวมระบบ',    icon: 'grid_view',        exact: true },
   { href: '/dashboard/listings',         label: 'จัดการประกาศ',  icon: 'apartment',         exact: false },
   { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false },
+  { href: '/dashboard/pages',            label: 'Pages',          icon: 'web',               exact: false },
   { href: '/dashboard/property-names',   label: 'ชื่ออสังหา',     icon: 'domain',            exact: false },
   { href: '/dashboard/seo',              label: 'SEO Tracker',    icon: 'travel_explore',    exact: false },
   { href: '/dashboard/revenue',          label: 'รายได้',         icon: 'bar_chart',         exact: false },
