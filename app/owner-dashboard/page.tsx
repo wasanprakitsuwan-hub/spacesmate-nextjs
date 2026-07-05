@@ -1472,6 +1472,10 @@ export default function OwnerDashboardPage() {
   const [confirmCancelSubId, setConfirmCancelSubId] = useState<string | null>(null)
   const [cancellingSubId,    setCancellingSubId]    = useState<string | null>(null)
   const [cancelError,        setCancelError]        = useState('')
+  const [confirmUpgradeSubId, setConfirmUpgradeSubId] = useState<string | null>(null)
+  const [selectedUpgradePkg,  setSelectedUpgradePkg]  = useState<string>('')
+  const [upgradingSubId,      setUpgradingSubId]      = useState<string | null>(null)
+  const [upgradeError,        setUpgradeError]        = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
@@ -1542,6 +1546,32 @@ export default function OwnerDashboardPage() {
       setCancelError(err.message ?? 'เกิดข้อผิดพลาด')
     } finally {
       setCancellingSubId(null)
+    }
+  }
+
+  async function upgradeSubscription(subscriptionId: string, newPackageId: string) {
+    setUpgradingSubId(subscriptionId)
+    setUpgradeError('')
+    try {
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch('/api/owner/subscription', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ subscription_id: subscriptionId, new_package_id: newPackageId }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'อัปเกรดไม่สำเร็จ')
+      setSubscriptions(prev => prev.map(s =>
+        s.stripe_subscription_id === subscriptionId
+          ? { ...s, package_type: newPackageId }
+          : s
+      ))
+      setConfirmUpgradeSubId(null)
+      setSelectedUpgradePkg('')
+    } catch (err: any) {
+      setUpgradeError(err.message ?? 'เกิดข้อผิดพลาด')
+    } finally {
+      setUpgradingSubId(null)
     }
   }
 
@@ -1665,13 +1695,24 @@ export default function OwnerDashboardPage() {
                 </div>
 
                 {isActive && !isCancelled && (
-                  <button
-                    onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
-                    style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}
-                  >
-                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>
-                    ยกเลิก
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                    {sub.package_type !== 'premium' && (
+                      <button
+                        onClick={() => { setUpgradeError(''); setSelectedUpgradePkg(''); setConfirmUpgradeSubId(sub.stripe_subscription_id) }}
+                        style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}
+                      >
+                        <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>
+                        อัปเกรด
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
+                      style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}
+                    >
+                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>
+                      ยกเลิก
+                    </button>
+                  </div>
                 )}
               </div>
             )
@@ -1724,6 +1765,68 @@ export default function OwnerDashboardPage() {
                   {isCancelling
                     ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังยกเลิก...</>
                     : 'ยืนยันยกเลิก'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Upgrade plan modal */}
+      {confirmUpgradeSubId && (() => {
+        const targetSub  = subscriptions.find(s => s.stripe_subscription_id === confirmUpgradeSubId)
+        const isUpgrading = upgradingSubId === confirmUpgradeSubId
+        const currentPkg = targetSub?.package_type ?? 'basic'
+        const PKG_ORDER  = ['basic', 'standard', 'premium']
+        const currentIdx = PKG_ORDER.indexOf(currentPkg)
+        const upgradeOptions = [
+          { id: 'standard', label: 'Standard', price: '฿699', period: '/ 3 เดือน', desc: 'อัปโหลดรูปสูงสุด 10 ภาพ · ประหยัด 22%' },
+          { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',   desc: 'อัปโหลดรูปสูงสุด 20 ภาพ + วิดีโอ · ประหยัด 30%' },
+        ].filter(o => PKG_ORDER.indexOf(o.id) > currentIdx)
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                <div style={{ background: '#eaf6f1', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="msym" style={{ fontSize: 20, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>อัปเกรดแพ็กเกจ</h3>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: 0, marginTop: 2 }}>ปัจจุบัน: <strong>{currentPkg.charAt(0).toUpperCase() + currentPkg.slice(1)}</strong></p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                {upgradeOptions.map(opt => (
+                  <button key={opt.id} onClick={() => setSelectedUpgradePkg(opt.id)}
+                    style={{ textAlign: 'left', background: selectedUpgradePkg === opt.id ? '#eaf6f1' : '#f8fafc', border: selectedUpgradePkg === opt.id ? '2px solid #048c73' : '2px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.price}<span style={{ fontSize: 11, fontWeight: 400, color: '#64748b', marginLeft: 2 }}>{opt.period}</span></span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#92400e', lineHeight: 1.5 }}>
+                Stripe จะคิดค่าใช้จ่ายเฉพาะส่วนต่างของวันที่เหลืออยู่ในรอบปัจจุบัน (Proration) ทันทีที่ยืนยัน
+              </div>
+
+              {upgradeError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>{upgradeError}</div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setConfirmUpgradeSubId(null); setSelectedUpgradePkg(''); setUpgradeError('') }} disabled={isUpgrading}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  กลับ
+                </button>
+                <button onClick={() => selectedUpgradePkg && upgradeSubscription(confirmUpgradeSubId, selectedUpgradePkg)} disabled={!selectedUpgradePkg || isUpgrading}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: !selectedUpgradePkg || isUpgrading ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: !selectedUpgradePkg || isUpgrading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {isUpgrading
+                    ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปเกรด...</>
+                    : 'ยืนยันอัปเกรด'}
                 </button>
               </div>
             </div>

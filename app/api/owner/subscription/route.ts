@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { stripe, STRIPE_PRICES, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 
 export interface SubscriptionItem {
@@ -145,6 +145,100 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({ subscriptions: results })
+}
+
+// PATCH — upgrade a specific subscription to a higher plan (with proration)
+export async function PATCH(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const supabase = createServerClient()
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { subscription_id?: string; new_package_id?: string } = {}
+  try { body = await req.json() } catch { /* empty body */ }
+
+  const { subscription_id: subscriptionId, new_package_id: newPackageId } = body
+  if (!subscriptionId) return NextResponse.json({ error: 'subscription_id required' }, { status: 400 })
+  if (!newPackageId)   return NextResponse.json({ error: 'new_package_id required' }, { status: 400 })
+
+  const newPriceId = STRIPE_PRICES[newPackageId]
+  if (!newPriceId) return NextResponse.json({ error: 'Invalid package' }, { status: 400 })
+
+  // Verify ownership — submission user_id OR stripe_customer_id OR profile.stripe_subscription_id
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('stripe_customer_id, stripe_subscription_id')
+    .eq('id', user.id)
+    .single()
+
+  const { data: ownedRow } = await supabase
+    .from('submissions')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('stripe_subscription_id', subscriptionId)
+    .maybeSingle()
+
+  if (!ownedRow) {
+    // Check stripe_customer_id
+    if (profile?.stripe_customer_id) {
+      try {
+        const s = await stripe.subscriptions.retrieve(subscriptionId)
+        if (s.customer !== profile.stripe_customer_id) {
+          return NextResponse.json({ error: 'ไม่มีสิทธิ์อัปเกรด subscription นี้' }, { status: 403 })
+        }
+      } catch {
+        return NextResponse.json({ error: 'ไม่พบ subscription' }, { status: 404 })
+      }
+    } else if (profile?.stripe_subscription_id !== subscriptionId) {
+      // Last resort — profile.stripe_subscription_id match
+      return NextResponse.json({ error: 'ไม่มีสิทธิ์อัปเกรด subscription นี้' }, { status: 403 })
+    }
+  }
+
+  try {
+    // Retrieve current subscription to get item ID and validate tier
+    const currentSub = await stripe.subscriptions.retrieve(subscriptionId)
+    const currentPriceId = currentSub.items.data[0]?.price?.id
+    if (currentPriceId === newPriceId) {
+      return NextResponse.json({ error: 'คุณใช้แพ็กเกจนี้อยู่แล้ว' }, { status: 400 })
+    }
+    const itemId = currentSub.items.data[0]?.id
+    if (!itemId) return NextResponse.json({ error: 'ไม่พบรายการใน subscription' }, { status: 400 })
+
+    // Swap price with proration — Stripe charges the difference immediately
+    const updatedSub = await stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+      metadata: { ...currentSub.metadata, package_id: newPackageId },
+    })
+
+    // Extend expires_at based on new package duration from now
+    const durationDays = PACKAGE_DAYS[newPackageId] ?? 30
+    const newExpiresAt = new Date()
+    newExpiresAt.setDate(newExpiresAt.getDate() + durationDays)
+
+    // Sync new package type to submissions and user_profiles
+    await supabase.from('submissions')
+      .update({ package_type: newPackageId, expires_at: newExpiresAt.toISOString() })
+      .eq('stripe_subscription_id', subscriptionId)
+
+    await supabase.from('user_profiles')
+      .update({ package_type: newPackageId, package_expires_at: newExpiresAt.toISOString() })
+      .eq('id', user.id)
+
+    console.log(`Subscription ${subscriptionId} upgraded → ${newPackageId}`)
+    return NextResponse.json({
+      success: true,
+      message: `อัปเกรดเป็น ${newPackageId} สำเร็จแล้ว`,
+      new_package_type: newPackageId,
+      stripe_status: updatedSub.status,
+    })
+  } catch (err: any) {
+    console.error('Upgrade subscription error:', err)
+    return NextResponse.json({ error: err.message ?? 'อัปเกรดไม่สำเร็จ' }, { status: 500 })
+  }
 }
 
 // DELETE — cancel a specific subscription at period end
