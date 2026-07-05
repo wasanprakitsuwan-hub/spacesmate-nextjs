@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { properties as staticProperties } from '@/lib/property-data'
-import { searchCondoRegistry } from '@/lib/condo-registry'
+
 import RichEditor from '@/components/RichEditor'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -1114,10 +1114,37 @@ function PropertyNameAutocomplete({ value, onChange }: {
   onChange: (v: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [allNames, setAllNames] = useState<{ name_th: string; name_en: string | null }[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
-  const suggestions = searchCondoRegistry(value)
 
-  // Close dropdown on outside click
+  // Fetch from Supabase registry once on mount
+  useEffect(() => {
+    fetch('/api/dashboard/property-names')
+      .then(r => r.json())
+      .then(d => {
+        setAllNames((d.names ?? []).map((n: { name_th: string; name_en: string | null }) => ({
+          name_th: n.name_th,
+          name_en: n.name_en,
+        })))
+      })
+      .catch(() => {})
+  }, [])
+
+  // Search: match against name_th, name_en, or partial
+  const suggestions = value.trim().length < 2 ? [] : (() => {
+    const q = value.toLowerCase().trim()
+    const starts: typeof allNames = []
+    const contains: typeof allNames = []
+    for (const n of allNames) {
+      const th = n.name_th.toLowerCase()
+      const en = (n.name_en ?? '').toLowerCase()
+      if (th.startsWith(q) || en.startsWith(q)) starts.push(n)
+      else if (th.includes(q) || en.includes(q)) contains.push(n)
+    }
+    return [...starts, ...contains].slice(0, 8)
+  })()
+
+  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -1134,7 +1161,7 @@ function PropertyNameAutocomplete({ value, onChange }: {
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
         onFocus={() => { if (value.length >= 2) setOpen(true) }}
-        placeholder="เช่น Lumpini Place Suanplu-Sathorn"
+        placeholder="เช่น แอชตัน อโศก, Ashton Asoke"
         style={SINP}
         autoComplete="off"
       />
@@ -1145,11 +1172,11 @@ function PropertyNameAutocomplete({ value, onChange }: {
           boxShadow: '0 8px 24px rgba(2,64,46,0.12)', overflow: 'hidden',
         }}>
           <div style={{ padding: '6px 14px 5px', borderBottom: '1px solid #f1f5f9', fontSize: 10.5, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            ชื่อ SEO แนะนำ
+            ชื่อแนะนำ
           </div>
           {suggestions.map(s => (
-            <button key={s.name} type="button"
-              onMouseDown={() => { onChange(s.name); setOpen(false) }}
+            <button key={s.name_th} type="button"
+              onMouseDown={() => { onChange(s.name_th); setOpen(false) }}
               style={{
                 display: 'block', width: '100%', textAlign: 'left', border: 'none',
                 padding: '10px 14px', fontSize: 13, color: '#1e293b', background: 'none',
@@ -1158,7 +1185,8 @@ function PropertyNameAutocomplete({ value, onChange }: {
               onMouseEnter={e => (e.currentTarget.style.background = '#eaf6f1')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={{ fontWeight: 600, color: '#02402e' }}>{s.name}</span>
+              <span style={{ fontWeight: 600, color: '#02402e' }}>{s.name_th}</span>
+              {s.name_en && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>{s.name_en}</span>}
             </button>
           ))}
         </div>
