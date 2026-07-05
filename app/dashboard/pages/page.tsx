@@ -1,6 +1,15 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
+
+async function authHeaders(): Promise<HeadersInit> {
+  const supabase = createBrowserClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }
+    : { 'Content-Type': 'application/json' }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /dashboard/pages — Editable site page registry
@@ -61,7 +70,7 @@ function EditDrawer({
     try {
       const r = await fetch('/api/dashboard/pages', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({
           id: page.id,
           label_th:   labelTh.trim(),
@@ -291,7 +300,7 @@ export default function PagesPage() {
     try {
       const r = await fetch('/api/dashboard/pages', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({ id: page.id, status: newStatus }),
       })
       if (!r.ok) throw new Error('Failed')
@@ -308,7 +317,8 @@ export default function PagesPage() {
     if (!deletePage) return
     setDeletingId(deletePage.id)
     try {
-      const r = await fetch(`/api/dashboard/pages?id=${deletePage.id}`, { method: 'DELETE' })
+      const headers = await authHeaders()
+      const r = await fetch(`/api/dashboard/pages?id=${deletePage.id}`, { method: 'DELETE', headers })
       if (!r.ok) throw new Error('Failed')
       setPages(prev => prev.filter(p => p.id !== deletePage.id))
       showToast(`ลบ ${deletePage.label_th} แล้ว`)
