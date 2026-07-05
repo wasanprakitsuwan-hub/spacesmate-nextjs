@@ -364,7 +364,7 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
 }
 
 // ── User Detail Drawer (#204) ─────────────────────────────────────────────────
-function DetailDrawer({ userId, onClose }: { userId: string; onClose: () => void }) {
+function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string; onClose: () => void; onEdit?: () => void; callerRole?: CallerRole }) {
   const [detail,  setDetail]  = useState<UserDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
@@ -490,8 +490,13 @@ function DetailDrawer({ userId, onClose }: { userId: string; onClose: () => void
           ) : null}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef' }}>
-          <button onClick={onClose} style={{ width: '100%', padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ปิด</button>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ปิด</button>
+          {onEdit && (
+            <button onClick={onEdit} style={{ flex: 2, padding: '11px', borderRadius: 11, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+              <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>edit</span>แก้ไขข้อมูล
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -585,7 +590,15 @@ export default function UsersPage() {
       {editingUser && <EditDrawer user={editingUser} callerRole={callerRole} onClose={() => setEditingUser(null)} onSaved={load} />}
       {deletingUser && <DeleteConfirmModal user={deletingUser} onClose={() => setDeletingUser(null)} onDeleted={() => { setDeletingUser(null); load() }} />}
       {suspendUser && <SuspendModal user={suspendUser} onClose={() => setSuspendUser(null)} onDone={load} />}
-      {detailUserId && <DetailDrawer userId={detailUserId} onClose={() => setDetailUserId(null)} />}
+      {detailUserId && <DetailDrawer
+        userId={detailUserId}
+        callerRole={callerRole}
+        onClose={() => setDetailUserId(null)}
+        onEdit={() => {
+          const u = users.find(x => x.id === detailUserId)
+          if (u) { setDetailUserId(null); setEditingUser(u) }
+        }}
+      />}
 
       {/* Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
