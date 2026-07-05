@@ -473,11 +473,37 @@ function EditDrawer({ post, onClose, onSave }: {
                 <label style={labelStyle}>SEO Score ปัจจุบัน</label>
                 <div style={{ padding: '16px 18px', background: '#f8fafc', borderRadius: 12 }}>
                   <SeoBar score={form.seoScore} />
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 10, lineHeight: 1.6 }}>
-                    {form.seoScore < 60 && 'Score ต่ำ — ควรเพิ่ม keyword density, alt text ของรูป, และ internal links'}
-                    {form.seoScore >= 60 && form.seoScore < 80 && 'ดีขึ้นได้ — เพิ่ม meta description, headings H2/H3, และ length ของบทความ'}
-                    {form.seoScore >= 80 && 'SEO Score ดี — อัปเดตเนื้อหาทุก 6 เดือนเพื่อรักษา ranking'}
-                  </div>
+                  {/* Specific missing-field hints */}
+                  {(() => {
+                    const hints: string[] = []
+                    if (!form.metaTitle || form.metaTitle.length < 20)
+                      hints.push('Meta Title (ต่ำกว่า 20 ตัวอักษร หรือยังไม่กรอก) — +25 pts')
+                    if (!form.metaDesc || form.metaDesc.length < 80)
+                      hints.push('Meta Description (ต่ำกว่า 80 ตัวอักษร หรือยังไม่กรอก) — +25 pts')
+                    const chars = (form.content ?? '').replace(/<[^>]*>/g, '').length
+                    if (chars < 800)
+                      hints.push(`เนื้อหา (${chars} ตัวอักษร — ต้องการ 800+) — +30 pts`)
+                    if (!form.thumbnail)
+                      hints.push('Thumbnail / รูปปก — +10 pts')
+                    if (!form.thumbnailAlt)
+                      hints.push('Alt Text ของรูปปก — +10 pts')
+                    if (hints.length === 0) return (
+                      <div style={{ fontSize: 12, color: '#15803d', marginTop: 10, fontWeight: 600 }}>
+                        SEO ครบถ้วน — อัปเดตเนื้อหาทุก 6 เดือนเพื่อรักษา ranking
+                      </div>
+                    )
+                    return (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 6 }}>สิ่งที่ยังขาด:</div>
+                        {hints.map(h => (
+                          <div key={h} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, color: '#ef4444', marginBottom: 4 }}>
+                            <span style={{ marginTop: 1, flexShrink: 0 }}>×</span>
+                            <span>{h}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -545,7 +571,12 @@ export default function BlogPage() {
   useEffect(() => {
     fetch('/api/dashboard/blog')
       .then(r => r.json())
-      .then(d => { if (Array.isArray(d.posts)) setPosts(d.posts) })
+      .then(d => {
+        if (Array.isArray(d.posts)) {
+          // Recalculate SEO scores live from actual post data — DB values are stale
+          setPosts(d.posts.map((p: BlogPost) => ({ ...p, seoScore: calcSeoScore(p) })))
+        }
+      })
       .catch(err => console.error('Failed to load blog posts:', err))
       .finally(() => setLoading(false))
   }, [])
@@ -570,7 +601,7 @@ export default function BlogPage() {
         throw new Error((d as { error?: string }).error ?? 'บันทึกไม่สำเร็จ')
       }
       const { post } = await r.json() as { post: BlogPost }
-      setPosts(prev => [post, ...prev])
+      setPosts(prev => [{ ...post, seoScore: calcSeoScore(post) }, ...prev])
       setShowCreate(false)
     } else {
       const r = await fetch(`/api/dashboard/blog/${updated.id}`, {
