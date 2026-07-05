@@ -9,7 +9,7 @@ const GTM_ID = 'GTM-PJ6X4NHS'
 // ── Prompt font — self-hosted via next/font (eliminates render-blocking external request)
 const prompt = Prompt({
   subsets: ['latin', 'thai'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '600', '700'],   // 300+500 removed — saves 2 Thai font file downloads on mobile
   display: 'swap',
   variable: '--font-prompt',
   preload: true,

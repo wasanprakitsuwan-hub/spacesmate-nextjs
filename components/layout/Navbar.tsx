@@ -4,8 +4,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { createBrowserClient } from '@/lib/supabase'
-import AuthModal from '@/components/auth/AuthModal'
+// Lazy-load AuthModal — 369-line component, only needed when user clicks เข้าสู่ระบบ
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false })
 
 interface UserInfo {
   role:               string | null

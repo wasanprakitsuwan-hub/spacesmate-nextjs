@@ -107,7 +107,8 @@ export default function FeaturedListings() {
                 {/* Image */}
                 <div style={{ height: 185, background: grad, position: 'relative', overflow: 'hidden' }}>
                   {p.image && (
-                    <img src={p.image} alt={p.title} className="sm-feat-img"
+                    <img src={p.image} alt={p.title} loading="lazy" decoding="async"
+                      className="sm-feat-img"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }} />
                   )}
                   <span style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.9)', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(4px)', padding: '3px 9px', borderRadius: 6 }}>

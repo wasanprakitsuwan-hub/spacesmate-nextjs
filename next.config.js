@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    formats: ['image/avif', 'image/webp'],   // serve AVIF → WebP → JPEG fallback
     remotePatterns: [
       {
         protocol: 'https',
@@ -10,6 +11,8 @@ const nextConfig = {
       },
     ],
   },
+  // Compress responses for all pages
+  compress: true,
 }
 
 module.exports = nextConfig
