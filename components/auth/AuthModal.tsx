@@ -93,6 +93,10 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const [loginPwd,   setLoginPwd]   = useState('')
   const [showPwd,    setShowPwd]    = useState(false)
 
+  // Forgot password flow
+  const [forgotPwd,   setForgotPwd]   = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+
   // Signup form
   const [signName,   setSignName]   = useState('')
   const [signEmail,  setSignEmail]  = useState('')
@@ -124,7 +128,25 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   }, [])
 
   function switchTab(t: 'login' | 'signup') {
-    setTab(t); setError(''); setSuccess('')
+    setTab(t); setError(''); setSuccess(''); setForgotPwd(false)
+  }
+
+  // ── Forgot Password ────────────────────────────────────────────────────────
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (!forgotEmail) { setError('กรุณากรอกอีเมล'); return }
+    setLoading(true); setError('')
+    try {
+      const supabase = createBrowserClient()
+      const redirectTo = `${window.location.origin}/reset-password`
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo })
+      if (resetErr) throw resetErr
+      setSuccess(`ส่งลิงก์รีเซ็ตรหัสผ่านไปที่ ${forgotEmail} แล้ว — กรุณาตรวจสอบอีเมลของคุณ`)
+      setForgotPwd(false)
+    } catch (err: any) {
+      setError(err.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+    }
+    setLoading(false)
   }
 
   async function getDashboardUrl(userId: string): Promise<string> {
@@ -255,6 +277,27 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>สำเร็จ!</p>
               <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{success}</p>
             </div>
+          ) : forgotPwd ? (
+            <form onSubmit={handleForgotPassword}>
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <span className="msym" style={{ fontSize: 36, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>lock_reset</span>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '8px 0 4px' }}>รีเซ็ตรหัสผ่าน</p>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>กรอกอีเมลที่ลงทะเบียนไว้ — เราจะส่งลิงก์ให้คุณ</p>
+              </div>
+              <div style={FG}>
+                <label style={LBL}>อีเมล</label>
+                <input style={INP} type="email" value={forgotEmail} onChange={e => { setForgotEmail(e.target.value); setError('') }} placeholder="email@example.com" autoFocus autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+              </div>
+              {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
+              <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', borderRadius: 14, border: 'none', background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginTop: 4 }}>
+                {loading ? 'กำลังส่ง...' : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}
+              </button>
+              <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '14px 0 0' }}>
+                <button type="button" onClick={() => { setForgotPwd(false); setError('') }} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
+                  กลับไปเข้าสู่ระบบ
+                </button>
+              </p>
+            </form>
           ) : tab === 'login' ? (
             <form onSubmit={handleLogin}>
               <div style={FG}>
@@ -264,7 +307,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               <div style={{ ...FG, marginBottom: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                   <label style={{ ...LBL, marginBottom: 0 }}>รหัสผ่าน</label>
-                  <button type="button" style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>ลืมรหัสผ่าน?</button>
+                  <button type="button" onClick={() => { setForgotPwd(true); setError(''); setForgotEmail(loginEmail) }} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>ลืมรหัสผ่าน?</button>
                 </div>
                 <div style={{ position: 'relative' }}>
                   <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={loginPwd} onChange={e => { setLoginPwd(e.target.value); setError('') }} placeholder="••••••••" autoComplete="current-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
