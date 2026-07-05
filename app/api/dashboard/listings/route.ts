@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       title_th:       body.title_th,
       title_en:       body.title_en  || null,
       description_th: body.description_th || null,
+      description_en: body.description_en || null,
       property_type:  body.property_type,
       status:         body.status    || 'for_rent',
       price_from:     parseInt(body.price_from) || 0,
@@ -162,7 +163,7 @@ export async function PATCH(req: NextRequest) {
     const supabase = createServerClient()
 
     const ALLOWED = [
-      'title_th', 'title_en', 'description_th', 'property_type', 'status',
+      'title_th', 'title_en', 'description_th', 'description_en', 'property_type', 'status',
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'listing_status', 'rental_term',

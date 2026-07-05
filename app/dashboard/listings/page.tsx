@@ -136,6 +136,7 @@ interface ListingFormState {
   lat: string
   lng: string
   description_th: string
+  description_en: string
   amenities: string[]
   images: string[]
   video_url: string
@@ -286,7 +287,7 @@ const BLANK_FORM: ListingFormState = {
   address_th: '', district: '', sub_district: '',
   province: 'กรุงเทพมหานคร', postcode: '',
   lat: '', lng: '',
-  description_th: '', amenities: [],
+  description_th: '', description_en: '', amenities: [],
   images: [], video_url: '',
   contact_name: '', contact_phone: '', contact_line: '',
 }
@@ -1502,6 +1503,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
   const termLabel = RENTAL_TERM_LABEL[form.rental_term] ?? '/เดือน'
   const isDaily   = form.rental_term === 'daily'
   const roomOpts  = getRoomTypeOptions(form.property_type)
+  const [descTab, setDescTab] = useState<'th' | 'en'>('th')
 
   const isApartment     = form.property_type === 'apartment'
   const isCondoOrHouse  = ['condo', 'house'].includes(form.property_type)
@@ -1783,11 +1785,45 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          6 · รายละเอียดประกาศ
+          6 · รายละเอียดประกาศ (TH / EN)
       ════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="6 · รายละเอียดประกาศ" />
-        <RichEditor value={form.description_th} onChange={v => onChange('description_th', v)} placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..." minHeight={220} />
+        {/* Language tab switcher */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 10, borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', width: 'fit-content' }}>
+          {(['th', 'en'] as const).map(lang => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => setDescTab(lang)}
+              style={{
+                padding: '6px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: descTab === lang ? '#02402e' : '#f8fafc',
+                color:      descTab === lang ? '#fff'    : '#64748b',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {lang === 'th' ? '🇹🇭 ภาษาไทย' : '🇬🇧 English'}
+            </button>
+          ))}
+        </div>
+        {descTab === 'th' ? (
+          <RichEditor
+            key="desc-th"
+            value={form.description_th}
+            onChange={v => onChange('description_th', v)}
+            placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..."
+            minHeight={220}
+          />
+        ) : (
+          <RichEditor
+            key="desc-en"
+            value={form.description_en}
+            onChange={v => onChange('description_en', v)}
+            placeholder="Describe the room, location, facilities and highlights in English..."
+            minHeight={220}
+          />
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -2053,6 +2089,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     lat:           listing.lat ? String(listing.lat) : '',
     lng:           listing.lng ? String(listing.lng) : '',
     description_th: listing.description_th ?? '',
+    description_en: (listing as any).description_en ?? '',
     amenities:     listing.amenities ?? [],
     images:        listing.images ?? [],
     video_url:     listing.video_url ?? '',

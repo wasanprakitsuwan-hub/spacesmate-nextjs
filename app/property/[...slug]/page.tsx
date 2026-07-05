@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
 import PropertyGallery from '@/components/property/PropertyGallery'
+import DescriptionBody from '@/components/property/DescriptionBody'
 
 interface Props {
   params: { slug: string[] }
@@ -116,6 +117,7 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   let p: Property
   let content: string | null = null
+  let contentEn: string | null = null
 
   // Contact info from DB (null for static listings — shows SpacesMate defaults)
   let dbContact: { name: string | null; phone: string | null; line: string | null } | null = null
@@ -132,6 +134,7 @@ export default async function PropertyDetailPage({ params }: Props) {
     if (!raw) notFound()
     p = normalizeDbListing(raw)
     content = raw.description_th || null
+    contentEn = (raw as any).description_en || null
     dbContact = {
       name:  raw.contact_name  || null,
       phone: raw.contact_phone || null,
@@ -140,7 +143,7 @@ export default async function PropertyDetailPage({ params }: Props) {
     rawRoomTypes = Array.isArray(raw.room_types) ? raw.room_types : []
   }
 
-  const hasContent = content && !content.includes('เนื้อหาไม่พร้อม') && !content.includes('ไม่พบเนื้อหา')
+  const hasContent = (content && !content.includes('เนื้อหาไม่พร้อม') && !content.includes('ไม่พบเนื้อหา')) || !!contentEn
 
   // Related properties — same type, exclude current, up to 3
   const related = properties
@@ -265,13 +268,9 @@ export default async function PropertyDetailPage({ params }: Props) {
               </p>
             )}
 
-            {/* Full WP content */}
+            {/* Full description — TH/EN toggle when English body is available */}
             {hasContent && (
-              <div
-                className="property-content"
-                style={{ color: '#475569', lineHeight: 1.75, fontSize: 15, marginBottom: 32 }}
-                dangerouslySetInnerHTML={{ __html: content ?? '' }}
-              />
+              <DescriptionBody contentTh={content} contentEn={contentEn} />
             )}
 
             {/* Apartment Unit Pricing Table */}

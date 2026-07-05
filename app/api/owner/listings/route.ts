@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       title_th:       fields.title_th || '',
       title_en:       fields.title_en || null,
       description_th: fields.description_th || null,
+      description_en: fields.description_en || null,
       property_type:  fields.property_type || 'condo',
       status:         'for_rent',
       price_from:     parseInt(fields.price_from) || 0,
@@ -181,7 +182,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const ALLOWED = [
-      'title_th', 'title_en', 'description_th', 'property_type',
+      'title_th', 'title_en', 'description_th', 'description_en', 'property_type',
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'rental_term', 'images', 'video_url',
