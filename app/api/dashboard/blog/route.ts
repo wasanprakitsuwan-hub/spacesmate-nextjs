@@ -20,6 +20,7 @@ function toPost(r: Record<string, unknown>) {
     metaTitle:    (r.meta_title as string) ?? '',
     metaDesc:     (r.meta_desc  as string) ?? '',
     language:     (r.language   as string) ?? 'th',
+    keyword:      (r.keyword    as string) ?? '',
   }
 }
 
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
         meta_title:    body.metaTitle    || null,
         meta_desc:     body.metaDesc     || null,
         language:      body.language     ?? 'th',
+        keyword:       body.keyword      || null,
         seo_score:     body.seoScore     ?? 0,
         views:         0,
         author:        body.author       ?? 'SpacesMate',

@@ -22,6 +22,7 @@ interface BlogPost {
   metaTitle?: string
   metaDesc?: string
   language?: 'th' | 'en'
+  keyword?: string
 }
 
 const CATEGORIES = ['คู่มือผู้เช่า', 'ความรู้การลงทุน', 'เกี่ยวกับเรา', 'PropTech', 'ทำเลน่าอยู่', 'เจ้าของทรัพย์']
@@ -81,13 +82,14 @@ async function getToken(): Promise<string> {
 /** Compute an SEO score (0–100) from post fields */
 function calcSeoScore(post: Partial<BlogPost>): number {
   let score = 0
-  if (post.metaTitle && post.metaTitle.length >= 20) score += 25
-  if (post.metaDesc  && post.metaDesc.length  >= 80) score += 25
+  if (post.metaTitle && post.metaTitle.length >= 20) score += 20
+  if (post.metaDesc  && post.metaDesc.length  >= 80) score += 20
   const chars = (post.content ?? '').replace(/<[^>]*>/g, '').length
   if (chars >= 800)      score += 30
   else if (chars >= 300) score += 15
   if (post.thumbnail)    score += 10
   if (post.thumbnailAlt) score += 10
+  if (post.keyword)      score += 10  // keyword defined
   return Math.min(score, 100)
 }
 
@@ -228,6 +230,58 @@ function SeoBar({ score }: { score: number }) {
   )
 }
 
+// ── AI meta generation helpers ────────────────────────────────────────────────
+
+/** Call the generate-meta API and return just the field requested */
+async function generateMeta(post: Partial<BlogPost>, field: 'title' | 'desc'): Promise<string | null> {
+  try {
+    const token = await getToken()
+    const res = await fetch('/api/dashboard/blog/generate-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        title:    post.title ?? '',
+        content:  post.content ?? '',
+        keyword:  post.keyword ?? post.title ?? '',
+        language: post.language ?? 'th',
+      }),
+    })
+    if (!res.ok) throw new Error('API error')
+    const data = await res.json() as { metaTitle?: string; metaDesc?: string; error?: string }
+    if (data.error) throw new Error(data.error)
+    return field === 'title' ? (data.metaTitle ?? null) : (data.metaDesc ?? null)
+  } catch (err) {
+    console.error('generateMeta error:', err)
+    alert('ไม่สามารถสร้าง Meta ได้ — ตรวจสอบ ANTHROPIC_API_KEY ใน Vercel Environment Variables')
+    return null
+  }
+}
+
+/** Sparkle button used for AI generation actions */
+function AiGenButton({ label, loading, onClick }: { label: string; loading: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '4px 12px', borderRadius: 8, border: '1px solid #048c73',
+        background: loading ? '#f0f9f6' : '#ffffff',
+        color: '#048c73', fontSize: 12, fontWeight: 600,
+        cursor: loading ? 'not-allowed' : 'pointer',
+        fontFamily: 'inherit', whiteSpace: 'nowrap',
+        opacity: loading ? 0.7 : 1,
+      }}
+    >
+      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>
+        {loading ? 'progress_activity' : 'auto_awesome'}
+      </span>
+      {loading ? 'กำลังสร้าง...' : label}
+    </button>
+  )
+}
+
 // ── EditDrawer ────────────────────────────────────────────────────────────────
 
 function EditDrawer({ post, onClose, onSave }: {
@@ -241,6 +295,7 @@ function EditDrawer({ post, onClose, onSave }: {
   const [saving, setSaving]         = useState(false)
   const [saveError, setSaveError]   = useState('')
   const [activeTab, setActiveTab]   = useState<'content' | 'seo'>('content')
+  const [aiLoading, setAiLoading]   = useState<'title' | 'desc' | null>(null)
 
   function setF(k: keyof BlogPost, v: string) {
     setForm(f => {
@@ -431,8 +486,43 @@ function EditDrawer({ post, onClose, onSave }: {
 
           {activeTab === 'seo' && (
             <>
+              {/* Main Keyword */}
               <div>
-                <label style={labelStyle}>Meta Title <span style={{ color: '#94a3b8', fontWeight: 400 }}>(สำหรับ Google)</span></label>
+                <label style={labelStyle}>
+                  Keyword หลัก
+                  <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 6 }}>
+                    (ใช้สำหรับ AI สร้าง Meta Title & Description)
+                  </span>
+                </label>
+                <input
+                  value={form.keyword ?? ''}
+                  onChange={e => setForm(f => ({ ...f, keyword: e.target.value }))}
+                  style={inputStyle}
+                  placeholder="เช่น ปล่อยเช่าคอนโด กรุงเทพ"
+                />
+                <p style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>
+                  กรอก keyword ก่อน แล้วกด AI สร้าง ด้านล่าง
+                </p>
+              </div>
+
+              {/* Meta Title + AI button */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, margin: 0 }}>
+                    Meta Title <span style={{ color: '#94a3b8', fontWeight: 400 }}>(สำหรับ Google)</span>
+                  </label>
+                  <AiGenButton
+                    label="AI สร้าง Title"
+                    loading={aiLoading === 'title'}
+                    onClick={async () => {
+                      setAiLoading('title')
+                      try {
+                        const res = await generateMeta(form, 'title')
+                        if (res) setForm(f => ({ ...f, metaTitle: res }))
+                      } finally { setAiLoading(null) }
+                    }}
+                  />
+                </div>
                 <input value={form.metaTitle ?? ''} onChange={e => setF('metaTitle', e.target.value)} style={inputStyle}
                   placeholder={`${form.title} | SpacesMate`} />
                 <div style={{ fontSize: 11.5, color: (form.metaTitle?.length ?? 0) > 60 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>
@@ -440,8 +530,22 @@ function EditDrawer({ post, onClose, onSave }: {
                 </div>
               </div>
 
+              {/* Meta Description + AI button */}
               <div>
-                <label style={labelStyle}>Meta Description</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, margin: 0 }}>Meta Description</label>
+                  <AiGenButton
+                    label="AI สร้าง Description"
+                    loading={aiLoading === 'desc'}
+                    onClick={async () => {
+                      setAiLoading('desc')
+                      try {
+                        const res = await generateMeta(form, 'desc')
+                        if (res) setForm(f => ({ ...f, metaDesc: res }))
+                      } finally { setAiLoading(null) }
+                    }}
+                  />
+                </div>
                 <textarea
                   value={form.metaDesc ?? ''}
                   onChange={e => setF('metaDesc', e.target.value)}
@@ -793,7 +897,7 @@ export default function BlogPage() {
             id: 'NEW', title: '', slug: '', category: 'คู่มือผู้เช่า',
             status: 'draft', seoScore: 0, views: 0, language: 'th',
             date: new Date().toISOString().slice(0, 10), author: 'SpacesMate',
-            content: '', thumbnail: '', thumbnailAlt: '', metaTitle: '', metaDesc: '',
+            content: '', thumbnail: '', thumbnailAlt: '', metaTitle: '', metaDesc: '', keyword: '',
           }}
           onClose={() => { setEditing(null); setShowCreate(false) }}
           onSave={handleSave}

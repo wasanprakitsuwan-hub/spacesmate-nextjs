@@ -26,6 +26,7 @@ export async function PATCH(
     if (body.metaTitle    !== undefined) update.meta_title    = body.metaTitle || null
     if (body.metaDesc     !== undefined) update.meta_desc     = body.metaDesc  || null
     if (body.language     !== undefined) update.language      = body.language  || 'th'
+    if (body.keyword      !== undefined) update.keyword       = body.keyword   || null
     if (body.seoScore     !== undefined) update.seo_score     = body.seoScore
     if (body.status !== undefined) {
       update.status = body.status
