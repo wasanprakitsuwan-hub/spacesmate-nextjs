@@ -52,6 +52,32 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`Submission ${submissionId} activated (${packageId})`)
 
+      // ── Sync package info to user_profiles ────────────────────────────────
+      // The owner dashboard reads from user_profiles, not submissions.
+      // Find the user by Stripe customer email and update their profile.
+      try {
+        const customerEmail = session.customer_details?.email ?? session.customer_email ?? null
+        if (customerEmail) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('email', customerEmail)
+            .single()
+
+          if (profile?.id) {
+            await supabase.from('user_profiles').update({
+              package_type:           packageId,
+              package_expires_at:     expiresAt.toISOString(),
+              stripe_subscription_id: subscriptionId,
+              stripe_customer_id:     customerId,
+            }).eq('id', profile.id)
+            console.log(`user_profiles updated for ${customerEmail} → package=${packageId}`)
+          }
+        }
+      } catch (profileErr) {
+        console.error('[profile sync] error (non-fatal):', profileErr)
+      }
+
       // ── Send email notifications ──────────────────────────────────────────
       try {
         const { data: sub } = await supabase
@@ -87,7 +113,6 @@ export async function POST(req: NextRequest) {
           ])
         }
       } catch (emailErr) {
-        // Email failure must never fail the webhook — Stripe will retry otherwise
         console.error('[email] notification error (non-fatal):', emailErr)
       }
     }
@@ -117,6 +142,14 @@ export async function POST(req: NextRequest) {
       console.error('Failed to renew submission:', error)
     } else {
       console.log(`Subscription ${subscriptionId} renewed`)
+      // Extend user_profiles expiry on renewal
+      try {
+        await supabase.from('user_profiles')
+          .update({ package_expires_at: expiresAt.toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+      } catch (profileErr) {
+        console.error('[profile renew] error (non-fatal):', profileErr)
+      }
       // Send payment confirmation email
       try {
         const amountPaid = (invoice.amount_paid ?? 0) / 100 // Stripe amount is in satang

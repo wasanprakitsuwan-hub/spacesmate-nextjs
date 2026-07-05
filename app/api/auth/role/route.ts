@@ -23,18 +23,19 @@ export async function GET(req: NextRequest) {
     const service = createServerClient()
     const { data: profile } = await service
       .from('user_profiles')
-      .select('role, status, full_name, phone, active_package, package_expires_at')
+      .select('role, status, full_name, phone, package_type, package_expires_at, stripe_subscription_id')
       .eq('id', user.id)
       .single()
 
     return NextResponse.json({
-      role:               profile?.role               ?? null,
-      status:             profile?.status             ?? 'active',
-      userId:             user.id,
-      full_name:          profile?.full_name           ?? null,
-      phone:              profile?.phone               ?? null,
-      active_package:     profile?.active_package      ?? null,
-      package_expires_at: profile?.package_expires_at  ?? null,
+      role:                    profile?.role                    ?? null,
+      status:                  profile?.status                  ?? 'active',
+      userId:                  user.id,
+      full_name:               profile?.full_name               ?? null,
+      phone:                   profile?.phone                   ?? null,
+      active_package:          (profile as any)?.package_type   ?? null,   // aliased for frontend compatibility
+      package_expires_at:      profile?.package_expires_at      ?? null,
+      stripe_subscription_id:  (profile as any)?.stripe_subscription_id ?? null,
     })
   } catch (err: any) {
     return NextResponse.json({ role: null, error: err.message }, { status: 500 })
