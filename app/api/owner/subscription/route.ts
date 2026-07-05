@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
   if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Get profile for stripe_customer_id
+  // Get profile — need both stripe_customer_id and the direct stripe_subscription_id
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, stripe_subscription_id, package_type, package_expires_at')
     .eq('id', user.id)
     .single()
 
@@ -55,7 +55,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. Subscriptions linked to this user's Stripe customer_id
+  // 2. Direct stripe_subscription_id on user_profiles
+  //    (covers cases where checkout was anonymous — no user_id on submissions,
+  //     no stripe_customer_id populated — but profile was manually/webhook updated)
+  if (profile?.stripe_subscription_id && !subMap.has(profile.stripe_subscription_id)) {
+    const { data: matchedSub } = await supabase
+      .from('submissions')
+      .select('id, title_th, title, package_type, expires_at')
+      .eq('stripe_subscription_id', profile.stripe_subscription_id)
+      .maybeSingle()
+
+    subMap.set(profile.stripe_subscription_id, {
+      submission_id: matchedSub?.id ?? null,
+      listing_title: (matchedSub as any)?.title_th || matchedSub?.title || null,
+      package_type:  matchedSub?.package_type || (profile as any).package_type || 'basic',
+      expires_at:    matchedSub?.expires_at ?? (profile as any).package_expires_at ?? null,
+    })
+  }
+
+  // 3. Subscriptions linked to this user's Stripe customer_id
   //    (covers anonymous checkouts where submission.user_id is null)
   if (profile?.stripe_customer_id) {
     try {
@@ -85,7 +103,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3. Fetch live Stripe status for every entry in the map
+  // 4. Fetch live Stripe status for every entry in the map
   const results: SubscriptionItem[] = []
 
   for (const [subId, meta] of Array.from(subMap.entries())) {
