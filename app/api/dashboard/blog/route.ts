@@ -19,6 +19,7 @@ function toPost(r: Record<string, unknown>) {
     thumbnailAlt: (r.thumbnail_alt as string) ?? '',
     metaTitle:    (r.meta_title as string) ?? '',
     metaDesc:     (r.meta_desc  as string) ?? '',
+    language:     (r.language   as string) ?? 'th',
   }
 }
 
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
         thumbnail_alt: body.thumbnailAlt || null,
         meta_title:    body.metaTitle    || null,
         meta_desc:     body.metaDesc     || null,
+        language:      body.language     ?? 'th',
         seo_score:     body.seoScore     ?? 0,
         views:         0,
         author:        body.author       ?? 'SpacesMate',

@@ -2,11 +2,21 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase'
 
-export const revalidate = 60
+// Dynamic so searchParams (lang filter) works
+export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'บทความ | SpacesMate',
-  description: 'เคล็ดลับ คู่มือ และข้อมูลตลาดเช่า-ขายอสังหาริมทรัพย์ในกรุงเทพฯ',
+interface Props {
+  searchParams: { lang?: string }
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const isEn = searchParams.lang === 'en'
+  return {
+    title: isEn ? 'Blog | SpacesMate' : 'บทความ | SpacesMate',
+    description: isEn
+      ? 'Tips, guides, and Bangkok property market insights for owners and tenants.'
+      : 'เคล็ดลับ คู่มือ และข้อมูลตลาดเช่า-ขายอสังหาริมทรัพย์ในกรุงเทพฯ',
+  }
 }
 
 const CATEGORIES = [
@@ -22,14 +32,23 @@ function formatThaiDate(iso: string): string {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`
 }
 
-export default async function BlogPage() {
+function formatEnDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export default async function BlogPage({ searchParams }: Props) {
+  const lang = searchParams.lang === 'en' ? 'en' : 'th'
+  const isEn = lang === 'en'
+
   const supabase = createServerClient()
-  const { data } = await supabase
+  const query = supabase
     .from('blog_posts')
-    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, published_at')
+    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, published_at, language')
     .eq('status', 'published')
+    .eq('language', lang)
     .order('published_at', { ascending: false })
 
+  const { data } = await query
   const posts = data ?? []
   const featured = posts[0]
   const rest = posts.slice(1)
@@ -41,16 +60,44 @@ export default async function BlogPage() {
       <div className="bg-spacemate-brandDark py-14 md:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-spacemate-brandTeal text-sm font-semibold tracking-widest uppercase mb-3">BLOG</p>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">บทความ SpacesMate</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
+            {isEn ? 'SpacesMate Blog' : 'บทความ SpacesMate'}
+          </h1>
           <p className="text-white/60 text-base font-light max-w-xl mx-auto">
-            เคล็ดลับ คู่มือ และข้อมูลตลาดอสังหาริมทรัพย์สำหรับเจ้าของและผู้เช่าในกรุงเทพฯ
+            {isEn
+              ? 'Tips, guides, and Bangkok property market insights for owners and tenants.'
+              : 'เคล็ดลับ คู่มือ และข้อมูลตลาดอสังหาริมทรัพย์สำหรับเจ้าของและผู้เช่าในกรุงเทพฯ'}
           </p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-        {/* Category tabs */}
+        {/* TH / EN language tabs */}
+        <div className="flex items-center gap-2 mb-8">
+          <Link
+            href="/blog"
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+              !isEn
+                ? 'bg-spacemate-brandDark text-white'
+                : 'bg-spacemate-bgLight text-gray-500 hover:text-spacemate-brandDark'
+            }`}
+          >
+            🇹🇭 ภาษาไทย
+          </Link>
+          <Link
+            href="/blog?lang=en"
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+              isEn
+                ? 'bg-spacemate-brandDark text-white'
+                : 'bg-spacemate-bgLight text-gray-500 hover:text-spacemate-brandDark'
+            }`}
+          >
+            🇬🇧 English
+          </Link>
+        </div>
+
+        {/* Category tabs (decorative) */}
         <div className="flex gap-2 flex-wrap mb-10">
           {CATEGORIES.map((cat, i) => (
             <span
@@ -89,9 +136,13 @@ export default async function BlogPage() {
               <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{featured.meta_desc}</p>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">
-                  {featured.published_at ? formatThaiDate(featured.published_at) : ''}
+                  {featured.published_at
+                    ? (isEn ? formatEnDate(featured.published_at) : formatThaiDate(featured.published_at))
+                    : ''}
                 </span>
-                <span className="text-spacemate-brandTeal text-sm font-semibold">อ่านต่อ →</span>
+                <span className="text-spacemate-brandTeal text-sm font-semibold">
+                  {isEn ? 'Read more →' : 'อ่านต่อ →'}
+                </span>
               </div>
             </div>
           </Link>
@@ -123,9 +174,13 @@ export default async function BlogPage() {
                   <p className="text-gray-400 text-xs leading-relaxed mb-4 line-clamp-2">{post.meta_desc}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">
-                      {post.published_at ? formatThaiDate(post.published_at) : ''}
+                      {post.published_at
+                        ? (isEn ? formatEnDate(post.published_at) : formatThaiDate(post.published_at))
+                        : ''}
                     </span>
-                    <span className="text-spacemate-brandTeal text-xs font-medium">อ่านต่อ →</span>
+                    <span className="text-spacemate-brandTeal text-xs font-medium">
+                      {isEn ? 'Read more →' : 'อ่านต่อ →'}
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -136,13 +191,17 @@ export default async function BlogPage() {
         {/* Empty state */}
         {posts.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-gray-400 text-sm">ยังไม่มีบทความที่เผยแพร่</p>
+            <p className="text-gray-400 text-sm">
+              {isEn ? 'No published articles yet.' : 'ยังไม่มีบทความที่เผยแพร่'}
+            </p>
           </div>
         )}
 
         {/* Follow CTA */}
         <div className="mt-14 text-center py-10 rounded-2xl border border-dashed border-spacemate-borderLight">
-          <p className="text-gray-400 text-sm">ติดตามบทความใหม่ได้ที่</p>
+          <p className="text-gray-400 text-sm">
+            {isEn ? 'Follow us for new articles' : 'ติดตามบทความใหม่ได้ที่'}
+          </p>
           <div className="flex justify-center gap-4 mt-3">
             <a href="https://www.facebook.com/spacesmateTH" target="_blank" rel="noopener noreferrer"
                className="text-spacemate-brandTeal text-sm font-medium hover:underline">Facebook</a>

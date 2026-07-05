@@ -21,6 +21,7 @@ interface BlogPost {
   thumbnailAlt?: string
   metaTitle?: string
   metaDesc?: string
+  language?: 'th' | 'en'
 }
 
 const CATEGORIES = ['คู่มือผู้เช่า', 'ความรู้การลงทุน', 'เกี่ยวกับเรา', 'PropTech', 'ทำเลน่าอยู่', 'เจ้าของทรัพย์']
@@ -368,6 +369,31 @@ function EditDrawer({ post, onClose, onSave }: {
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
+              </div>
+
+              {/* Language */}
+              <div>
+                <label style={labelStyle}>ภาษาของบทความ</label>
+                <div style={{ display: 'flex', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', width: 'fit-content' }}>
+                  {([['th', '🇹🇭 ภาษาไทย'], ['en', '🇬🇧 English']] as const).map(([val, lbl]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setF('language', val)}
+                      style={{
+                        padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', border: 'none',
+                        background: (form.language ?? 'th') === val ? '#02402e' : '#f8fafc',
+                        color:      (form.language ?? 'th') === val ? '#fff'    : '#64748b',
+                        transition: 'background 0.15s, color 0.15s',
+                      }}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 6 }}>
+                  บทความไทยและอังกฤษจะแยกแสดงในหน้า Blog
+                </p>
               </div>
 
               {/* Thumbnail */}
@@ -734,7 +760,7 @@ export default function BlogPage() {
         <EditDrawer
           post={editing ?? {
             id: 'NEW', title: '', slug: '', category: 'คู่มือผู้เช่า',
-            status: 'draft', seoScore: 0, views: 0,
+            status: 'draft', seoScore: 0, views: 0, language: 'th',
             date: new Date().toISOString().slice(0, 10), author: 'SpacesMate',
             content: '', thumbnail: '', thumbnailAlt: '', metaTitle: '', metaDesc: '',
           }}
