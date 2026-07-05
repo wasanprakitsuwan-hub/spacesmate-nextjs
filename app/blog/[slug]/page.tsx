@@ -33,26 +33,50 @@ export async function generateStaticParams() {
   return (data ?? []).map((p) => ({ slug: p.slug }))
 }
 
+// Strip HTML tags to produce a plain-text excerpt for meta description fallback
+function stripHtml(html: string, maxLen = 160): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLen)
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createServerClient()
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('title, meta_title, meta_desc, thumbnail, thumbnail_alt, published_at')
+    .select('title, meta_title, meta_desc, thumbnail, thumbnail_alt, published_at, content')
     .eq('slug', params.slug)
     .eq('status', 'published')
     .single()
 
   if (!post) return { title: 'ไม่พบบทความ | SpacesMate' }
 
+  const pageTitle  = post.meta_title ?? post.title
+  const pageDesc   = post.meta_desc
+    || (post.content ? stripHtml(post.content) : '')
+    || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'
+  const canonicalUrl = `https://spacesmate.com/blog/${params.slug}`
+  const ogImage = post.thumbnail
+    ? [{ url: post.thumbnail, width: 1200, height: 630, alt: post.thumbnail_alt ?? post.title }]
+    : [{ url: 'https://spacesmate.com/og-image.jpg', width: 1200, height: 630 }]
+
   return {
-    title: `${post.meta_title ?? post.title} | SpacesMate`,
-    description: post.meta_desc ?? '',
+    title: `${pageTitle} | SpacesMate`,
+    description: pageDesc,
+    alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: post.meta_title ?? post.title,
-      description: post.meta_desc ?? '',
-      images: post.thumbnail ? [{ url: post.thumbnail, alt: post.thumbnail_alt ?? post.title }] : [],
+      title: pageTitle,
+      description: pageDesc,
+      images: ogImage,
       type: 'article',
+      url: canonicalUrl,
+      siteName: 'SpacesMate',
+      locale: 'th_TH',
       publishedTime: post.published_at ?? undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
+      description: pageDesc,
+      images: post.thumbnail ? [post.thumbnail] : ['https://spacesmate.com/og-image.jpg'],
     },
   }
 }
@@ -90,8 +114,51 @@ export default async function BlogPostPage({ params }: Props) {
 
   const related = relatedData ?? []
 
+  // Build JSON-LD Article schema for rich snippets
+  const metaDesc = post.meta_desc
+    || (content ? stripHtml(content) : '')
+    || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: metaDesc,
+    image: post.thumbnail
+      ? [post.thumbnail]
+      : ['https://spacesmate.com/og-image.jpg'],
+    datePublished: post.published_at ?? undefined,
+    dateModified: post.published_at ?? undefined,
+    author: {
+      '@type': 'Organization',
+      name: post.author ?? 'SpacesMate',
+      url: 'https://spacesmate.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SpacesMate',
+      url: 'https://spacesmate.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://spacesmate.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://spacesmate.com/blog/${post.slug}`,
+    },
+    articleSection: post.category,
+    inLanguage: 'th',
+  }
+
   return (
     <div className="bg-white min-h-screen">
+
+      {/* JSON-LD structured data — Article schema for Google rich snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* Hero image */}
       <div className="w-full h-64 md:h-96 overflow-hidden bg-spacemate-bgLight relative">
