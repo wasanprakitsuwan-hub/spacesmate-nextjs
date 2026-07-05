@@ -5,6 +5,17 @@ import { createBrowserClient } from '@/lib/supabase'
 import RichEditor from '@/components/RichEditor'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface SubscriptionItem {
+  submission_id: string | null
+  listing_title: string | null
+  stripe_subscription_id: string
+  stripe_status: string
+  package_type: string
+  expires_at: string | null
+  cancel_at_period_end: boolean
+  next_billing_date: string | null
+}
+
 interface OwnerListing {
   id: string
   slug: string
@@ -1457,18 +1468,18 @@ export default function OwnerDashboardPage() {
   const [userEmail,          setUserEmail]          = useState('')
   const [activePackage,      setActivePackage]      = useState<string | null>(null)
   const [packageExpiresAt,   setPackageExpiresAt]   = useState<string | null>(null)
-  const [stripeSubId,        setStripeSubId]        = useState<string | null>(null)
-  const [cancelAtPeriodEnd,  setCancelAtPeriodEnd]  = useState(false)
-  const [showCancelConfirm,  setShowCancelConfirm]  = useState(false)
-  const [cancelling,         setCancelling]         = useState(false)
+  const [subscriptions,      setSubscriptions]      = useState<SubscriptionItem[]>([])
+  const [confirmCancelSubId, setConfirmCancelSubId] = useState<string | null>(null)
+  const [cancellingSubId,    setCancellingSubId]    = useState<string | null>(null)
   const [cancelError,        setCancelError]        = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
 
   // Derived: user has a valid active package
-  const hasPackage = activePackage !== null &&
-    (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())
+  const hasPackage =
+    subscriptions.some(s => s.stripe_status === 'active' || s.stripe_status === 'trialing') ||
+    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date()))
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
@@ -1496,36 +1507,41 @@ export default function OwnerDashboardPage() {
         const d = await r.json()
         setActivePackage(d.active_package ?? null)
         setPackageExpiresAt(d.package_expires_at ?? null)
-        // Fetch Stripe subscription info
+        // Fetch all Stripe subscriptions for this owner
         try {
           const sr = await fetch('/api/owner/subscription', {
             headers: { Authorization: `Bearer ${session.access_token}` },
           })
           const sd = await sr.json()
-          setStripeSubId(sd.stripe_subscription_id ?? null)
-          setCancelAtPeriodEnd(sd.cancel_at_period_end ?? false)
+          setSubscriptions(sd.subscriptions ?? [])
         } catch { /* no-op */ }
       } catch { /* no-op */ }
     })
   }, [load])
 
-  async function cancelSubscription() {
-    setCancelling(true)
+  async function cancelSubscription(subscriptionId: string) {
+    setCancellingSubId(subscriptionId)
     setCancelError('')
     try {
       const { data: { session } } = await createBrowserClient().auth.getSession()
       const r = await fetch('/api/owner/subscription', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ subscription_id: subscriptionId }),
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error ?? 'ยกเลิกไม่สำเร็จ')
-      setCancelAtPeriodEnd(true)
-      setShowCancelConfirm(false)
+      // Update only that specific subscription in state — no reload needed
+      setSubscriptions(prev => prev.map(s =>
+        s.stripe_subscription_id === subscriptionId
+          ? { ...s, cancel_at_period_end: true }
+          : s
+      ))
+      setConfirmCancelSubId(null)
     } catch (err: any) {
       setCancelError(err.message ?? 'เกิดข้อผิดพลาด')
     } finally {
-      setCancelling(false)
+      setCancellingSubId(null)
     }
   }
 
@@ -1596,71 +1612,124 @@ export default function OwnerDashboardPage() {
         ))}
       </div>
 
-      {/* Subscription management card */}
-      {activePackage && (
-        <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '18px 22px', marginBottom: 24, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ background: '#f0f7f4', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span className="msym" style={{ fontSize: 20, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
-            </div>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#02402e', textTransform: 'capitalize' }}>
-                แพ็กเกจ {activePackage === 'basic' ? 'Basic' : activePackage === 'standard' ? 'Standard' : activePackage === 'premium' ? 'Premium' : activePackage}
-                {cancelAtPeriodEnd && (
-                  <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: '#d97f11', background: '#fdf3e3', borderRadius: 6, padding: '2px 7px' }}>ยกเลิกแล้ว — ใช้งานได้ถึงวันหมดอายุ</span>
+      {/* Subscriptions section — one row per subscription */}
+      {subscriptions.length > 0 && (
+        <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, overflow: 'hidden', marginBottom: 24, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="msym" style={{ fontSize: 18, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#02402e' }}>Subscriptions ของฉัน</span>
+            <span style={{ fontSize: 12, color: '#94a3b8', background: '#f1f5f9', borderRadius: 10, padding: '2px 8px', marginLeft: 2 }}>
+              {subscriptions.filter(s => s.stripe_status === 'active' || s.stripe_status === 'trialing').length} active
+            </span>
+          </div>
+
+          {subscriptions.map((sub, i) => {
+            const pkgLabel  = sub.package_type === 'basic' ? 'Basic' : sub.package_type === 'standard' ? 'Standard' : sub.package_type === 'premium' ? 'Premium' : sub.package_type
+            const isActive  = sub.stripe_status === 'active' || sub.stripe_status === 'trialing'
+            const isCancelled = sub.cancel_at_period_end
+            return (
+              <div key={sub.stripe_subscription_id} style={{
+                padding: '16px 20px',
+                borderBottom: i < subscriptions.length - 1 ? '1px solid #f1f5f4' : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexWrap: 'wrap', gap: 12,
+                background: i % 2 === 0 ? '#fff' : '#fafffe',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ background: isActive ? '#eaf6f1' : '#f1f5f9', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span className="msym" style={{ fontSize: 18, color: isActive ? '#048c73' : '#94a3b8', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>receipt_long</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                      แพ็กเกจ {pkgLabel}
+                      {isCancelled && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#d97f11', background: '#fdf3e3', borderRadius: 6, padding: '2px 7px' }}>ยกเลิกแล้ว — ใช้งานถึงวันหมดอายุ</span>
+                      )}
+                      {!isActive && !isCancelled && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c', background: '#fee2e2', borderRadius: 6, padding: '2px 7px' }}>{sub.stripe_status}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {sub.listing_title
+                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{sub.listing_title}</span>
+                        : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่ระบุประกาศ</span>
+                      }
+                      {sub.expires_at && (
+                        <span style={{ color: '#94a3b8' }}>·</span>
+                      )}
+                      {sub.expires_at && (
+                        <span>{isCancelled ? 'หมดอายุ' : 'ต่ออายุ'}: {new Date(sub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {isActive && !isCancelled && (
+                  <button
+                    onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
+                    style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}
+                  >
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>
+                    ยกเลิก
+                  </button>
                 )}
               </div>
-              {packageExpiresAt && (
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                  {cancelAtPeriodEnd ? 'หมดอายุ' : 'ต่ออายุ'}:{' '}
-                  {new Date(packageExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </div>
-              )}
-            </div>
-          </div>
-          {/* Cancel button — only show if sub active and not already cancelled */}
-          {stripeSubId && !cancelAtPeriodEnd && (
-            <button
-              onClick={() => { setCancelError(''); setShowCancelConfirm(true) }}
-              style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .2s' }}
-            >
-              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>
-              ยกเลิก subscription
-            </button>
-          )}
+            )
+          })}
         </div>
       )}
 
-      {/* Cancel confirm modal */}
-      {showCancelConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ background: '#fef2f2', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="msym" style={{ fontSize: 20, color: '#dc2626', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>
+      {/* Per-subscription cancel confirm modal */}
+      {confirmCancelSubId && (() => {
+        const targetSub   = subscriptions.find(s => s.stripe_subscription_id === confirmCancelSubId)
+        const isCancelling = cancellingSubId === confirmCancelSubId
+        const pkgLabel    = targetSub?.package_type === 'basic' ? 'Basic' : targetSub?.package_type === 'standard' ? 'Standard' : 'Premium'
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ background: '#fef2f2', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="msym" style={{ fontSize: 20, color: '#dc2626', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ยืนยันการยกเลิก?</h3>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ยืนยันการยกเลิก subscription?</h3>
-            </div>
-            <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 8px', lineHeight: 1.6 }}>
-              ประกาศของคุณจะยังเผยแพร่ได้จนถึงวันหมดอายุ — ระบบจะไม่เรียกเก็บเงินรอบถัดไป
-            </p>
-            {packageExpiresAt && (
-              <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>
-                วันหมดอายุ: <strong style={{ color: '#d97f11' }}>{new Date(packageExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+
+              {targetSub && (
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13, color: '#334155' }}>
+                  <div style={{ fontWeight: 600 }}>แพ็กเกจ {pkgLabel}</div>
+                  {targetSub.listing_title && <div style={{ color: '#64748b', marginTop: 2 }}>ประกาศ: {targetSub.listing_title}</div>}
+                  {targetSub.expires_at && (
+                    <div style={{ color: '#64748b', marginTop: 2 }}>
+                      หมดอายุ: <strong style={{ color: '#d97f11' }}>{new Date(targetSub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 20px', lineHeight: 1.6 }}>
+                ประกาศจะยังเผยแพร่ได้จนถึงวันหมดอายุ — ระบบจะไม่เรียกเก็บเงินรอบถัดไป
               </p>
-            )}
-            {cancelError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>
-            )}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowCancelConfirm(false)} disabled={cancelling} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>กลับ</button>
-              <button onClick={cancelSubscription} disabled={cancelling} style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: cancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: cancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {cancelling ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังยกเลิก...</> : 'ยืนยันยกเลิก'}
-              </button>
+
+              {cancelError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setConfirmCancelSubId(null); setCancelError('') }} disabled={isCancelling}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  กลับ
+                </button>
+                <button onClick={() => cancelSubscription(confirmCancelSubId)} disabled={isCancelling}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: isCancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: isCancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {isCancelling
+                    ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังยกเลิก...</>
+                    : 'ยืนยันยกเลิก'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Listings table */}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -10px rgba(2,64,46,0.08)' }}>
