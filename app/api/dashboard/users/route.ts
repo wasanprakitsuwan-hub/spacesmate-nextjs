@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Build query — super_admin sees everyone, admin sees only landlords
     let query = supabase
       .from('user_profiles')
-      .select('id, email, first_name, last_name, full_name, phone, role, status, created_at, updated_at')
+      .select('id, email, first_name, last_name, full_name, phone, role, status, package_type, package_expires_at, created_at, updated_at')
       .order('created_at', { ascending: false })
 
     if (callerRole === 'admin') {
@@ -59,18 +59,20 @@ export async function GET(req: NextRequest) {
       const displayName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || null
       const agg = aggMap[p.id] ?? { total: 0, active: 0, pending: 0, expired: 0, package: null }
       return {
-        id:           p.id,
-        email:        p.email,
-        first_name:   p.first_name ?? null,
-        last_name:    p.last_name  ?? null,
-        full_name:    displayName,
-        phone:        p.phone      ?? null,
-        role:         p.role ?? 'landlord',
-        status:       p.status ?? 'active',
-        package:      agg.package,
-        created_at:   p.created_at,
-        updated_at:   p.updated_at,
-        listings:     { total: agg.total, active: agg.active, pending: agg.pending, expired: agg.expired },
+        id:                  p.id,
+        email:               p.email,
+        first_name:          p.first_name        ?? null,
+        last_name:           p.last_name         ?? null,
+        full_name:           displayName,
+        phone:               p.phone             ?? null,
+        role:                p.role              ?? 'landlord',
+        status:              p.status            ?? 'active',
+        package:             agg.package,
+        package_type:        (p as any).package_type        ?? null,
+        package_expires_at:  (p as any).package_expires_at ?? null,
+        created_at:          p.created_at,
+        updated_at:          p.updated_at,
+        listings:            { total: agg.total, active: agg.active, pending: agg.pending, expired: agg.expired },
       }
     })
 
@@ -129,7 +131,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { id, first_name, last_name, phone, role, status } = body
+    const { id, first_name, last_name, phone, role, status, package_type, package_expires_at } = body
     // Role authorization from verified JWT — never trust client body
     const callerRole = auth.role
 
@@ -163,13 +165,20 @@ export async function PATCH(req: NextRequest) {
 
     const supabase = createServerClient()
 
+    // Validate package changes — super_admin only
+    if ((package_type !== undefined || package_expires_at !== undefined) && callerRole !== 'super_admin') {
+      return NextResponse.json({ error: 'Insufficient permissions to change package' }, { status: 403 })
+    }
+
     // Build update payload — only include provided fields
     const updates: Record<string, string> = {}
-    if (first_name !== undefined) updates.first_name = first_name
-    if (last_name  !== undefined) updates.last_name  = last_name
-    if (phone      !== undefined) updates.phone       = phone
-    if (role       !== undefined) updates.role        = role
-    if (status     !== undefined) updates.status      = status
+    if (first_name          !== undefined) updates.first_name          = first_name
+    if (last_name           !== undefined) updates.last_name           = last_name
+    if (phone               !== undefined) updates.phone               = phone
+    if (role                !== undefined) updates.role                = role
+    if (status              !== undefined) updates.status              = status
+    if (package_type        !== undefined) updates.package_type        = package_type
+    if (package_expires_at  !== undefined) updates.package_expires_at  = package_expires_at
 
     // Also keep full_name in sync
     if (first_name !== undefined || last_name !== undefined) {

@@ -8,18 +8,20 @@ interface UserListings {
 }
 
 interface UserRow {
-  id:          string
-  email:       string
-  first_name:  string | null
-  last_name:   string | null
-  full_name:   string | null
-  phone:       string | null
-  role:        string
-  status:      string
-  package:     string | null
-  created_at:  string
-  updated_at:  string | null
-  listings:    UserListings
+  id:                  string
+  email:               string
+  first_name:          string | null
+  last_name:           string | null
+  full_name:           string | null
+  phone:               string | null
+  role:                string
+  status:              string
+  package:             string | null
+  package_type:        string | null
+  package_expires_at:  string | null
+  created_at:          string
+  updated_at:          string | null
+  listings:            UserListings
 }
 
 interface DetailListing {
@@ -229,18 +231,26 @@ function DeleteConfirmModal({ user, onClose, onDeleted }: { user: UserRow; onClo
 
 // ── Edit Drawer ───────────────────────────────────────────────────────────────
 function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; callerRole: CallerRole; onClose: () => void; onSaved: () => void }) {
-  const [firstName, setFirstName] = useState(user.first_name ?? '')
-  const [lastName,  setLastName]  = useState(user.last_name  ?? '')
-  const [phone,     setPhone]     = useState(user.phone       ?? '')
-  const [role,      setRole]      = useState(user.role)
-  const [saving,    setSaving]    = useState(false)
-  const [error,     setError]     = useState('')
+  const [firstName,         setFirstName]         = useState(user.first_name ?? '')
+  const [lastName,          setLastName]           = useState(user.last_name  ?? '')
+  const [phone,             setPhone]              = useState(user.phone       ?? '')
+  const [role,              setRole]               = useState(user.role)
+  const [packageType,       setPackageType]        = useState(user.package_type ?? '')
+  const [packageExpiresAt,  setPackageExpiresAt]   = useState(
+    user.package_expires_at ? user.package_expires_at.slice(0, 10) : ''
+  )
+  const [saving,            setSaving]             = useState(false)
+  const [error,             setError]              = useState('')
 
   async function save() {
     setSaving(true); setError('')
     try {
       const body: Record<string, string> = { id: user.id, first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim() }
-      if (callerRole === 'super_admin') body.role = role
+      if (callerRole === 'super_admin') {
+        body.role = role
+        if (packageType) body.package_type = packageType
+        if (packageExpiresAt) body.package_expires_at = new Date(packageExpiresAt).toISOString()
+      }
       const token = await getToken()
       const r = await fetch('/api/dashboard/users', {
         method: 'PATCH',
@@ -254,8 +264,9 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
     setSaving(false)
   }
 
-  const canChangeRole  = callerRole === 'super_admin'
-  const availableRoles = callerRole === 'super_admin' ? ['landlord', 'admin', 'super_admin'] : ['landlord']
+  const canChangeRole    = callerRole === 'super_admin'
+  const canChangePackage = callerRole === 'super_admin'
+  const availableRoles   = callerRole === 'super_admin' ? ['landlord', 'admin', 'super_admin'] : ['landlord']
   const inp = { width: '100%', padding: '13px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' }
 
   return (
@@ -296,6 +307,42 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
               {availableRoles.map(r => <option key={r} value={r}>{r === 'super_admin' ? 'Super Admin' : r === 'admin' ? 'Admin' : 'เจ้าของ (Landlord)'}</option>)}
             </select>
           </div>
+
+          {/* Package fields — super_admin only */}
+          <div style={{ background: '#f0f7f4', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <span className="msym" style={{ fontSize: 18, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>จัดการแพ็กเกจ</span>
+              {!canChangePackage && <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400 }}>(เฉพาะ Super Admin)</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>แพ็กเกจ</label>
+                <select
+                  value={packageType}
+                  onChange={e => setPackageType(e.target.value)}
+                  disabled={!canChangePackage}
+                  style={{ ...inp, fontSize: 14, cursor: canChangePackage ? 'pointer' : 'not-allowed', background: canChangePackage ? '#fff' : '#f8faf9', color: canChangePackage ? '#02402e' : '#94a3b8' }}
+                >
+                  <option value="">ไม่มีแพ็กเกจ</option>
+                  <option value="basic">Basic</option>
+                  <option value="standard">Standard</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>วันหมดอายุ</label>
+                <input
+                  type="date"
+                  value={packageExpiresAt}
+                  onChange={e => setPackageExpiresAt(e.target.value)}
+                  disabled={!canChangePackage}
+                  style={{ ...inp, fontSize: 14, cursor: canChangePackage ? 'text' : 'not-allowed', background: canChangePackage ? '#fff' : '#f8faf9', color: canChangePackage ? '#02402e' : '#94a3b8' }}
+                />
+              </div>
+            </div>
+          </div>
+
           <div style={{ background: '#f8faf9', borderRadius: 12, padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[{ label: 'ประกาศทั้งหมด', value: user.listings.total, color: '#02402e' }, { label: 'เผยแพร่แล้ว', value: user.listings.active, color: '#15803d' }, { label: 'รออนุมัติ', value: user.listings.pending, color: '#a16207' }, { label: 'หมดอายุ', value: user.listings.expired, color: '#dc2626' }].map(s => (
               <div key={s.label}><div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div><div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{s.label}</div></div>

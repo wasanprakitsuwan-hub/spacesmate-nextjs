@@ -15,10 +15,10 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerClient()
 
-    // Fetch user profile
+    // Fetch user profile — query both column names for compatibility
     const { data: profile, error: profErr } = await supabase
       .from('user_profiles')
-      .select('id, email, first_name, last_name, full_name, phone, role, status, active_package, package_expires_at, created_at, updated_at')
+      .select('id, email, first_name, last_name, full_name, phone, role, status, package_type, package_expires_at, stripe_subscription_id, created_at, updated_at')
       .eq('id', id)
       .single()
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     // Fetch all listings for this user with full detail
     const { data: listings, error: listErr } = await supabase
       .from('properties')
-      .select('id, title_th, title_en, slug, property_type, listing_status, package_type, created_at, expires_at, address_district, address_province')
+      .select('id, title_th, title_en, slug, property_type, listing_status, package_type, created_at, expires_at, district, province')
       .eq('landlord_id', id)
       .order('created_at', { ascending: false })
 
@@ -38,9 +38,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       profile: {
         ...profile,
+        // Expose as active_package for frontend compatibility
+        active_package: (profile as any).package_type ?? null,
         display_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.full_name || profile.email,
       },
-      listings: listings ?? [],
+      listings: (listings ?? []).map((l: any) => ({
+        ...l,
+        // Map to frontend interface field names
+        address_district: l.district ?? null,
+        address_province: l.province ?? null,
+      })),
     })
   } catch (err: any) {
     console.error('dashboard/users/detail GET error:', err)
