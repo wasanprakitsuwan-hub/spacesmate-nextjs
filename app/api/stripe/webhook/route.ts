@@ -72,6 +72,12 @@ export async function POST(req: NextRequest) {
               stripe_customer_id:     customerId,
             }).eq('id', profile.id)
             console.log(`user_profiles updated for ${customerEmail} → package=${packageId}`)
+
+            // Stamp user_id on the submission so multi-sub owners see all packages
+            await supabase.from('submissions')
+              .update({ user_id: profile.id })
+              .eq('id', submissionId)
+            console.log(`submissions.user_id stamped → user=${profile.id}`)
           }
         }
       } catch (profileErr) {
