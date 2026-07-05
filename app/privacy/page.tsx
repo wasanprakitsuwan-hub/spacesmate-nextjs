@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'นโยบายความเป็นส่วนตัว | SpacesMate',
   description: 'นโยบายความเป็นส่วนตัวของ Space Works Co., Ltd. (SpacesMate) — การรวบรวมและใช้ข้อมูลส่วนบุคคลตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)',
+  alternates: { canonical: 'https://spacesmate.com/privacy' },
 }
 
 const SECTIONS = [

@@ -1,4 +1,19 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'ลงประกาศเช่า | SpacesMate',
+  description:
+    'ลงประกาศเช่าอพาร์ทเม้นท์ คอนโด บ้าน ออฟฟิศ หรือโคเวิร์กกิ้งสเปซ เริ่มต้นเพียง ฿299/เดือน เผยแพร่ทันทีหลังชำระ เข้าถึงผู้เช่าที่กำลังมองหาจริงๆ',
+  keywords: ['ลงประกาศเช่า', 'ลงประกาศคอนโด', 'ลงประกาศห้องพัก', 'property listing Thailand'],
+  openGraph: {
+    title: 'ลงประกาศเช่ากับ SpacesMate — เริ่มต้น ฿299/เดือน',
+    description: 'เข้าถึงผู้เช่าที่กำลังมองหาจริงๆ ระบบสุ่มแสดงผลเท่าเทียม ไม่ต้องจ่ายเพื่อขึ้นหน้าแรก',
+    type: 'website',
+    url: 'https://spacesmate.com/submit',
+  },
+  alternates: { canonical: 'https://spacesmate.com/submit' },
+}
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 

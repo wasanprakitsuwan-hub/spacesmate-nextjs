@@ -3,7 +3,14 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
-  description: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/เดือน — 1 ประกาศต่อแพ็กเกจ เผยแพร่ทันทีหลังชำระ มีแพ็กเกจอาคารสำหรับผู้ที่มีหลายห้อง',
+  description: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/เดือน — เผยแพร่ทันทีหลังชำระ ไม่ต้องจ่ายค่าคอมมิชชัน มีแพ็กเกจอาคารสำหรับผู้ที่มีหลายห้อง',
+  openGraph: {
+    title: 'ราคาลงประกาศ | SpacesMate — เริ่มต้น ฿299/เดือน',
+    description: 'เลือกแพ็กเกจ Basic, Standard หรือ Premium — เผยแพร่ทันที ไม่มีค่าคอมมิชชันซ่อน',
+    type: 'website',
+    url: 'https://spacesmate.com/pricing',
+  },
+  alternates: { canonical: 'https://spacesmate.com/pricing' },
 }
 
 const PLANS = [

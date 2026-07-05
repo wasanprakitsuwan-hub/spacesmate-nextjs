@@ -3,7 +3,14 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'เกี่ยวกับเรา | SpacesMate',
-  description: 'SpacesMate (Space Works Co., Ltd.) — แพลตฟอร์มบริหารจัดการอสังหาริมทรัพย์ Asset-Light ที่ตั้งอยู่ในกรุงเทพฯ',
+  description: 'SpacesMate (Space Works Co., Ltd.) — แพลตฟอร์มบริหารจัดการอสังหาริมทรัพย์ Asset-Light ในกรุงเทพฯ ดูแลแบบ Performance-Based ยิ่งเจ้าของได้มาก SpacesMate ได้มากด้วย',
+  openGraph: {
+    title: 'เกี่ยวกับ SpacesMate',
+    description: 'แพลตฟอร์มบริหารจัดการอสังหาริมทรัพย์ Asset-Light ในกรุงเทพฯ — Performance-Based, AI-Powered',
+    type: 'website',
+    url: 'https://spacesmate.com/about',
+  },
+  alternates: { canonical: 'https://spacesmate.com/about' },
 }
 
 const TEAM = [

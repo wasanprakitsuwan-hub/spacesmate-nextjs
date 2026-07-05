@@ -4,6 +4,13 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'บริการของเรา | SpacesMate',
   description: 'บริการบริหารจัดการอสังหาริมทรัพย์ให้เช่าครบวงจร ทั้งอพาร์ทเม้นท์และคอนโด พร้อมแพลตฟอร์มลงประกาศเช่าออนไลน์ เริ่มต้น ฿299/เดือน',
+  openGraph: {
+    title: 'บริการ SpacesMate — บริหารอพาร์ทเม้นท์ คอนโด และลงประกาศเช่า',
+    description: 'บริหารทรัพย์สินครบวงจรแบบ Performance-Based และแพลตฟอร์มลงประกาศเช่าเริ่มต้น ฿299/เดือน',
+    type: 'website',
+    url: 'https://spacesmate.com/services',
+  },
+  alternates: { canonical: 'https://spacesmate.com/services' },
 }
 
 const SERVICES = [

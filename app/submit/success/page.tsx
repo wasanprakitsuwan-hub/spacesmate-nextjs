@@ -4,6 +4,8 @@ import TrackOnMount from '@/components/TrackOnMount'
 
 export const metadata: Metadata = {
   title: 'ชำระเงินสำเร็จ | SpacesMate',
+  description: 'ชำระเงินสำเร็จ — ประกาศของคุณได้รับการเผยแพร่บน SpacesMate แล้ว',
+  robots: { index: false, follow: false },
 }
 
 export default function SubmitSuccessPage() {

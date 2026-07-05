@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'เงื่อนไขการใช้งาน | SpacesMate',
-  description: 'เงื่อนไขการใช้งานเว็บไซต์ spacesmate.com โดย Space Works Co., Ltd.',
+  description: 'เงื่อนไขการใช้งานเว็บไซต์ spacesmate.com โดย Space Works Co., Ltd. — ข้อกำหนดสำหรับเจ้าของทรัพย์สินและผู้เช่า',
+  alternates: { canonical: 'https://spacesmate.com/terms' },
 }
 
 const SECTIONS = [

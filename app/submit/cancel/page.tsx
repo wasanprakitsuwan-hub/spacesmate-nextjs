@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'ยกเลิกการชำระเงิน | SpacesMate',
+  description: 'ยกเลิกการชำระเงิน — คุณสามารถกลับไปเลือกแพ็กเกจและลองอีกครั้งได้ทุกเมื่อ',
+  robots: { index: false, follow: false },
 }
 
 export default function SubmitCancelPage() {
