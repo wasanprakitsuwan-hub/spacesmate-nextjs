@@ -1,17 +1,10 @@
 import Link from 'next/link'
-import { properties } from '@/lib/property-data'
 
 const CATEGORIES = [
   { type: 'Apartment', label: 'อพาร์ทเม้นท์', icon: 'apartment' },
   { type: 'Condo',     label: 'คอนโดมิเนียม',  icon: 'location_city' },
   { type: 'Office',    label: 'ออฟฟิศ',         icon: 'business_center' },
 ]
-
-// Compute counts from static property data
-const counts: Record<string, number> = {}
-properties.forEach(p => {
-  counts[p.propertyType] = (counts[p.propertyType] || 0) + 1
-})
 
 export default function CategorySection() {
   return (
@@ -28,7 +21,7 @@ export default function CategorySection() {
               <span className="msym" style={{ fontSize: 28, color: '#fff' }}>{cat.icon}</span>
             </span>
             <span style={{ fontSize: 14.5, fontWeight: 500, color: '#231f20', textAlign: 'center', lineHeight: 1.3 }}>{cat.label}</span>
-            <span className="mono" style={{ fontSize: 10.5, color: '#9aa' }}>{counts[cat.type] ?? 0} แห่ง</span>
+            <span className="mono" style={{ fontSize: 10.5, color: '#9aa' }}>ค้นหา →</span>
           </Link>
         ))}
       </div>

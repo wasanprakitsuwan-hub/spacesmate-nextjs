@@ -1,45 +1,9 @@
 import Link from 'next/link'
-import { properties } from '@/lib/property-data'
 import { AREA_KEYWORDS } from '@/lib/constants'
 
-// Match terms for each keyword slug — Thai + English
-const MATCH_MAP: Record<string, { type: string; terms: string[] }> = {
-  'condo-rent-bts-asok':            { type: 'Condo',     terms: ['asok', 'อโศก', 'sukhumvit 21', 'สุขุมวิท 21'] },
-  'apartment-rent-sukhumvit':       { type: 'Apartment', terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-ekkamai':         { type: 'Condo',     terms: ['ekkamai', 'เอกมัย'] },
-  'house-rent-lat-phrao':           { type: 'Apartment', terms: ['lat phrao', 'ลาดพร้าว'] },
-  'condo-rent-bts-thonglor':        { type: 'Condo',     terms: ['thonglor', 'ทองหล่อ', 'thong lor'] },
-  'office-rent-silom':              { type: 'Office',    terms: ['silom', 'สีลม'] },
-  'condo-rent-bts-on-nut':          { type: 'Condo',     terms: ['on nut', 'อ่อนนุช', 'on-nut'] },
-  'apartment-rent-ratchada':        { type: 'Apartment', terms: ['ratchada', 'รัชดา', 'ratchadaphisek'] },
-  'house-rent-rama-9':              { type: 'Apartment', terms: ['rama 9', 'พระราม 9', 'rama9'] },
-  'condo-rent-mrt-lat-phrao':       { type: 'Condo',     terms: ['lat phrao', 'ลาดพร้าว'] },
-  'coworking-rent-sukhumvit':       { type: 'Condo',     terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-saphan-kwai':     { type: 'Condo',     terms: ['saphan kwai', 'สะพานควาย'] },
-  'condo-rent-bts-ari':             { type: 'Condo',     terms: ['ari', 'อารีย์', 'aree'] },
-  'apartment-rent-bang-na':         { type: 'Apartment', terms: ['bang na', 'บางนา', 'bangna'] },
-  'condo-rent-mrt-phahon-yothin':   { type: 'Condo',     terms: ['phahon', 'พหลโยธิน', 'phahonyothin'] },
-  'office-rent-sathorn':            { type: 'Office',    terms: ['sathorn', 'สาทร'] },
-}
 
-// Compute counts from static property data
-const withCounts = AREA_KEYWORDS.map(area => {
-  const match = MATCH_MAP[area.slug]
-  if (!match) return { ...area, count: 0 }
-
-  const count = properties.filter(p => {
-    if (p.propertyType !== match.type) return false
-    const haystack = [p.neighborhood, p.address]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-    return match.terms.some(t => haystack.includes(t.toLowerCase()))
-  }).length
-
-  return { ...area, count }
-})
-
-const sorted = [...withCounts].sort((a, b) => b.count - a.count)
+// Counts will come from DB in the future; show 0 for now
+const sorted = [...AREA_KEYWORDS].map(area => ({ ...area, count: 0 }))
 
 export default function AreaLinks() {
   return (

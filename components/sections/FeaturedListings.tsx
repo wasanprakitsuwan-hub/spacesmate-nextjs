@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import { properties, Property } from '@/lib/property-data'
+import { Property } from '@/lib/property-data'
 
 const TYPE_LABELS: Record<string, string> = {
   Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโด', Office: 'ออฟฟิศ', 'Co-Working': 'Co-space',
@@ -64,22 +64,16 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function FeaturedListings() {
-  // SSR-safe: start with static slice, then merge DB + shuffle on mount
-  const [displayed, setDisplayed] = useState<Property[]>(properties.slice(0, 6))
+  const [displayed, setDisplayed] = useState<Property[]>([])
 
   useEffect(() => {
-    // Fetch DB listings and merge with static for full pool
     fetch('/api/listings/public')
       .then(r => r.json())
       .then((d: { listings?: unknown[] }) => {
         const dbListings = (d.listings ?? []).map(adaptDbListing)
-        const all = [...properties, ...dbListings]
-        setDisplayed(shuffle(all).slice(0, 6))
+        setDisplayed(shuffle(dbListings).slice(0, 6))
       })
-      .catch(() => {
-        // Fallback to static only on error
-        setDisplayed(shuffle(properties).slice(0, 6))
-      })
+      .catch(() => setDisplayed([]))
   }, [])
 
   return (

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { properties, PRICE_RANGES, type Property } from '@/lib/property-data'
+import { PRICE_RANGES, type Property } from '@/lib/property-data'
 
 // ── Haversine distance (km) between two lat/lng points ───────────────────────
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -134,14 +134,14 @@ function SearchContent() {
 
   // Dynamic counts including DB listings
   const typeCounts = useMemo(() => {
-    const all = [...properties, ...dbListings]
+    const all = [...dbListings]
     const counts: Record<string, number> = { '': all.length }
     all.forEach(p => { counts[p.propertyType] = (counts[p.propertyType] || 0) + 1 })
     return counts
   }, [dbListings])
 
   const results = useMemo(() => {
-    let list = [...properties, ...dbListings]
+    let list = [...dbListings]
     if (activeType) list = list.filter(p => p.propertyType === activeType)
     if (keyword.trim()) {
       const kw = keyword.trim().toLowerCase()
