@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
-import { properties as staticProperties } from '@/lib/property-data'
 
 import RichEditor from '@/components/RichEditor'
 
@@ -2302,26 +2301,6 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   )
 }
 
-// ── Map static Property → form pre-fill ───────────────────────────────────────
-function staticToFormState(p: import('../../../lib/property-data').Property): Partial<ListingFormState> {
-  const ptMap: Record<string, string> = {
-    'Condo': 'condo', 'Apartment': 'apartment', 'Office': 'office', 'Co-Working': 'coworking',
-  }
-  return {
-    title_th:      p.title,
-    property_type: ptMap[p.propertyType] ?? 'condo',
-    price_from:    String(p.priceMin || ''),
-    bedrooms:      String(p.bedrooms),
-    bathrooms:     String(p.bathrooms),
-    lat:           p.lat,
-    lng:           p.lng,
-    address_th:    p.address,
-    district:      p.neighborhood,
-    amenities:     p.amenities ?? [],
-    images:        p.images?.length ? p.images : (p.image ? [p.image] : []),
-  }
-}
-
 // ── Published Tab ─────────────────────────────────────────────────────────────
 function PublishedTab({ refreshKey }: { refreshKey: number }) {
   const [dbListings,       setDbListings]       = useState<DbListing[]>([])
@@ -2331,7 +2310,6 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
   const [editTarget,       setEditTarget]       = useState<DbListing | null>(null)
   const [deleting,         setDeleting]         = useState<string | null>(null)
   const [toggling,         setToggling]         = useState<Set<string>>(new Set())
-  const [createFromStatic, setCreateFromStatic] = useState<Partial<ListingFormState> | null>(null)
 
   const loadDb = useCallback(async () => {
     setLoadingDb(true)
@@ -2365,19 +2343,17 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
     setToggling(prev => { const s = new Set(prev); s.delete(id); return s })
   }
 
-  const allTypes = Array.from(new Set([...staticProperties.map(p => p.propertyType.toLowerCase()), ...dbListings.map(p => p.property_type)]))
+  const allTypes = Array.from(new Set(dbListings.map(p => p.property_type)))
   const ok = (title: string, type: string, loc: string) => {
     if (typeFilter && type !== typeFilter) return false
     if (search) { const q = search.toLowerCase(); return title.toLowerCase().includes(q) || loc.toLowerCase().includes(q) }
     return true
   }
-  const filteredStatic = staticProperties.filter(p => ok(p.title, p.propertyType.toLowerCase(), p.neighborhood + p.address))
-  const filteredDb     = dbListings.filter(p => ok(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
+  const filteredDb = dbListings.filter(p => ok(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
 
   return (
     <div>
-      {editTarget       && <EditDrawer   listing={editTarget}  onClose={() => setEditTarget(null)}       onSaved={loadDb} />}
-      {createFromStatic && <CreateDrawer initialData={createFromStatic} onClose={() => setCreateFromStatic(null)} onCreated={() => { setCreateFromStatic(null); loadDb() }} />}
+      {editTarget && <EditDrawer listing={editTarget} onClose={() => setEditTarget(null)} onSaved={loadDb} />}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={() => setTypeFilter('')} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: !typeFilter ? '#02402e' : '#f4f6f5', color: !typeFilter ? '#fff' : '#334155' }}>ทั้งหมด</button>
@@ -2391,7 +2367,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
       </div>
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -12px rgba(2,64,46,0.08)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredStatic.length + filteredDb.length} จาก {staticProperties.length + dbListings.length} รายการ</span>
+          <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredDb.length} จาก {dbListings.length} รายการ</span>
           {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, display: 'inline-block', animation: 'spin .8s linear infinite' }}>sync</span>กำลังโหลด…</span>}
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
@@ -2403,29 +2379,6 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
             </tr>
           </thead>
           <tbody>
-            {filteredStatic.map(p => (
-              <tr key={`s-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4' }}>
-                <td style={{ padding: '12px 14px', maxWidth: 240 }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <img src={p.image} alt="" style={{ width: 38, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />
-                    <span style={{ fontWeight: 600, color: '#02402e', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '12px 14px' }}><TypeChip type={p.propertyType} /></td>
-                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12.5 }}>{p.neighborhood}</td>
-                <td style={{ padding: '12px 14px', fontWeight: 700, color: '#02402e' }}>{p.priceDisplay}</td>
-                <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
-                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>รายเดือน</td>
-                <td style={{ padding: '12px 14px', color: '#94a3b8', fontSize: 12 }}>—</td>
-                <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0f2f1', color: '#64748b', fontWeight: 500 }}>Static</span></td>
-                <td style={{ padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                    <button onClick={() => setCreateFromStatic(staticToFormState(p))} title="นำเข้าและแก้ไขเป็น DB listing" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
             {filteredDb.map(p => (
               <tr key={`d-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4', background: '#fafffe' }}>
                 <td style={{ padding: '12px 14px', maxWidth: 240 }}>
@@ -2486,7 +2439,7 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
                 </td>
               </tr>
             ))}
-            {filteredStatic.length + filteredDb.length === 0 && (
+            {filteredDb.length === 0 && (
               <tr><td colSpan={9} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
             )}
           </tbody>
@@ -2627,7 +2580,7 @@ export default function ListingsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 3px', color: '#02402e' }}>จัดการประกาศ</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>{staticProperties.length} static + ประกาศจาก Dashboard</p>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ประกาศจาก Dashboard</p>
         </div>
         <button onClick={() => setShowCreate(true)} style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
           + เพิ่มประกาศใหม่
