@@ -44,7 +44,7 @@ function adaptDbListing(l: any): Property {
     neighborhood: l.district || l.province || 'กรุงเทพมหานคร',
     lat: l.lat ? String(l.lat) : '',
     lng: l.lng ? String(l.lng) : '',
-    image: (Array.isArray(l.images) ? l.images.find((img: string) => img.startsWith('https://')) : null) ?? '',
+    image: (() => { const imgs = Array.isArray(l.images) ? l.images : []; return imgs.find((i: string) => i.startsWith('https://')) ?? imgs.find((i: string) => i.startsWith('/')) ?? ''; })(),
     propertyType: DB_TYPE_MAP[l.property_type] ?? 'Condo',
     listingType: 'Rent',
     amenities: l.amenities || [],
