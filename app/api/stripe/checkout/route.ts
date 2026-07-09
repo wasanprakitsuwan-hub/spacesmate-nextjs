@@ -28,29 +28,44 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1. Save submission as pending_payment ───────────────────────────────
+    // Support both new rich FormState fields and old simplified fields (backward compat)
+    const titleTh      = body.title_th      || body.title       || null
+    const propType     = body.property_type || body.type        || null
+    const descTh       = body.description_th || body.description || null
+    const addrTh       = body.address_th    || body.address     || null
+    const subDistrict  = body.sub_district  || body.subdistrict || null
+    const roomTypes    = body.room_types    || null  // serialized apartment_units / condo_rental / charges
+
     const { data: submission, error: dbError } = await supabase
       .from('submissions')
       .insert([{
-        title:         body.title         || null,
-        type:          body.type          || null,
+        title:         titleTh,
+        type:          propType,
         rent_type:     body.rentType      || 'month',
-        rental_term:   body.rentalTerm    || 'monthly',
-        price:         body.price         ? parseInt(body.price)     : null,
-        size:          body.size          || null,
-        bedrooms:      body.bedrooms      ? parseInt(body.bedrooms)  : null,
-        bathrooms:     body.bathrooms     ? parseInt(body.bathrooms) : null,
+        rental_term:   body.rental_term   || body.rentalTerm || 'monthly',
+        price:         body.price_from    ?? (body.price ? parseInt(body.price) : null),
+        size:          body.area_sqm      || body.size || null,
+        bedrooms:      body.bedrooms      ? parseInt(String(body.bedrooms))  : null,
+        bathrooms:     body.bathrooms     ? parseInt(String(body.bathrooms)) : null,
         floor:         body.floor         || null,
-        description:   body.description   || null,
+        description:   descTh,
         amenities:     body.amenities     || [],
-        address:       body.address       || null,
+        address:       addrTh,
         province:      body.province      || null,
         district:      body.district      || null,
-        subdistrict:   body.subdistrict   || null,
+        subdistrict:   subDistrict,
         postcode:      body.postcode      || null,
         contact_name:  body.contactName   || null,
         contact_phone: body.contactPhone  || null,
         contact_email: body.contactEmail  || null,
         images:        Array.isArray(body.images) ? body.images : [],
+        // Rich fields stored as extra JSON columns (if columns exist) or ignored gracefully
+        title_en:       body.title_en      || null,
+        description_en: body.description_en || null,
+        lat:            body.lat           || null,
+        lng:            body.lng           || null,
+        room_types:     roomTypes,
+        video_url:      body.video_url     || null,
         package_type:  packageId,
         user_id:       userId,             // stamped immediately if logged in
         status:        'pending_payment', // activated by webhook after payment
@@ -89,7 +104,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           submission_id: submissionId,
           package_id:    packageId,
-          listing_title: body.title || '',
+          listing_title: body.title_th || body.title || '',
         },
       },
       metadata: {
@@ -106,7 +121,7 @@ export async function POST(req: NextRequest) {
       locale: 'auto',
       custom_text: {
         submit: {
-          message: `ประกาศ "${body.title || 'ทรัพย์สินของคุณ'}" จะเผยแพร่ทันทีหลังชำระเงิน`,
+          message: `ประกาศ "${body.title_th || body.title || 'ทรัพย์สินของคุณ'}" จะเผยแพร่ทันทีหลังชำระเงิน`,
         },
       },
     })
