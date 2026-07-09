@@ -44,7 +44,7 @@ function adaptDbListing(l: any): Property {
     neighborhood: l.district || l.province || 'กรุงเทพมหานคร',
     lat: l.lat ? String(l.lat) : '',
     lng: l.lng ? String(l.lng) : '',
-    image: '',
+    image: Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : '',
     propertyType: DB_TYPE_MAP[l.property_type] ?? 'Condo',
     listingType: 'Rent',
     amenities: l.amenities || [],
