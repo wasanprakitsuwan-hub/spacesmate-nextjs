@@ -1,11 +1,12 @@
 -- ============================================================
 -- Backfill: publish approved submissions that have no property row
--- Date: 2026-07-10
+-- Date: 2026-07-10  (v2 — all type errors fixed)
 -- Run in: Supabase Dashboard → SQL Editor → New query
 --
--- This fixes listings stuck in submissions.status = 'approved'
--- that never made it into the properties table (e.g. because
--- the old approval handler only updated status, never copied data).
+-- Fixes applied vs v1:
+--  • property_type: CASE maps Thai labels → English enum values
+--  • bedrooms / bathrooms / floor: safe text→integer cast
+--  • amenities / room_types: correct text[] empty default (not ::jsonb)
 --
 -- Safe to run multiple times — the NOT EXISTS guard prevents duplicates.
 -- ============================================================
@@ -70,7 +71,26 @@ SELECT
   s.title_en,
   s.description                                          AS description_th,
   s.description_en,
-  coalesce(s.type, 'คอนโดมิเนียม')                      AS property_type,
+
+  -- Map Thai property type labels → English enum values required by check constraint
+  CASE s.type
+    WHEN 'คอนโด'              THEN 'condo'
+    WHEN 'คอนโดมิเนียม'       THEN 'condo'
+    WHEN 'อพาร์ทเม้นท์'       THEN 'apartment'
+    WHEN 'อพาร์ตเมนต์'        THEN 'apartment'
+    WHEN 'บ้าน'               THEN 'house'
+    WHEN 'ออฟฟิศ'             THEN 'office'
+    WHEN 'โคเวิร์ก'           THEN 'coworking'
+    WHEN 'โคเวิร์คกิ้งสเปซ'   THEN 'coworking'
+    -- Pass-through for rows already storing English values
+    WHEN 'condo'              THEN 'condo'
+    WHEN 'apartment'          THEN 'apartment'
+    WHEN 'house'              THEN 'house'
+    WHEN 'office'             THEN 'office'
+    WHEN 'coworking'          THEN 'coworking'
+    ELSE 'apartment'
+  END                                                    AS property_type,
+
   coalesce(s.price, 0)                                   AS price_from,
 
   -- size may be stored as text; cast safely
@@ -80,9 +100,23 @@ SELECT
     ELSE NULL
   END                                                    AS area_sqm,
 
-  s.bedrooms,
-  s.bathrooms,
-  s.floor,
+  -- bedrooms / bathrooms: text in submissions, integer in properties
+  CASE
+    WHEN s.bedrooms::text ~ '^\d+$' THEN s.bedrooms::text::integer
+    ELSE 0
+  END                                                    AS bedrooms,
+
+  CASE
+    WHEN s.bathrooms::text ~ '^\d+$' THEN s.bathrooms::text::integer
+    ELSE 0
+  END                                                    AS bathrooms,
+
+  -- floor: text in submissions, integer in properties
+  CASE
+    WHEN s.floor::text ~ '^\d+$' THEN s.floor::text::integer
+    ELSE NULL
+  END                                                    AS floor,
+
   s.address                                              AS address_th,
   s.district,
   s.subdistrict                                          AS sub_district,
@@ -91,9 +125,10 @@ SELECT
   s.lat,
   s.lng,
 
-  coalesce(s.amenities, '[]'::jsonb)                    AS amenities,
-  coalesce(s.images,    '{}'::text[])                   AS images,
-  coalesce(s.room_types,'[]'::jsonb)                    AS room_types,
+  -- amenities / room_types are text[] in both tables
+  coalesce(s.amenities, ARRAY[]::text[])                 AS amenities,
+  coalesce(s.images,    ARRAY[]::text[])                 AS images,
+  coalesce(s.room_types, ARRAY[]::text[])                AS room_types,
   s.video_url,
 
   coalesce(s.rental_term, 'monthly')                    AS rental_term,

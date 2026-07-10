@@ -104,18 +104,28 @@ export async function POST(req: NextRequest) {
             .trim()
             .slice(0, 60) + '-' + Date.now().toString(36)
 
+          const PROP_TYPE_MAP: Record<string, string> = {
+            'คอนโด': 'condo', 'คอนโดมิเนียม': 'condo',
+            'อพาร์ทเม้นท์': 'apartment', 'อพาร์ตเมนต์': 'apartment',
+            'บ้าน': 'house', 'ออฟฟิศ': 'office',
+            'โคเวิร์ก': 'coworking', 'โคเวิร์คกิ้งสเปซ': 'coworking',
+          }
+          const rawPropType = (sub.type as string) || ''
+          const normalizedType = PROP_TYPE_MAP[rawPropType] ?? (rawPropType || 'apartment')
+          const safeIntW = (v: unknown) => { const n = parseInt(String(v ?? ''), 10); return isNaN(n) ? null : n }
+
           const { error: propErr } = await supabase.from('properties').insert({
             slug,
             source_submission_id: submissionId,
             landlord_id:          resolvedUserId,
             title_th:             sub.title       || '',
             description_th:       sub.description || null,
-            property_type:        sub.type        || 'คอนโดมิเนียม',
+            property_type:        normalizedType,
             price_from:           sub.price       || 0,
             area_sqm:             sub.size ? parseFloat(String(sub.size)) : null,
-            bedrooms:             sub.bedrooms    || null,
-            bathrooms:            sub.bathrooms   || null,
-            floor:                sub.floor       || null,
+            bedrooms:             safeIntW(sub.bedrooms) ?? 0,
+            bathrooms:            safeIntW(sub.bathrooms) ?? 0,
+            floor:                safeIntW(sub.floor),
             address_th:           sub.address     || null,
             district:             sub.district    || null,
             sub_district:         sub.subdistrict || null,

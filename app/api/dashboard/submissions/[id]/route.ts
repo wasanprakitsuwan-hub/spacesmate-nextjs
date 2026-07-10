@@ -63,6 +63,24 @@ export async function PATCH(
                   return d
                 })()
 
+            // Normalise property_type: submissions may store Thai labels,
+            // but the properties table has an English-value check constraint.
+            const TYPE_MAP: Record<string, string> = {
+              'คอนโด': 'condo', 'คอนโดมิเนียม': 'condo',
+              'อพาร์ทเม้นท์': 'apartment', 'อพาร์ตเมนต์': 'apartment',
+              'บ้าน': 'house',
+              'ออฟฟิศ': 'office',
+              'โคเวิร์ก': 'coworking', 'โคเวิร์คกิ้งสเปซ': 'coworking',
+            }
+            const rawType = (sub.type as string) || ''
+            const propertyType = TYPE_MAP[rawType] ?? (rawType || 'apartment')
+
+            // Safe integer cast for fields that are text in submissions but int in properties
+            const safeInt = (v: unknown): number | null => {
+              const n = parseInt(String(v ?? ''), 10)
+              return isNaN(n) ? null : n
+            }
+
             const { error: propErr } = await supabase.from('properties').insert({
               slug,
               source_submission_id: params.id,
@@ -71,13 +89,13 @@ export async function PATCH(
               title_en:             sub.title_en       || null,
               description_th:       sub.description    || null,
               description_en:       sub.description_en || null,
-              property_type:        sub.type           || 'คอนโดมิเนียม',
+              property_type:        propertyType,
               price_from:           sub.price          || 0,
               price_to:             sub.price_to       || null,
               area_sqm:             sub.size ? parseFloat(String(sub.size)) : null,
-              bedrooms:             sub.bedrooms       || null,
-              bathrooms:            sub.bathrooms      || null,
-              floor:                sub.floor          || null,
+              bedrooms:             safeInt(sub.bedrooms) ?? 0,
+              bathrooms:            safeInt(sub.bathrooms) ?? 0,
+              floor:                safeInt(sub.floor),
               address_th:           sub.address        || null,
               district:             sub.district       || null,
               sub_district:         sub.subdistrict    || null,
