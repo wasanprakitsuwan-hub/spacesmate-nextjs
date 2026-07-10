@@ -2478,10 +2478,12 @@ function SubmissionsTab() {
   }
 
   const STATUS_OPTS = [
-    { value: '', label: 'ทั้งหมด' }, { value: 'pending', label: 'รออนุมัติ' },
+    { value: '', label: 'ทั้งหมด' }, { value: 'pending_payment', label: 'รอชำระ' },
+    { value: 'pending', label: 'รออนุมัติ' },
     { value: 'approved', label: 'อนุมัติแล้ว' }, { value: 'rejected', label: 'ปฏิเสธ' },
   ]
   const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> = {
+    pending_payment: { bg: '#dbeafe', color: '#1d4ed8', label: 'รอชำระ' },
     pending:  { bg: '#fef9c3', color: '#a16207', label: 'รออนุมัติ' },
     approved: { bg: '#dcfce7', color: '#15803d', label: 'อนุมัติแล้ว' },
     rejected: { bg: '#fee2e2', color: '#b91c1c', label: 'ปฏิเสธ' },
