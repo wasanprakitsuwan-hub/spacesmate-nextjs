@@ -103,16 +103,30 @@ export default async function BlogPostPage({ params }: Props) {
   const wpId = SLUG_TO_WP_ID[post.slug]
   const content = post.content ?? (wpId ? BLOG_CONTENT[wpId] : '') ?? '<p>ไม่พบเนื้อหา</p>'
 
-  // Related posts — same category, exclude current
-  const { data: relatedData } = await supabase
+  // Related posts — same category first, top up with recent posts if < 3 found
+  const { data: sameCatData } = await supabase
     .from('blog_posts')
-    .select('slug, title, thumbnail, thumbnail_alt, published_at')
+    .select('slug, title, thumbnail, thumbnail_alt, published_at, category')
     .eq('status', 'published')
     .eq('category', post.category)
     .neq('slug', post.slug)
+    .order('published_at', { ascending: false })
     .limit(3)
 
-  const related = relatedData ?? []
+  let related = sameCatData ?? []
+
+  // If we have fewer than 3 same-category posts, fill with recent posts from other categories
+  if (related.length < 3) {
+    const existingSlugs = [post.slug, ...related.map(r => r.slug)]
+    const { data: recentData } = await supabase
+      .from('blog_posts')
+      .select('slug, title, thumbnail, thumbnail_alt, published_at, category')
+      .eq('status', 'published')
+      .not('slug', 'in', `(${existingSlugs.map(s => `"${s}"`).join(',')})`)
+      .order('published_at', { ascending: false })
+      .limit(3 - related.length)
+    related = [...related, ...(recentData ?? [])]
+  }
 
   // Build JSON-LD Article schema for rich snippets
   const metaDesc = post.meta_desc
@@ -234,10 +248,17 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Related posts */}
+        {/* Related / other posts — always show when there's anything to read */}
         {related.length > 0 && (
           <div className="mt-14">
-            <h2 className="text-lg font-bold text-spacemate-brandDark mb-6">บทความที่เกี่ยวข้อง</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-spacemate-brandDark">
+                {related.some(r => r.category === post.category) ? 'บทความที่เกี่ยวข้อง' : 'บทความอื่น ๆ ที่น่าสนใจ'}
+              </h2>
+              <Link href="/blog" className="text-sm text-spacemate-brandTeal font-medium hover:underline">
+                ดูทั้งหมด →
+              </Link>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {related.map((p) => (
                 <Link
@@ -253,6 +274,11 @@ export default async function BlogPostPage({ params }: Props) {
                     />
                   </div>
                   <div className="p-4">
+                    {p.category !== post.category && (
+                      <span className="inline-block text-[10px] font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-2 py-0.5 rounded-full mb-1.5">
+                        {p.category}
+                      </span>
+                    )}
                     <p className="text-xs font-semibold text-spacemate-brandDark leading-snug line-clamp-3 group-hover:text-spacemate-brandTeal transition-colors">
                       {p.title}
                     </p>

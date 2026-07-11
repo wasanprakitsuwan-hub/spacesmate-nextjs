@@ -35,11 +35,30 @@ export async function GET(req: NextRequest) {
 
     if (listErr) throw listErr
 
+    // Derive package: user_profiles.package_type is source of truth.
+    // Fallback: use most recent active listing's package_type if profile field is null
+    // (happens when Stripe webhook profile sync missed the user or ran before profile existed)
+    const profilePackage = (profile as any).package_type ?? null
+    const derivedPackage = profilePackage ?? (() => {
+      const withPkg = (listings ?? []).filter((l: any) => l.package_type)
+      const active  = withPkg.find((l: any) => l.listing_status === 'active')
+      return active?.package_type ?? withPkg[0]?.package_type ?? null
+    })()
+
+    // Derive expiry: same fallback logic
+    const profileExpiry = (profile as any).package_expires_at ?? null
+    const derivedExpiry = profileExpiry ?? (() => {
+      const withExpiry = (listings ?? []).filter((l: any) => l.expires_at && l.package_type)
+      const active     = withExpiry.find((l: any) => l.listing_status === 'active')
+      return active?.expires_at ?? withExpiry[0]?.expires_at ?? null
+    })()
+
     return NextResponse.json({
       profile: {
         ...profile,
         // Expose as active_package for frontend compatibility
-        active_package: (profile as any).package_type ?? null,
+        active_package:    derivedPackage,
+        package_expires_at: derivedExpiry,
         display_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.full_name || profile.email,
       },
       listings: (listings ?? []).map((l: any) => ({

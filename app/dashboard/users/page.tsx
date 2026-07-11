@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 
 interface UserListings {
@@ -365,6 +366,7 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
 
 // ── User Detail Drawer (#204) ─────────────────────────────────────────────────
 function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string; onClose: () => void; onEdit?: () => void; callerRole?: CallerRole }) {
+  const router = useRouter()
   const [detail,  setDetail]  = useState<UserDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
@@ -476,9 +478,16 @@ function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string;
                               {expiringSoon && <span style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 7, background: '#fef9c3', color: '#a16207', fontWeight: 600 }}>ใกล้หมดอายุ</span>}
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(l.created_at)}</div>
-                            {l.expires_at && <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>หมด {fmtDate(l.expires_at)}</div>}
+                            {l.expires_at && <div style={{ fontSize: 10.5, color: '#94a3b8' }}>หมด {fmtDate(l.expires_at)}</div>}
+                            <button
+                              onClick={() => { onClose(); router.push(`/dashboard/listings?editId=${l.id}`) }}
+                              title="แก้ไขประกาศนี้"
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span>แก้ไข
+                            </button>
                           </div>
                         </div>
                       )

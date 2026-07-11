@@ -2321,6 +2321,20 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
 
   useEffect(() => { loadDb() }, [loadDb, refreshKey])
 
+  // Auto-open edit drawer when navigated here with ?editId=<id>
+  useEffect(() => {
+    if (!dbListings.length) return
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get('editId')
+    if (editId) {
+      const target = dbListings.find(l => l.id === editId)
+      if (target) {
+        setEditTarget(target)
+        window.history.replaceState({}, '', '/dashboard/listings')
+      }
+    }
+  }, [dbListings])
+
   async function deleteListing(id: string) {
     if (!confirm('ลบประกาศนี้ออกจากระบบ?')) return
     setDeleting(id)
@@ -2554,6 +2568,9 @@ function SubmissionsTab() {
                       <div style={{ display: 'flex', gap: 5 }}>
                         {item.status !== 'approved' && (
                           <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: 'none', background: '#02402e', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>อนุมัติ</button>
+                        )}
+                        {item.status === 'approved' && (
+                          <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} title="สร้าง/อัปเดต property row บนเว็บไซต์" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #02402e', background: '#fff', color: '#02402e', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>เผยแพร่</button>
                         )}
                         {item.status !== 'rejected' && (
                           <button onClick={() => updateStatus(item.id, 'rejected')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>ปฏิเสธ</button>
