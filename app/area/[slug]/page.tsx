@@ -2,8 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { AREA_KEYWORDS } from '@/lib/constants'
-import { properties } from '@/lib/property-data'
 import { AREA_CONTENT } from '@/lib/area-content'
+import { createServerClient } from '@/lib/supabase'
 
 interface Props { params: { slug: string } }
 
@@ -48,30 +48,58 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+// Maps use lowercase property_type values (as stored in Supabase)
 const TYPE_LABELS: Record<string, string> = {
-  Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโดมิเนียม', Office: 'ออฟฟิศ', 'Co-Working': 'โคเวิร์กกิ้ง',
+  apartment: 'อพาร์ทเม้นท์', condo: 'คอนโดมิเนียม', office: 'ออฟฟิศ', coworking: 'โคเวิร์กกิ้ง', house: 'บ้าน',
 }
 const GRADS: Record<string, string> = {
-  Apartment: 'linear-gradient(135deg,#02402e,#036b56)',
-  Condo:     'linear-gradient(135deg,#036b56,#048c73)',
-  Office:    'linear-gradient(135deg,#4a1d1d,#8b3a3a)',
-  'Co-Working': 'linear-gradient(135deg,#02402e,#048c73)',
+  apartment: 'linear-gradient(135deg,#02402e,#036b56)',
+  condo:     'linear-gradient(135deg,#036b56,#048c73)',
+  office:    'linear-gradient(135deg,#4a1d1d,#8b3a3a)',
+  coworking: 'linear-gradient(135deg,#02402e,#048c73)',
+  house:     'linear-gradient(135deg,#02402e,#036b56)',
   default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
-export default function AreaPage({ params }: Props) {
+// Map AREA_MATCH type labels → Supabase property_type enum values
+const MATCH_TYPE_TO_DB: Record<string, string> = {
+  Apartment: 'apartment', Condo: 'condo', Office: 'office', 'Co-Working': 'coworking', House: 'house',
+}
+
+export default async function AreaPage({ params }: Props) {
   const area = AREA_KEYWORDS.find(a => a.slug === params.slug)
   if (!area) notFound()
 
   const content = AREA_CONTENT[params.slug]
   const match = AREA_MATCH[params.slug]
-  const areaProps = match
-    ? properties.filter(p => {
-        if (p.propertyType !== match.type) return false
-        const h = [p.neighborhood, p.address].join(' ').toLowerCase()
-        return match.terms.some(t => h.includes(t.toLowerCase()))
+
+  // Query live listings from Supabase instead of static data
+  type AreaProp = {
+    slug: string
+    property_type: string
+    title_th: string
+    district: string | null
+    address_th: string | null
+    images: string[]
+    price_from: number
+  }
+  let areaProps: AreaProp[] = []
+
+  if (match) {
+    const supabase = createServerClient()
+    const dbType = MATCH_TYPE_TO_DB[match.type] ?? match.type.toLowerCase()
+    const { data } = await supabase
+      .from('properties')
+      .select('slug, property_type, title_th, district, address_th, images, price_from')
+      .eq('listing_status', 'active')
+      .eq('property_type', dbType)
+    if (data) {
+      areaProps = data.filter((p: AreaProp) => {
+        const haystack = [p.district, p.address_th].join(' ').toLowerCase()
+        return match.terms.some(t => haystack.includes(t.toLowerCase()))
       })
-    : []
+    }
+  }
 
   // Related areas (same property type)
   const related = AREA_KEYWORDS
@@ -122,22 +150,23 @@ export default function AreaPage({ params }: Props) {
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }} className="sm-area-grid">
               {areaProps.map(p => {
-                const grad = GRADS[p.propertyType] || GRADS.default
+                const grad = GRADS[p.property_type] || GRADS.default
+                const heroImg = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null
                 return (
                   <Link key={p.slug} href={`/property/${p.slug}`}
                     style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', display: 'block', textDecoration: 'none', transition: 'all .25s', boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)' }}
                     className="sm-area-card">
                     <div style={{ height: 160, background: grad, position: 'relative', overflow: 'hidden' }}>
-                      {p.image && <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }} className="sm-area-img" />}
+                      {heroImg && <img src={heroImg} alt={p.title_th} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }} className="sm-area-img" />}
                       <span style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 11, color: 'rgba(255,255,255,0.9)', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(4px)', padding: '3px 9px', borderRadius: 6 }}>
-                        {TYPE_LABELS[p.propertyType] || p.propertyType}
+                        {TYPE_LABELS[p.property_type] || p.property_type}
                       </span>
                     </div>
                     <div style={{ padding: '14px 16px' }}>
-                      <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}</p>
-                      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#231f20', margin: '0 0 8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</h3>
+                      <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.district}</p>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#231f20', margin: '0 0 8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title_th}</h3>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 15.5, fontWeight: 700, color: '#d97f11' }}>{p.priceDisplay}</span>
+                        <span style={{ fontSize: 15.5, fontWeight: 700, color: '#d97f11' }}>฿{p.price_from.toLocaleString()}/เดือน</span>
                         <span style={{ color: '#048c73', fontSize: 12, fontWeight: 600 }}>ดูรายละเอียด →</span>
                       </div>
                     </div>
