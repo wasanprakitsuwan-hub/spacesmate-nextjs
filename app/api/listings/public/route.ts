@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
+// Force dynamic — never statically cache this route (listings change in real-time)
+export const dynamic = 'force-dynamic'
+
 // Public endpoint — returns active, non-expired DB listings for homepage + search
 export async function GET() {
   try {
@@ -15,8 +18,15 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return NextResponse.json({ listings: data ?? [] })
+
+    return NextResponse.json(
+      { listings: data ?? [] },
+      { headers: { 'Cache-Control': 'no-store, must-revalidate' } }
+    )
   } catch {
-    return NextResponse.json({ listings: [] })
+    return NextResponse.json(
+      { listings: [] },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
   }
 }
