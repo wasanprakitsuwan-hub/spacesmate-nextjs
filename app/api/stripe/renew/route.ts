@@ -27,20 +27,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
-    // Fetch user email for Stripe
+    // Fetch user profile — get existing Stripe customer ID if available
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('email')
+      .select('email, stripe_customer_id')
       .eq('id', auth.id)
       .single()
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
     const durationDays = PACKAGE_DAYS[package_id as keyof typeof PACKAGE_DAYS] ?? 30
 
+    // Reuse existing Stripe customer so saved card is pre-filled
+    const customerParams = profile?.stripe_customer_id
+      ? { customer: profile.stripe_customer_id }
+      : { customer_email: profile?.email || undefined }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      customer_email: profile?.email || undefined,
+      ...customerParams,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
         metadata: {
