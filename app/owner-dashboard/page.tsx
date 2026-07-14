@@ -233,6 +233,10 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
     amenities:     listing.amenities  ?? [],
     images:        listing.images     ?? [],
     video_url:     listing.video_url  ?? '',
+    contact_name:  (listing as any).contact_name  ?? '',
+    contact_phone: (listing as any).contact_phone ?? '',
+    contact_email: (listing as any).contact_email ?? '',
+    contact_line:  (listing as any).contact_line  ?? '',
   })
 
   function onChange(k: string, v: any) { setForm(f => ({ ...f, [k]: v })) }

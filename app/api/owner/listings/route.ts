@@ -152,6 +152,10 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(fields.images) && fields.images.length > 0) payload.images = fields.images
     if (fields.video_url) payload.video_url = fields.video_url
+    if (fields.contact_name)  payload.contact_name  = fields.contact_name
+    if (fields.contact_phone) payload.contact_phone = fields.contact_phone
+    if (fields.contact_email) payload.contact_email = fields.contact_email
+    if (fields.contact_line)  payload.contact_line  = fields.contact_line
 
     const { data, error } = await supabase
       .from('properties')
@@ -244,6 +248,7 @@ export async function PATCH(req: NextRequest) {
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'rental_term', 'images', 'video_url',
+      'contact_name', 'contact_phone', 'contact_email', 'contact_line',
     ]
 
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }

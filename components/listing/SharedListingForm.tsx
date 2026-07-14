@@ -51,6 +51,11 @@ export interface FormState {
   amenities: string[]
   images: string[]
   video_url: string
+  // Contact fields
+  contact_name: string
+  contact_phone: string
+  contact_email: string
+  contact_line: string
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -76,6 +81,7 @@ export const BLANK: FormState = {
   province: 'กรุงเทพมหานคร', postcode: '',
   lat: '', lng: '',
   description_th: '', description_en: '', amenities: [], images: [], video_url: '',
+  contact_name: '', contact_phone: '', contact_email: '', contact_line: '',
 }
 
 export const AMENITY_BUILDING = [
@@ -164,7 +170,13 @@ export function prepareSubmitData(form: FormState) {
     area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
   }
 
-  return { price_from, price_to, room_types, floor, area_sqm }
+  return {
+    price_from, price_to, room_types, floor, area_sqm,
+    contact_name:  form.contact_name  || null,
+    contact_phone: form.contact_phone || null,
+    contact_email: form.contact_email || null,
+    contact_line:  form.contact_line  || null,
+  }
 }
 
 // ── Section Header ─────────────────────────────────────────────────────────────
@@ -1221,9 +1233,39 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
       </div>
 
       {/* ── 9 · วิดีโอ (Premium) ── */}
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 24 }}>
         <SectionHead text="9 · วิดีโอประกาศ (Premium เท่านั้น)" />
         <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} />
+      </div>
+
+      {/* ── 10 · ข้อมูลการติดต่อ ── */}
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead text="10 · ข้อมูลการติดต่อ" />
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>ข้อมูลนี้จะแสดงในหน้าประกาศเพื่อให้ผู้เช่าติดต่อได้</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={SLBL}>ชื่อผู้ติดต่อ</label>
+            <input value={form.contact_name} onChange={e => onChange('contact_name', e.target.value)}
+              placeholder="ชื่อ-นามสกุล หรือชื่อนิติบุคคล" style={SINP} />
+          </div>
+          <div>
+            <label style={SLBL}>เบอร์โทรศัพท์</label>
+            <input value={form.contact_phone} onChange={e => onChange('contact_phone', e.target.value)}
+              placeholder="0812345678" style={SINP} />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={SLBL}>LINE ID</label>
+            <input value={form.contact_line} onChange={e => onChange('contact_line', e.target.value)}
+              placeholder="@yourid หรือ yourid" style={SINP} />
+          </div>
+          <div>
+            <label style={SLBL}>อีเมล</label>
+            <input value={form.contact_email} onChange={e => onChange('contact_email', e.target.value)}
+              placeholder="your@email.com" type="email" style={SINP} />
+          </div>
+        </div>
       </div>
     </>
   )
