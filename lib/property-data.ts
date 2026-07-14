@@ -1,11 +1,8 @@
-// ─── SpacesMate Property Listings — Static Data ───────────────────────────────
-// Migrated from WordPress (spacesmate.com) — all 14 published listings
-// Images: hosted on WP CDN. Download to /public/properties/ before closing WP.
-// Full content: fetched from WP REST API at build time via generateStaticParams.
+// ─── SpacesMate Property Listings — Static Fallback Data ─────────────────────
 
 export interface Property {
-  id: number             // WP post ID — used to fetch full content at build time
-  slug: string           // Clean English slug for Next.js routing
+  id: number             // Internal listing ID
+  slug: string           // URL slug for Next.js routing
   title: string
   excerpt: string
   priceMin: number       // Minimum price for filtering (THB/month)
@@ -25,8 +22,6 @@ export interface Property {
   featured: boolean
   date: string
 }
-
-export const WP_BASE = 'https://spacesmate.com/wp-json/wp/v2'
 
 export const properties: Property[] = [
   // ── Recently uploaded (6 flagship listings) ──────────────────────────────────
@@ -363,9 +358,8 @@ export const PRICE_RANGES = [
   { label: 'มากกว่า ฿20,000', min: 20000, max: Infinity },
 ]
 
-// Property detail content — WP REST API no longer available after DNS cutover.
-// Property pages already show all key info (specs, amenities, map) from static data.
+// Returns empty string — property detail content is served from static data only.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function fetchPropertyContent(_wpId: number): Promise<string> {
+export async function fetchPropertyContent(_id: number): Promise<string> {
   return ''
 }
