@@ -313,9 +313,13 @@ export default function OwnerDashboardPage() {
   const [deleting,           setDeleting]           = useState<string | null>(null)
 
   // Derived: user has a valid active package
+  const hasActiveListing = listings.some(l =>
+    l.expires_at && new Date(l.expires_at) > new Date() && l.listing_status !== 'expired'
+  )
   const hasPackage =
     subscriptions.some(s => s.stripe_status === 'active' || s.stripe_status === 'trialing') ||
-    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date()))
+    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
+    hasActiveListing
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
@@ -474,83 +478,127 @@ export default function OwnerDashboardPage() {
         ))}
       </div>
 
-      {/* Subscriptions section — one row per subscription */}
-      {subscriptions.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, overflow: 'hidden', marginBottom: 24, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="msym" style={{ fontSize: 18, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#02402e' }}>Subscriptions ของฉัน</span>
+      {/* แพ็กเกจของฉัน — always visible */}
+      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, overflow: 'hidden', marginBottom: 24, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="msym" style={{ fontSize: 18, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#02402e' }}>แพ็กเกจของฉัน</span>
+          {subscriptions.length > 0 && (
             <span style={{ fontSize: 12, color: '#94a3b8', background: '#f1f5f9', borderRadius: 10, padding: '2px 8px', marginLeft: 2 }}>
               {subscriptions.filter(s => s.stripe_status === 'active' || s.stripe_status === 'trialing').length} active
             </span>
-          </div>
+          )}
+        </div>
 
-          {subscriptions.map((sub, i) => {
-            const pkgLabel  = sub.package_type === 'basic' ? 'Basic' : sub.package_type === 'standard' ? 'Standard' : sub.package_type === 'premium' ? 'Premium' : sub.package_type
-            const isActive  = sub.stripe_status === 'active' || sub.stripe_status === 'trialing'
-            const isCancelled = sub.cancel_at_period_end
-            return (
-              <div key={sub.stripe_subscription_id} style={{
-                padding: '16px 20px',
-                borderBottom: i < subscriptions.length - 1 ? '1px solid #f1f5f4' : 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                flexWrap: 'wrap', gap: 12,
-                background: i % 2 === 0 ? '#fff' : '#fafffe',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ background: isActive ? '#eaf6f1' : '#f1f5f9', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span className="msym" style={{ fontSize: 18, color: isActive ? '#048c73' : '#94a3b8', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>receipt_long</span>
+        {/* State 1: Has Stripe subscriptions */}
+        {subscriptions.length > 0 ? subscriptions.map((sub, i) => {
+          const pkgLabel  = sub.package_type === 'basic' ? 'Basic' : sub.package_type === 'standard' ? 'Standard' : sub.package_type === 'premium' ? 'Premium' : sub.package_type
+          const isActive  = sub.stripe_status === 'active' || sub.stripe_status === 'trialing'
+          const isCancelled = sub.cancel_at_period_end
+          return (
+            <div key={sub.stripe_subscription_id} style={{
+              padding: '16px 20px',
+              borderBottom: i < subscriptions.length - 1 ? '1px solid #f1f5f4' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: 12,
+              background: i % 2 === 0 ? '#fff' : '#fafffe',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: isActive ? '#eaf6f1' : '#f1f5f9', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="msym" style={{ fontSize: 18, color: isActive ? '#048c73' : '#94a3b8', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>receipt_long</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                    แพ็กเกจ {pkgLabel}
+                    {isCancelled && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#d97f11', background: '#fdf3e3', borderRadius: 6, padding: '2px 7px' }}>ยกเลิกแล้ว — ใช้งานถึงวันหมดอายุ</span>
+                    )}
+                    {!isActive && !isCancelled && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c', background: '#fee2e2', borderRadius: 6, padding: '2px 7px' }}>{sub.stripe_status}</span>
+                    )}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                      แพ็กเกจ {pkgLabel}
-                      {isCancelled && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#d97f11', background: '#fdf3e3', borderRadius: 6, padding: '2px 7px' }}>ยกเลิกแล้ว — ใช้งานถึงวันหมดอายุ</span>
-                      )}
-                      {!isActive && !isCancelled && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c', background: '#fee2e2', borderRadius: 6, padding: '2px 7px' }}>{sub.stripe_status}</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {sub.listing_title
-                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{sub.listing_title}</span>
-                        : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่ระบุประกาศ</span>
-                      }
-                      {sub.expires_at && (
-                        <span style={{ color: '#94a3b8' }}>·</span>
-                      )}
-                      {sub.expires_at && (
-                        <span>{isCancelled ? 'หมดอายุ' : 'ต่ออายุ'}: {new Date(sub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                      )}
-                    </div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {sub.listing_title
+                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{sub.listing_title}</span>
+                      : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่ระบุประกาศ</span>
+                    }
+                    {sub.expires_at && <span style={{ color: '#94a3b8' }}>·</span>}
+                    {sub.expires_at && (
+                      <span>{isCancelled ? 'หมดอายุ' : 'ต่ออายุ'}: {new Date(sub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    )}
                   </div>
                 </div>
-
-                {isActive && !isCancelled && (
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-                    {sub.package_type !== 'premium' && (
-                      <button
-                        onClick={() => { setUpgradeError(''); setSelectedUpgradePkg(''); setConfirmUpgradeSubId(sub.stripe_subscription_id) }}
-                        style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}
-                      >
-                        <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>
-                        อัปเกรด
-                      </button>
-                    )}
-                    <button
-                      onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
-                      style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>
-                      ยกเลิก
-                    </button>
-                  </div>
-                )}
               </div>
-            )
-          })}
-        </div>
-      )}
+              {isActive && !isCancelled && (
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                  {sub.package_type !== 'premium' && (
+                    <button onClick={() => { setUpgradeError(''); setSelectedUpgradePkg(''); setConfirmUpgradeSubId(sub.stripe_subscription_id) }}
+                      style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>อัปเกรด
+                    </button>
+                  )}
+                  <button onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
+                    style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>ยกเลิก
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        }) : hasActiveListing ? (
+          /* State 2: No Stripe sub but has active listing with package */
+          <div style={{ padding: '8px 0' }}>
+            {listings.filter(l => l.expires_at && new Date(l.expires_at) > new Date() && l.listing_status !== 'expired').map((l, i, arr) => {
+              const days = daysLeft(l.expires_at)
+              const soonExp = days !== null && days <= 7 && days > 0
+              return (
+                <div key={l.id} style={{
+                  padding: '16px 20px',
+                  borderBottom: i < arr.length - 1 ? '1px solid #f1f5f4' : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  flexWrap: 'wrap', gap: 12,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: '#eaf6f1', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>verified</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                        แพ็กเกจ {PKG_LABEL[l.package_type ?? 'basic'] ?? l.package_type}
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#15803d', background: '#dcfce7', borderRadius: 6, padding: '2px 7px' }}>ใช้งานอยู่</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{l.title_th}
+                        </span>
+                        {l.expires_at && <span style={{ color: '#94a3b8' }}>·</span>}
+                        {l.expires_at && (
+                          <span style={{ color: soonExp ? '#d97f11' : '#64748b', fontWeight: soonExp ? 700 : 400 }}>
+                            หมดอายุ: {fmtDate(l.expires_at)}{soonExp ? ` (เหลือ ${days} วัน)` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <a href="/pricing" style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>อัปเกรด
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* State 3: No package at all */
+          <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+            <span className="msym" style={{ fontSize: 40, color: '#c7d2d0', display: 'block', marginBottom: 10, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>workspace_premium</span>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>ยังไม่มีแพ็กเกจที่ใช้งานอยู่</p>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 18px' }}>ซื้อแพ็กเกจเพื่อเริ่มลงประกาศทรัพย์สินของคุณ</p>
+            <a href="/pricing" style={{ background: '#d97f11', color: '#fff', borderRadius: 20, padding: '10px 22px', fontSize: 13.5, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>ดูแพ็กเกจ
+            </a>
+          </div>
+        )}
+      </div>
 
       {/* Per-subscription cancel confirm modal */}
       {confirmCancelSubId && (() => {
