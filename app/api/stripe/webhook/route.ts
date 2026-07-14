@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Subscription renewed → extend expires_at
+  // Subscription renewed → extend expires_at on submissions + properties + user_profiles
   if (event.type === 'invoice.payment_succeeded') {
     const invoice = event.data.object as Stripe.Invoice
     const subscriptionId = invoice.subscription as string | null
@@ -206,13 +206,26 @@ export async function POST(req: NextRequest) {
       .from('submissions')
       .update({ status: 'approved', expires_at: expiresAt.toISOString() })
       .eq('stripe_subscription_id', subscriptionId)
-      .select('title, contact_email, contact_name, package_type')
+      .select('id, title, contact_email, contact_name, package_type')
       .single()
 
     if (error) {
       console.error('Failed to renew submission:', error)
     } else {
       console.log(`Subscription ${subscriptionId} renewed`)
+
+      // ── Extend expires_at on the public properties row ─────────────────────
+      if (renewedSub?.id) {
+        try {
+          await supabase.from('properties')
+            .update({ expires_at: expiresAt.toISOString(), listing_status: 'active' })
+            .eq('source_submission_id', renewedSub.id)
+          console.log(`properties.expires_at extended for submission ${renewedSub.id}`)
+        } catch (propErr) {
+          console.error('[renewal] properties update error (non-fatal):', propErr)
+        }
+      }
+
       // Extend user_profiles expiry on renewal
       try {
         await supabase.from('user_profiles')
@@ -221,6 +234,7 @@ export async function POST(req: NextRequest) {
       } catch (profileErr) {
         console.error('[profile renew] error (non-fatal):', profileErr)
       }
+
       // Send payment confirmation email
       try {
         const amountPaid = (invoice.amount_paid ?? 0) / 100 // Stripe amount is in satang
@@ -240,33 +254,63 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Payment failed → mark as expired (listing hidden)
+  // Payment failed → mark as expired on submissions + properties
   if (event.type === 'invoice.payment_failed') {
     const invoice = event.data.object as Stripe.Invoice
     const subscriptionId = invoice.subscription as string | null
     if (!subscriptionId) return NextResponse.json({ received: true })
 
-    const { error } = await supabase
+    const { data: failedSub, error } = await supabase
       .from('submissions')
       .update({ status: 'expired' })
       .eq('stripe_subscription_id', subscriptionId)
+      .select('id')
+      .single()
 
     if (error) console.error('Failed to expire submission on failed payment:', error)
-    else console.log(`Submission expired — payment failed for subscription ${subscriptionId}`)
+    else {
+      console.log(`Submission expired — payment failed for subscription ${subscriptionId}`)
+      // Also hide the public listing
+      if (failedSub?.id) {
+        try {
+          await supabase.from('properties')
+            .update({ listing_status: 'expired' })
+            .eq('source_submission_id', failedSub.id)
+        } catch (propErr) {
+          console.error('[payment_failed] properties update (non-fatal):', propErr)
+        }
+      }
+    }
   }
 
-  // Subscription cancelled → expire listing
+  // Subscription period ended (cancel_at_period_end reached) → expire listing
+  // Note: this fires AFTER the period ends, so the listing was live until this point ✓
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object as Stripe.Subscription
     const subscriptionId = subscription.id
 
-    const { error } = await supabase
+    const { data: cancelledSub, error } = await supabase
       .from('submissions')
       .update({ status: 'expired', stripe_subscription_id: null })
       .eq('stripe_subscription_id', subscriptionId)
+      .select('id')
+      .single()
 
     if (error) console.error('Failed to expire submission on cancellation:', error)
-    else console.log(`Subscription ${subscriptionId} cancelled — listing expired`)
+    else {
+      console.log(`Subscription ${subscriptionId} cancelled — listing expired`)
+      // Expire the public properties row so it disappears from search immediately
+      if (cancelledSub?.id) {
+        try {
+          await supabase.from('properties')
+            .update({ listing_status: 'expired' })
+            .eq('source_submission_id', cancelledSub.id)
+          console.log(`properties row expired for submission ${cancelledSub.id}`)
+        } catch (propErr) {
+          console.error('[cancellation] properties update (non-fatal):', propErr)
+        }
+      }
+    }
   }
 
   return NextResponse.json({ received: true })
