@@ -771,7 +771,7 @@ export function ThaiAddressSelect({ form, onChange }: {
 }
 
 // ── Image Upload Zone ──────────────────────────────────────────────────────────
-const IMAGE_LIMITS: Record<string, number> = { basic: 10, standard: 10, premium: 10 }
+const IMAGE_LIMITS: Record<string, number> = { basic: 20, standard: 20, premium: 20 }
 
 export function ImageUploadZone({ images, onImagesChange, packageType = 'basic', isPublic = false }: {
   images: string[]

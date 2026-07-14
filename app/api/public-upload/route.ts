@@ -10,7 +10,7 @@ const THUMB_WIDTH    = 480
 const THUMB_QUALITY  = 72
 
 const PACKAGE_LIMITS: Record<string, number> = {
-  basic: 10, standard: 10, premium: 10,
+  basic: 20, standard: 20, premium: 20,
 }
 
 async function ensureBucket(supabase: ReturnType<typeof createServerClient>) {
