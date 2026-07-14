@@ -1598,7 +1598,7 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
               <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none', whiteSpace: 'nowrap' }}>/property/</span>
               <input
                 value={form.slug}
-                onChange={e => onChange('slug', e.target.value.replace(/\s+/g, '-').replace(/[^\w/-]/g, '').toLowerCase())}
+                onChange={e => onChange('slug', e.target.value.replace(/\s+/g, '-').replace(/[^฀-๿\w/-]/g, '').toLowerCase())}
                 placeholder="building-name/condo-abc123"
                 style={{ ...SINP, paddingLeft: 72 }}
               />

@@ -163,6 +163,7 @@ export async function PATCH(req: NextRequest) {
     const supabase = createServerClient()
 
     const ALLOWED = [
+      'slug',
       'title_th', 'title_en', 'description_th', 'description_en', 'property_type', 'status',
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
