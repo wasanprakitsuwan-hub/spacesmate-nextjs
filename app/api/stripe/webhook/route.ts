@@ -104,33 +104,51 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`Submission ${submissionId} activated (${packageId})`)
 
-      // ── Sync package info to user_profiles + stamp user_id ───────────────
-      const customerEmail = session.customer_details?.email ?? session.customer_email ?? null
-      let resolvedUserId: string | null = null
+      // ── Fetch submission once — used for user resolution, property creation, and email ──
+      const { data: sub } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('id', submissionId)
+        .single()
+
+      // ── Resolve owner: user_id stamped at checkout is PRIMARY source ──────
+      // Falls back to Stripe customer email only when user_id is absent
+      // (e.g. guest checkout, or token expired before form submit).
+      let resolvedUserId: string | null = sub?.user_id ?? null
 
       try {
-        if (customerEmail) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('id')
-            .eq('email', customerEmail)
-            .single()
+        if (!resolvedUserId) {
+          // Fallback: look up by the email Stripe collected at checkout
+          const customerEmail = session.customer_details?.email ?? session.customer_email ?? null
+          if (customerEmail) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('id')
+              .eq('email', customerEmail)
+              .single()
+            resolvedUserId = profile?.id ?? null
+            console.log(`[user resolve] fallback email lookup → ${customerEmail} → ${resolvedUserId}`)
+          }
+        } else {
+          console.log(`[user resolve] user_id from submission → ${resolvedUserId}`)
+        }
 
-          if (profile?.id) {
-            resolvedUserId = profile.id
-            await supabase.from('user_profiles').update({
-              package_type:           packageId,
-              package_expires_at:     expiresAt.toISOString(),
-              stripe_subscription_id: subscriptionId,
-              stripe_customer_id:     customerId,
-            }).eq('id', profile.id)
-            console.log(`user_profiles updated for ${customerEmail} → package=${packageId}`)
+        // Update user_profiles with package info using the resolved user
+        if (resolvedUserId) {
+          await supabase.from('user_profiles').update({
+            package_type:           packageId,
+            package_expires_at:     expiresAt.toISOString(),
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id:     customerId,
+          }).eq('id', resolvedUserId)
+          console.log(`user_profiles updated → user=${resolvedUserId} package=${packageId}`)
 
-            // Stamp user_id on the submission so multi-sub owners see all packages
+          // Stamp user_id on submission if it wasn't already set (fallback path)
+          if (!sub?.user_id) {
             await supabase.from('submissions')
-              .update({ user_id: profile.id })
+              .update({ user_id: resolvedUserId })
               .eq('id', submissionId)
-            console.log(`submissions.user_id stamped → user=${profile.id}`)
+            console.log(`submissions.user_id stamped (fallback) → user=${resolvedUserId}`)
           }
         }
       } catch (profileErr) {
@@ -138,15 +156,7 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Auto-create a properties row so the listing is publicly visible ───
-      // Paid submissions stay in `submissions` but public search reads `properties`.
-      // We create the property here so it appears live immediately after payment.
       try {
-        const { data: sub } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('id', submissionId)
-          .single()
-
         if (sub) {
           const slug = ((sub.title || 'listing') as string)
             .toLowerCase()
@@ -169,7 +179,7 @@ export async function POST(req: NextRequest) {
           const { error: propErr } = await supabase.from('properties').insert({
             slug,
             source_submission_id: submissionId,
-            landlord_id:          resolvedUserId,
+            landlord_id:          resolvedUserId,   // always the account UUID now
             title_th:             sub.title       || '',
             description_th:       sub.description || null,
             property_type:        normalizedType,
@@ -188,6 +198,7 @@ export async function POST(req: NextRequest) {
             rental_term:          sub.rental_term || 'monthly',
             contact_name:         sub.contact_name  || null,
             contact_phone:        sub.contact_phone || null,
+            contact_email:        sub.contact_email || null,
             package_type:         packageId,
             expires_at:           expiresAt.toISOString(),
             listing_status:       'active',
@@ -195,20 +206,14 @@ export async function POST(req: NextRequest) {
           })
 
           if (propErr) console.error('[webhook] auto-create property error:', propErr)
-          else console.log(`Property auto-created from submission ${submissionId} → slug=${slug}`)
+          else console.log(`Property auto-created from submission ${submissionId} → landlord=${resolvedUserId} slug=${slug}`)
         }
       } catch (propCreateErr) {
         console.error('[webhook] auto-create property (non-fatal):', propCreateErr)
       }
 
-      // ── Send email notifications ──────────────────────────────────────────
+      // ── Send email notifications (reuse sub fetched above) ───────────────
       try {
-        const { data: sub } = await supabase
-          .from('submissions')
-          .select('id, title, type, price, rent_type, size, bedrooms, bathrooms, address, district, province, contact_name, contact_phone, contact_email, package_type')
-          .eq('id', submissionId)
-          .single()
-
         if (sub) {
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
           const emailData = {
