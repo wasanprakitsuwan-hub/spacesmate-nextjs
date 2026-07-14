@@ -311,6 +311,10 @@ export default function OwnerDashboardPage() {
   const [confirmCancelListingPkgId, setConfirmCancelListingPkgId] = useState<string | null>(null)
   const [cancellingListingPkgId,    setCancellingListingPkgId]    = useState<string | null>(null)
   const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
+  const [renewTarget,        setRenewTarget]        = useState<OwnerListing | null>(null)
+  const [renewPkg,           setRenewPkg]           = useState<string>('')
+  const [renewing,           setRenewing]           = useState(false)
+  const [renewError,         setRenewError]         = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
@@ -417,6 +421,26 @@ export default function OwnerDashboardPage() {
       setUpgradeError(err.message ?? 'เกิดข้อผิดพลาด')
     } finally {
       setUpgradingSubId(null)
+    }
+  }
+
+  async function renewListing(listingId: string, packageId: string) {
+    setRenewing(true)
+    setRenewError('')
+    try {
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch('/api/stripe/renew', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ property_id: listingId, package_id: packageId }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'เกิดข้อผิดพลาด')
+      // Redirect to Stripe checkout
+      window.location.href = d.url
+    } catch (err: any) {
+      setRenewError(err.message ?? 'เกิดข้อผิดพลาด')
+      setRenewing(false)
     }
   }
 
@@ -695,6 +719,61 @@ export default function OwnerDashboardPage() {
         )
       })()}
 
+      {/* Renewal modal — package picker for expired listings */}
+      {renewTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+              <div style={{ background: '#fdf3e3', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ต่ออายุประกาศ</h3>
+                <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>{renewTarget.title_th}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {[
+                { id: 'basic',    label: 'Basic',    price: '฿299',   period: '/ 30 วัน',  desc: 'เผยแพร่ได้ 1 เดือน · อัปโหลดรูปสูงสุด 5 ภาพ' },
+                { id: 'standard', label: 'Standard', price: '฿699',   period: '/ 3 เดือน', desc: 'เผยแพร่ได้ 3 เดือน · อัปโหลดรูปสูงสุด 10 ภาพ · ประหยัด 22%' },
+                { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',      desc: 'เผยแพร่ได้ 12 เดือน · อัปโหลดรูปสูงสุด 20 ภาพ + วิดีโอ · ประหยัด 30%' },
+              ].map(opt => (
+                <button key={opt.id} onClick={() => setRenewPkg(opt.id)}
+                  style={{ textAlign: 'left', background: renewPkg === opt.id ? '#eaf6f1' : '#f8fafc', border: renewPkg === opt.id ? '2px solid #048c73' : '2px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.price}<span style={{ fontSize: 11, fontWeight: 400, color: '#64748b', marginLeft: 2 }}>{opt.period}</span></span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#92400e', lineHeight: 1.5 }}>
+              ประกาศเดิมจะกลับมาเผยแพร่ทันทีหลังชำระเงิน — ข้อมูลทรัพย์สินทั้งหมดยังอยู่ครบ
+            </div>
+
+            {renewError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>{renewError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setRenewTarget(null); setRenewPkg(''); setRenewError('') }} disabled={renewing}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                กลับ
+              </button>
+              <button onClick={() => renewTarget && renewPkg && renewListing(renewTarget.id, renewPkg)} disabled={!renewPkg || renewing}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: !renewPkg || renewing ? '#94a3b8' : '#d97f11', color: '#fff', fontSize: 14, fontWeight: 700, cursor: !renewPkg || renewing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {renewing
+                  ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังโหลด...</>
+                  : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>credit_card</span>ไปชำระเงิน</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Listing package cancel confirm modal (State 2 — non-Stripe packages) */}
       {confirmCancelListingPkgId && (() => {
         const targetListing = listings.find(l => l.id === confirmCancelListingPkgId)
@@ -877,8 +956,17 @@ export default function OwnerDashboardPage() {
                         <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: ss.bg, color: ss.color, fontWeight: 600 }}>{ss.label}</span>
                       </td>
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', gap: 5 }}>
-                          <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                          {l.listing_status === 'expired' ? (
+                            // Expired: show Renew button prominently
+                            <button
+                              onClick={() => { setRenewError(''); setRenewPkg('basic'); setRenewTarget(l) }}
+                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>ต่ออายุ
+                            </button>
+                          ) : (
+                            <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                          )}
                           <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
                           <button onClick={() => deleteListing(l.id)} disabled={deleting === l.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === l.id ? 0.5 : 1 }}>
                             {deleting === l.id ? '…' : 'ลบ'}

@@ -23,11 +23,63 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-    const submissionId     = session.metadata?.submission_id
-    const packageId        = session.metadata?.package_id || 'basic'
-    const subscriptionId   = session.subscription as string | null
-    const customerId       = session.customer as string | null
+    const packageId      = session.metadata?.package_id || 'basic'
+    const subscriptionId = session.subscription as string | null
+    const customerId     = session.customer as string | null
 
+    // ── Renewal path: reactivate an existing property row ─────────────────────
+    if (session.metadata?.renew_property_id) {
+      const propertyId          = session.metadata.renew_property_id
+      const sourceSubmissionId  = session.metadata?.source_submission_id || null
+      const durationDays        = PACKAGE_DAYS[packageId] ?? 30
+      const expiresAt           = new Date()
+      expiresAt.setDate(expiresAt.getDate() + durationDays)
+
+      // Reactivate the property
+      const { error: propErr } = await supabase
+        .from('properties')
+        .update({
+          listing_status: 'active',
+          package_type:   packageId,
+          expires_at:     expiresAt.toISOString(),
+        })
+        .eq('id', propertyId)
+
+      if (propErr) console.error('[renew] Failed to reactivate property:', propErr)
+      else console.log(`Property ${propertyId} reactivated → package=${packageId}`)
+
+      // Keep the original submission in sync so invoice.payment_succeeded works
+      if (sourceSubmissionId) {
+        await supabase.from('submissions')
+          .update({
+            status:                 'approved',
+            expires_at:             expiresAt.toISOString(),
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id:     customerId,
+          })
+          .eq('id', sourceSubmissionId)
+      }
+
+      // Sync user_profiles package info
+      try {
+        const userId = session.metadata?.user_id
+        if (userId) {
+          await supabase.from('user_profiles').update({
+            package_type:           packageId,
+            package_expires_at:     expiresAt.toISOString(),
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id:     customerId,
+          }).eq('id', userId)
+        }
+      } catch (profileErr) {
+        console.error('[renew profile sync] non-fatal:', profileErr)
+      }
+
+      return NextResponse.json({ received: true })
+    }
+
+    // ── New listing path ───────────────────────────────────────────────────────
+    const submissionId = session.metadata?.submission_id
     if (!submissionId) {
       console.error('No submission_id in session metadata')
       return NextResponse.json({ received: true })
