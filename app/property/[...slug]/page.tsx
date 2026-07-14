@@ -81,7 +81,7 @@ function normalizeDbListing(raw: any): Property {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const slug = params.slug.join('/')
+  const slug = params.slug.map(s => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
   const staticP = getPropertyBySlug(slug)
   if (staticP) {
     return {
@@ -114,7 +114,8 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default async function PropertyDetailPage({ params }: Props) {
   // Join catch-all segments: ['lumpini-place', 'condo-abc'] → 'lumpini-place/condo-abc'
-  const slug = params.slug.join('/')
+  // decodeURIComponent handles Next.js 14 bug where Thai params arrive percent-encoded
+  const slug = params.slug.map(s => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
 
   // 1. Try static data first (builds fast from property-data.ts)
   const staticP = getPropertyBySlug(slug)
