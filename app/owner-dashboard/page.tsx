@@ -332,20 +332,26 @@ export default function OwnerDashboardPage() {
     (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
     hasActiveListing
 
-  // Can create a NEW listing only when an unused package slot exists
-  // (Stripe sub without a linked listing, OR user_profiles-level active package)
-  const canCreateNew =
-    subscriptions.some(s => (s.stripe_status === 'active' || s.stripe_status === 'trialing') && !s.submission_id) ||
-    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date()))
+  // Slot logic: slots available = active subscriptions − active listings
+  // A slot is free when the owner has more paid subs than live listings
+  const activeSubCount = subscriptions.filter(s =>
+    s.stripe_status === 'active' || s.stripe_status === 'trialing'
+  ).length
+  const activeListingCount = listings.filter(l =>
+    l.listing_status === 'active' && l.expires_at && new Date(l.expires_at) > new Date()
+  ).length
+  const canCreateNew = activeSubCount > activeListingCount
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
     const { data: { session: lSess } } = await createBrowserClient().auth.getSession()
-    const r = await fetch('/api/owner/listings', {
-      headers: { Authorization: `Bearer ${lSess?.access_token}` },
-    })
-    const d = await r.json()
-    setListings(d.listings ?? [])
+    const [lr, sr] = await Promise.all([
+      fetch('/api/owner/listings',     { headers: { Authorization: `Bearer ${lSess?.access_token}` } }),
+      fetch('/api/owner/subscription', { headers: { Authorization: `Bearer ${lSess?.access_token}` } }),
+    ])
+    const [ld, sd] = await Promise.all([lr.json(), sr.json()])
+    setListings(ld.listings ?? [])
+    setSubscriptions(sd.subscriptions ?? [])
     setLoading(false)
   }, [])
 
