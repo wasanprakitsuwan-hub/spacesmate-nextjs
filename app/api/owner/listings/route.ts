@@ -210,6 +210,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized to edit this listing' }, { status: 403 })
     }
 
+    // Special action: owner cancels their own manual package
+    if (body.cancel_package === true) {
+      const { error: cpErr } = await supabase
+        .from('properties')
+        .update({ package_type: null, expires_at: null, listing_status: 'expired', updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (cpErr) throw cpErr
+      return NextResponse.json({ success: true })
+    }
+
     const ALLOWED = [
       'title_th', 'title_en', 'description_th', 'description_en', 'property_type',
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',

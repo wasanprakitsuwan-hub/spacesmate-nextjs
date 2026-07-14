@@ -308,6 +308,9 @@ export default function OwnerDashboardPage() {
   const [selectedUpgradePkg,  setSelectedUpgradePkg]  = useState<string>('')
   const [upgradingSubId,      setUpgradingSubId]      = useState<string | null>(null)
   const [upgradeError,        setUpgradeError]        = useState('')
+  const [confirmCancelListingPkgId, setConfirmCancelListingPkgId] = useState<string | null>(null)
+  const [cancellingListingPkgId,    setCancellingListingPkgId]    = useState<string | null>(null)
+  const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
@@ -320,6 +323,12 @@ export default function OwnerDashboardPage() {
     subscriptions.some(s => s.stripe_status === 'active' || s.stripe_status === 'trialing') ||
     (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
     hasActiveListing
+
+  // Can create a NEW listing only when an unused package slot exists
+  // (Stripe sub without a linked listing, OR user_profiles-level active package)
+  const canCreateNew =
+    subscriptions.some(s => (s.stripe_status === 'active' || s.stripe_status === 'trialing') && !s.submission_id) ||
+    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date()))
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
@@ -411,6 +420,30 @@ export default function OwnerDashboardPage() {
     }
   }
 
+  async function cancelListingPackage(listingId: string) {
+    setCancellingListingPkgId(listingId)
+    setCancelListingPkgError('')
+    try {
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch('/api/owner/listings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ id: listingId, cancel_package: true }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'ยกเลิกไม่สำเร็จ')
+      // Update listing state immediately — mark as expired, clear package
+      setListings(prev => prev.map(l =>
+        l.id === listingId ? { ...l, package_type: null, expires_at: null, listing_status: 'expired' } : l
+      ))
+      setConfirmCancelListingPkgId(null)
+    } catch (err: any) {
+      setCancelListingPkgError(err.message ?? 'เกิดข้อผิดพลาด')
+    } finally {
+      setCancellingListingPkgId(null)
+    }
+  }
+
   async function deleteListing(id: string) {
     if (!confirm('ลบประกาศนี้?')) return
     setDeleting(id)
@@ -440,25 +473,28 @@ export default function OwnerDashboardPage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <button
-            onClick={() => hasPackage && setShowCreate(true)}
+            onClick={() => canCreateNew && setShowCreate(true)}
             style={{
-              background: hasPackage ? '#02402e' : '#e2e8f0',
-              color: hasPackage ? '#fff' : '#94a3b8',
+              background: canCreateNew ? '#02402e' : '#e2e8f0',
+              color: canCreateNew ? '#fff' : '#94a3b8',
               border: 'none', borderRadius: 24, padding: '12px 22px',
               fontSize: 14, fontWeight: 700,
-              cursor: hasPackage ? 'pointer' : 'not-allowed',
+              cursor: canCreateNew ? 'pointer' : 'not-allowed',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
               transition: 'all .2s',
             }}
-            title={!hasPackage ? 'กรุณาซื้อแพ็กเกจก่อนเพื่อลงประกาศ' : undefined}
+            title={!canCreateNew ? (hasPackage ? 'แพ็กเกจปัจจุบันใช้งานอยู่ครบแล้ว กรุณาซื้อแพ็กเกจเพิ่ม' : 'กรุณาซื้อแพ็กเกจก่อนเพื่อลงประกาศ') : undefined}
           >
             + เพิ่มประกาศใหม่
           </button>
-          {!hasPackage && (
+          {!canCreateNew && (
             <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right' }}>
-              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>warning</span>กรุณา{' '}
-              <a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>
-              {' '}ก่อนเพื่อลงประกาศ
+              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>warning</span>
+              {hasPackage ? (
+                <>แพ็กเกจถูกใช้งานครบแล้ว{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อเพิ่ม</a></>
+              ) : (
+                <>กรุณา{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>{' '}ก่อนเพื่อลงประกาศ</>
+              )}
             </p>
           )}
         </div>
@@ -580,9 +616,16 @@ export default function OwnerDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <a href="/pricing" style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>อัปเกรด
-                  </a>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                    <a href="/pricing" style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
+                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>อัปเกรด
+                    </a>
+                    <button
+                      onClick={() => { setCancelListingPkgError(''); setConfirmCancelListingPkgId(l.id) }}
+                      style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>ยกเลิก
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -641,6 +684,48 @@ export default function OwnerDashboardPage() {
                   กลับ
                 </button>
                 <button onClick={() => cancelSubscription(confirmCancelSubId)} disabled={isCancelling}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: isCancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: isCancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {isCancelling
+                    ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังยกเลิก...</>
+                    : 'ยืนยันยกเลิก'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Listing package cancel confirm modal (State 2 — non-Stripe packages) */}
+      {confirmCancelListingPkgId && (() => {
+        const targetListing = listings.find(l => l.id === confirmCancelListingPkgId)
+        const isCancelling  = cancellingListingPkgId === confirmCancelListingPkgId
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ background: '#fef2f2', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="msym" style={{ fontSize: 20, color: '#dc2626', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ยืนยันการยกเลิกแพ็กเกจ?</h3>
+              </div>
+              {targetListing && (
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13, color: '#334155' }}>
+                  <div style={{ fontWeight: 600 }}>แพ็กเกจ {PKG_LABEL[targetListing.package_type ?? 'basic'] ?? targetListing.package_type}</div>
+                  <div style={{ color: '#64748b', marginTop: 2 }}>ประกาศ: {targetListing.title_th}</div>
+                </div>
+              )}
+              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 20px', lineHeight: 1.6 }}>
+                ประกาศจะหยุดการเผยแพร่ทันที และแพ็กเกจจะถูกยกเลิก การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </p>
+              {cancelListingPkgError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 16 }}>{cancelListingPkgError}</div>
+              )}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setConfirmCancelListingPkgId(null); setCancelListingPkgError('') }} disabled={isCancelling}
+                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  กลับ
+                </button>
+                <button onClick={() => cancelListingPackage(confirmCancelListingPkgId)} disabled={isCancelling}
                   style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: isCancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: isCancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {isCancelling
                     ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังยกเลิก...</>
