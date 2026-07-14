@@ -21,9 +21,9 @@ const PACKAGES = [
     badge: null as string | null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 5,
+    maxImages: 10,
     allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 5 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 10 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
   },
   {
     id: 'standard',
@@ -49,9 +49,9 @@ const PACKAGES = [
     badge: 'คุ้มที่สุด' as string | null,
     highlight: true,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 20,
-    allowVideo: true,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 20 รูป', 'อัปโหลดวิดีโอได้', 'แสดงผล 12 เดือน', 'ประหยัดกว่า Basic 30%'],
+    maxImages: 10,
+    allowVideo: false,
+    features: ['1 ประกาศ', 'รูปภาพสูงสุด 10 รูป', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 30%'],
   },
 ]
 
