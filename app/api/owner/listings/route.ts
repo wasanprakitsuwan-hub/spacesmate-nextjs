@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     // ── Return all properties owned by this user ───────────────────────────
     const { data, error } = await supabase
       .from('properties')
-      .select('id, slug, title_th, title_en, property_type, price_from, price_to, district, address_th, images, listing_status, package_type, expires_at, created_at, bedrooms, bathrooms, area_sqm, rental_term, verified')
+      .select('id, slug, title_th, title_en, property_type, price_from, price_to, district, sub_district, province, postcode, address_th, floor, area_sqm, bedrooms, bathrooms, lat, lng, images, video_url, listing_status, package_type, expires_at, created_at, rental_term, verified, description_th, description_en, amenities, room_types, contact_name, contact_phone, contact_email, contact_line')
       .eq('landlord_id', userId)
       .order('created_at', { ascending: false })
 

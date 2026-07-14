@@ -45,11 +45,16 @@ interface OwnerListing {
   rental_term: string | null
   verified: boolean
   description_th: string | null
+  description_en: string | null
   amenities: string[] | null
   room_types: any[] | null
   lat: number | null
   lng: number | null
   video_url: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  contact_line: string | null
 }
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
@@ -229,14 +234,14 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
     lat:           listing.lat  ? String(listing.lat)  : '',
     lng:           listing.lng  ? String(listing.lng)  : '',
     description_th: listing.description_th ?? '',
-    description_en: (listing as any).description_en ?? '',
+    description_en: listing.description_en ?? '',
     amenities:     listing.amenities  ?? [],
     images:        listing.images     ?? [],
     video_url:     listing.video_url  ?? '',
-    contact_name:  (listing as any).contact_name  ?? '',
-    contact_phone: (listing as any).contact_phone ?? '',
-    contact_email: (listing as any).contact_email ?? '',
-    contact_line:  (listing as any).contact_line  ?? '',
+    contact_name:  listing.contact_name  ?? '',
+    contact_phone: listing.contact_phone ?? '',
+    contact_email: listing.contact_email ?? '',
+    contact_line:  listing.contact_line  ?? '',
   })
 
   function onChange(k: string, v: any) { setForm(f => ({ ...f, [k]: v })) }
