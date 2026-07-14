@@ -40,9 +40,10 @@ export async function GET(req: NextRequest) {
   const userEmail = user.email ?? ''
 
   // 1. Submissions owned by this user_id (primary path)
+  // NOTE: submissions table uses 'title' column (not 'title_th' — that's on properties)
   const { data: ownedSubs } = await supabase
     .from('submissions')
-    .select('id, title_th, title, stripe_subscription_id, package_type, expires_at')
+    .select('id, title, stripe_subscription_id, package_type, expires_at')
     .eq('user_id', user.id)
     .not('stripe_subscription_id', 'is', null)
 
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     if (sub.stripe_subscription_id) {
       subMap.set(sub.stripe_subscription_id, {
         submission_id: sub.id,
-        listing_title: (sub as any).title_th || sub.title || null,
+        listing_title: sub.title || null,
         package_type:  sub.package_type || 'basic',
         expires_at:    sub.expires_at,
       })
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
   if (userEmail) {
     const { data: emailSubs } = await supabase
       .from('submissions')
-      .select('id, title_th, title, stripe_subscription_id, package_type, expires_at')
+      .select('id, title, stripe_subscription_id, package_type, expires_at')
       .eq('contact_email', userEmail)
       .is('user_id', null)
       .eq('status', 'approved')
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
       if (sub.stripe_subscription_id && !subMap.has(sub.stripe_subscription_id)) {
         subMap.set(sub.stripe_subscription_id, {
           submission_id: sub.id,
-          listing_title: (sub as any).title_th || sub.title || null,
+          listing_title: sub.title || null,
           package_type:  sub.package_type || 'basic',
           expires_at:    sub.expires_at,
         })
@@ -93,13 +94,13 @@ export async function GET(req: NextRequest) {
   if (profile?.stripe_subscription_id && !subMap.has(profile.stripe_subscription_id)) {
     const { data: matchedSub } = await supabase
       .from('submissions')
-      .select('id, title_th, title, package_type, expires_at')
+      .select('id, title, package_type, expires_at')
       .eq('stripe_subscription_id', profile.stripe_subscription_id)
       .maybeSingle()
 
     subMap.set(profile.stripe_subscription_id, {
       submission_id: matchedSub?.id ?? null,
-      listing_title: (matchedSub as any)?.title_th || matchedSub?.title || null,
+      listing_title: matchedSub?.title || null,
       package_type:  matchedSub?.package_type || (profile as any).package_type || 'basic',
       expires_at:    matchedSub?.expires_at ?? (profile as any).package_expires_at ?? null,
     })
@@ -119,13 +120,13 @@ export async function GET(req: NextRequest) {
         // Try to find corresponding submission row
         const { data: matchedSub } = await supabase
           .from('submissions')
-          .select('id, title_th, title, package_type, expires_at')
+          .select('id, title, package_type, expires_at')
           .eq('stripe_subscription_id', stripeSub.id)
           .maybeSingle()
 
         subMap.set(stripeSub.id, {
           submission_id: matchedSub?.id ?? null,
-          listing_title: (matchedSub as any)?.title_th || matchedSub?.title || null,
+          listing_title: matchedSub?.title || null,
           package_type:  stripeSub.metadata?.package_id || matchedSub?.package_type || 'basic',
           expires_at:    matchedSub?.expires_at ?? null,
         })
