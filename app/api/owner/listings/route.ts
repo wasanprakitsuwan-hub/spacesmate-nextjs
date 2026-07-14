@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
     const userEmail = auth.email ?? ''
     const supabase  = createServerClient()
 
-    // ── Auto-claim orphaned submissions (paid before account existed) ──────
-    // Find any approved submissions with matching email but no user_id.
+    // ── Auto-claim: stamp user_id on submissions with matching email ──────────
+    // Covers submissions created before account existed, or where webhook profile
+    // lookup failed to stamp user_id (e.g. Stripe customer email mismatch).
     if (userEmail) {
       const { data: orphaned } = await supabase
         .from('submissions')
@@ -41,12 +42,10 @@ export async function GET(req: NextRequest) {
       if (orphaned && orphaned.length > 0) {
         const orphanIds = orphaned.map((s: { id: string }) => s.id)
 
-        // Stamp user_id on submissions
         await supabase.from('submissions')
           .update({ user_id: userId })
           .in('id', orphanIds)
 
-        // Claim the corresponding properties rows (linked by source_submission_id)
         await supabase.from('properties')
           .update({ landlord_id: userId })
           .in('source_submission_id', orphanIds)
@@ -54,6 +53,26 @@ export async function GET(req: NextRequest) {
 
         console.log(`[auto-claim] ${orphanIds.length} orphaned submission(s) claimed for ${userEmail}`)
       }
+    }
+
+    // ── Auto-claim: fix properties where submission is already owned but
+    //    properties.landlord_id is null (webhook timing / profile lookup failure) ─
+    try {
+      const { data: ownedSubs } = await supabase
+        .from('submissions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'approved')
+
+      if (ownedSubs && ownedSubs.length > 0) {
+        const ownedSubIds = ownedSubs.map((s: { id: string }) => s.id)
+        await supabase.from('properties')
+          .update({ landlord_id: userId })
+          .in('source_submission_id', ownedSubIds)
+          .is('landlord_id', null)
+      }
+    } catch (claimErr) {
+      console.error('[auto-claim] owned-submission property fix (non-fatal):', claimErr)
     }
 
     // ── Return all properties owned by this user ───────────────────────────

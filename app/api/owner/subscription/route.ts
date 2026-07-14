@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
     expires_at: string | null
   }>()
 
-  // 1. Submissions owned by this user_id
+  const userEmail = user.email ?? ''
+
+  // 1. Submissions owned by this user_id (primary path)
   const { data: ownedSubs } = await supabase
     .from('submissions')
     .select('id, title_th, title, stripe_subscription_id, package_type, expires_at')
@@ -52,6 +54,36 @@ export async function GET(req: NextRequest) {
         package_type:  sub.package_type || 'basic',
         expires_at:    sub.expires_at,
       })
+    }
+  }
+
+  // 1b. Submissions matched by contact_email where user_id wasn't stamped
+  //     (covers webhook profile-lookup failures; also stamps user_id so this
+  //      is self-healing — next call finds them via path 1)
+  if (userEmail) {
+    const { data: emailSubs } = await supabase
+      .from('submissions')
+      .select('id, title_th, title, stripe_subscription_id, package_type, expires_at')
+      .eq('contact_email', userEmail)
+      .is('user_id', null)
+      .eq('status', 'approved')
+      .not('stripe_subscription_id', 'is', null)
+
+    for (const sub of emailSubs ?? []) {
+      if (sub.stripe_subscription_id && !subMap.has(sub.stripe_subscription_id)) {
+        subMap.set(sub.stripe_subscription_id, {
+          submission_id: sub.id,
+          listing_title: (sub as any).title_th || sub.title || null,
+          package_type:  sub.package_type || 'basic',
+          expires_at:    sub.expires_at,
+        })
+        // Self-heal: stamp user_id so next call goes through path 1
+        await supabase.from('submissions').update({ user_id: user.id }).eq('id', sub.id)
+        await supabase.from('properties')
+          .update({ landlord_id: user.id })
+          .eq('source_submission_id', sub.id)
+          .is('landlord_id', null)
+      }
     }
   }
 
