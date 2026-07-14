@@ -20,6 +20,10 @@ export async function generateStaticParams() {
 // Allow runtime resolution of slugs not in generateStaticParams (e.g. DB listings)
 export const dynamicParams = true
 
+// Never cache this page at the edge — prevents Vercel from storing a 404 response
+// (e.g. when slug didn't exist yet) and re-serving it even after the slug is fixed in DB
+export const dynamic = 'force-dynamic'
+
 // ── DB listing helpers ──────────────────────────────────────────────────────
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
