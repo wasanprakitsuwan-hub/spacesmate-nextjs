@@ -249,6 +249,7 @@ export async function PATCH(req: NextRequest) {
       'price_from', 'price_to', 'area_sqm', 'bedrooms', 'bathrooms', 'floor',
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'rental_term', 'images', 'video_url',
+      'room_types',  // apartment unit grid, condo rental detail, and rental charges
       'contact_name', 'contact_phone', 'contact_line',
       // contact_email is immutable after creation — always the account email
     ]
