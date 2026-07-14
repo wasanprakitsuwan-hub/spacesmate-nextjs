@@ -285,15 +285,47 @@ export async function DELETE(req: NextRequest) {
 
     const supabase = createServerClient()
 
-    // Verify ownership before deleting
+    // Verify ownership before deleting — also fetch source_submission_id for sub lookup
     const { data: existing } = await supabase
       .from('properties')
-      .select('landlord_id')
+      .select('landlord_id, source_submission_id')
       .eq('id', id)
       .single()
 
     if (!existing || existing.landlord_id !== userId) {
       return NextResponse.json({ error: 'Not authorized to delete this listing' }, { status: 403 })
+    }
+
+    // ── Cancel the Stripe subscription tied to this listing (non-fatal) ───────
+    // This prevents the owner being charged for a deleted listing and keeps
+    // user_profiles clean so a new submission/checkout starts fresh.
+    try {
+      if (existing.source_submission_id) {
+        const { data: sub } = await supabase
+          .from('submissions')
+          .select('stripe_subscription_id')
+          .eq('id', existing.source_submission_id)
+          .single()
+
+        if (sub?.stripe_subscription_id) {
+          const { stripe } = await import('@/lib/stripe')
+          await stripe.subscriptions.cancel(sub.stripe_subscription_id)
+          console.log(`[delete] Stripe subscription ${sub.stripe_subscription_id} cancelled`)
+
+          // Clear package from user_profiles so slot is fully freed
+          await supabase
+            .from('user_profiles')
+            .update({
+              package_type:           null,
+              package_expires_at:     null,
+              stripe_subscription_id: null,
+            })
+            .eq('id', userId)
+        }
+      }
+    } catch (stripeErr) {
+      // Non-fatal — log and continue with property deletion
+      console.error('[delete] Stripe cancel error (non-fatal):', stripeErr)
     }
 
     const { error } = await supabase.from('properties').delete().eq('id', id)
