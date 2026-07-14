@@ -24,10 +24,18 @@ export function createBrowserClient() {
 export const supabase = createBrowserClient()
 
 // ── Server client — never cached, service role, no session persistence ─────
+// Passes cache:'no-store' to every internal fetch so Next.js data cache
+// never serves stale Supabase query results between writes and reads.
 export function createServerClient() {
   return createClient(
     supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+          fetch(url, { ...options, cache: 'no-store' }),
+      },
+    }
   )
 }
