@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
+import { trackEvent } from '@/lib/analytics'
 
 interface Props {
   onClose: () => void
@@ -243,6 +244,11 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
       if (authErr) {
         setError(authErr.message || 'สมัครสมาชิกไม่สำเร็จ')
       } else if (data.user) {
+        // ── Tracking: GA4 sign_up + Facebook Pixel CompleteRegistration ──
+        trackEvent('sign_up', { method: 'email' })
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+          window.fbq('track', 'CompleteRegistration')
+        }
         setConfirmedEmail(signEmail)
       }
     } catch {
