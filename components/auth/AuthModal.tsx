@@ -102,6 +102,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const [signEmail,  setSignEmail]  = useState('')
   const [signPwd,    setSignPwd]    = useState('')
   const [signPwd2,   setSignPwd2]   = useState('')
+  const [signPhone,  setSignPhone]  = useState('')
   const [confirmedEmail, setConfirmedEmail] = useState('')
 
   // Anti-spam fields
@@ -185,7 +186,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   // ── Sign Up ────────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
-    if (!signName || !signEmail || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
+    if (!signName || !signEmail || !signPhone || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
     if (signPwd !== signPwd2) { setError('รหัสผ่านไม่ตรงกัน'); return }
     if (signPwd.length < 6)  { setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return }
 
@@ -225,7 +226,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
       } else if (data.user) {
         // Upsert profile as landlord
         await supabase.from('user_profiles').upsert(
-          { id: data.user.id, email: signEmail, full_name: signName, role: 'landlord' },
+          { id: data.user.id, email: signEmail, full_name: signName, phone: signPhone, role: 'landlord' },
           { onConflict: 'id', ignoreDuplicates: true }
         )
         setConfirmedEmail(signEmail)
@@ -379,6 +380,10 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               <div style={FG}>
                 <label style={LBL}>อีเมล</label>
                 <input style={INP} type="email" value={signEmail} onChange={e => { setSignEmail(e.target.value); setError('') }} placeholder="email@example.com" autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+              </div>
+              <div style={FG}>
+                <label style={LBL}>เบอร์โทรศัพท์ <span style={{ color: '#e53e3e' }}>*</span></label>
+                <input style={INP} type="tel" value={signPhone} onChange={e => { setSignPhone(e.target.value); setError('') }} placeholder="08X-XXX-XXXX" autoComplete="tel" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
                 <label style={LBL}>รหัสผ่าน</label>
