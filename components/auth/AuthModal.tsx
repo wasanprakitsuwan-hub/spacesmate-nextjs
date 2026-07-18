@@ -92,6 +92,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPwd,   setLoginPwd]   = useState('')
   const [showPwd,    setShowPwd]    = useState(false)
+  const [showPwd2,   setShowPwd2]   = useState(false)
 
   // Forgot password flow
   const [forgotPwd,   setForgotPwd]   = useState(false)
@@ -131,6 +132,19 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
 
   function switchTab(t: 'login' | 'signup') {
     setTab(t); setError(''); setSuccess(''); setForgotPwd(false)
+  }
+
+  // ── Password strength ─────────────────────────────────────────────────────
+  function pwdStrength(pwd: string): { level: 0|1|2|3; label: string; color: string } {
+    if (!pwd) return { level: 0, label: '', color: '' }
+    const hasLetter  = /[a-zA-Z]/.test(pwd)
+    const hasNumber  = /[0-9]/.test(pwd)
+    const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
+    if (pwd.length < 8 || !hasLetter || !hasNumber)
+      return { level: 1, label: 'อ่อน', color: '#ef4444' }
+    if (hasSpecial || pwd.length >= 12)
+      return { level: 3, label: 'แข็งแกร่ง', color: '#16a34a' }
+    return { level: 2, label: 'ปานกลาง', color: '#d97f11' }
   }
 
   // ── Forgot Password ────────────────────────────────────────────────────────
@@ -186,9 +200,13 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   // ── Sign Up ────────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
-    if (!signName || !signEmail || !signPhone || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
+    if (!signName.trim() || !signEmail.trim() || !signPhone || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signEmail.trim())) { setError('กรุณากรอกอีเมลที่ถูกต้อง เช่น name@email.com'); return }
+    const cleanPhone = signPhone.replace(/[\s\-]/g, '')
+    if (!/^0[6-9]\d{8}$/.test(cleanPhone)) { setError('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณากรอกเบอร์มือถือ เช่น 081-234-5678'); return }
     if (signPwd !== signPwd2) { setError('รหัสผ่านไม่ตรงกัน'); return }
-    if (signPwd.length < 6)  { setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return }
+    if (signPwd.length < 8)  { setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return }
+    if (!/[a-zA-Z]/.test(signPwd) || !/[0-9]/.test(signPwd)) { setError('รหัสผ่านต้องมีทั้งตัวอักษรและตัวเลข เช่น SpacesMate88'); return }
 
     setLoading(true); setError('')
 
@@ -378,7 +396,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 <input style={INP} type="text" value={signName} onChange={e => { setSignName(e.target.value); setError('') }} placeholder="สมชาย ใจดี" autoFocus autoComplete="name" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
-                <label style={LBL}>อีเมล</label>
+                <label style={LBL}>อีเมล <span style={{ color: '#e53e3e' }}>*</span></label>
                 <input style={INP} type="email" value={signEmail} onChange={e => { setSignEmail(e.target.value); setError('') }} placeholder="email@example.com" autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
@@ -388,15 +406,34 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               <div style={FG}>
                 <label style={LBL}>รหัสผ่าน</label>
                 <div style={{ position: 'relative' }}>
-                  <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={signPwd} onChange={e => { setSignPwd(e.target.value); setError('') }} placeholder="อย่างน้อย 6 ตัวอักษร" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+                  <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={signPwd} onChange={e => { setSignPwd(e.target.value); setError('') }} placeholder="อย่างน้อย 8 ตัวอักษร ผสมตัวเลข" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
                     <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{showPwd ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>
+                {/* Strength meter */}
+                {signPwd && (() => {
+                  const s = pwdStrength(signPwd)
+                  return (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ display: 'flex', gap: 3, marginBottom: 3 }}>
+                        {[1,2,3].map(i => (
+                          <div key={i} style={{ flex: 1, height: 3, borderRadius: 4, background: i <= s.level ? s.color : '#e2e8f0', transition: 'background .2s' }} />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: 11, color: s.color, fontWeight: 600 }}>{s.label}</span>
+                    </div>
+                  )
+                })()}
               </div>
               <div style={{ ...FG, marginBottom: 6 }}>
                 <label style={LBL}>ยืนยันรหัสผ่าน</label>
-                <input style={INP} type="password" value={signPwd2} onChange={e => { setSignPwd2(e.target.value); setError('') }} placeholder="••••••••" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+                <div style={{ position: 'relative' }}>
+                  <input style={{ ...INP, paddingRight: 44 }} type={showPwd2 ? 'text' : 'password'} value={signPwd2} onChange={e => { setSignPwd2(e.target.value); setError('') }} placeholder="••••••••" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+                  <button type="button" onClick={() => setShowPwd2(!showPwd2)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
+                    <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{showPwd2 ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* ── Cloudflare Turnstile (shows only when site key configured) ── */}
