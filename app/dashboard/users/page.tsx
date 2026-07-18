@@ -367,9 +367,11 @@ function EditDrawer({ user, callerRole, onClose, onSaved }: { user: UserRow; cal
 // ── User Detail Drawer (#204) ─────────────────────────────────────────────────
 function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string; onClose: () => void; onEdit?: () => void; callerRole?: CallerRole }) {
   const router = useRouter()
-  const [detail,  setDetail]  = useState<UserDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
+  const [detail,      setDetail]      = useState<UserDetail | null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState('')
+  const [resending,   setResending]   = useState(false)
+  const [resendMsg,   setResendMsg]   = useState('')
 
   useEffect(() => {
     async function load() {
@@ -385,6 +387,22 @@ function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string;
     }
     load()
   }, [userId])
+
+  async function resendConfirmation() {
+    setResending(true); setResendMsg('')
+    try {
+      const token = await getToken()
+      const r = await fetch('/api/dashboard/users/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: userId }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error ?? 'Failed')
+      setResendMsg('ส่งอีเมลยืนยันแล้ว')
+    } catch (e: any) { setResendMsg(`ผิดพลาด: ${e.message}`) }
+    setResending(false)
+  }
 
   const p = detail?.profile
 
@@ -499,13 +517,39 @@ function DetailDrawer({ userId, onClose, onEdit, callerRole }: { userId: string;
           ) : null}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #eef0ef', display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ปิด</button>
-          {onEdit && (
-            <button onClick={onEdit} style={{ flex: 2, padding: '11px', borderRadius: 11, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-              <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>edit</span>แก้ไขข้อมูล
-            </button>
+        <div style={{ padding: '12px 24px 16px', borderTop: '1px solid #eef0ef' }}>
+          {resendMsg && (
+            <div style={{
+              marginBottom: 10, padding: '9px 13px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+              background: resendMsg.startsWith('ผิดพลาด') ? '#fef2f2' : '#f0fdf4',
+              color: resendMsg.startsWith('ผิดพลาด') ? '#dc2626' : '#15803d',
+              border: `1px solid ${resendMsg.startsWith('ผิดพลาด') ? '#fecaca' : '#bbf7d0'}`,
+              display: 'flex', alignItems: 'center', gap: 7,
+            }}>
+              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>
+                {resendMsg.startsWith('ผิดพลาด') ? 'error' : 'mark_email_read'}
+              </span>
+              {resendMsg}
+            </div>
           )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 11, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ปิด</button>
+            <button
+              onClick={resendConfirmation}
+              disabled={resending}
+              title="ส่งลิงก์ยืนยันอีเมลใหม่ให้ผู้ใช้"
+              style={{ flex: 1.5, padding: '11px', borderRadius: 11, border: '1.5px solid #048c73', background: '#fff', color: '#048c73', fontSize: 13, fontWeight: 600, cursor: resending ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {resending
+                ? <><span style={{ width: 13, height: 13, border: '2px solid #048c7340', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .8s linear infinite', display: 'inline-block' }} />กำลังส่ง...</>
+                : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>forward_to_inbox</span>ส่งอีเมลยืนยันใหม่</>}
+            </button>
+            {onEdit && (
+              <button onClick={onEdit} style={{ flex: 2, padding: '11px', borderRadius: 11, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>edit</span>แก้ไขข้อมูล
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>
