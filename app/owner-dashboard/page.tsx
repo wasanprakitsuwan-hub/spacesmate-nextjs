@@ -337,20 +337,14 @@ export default function OwnerDashboardPage() {
     (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
     hasActiveListing
 
-  // Slot logic: slots available = active subscriptions + direct pkg − active listings
+  // Slot logic: slots available = active subscriptions − active listings
   const activeSubCount = subscriptions.filter(s =>
     s.stripe_status === 'active' || s.stripe_status === 'trialing'
   ).length
   const activeListingCount = listings.filter(l =>
     l.listing_status === 'active' && l.expires_at && new Date(l.expires_at) > new Date()
   ).length
-  // Non-Stripe direct package (assigned via admin) counts as 1 slot when no Stripe subs
-  const directPkgSlots = (
-    activePackage !== null &&
-    subscriptions.length === 0 &&
-    (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())
-  ) ? 1 : 0
-  const canCreateNew = (activeSubCount + directPkgSlots) > activeListingCount
+  const canCreateNew = activeSubCount > activeListingCount
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
@@ -673,35 +667,6 @@ export default function OwnerDashboardPage() {
                 </div>
               )
             })}
-          </div>
-        ) : (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ? (
-          /* State 2.5: Non-Stripe direct package assigned via admin */
-          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ background: '#eaf6f1', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="msym" style={{ fontSize: 18, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>verified</span>
-              </div>
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                  แพ็กเกจ {PKG_LABEL[activePackage ?? 'basic'] ?? activePackage}
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#15803d', background: '#dcfce7', borderRadius: 6, padding: '2px 7px' }}>ใช้งานอยู่</span>
-                </div>
-                {packageExpiresAt && (() => {
-                  const days = daysLeft(packageExpiresAt)
-                  const soonExp = days !== null && days <= 7 && days > 0
-                  return (
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
-                      <span style={{ color: soonExp ? '#d97f11' : '#64748b', fontWeight: soonExp ? 700 : 400 }}>
-                        หมดอายุ: {fmtDate(packageExpiresAt)}{soonExp ? ` (เหลือ ${days} วัน)` : ''}
-                      </span>
-                    </div>
-                  )
-                })()}
-              </div>
-            </div>
-            <a href="/pricing" style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
-              <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>อัปเกรด
-            </a>
           </div>
         ) : (
           /* State 3: No package at all */
