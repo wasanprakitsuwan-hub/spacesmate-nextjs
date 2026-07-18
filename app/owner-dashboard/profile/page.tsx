@@ -86,7 +86,7 @@ export default function ProfilePage() {
   async function handlePwdChange(e: React.FormEvent) {
     e.preventDefault()
     setPwdErr(''); setPwdMsg('')
-    if (newPwd.length < 6) { setPwdErr('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return }
+    if (newPwd.length < 8) { setPwdErr('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return }
     if (newPwd !== newPwd2) { setPwdErr('รหัสผ่านไม่ตรงกัน'); return }
     setPwdSaving(true)
     try {
@@ -253,7 +253,7 @@ export default function ProfilePage() {
             <div style={{ marginBottom: 14 }}>
               <label style={LBL}>รหัสผ่านใหม่</label>
               <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} required minLength={6}
-                placeholder="อย่างน้อย 6 ตัวอักษร" style={INP}
+                placeholder="อย่างน้อย 8 ตัวอักษร" style={INP}
                 onFocus={e => (e.currentTarget.style.borderColor = '#048c73')}
                 onBlur={e  => (e.currentTarget.style.borderColor = '#e2e8f0')} />
             </div>
