@@ -102,6 +102,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   const [signEmail,  setSignEmail]  = useState('')
   const [signPwd,    setSignPwd]    = useState('')
   const [signPwd2,   setSignPwd2]   = useState('')
+  const [confirmedEmail, setConfirmedEmail] = useState('')
 
   // Anti-spam fields
   const [honeypot,        setHoneypot]        = useState('')   // must stay empty
@@ -214,7 +215,10 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
       const { data, error: authErr } = await supabase.auth.signUp({
         email:    signEmail,
         password: signPwd,
-        options:  { data: { full_name: signName } },
+        options:  {
+          data: { full_name: signName },
+          emailRedirectTo: `${window.location.origin}/owner-dashboard`,
+        },
       })
       if (authErr) {
         setError(authErr.message || 'สมัครสมาชิกไม่สำเร็จ')
@@ -224,9 +228,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
           { id: data.user.id, email: signEmail, full_name: signName, role: 'landlord' },
           { onConflict: 'id', ignoreDuplicates: true }
         )
-        onClose()
-        router.push('/owner-dashboard')
-        router.refresh()
+        setConfirmedEmail(signEmail)
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่')
@@ -271,7 +273,26 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
 
         {/* Body */}
         <div style={{ padding: '24px 28px 28px' }}>
-          {success ? (
+          {confirmedEmail ? (
+            <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+              <div style={{ width: 68, height: 68, borderRadius: 20, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+                <span className="msym" style={{ fontSize: 38, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>mark_email_unread</span>
+              </div>
+              <p style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ตรวจสอบอีเมลของคุณ</p>
+              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 4px', lineHeight: 1.7 }}>เราส่งลิงก์ยืนยันไปที่</p>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{confirmedEmail}</p>
+              <p style={{ fontSize: 13, color: '#475569', margin: '0 0 20px', lineHeight: 1.8 }}>
+                กดลิงก์ในอีเมลเพื่อยืนยันตัวตน<br />และระบบจะพาคุณเข้า Owner Dashboard ทันที
+              </p>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12.5, color: '#92400e', marginBottom: 20, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span className="msym" style={{ fontSize: 15, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0, marginTop: 1 }}>tips_and_updates</span>
+                <span>ไม่ได้รับอีเมล? กรุณาตรวจสอบโฟลเดอร์ <strong>Spam</strong> หรือ <strong>Junk</strong></span>
+              </div>
+              <button onClick={onClose} style={{ width: '100%', padding: '12px', borderRadius: 14, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                ปิด
+              </button>
+            </div>
+          ) : success ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <p style={{ margin: '0 0 10px' }}><span className="msym" style={{ fontSize: 36, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span></p>
               <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>สำเร็จ!</p>
