@@ -22,6 +22,7 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE
     SET
+      email      = EXCLUDED.email,
       full_name  = COALESCE(EXCLUDED.full_name,  public.user_profiles.full_name),
       phone      = COALESCE(EXCLUDED.phone,       public.user_profiles.phone),
       updated_at = NOW();
