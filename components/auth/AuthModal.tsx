@@ -235,18 +235,14 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
         email:    signEmail,
         password: signPwd,
         options:  {
-          data: { full_name: signName },
+          // Pass all fields in metadata — the DB trigger reads these to populate user_profiles
+          data: { full_name: signName, phone: cleanPhone },
           emailRedirectTo: `${window.location.origin}/owner-dashboard`,
         },
       })
       if (authErr) {
         setError(authErr.message || 'สมัครสมาชิกไม่สำเร็จ')
       } else if (data.user) {
-        // Upsert profile as landlord
-        await supabase.from('user_profiles').upsert(
-          { id: data.user.id, email: signEmail, full_name: signName, phone: signPhone, role: 'landlord' },
-          { onConflict: 'id', ignoreDuplicates: true }
-        )
         setConfirmedEmail(signEmail)
       }
     } catch {
