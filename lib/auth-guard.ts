@@ -10,6 +10,18 @@ export type AuthUser = { id: string; email: string; role: 'admin' | 'super_admin
  * Usage: const auth = await requireAdmin(req); if (isErr(auth)) return auth
  */
 export async function requireAdmin(req: NextRequest): Promise<AuthUser | NextResponse> {
+  // ── Automation path ─────────────────────────────────────────────────────────
+  // Machine clients (n8n Content Pipeline) send a static key instead of a user
+  // JWT, because Supabase session tokens expire hourly and can't be stored.
+  // Scope is deliberately narrow: this grants exactly what an admin route allows,
+  // nothing more. Rotate by changing AUTOMATION_API_KEY in Vercel.
+  const apiKey = req.headers.get('x-api-key')?.trim()
+  const expected = process.env.AUTOMATION_API_KEY
+  if (apiKey && expected && apiKey === expected) {
+    return { id: 'automation', email: 'automation@spacesmate.com', role: 'admin' }
+  }
+
+  // ── Normal path — Supabase user JWT ─────────────────────────────────────────
   const token = req.headers.get('authorization')?.replace('Bearer ', '').trim()
   if (!token) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
