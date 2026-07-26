@@ -15,8 +15,10 @@ export async function requireAdmin(req: NextRequest): Promise<AuthUser | NextRes
   // JWT, because Supabase session tokens expire hourly and can't be stored.
   // Scope is deliberately narrow: this grants exactly what an admin route allows,
   // nothing more. Rotate by changing AUTOMATION_API_KEY in Vercel.
+  // Env var name is read in both casings — Vercel stores it as Automation_API_Key,
+  // and env var names are case-sensitive in Node.
   const apiKey = req.headers.get('x-api-key')?.trim()
-  const expected = process.env.AUTOMATION_API_KEY
+  const expected = process.env.AUTOMATION_API_KEY || process.env.Automation_API_Key
   if (apiKey && expected && apiKey === expected) {
     return { id: 'automation', email: 'automation@spacesmate.com', role: 'admin' }
   }
