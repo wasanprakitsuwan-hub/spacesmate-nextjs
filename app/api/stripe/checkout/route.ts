@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
         contact_name:  body.contactName   || null,
         contact_phone: body.contactPhone  || null,
         contact_email: body.contactEmail  || null,
+        // The property page renders a LINE button from this. It was collected on
+        // the form but never sent, so the button never appeared on any listing
+        // created through the public paid flow.
+        contact_line:  body.contactLine   || null,
         images:        Array.isArray(body.images) ? body.images : [],
         // Rich fields stored as extra JSON columns (if columns exist) or ignored gracefully
         title_en:       body.title_en      || null,

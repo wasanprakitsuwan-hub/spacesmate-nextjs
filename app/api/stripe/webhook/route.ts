@@ -202,6 +202,7 @@ export async function POST(req: NextRequest) {
             contact_name:         sub.contact_name  || null,
             contact_phone:        sub.contact_phone || null,
             contact_email:        sub.contact_email || null,
+            contact_line:         sub.contact_line  || null,
             package_type:         packageId,
             expires_at:           expiresAt.toISOString(),
             listing_status:       'active',

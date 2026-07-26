@@ -113,6 +113,9 @@ export async function PATCH(
               contact_name:         sub.contact_name   || null,
               contact_phone:        sub.contact_phone  || null,
               contact_line:         sub.contact_line   || null,
+              // was omitted here while the webhook path carried it, so a listing
+              // approved by an admin lost the contact email
+              contact_email:        sub.contact_email  || null,
               package_type:         packageId,
               expires_at:           expiresAt.toISOString(),
               listing_status:       'active',
