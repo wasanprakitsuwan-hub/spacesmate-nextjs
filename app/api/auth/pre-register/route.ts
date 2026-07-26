@@ -20,7 +20,11 @@ import { isBlockedDomain, looksLikeBot } from '@/lib/blocked-domains'
 // Good enough for an MVP — upgrade to Upstash Redis when needed.
 const ipRateMap = new Map<string, { count: number; resetAt: number }>()
 
-const RATE_LIMIT_MAX  = 3          // max registrations per window
+// Raised from 3. Thai mobile carriers use large-scale NAT — thousands of
+// subscribers can share one public IP — so 3/hour was rejecting legitimate users
+// who happened to follow two other people from the same carrier. A prime suspect
+// in the Facebook-ads conversion gap.
+const RATE_LIMIT_MAX  = 15         // max registrations per window
 const RATE_LIMIT_MS   = 60 * 60 * 1000  // 1 hour window
 
 function getRealIp(req: NextRequest): string {

@@ -3,6 +3,7 @@ import { Prompt } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
+import { OrganizationLd, WebSiteLd } from '@/components/seo/JsonLd'
 
 const GTM_ID = 'GTM-PJ6X4NHS'
 
@@ -37,6 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
+        <OrganizationLd />
+        <WebSiteLd />
         {/* GTM noscript fallback — immediately after <body> */}
         <noscript>
           <iframe

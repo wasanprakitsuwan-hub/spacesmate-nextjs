@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ItemListLd, BreadcrumbLd } from '@/components/seo/JsonLd'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { AREA_KEYWORDS } from '@/lib/constants'
@@ -107,6 +108,21 @@ export default async function AreaPageEn({ params }: Props) {
 
   return (
     <div className="bg-white min-h-screen">
+
+      <ItemListLd
+        name={area.label_en}
+        items={areaProps.map(ap => ({
+          url: `https://spacesmate.com/property/${ap.slug}`,
+          name: ap.title_th,
+        }))}
+      />
+      <BreadcrumbLd
+        trail={[
+          { name: 'Home', url: 'https://spacesmate.com/en/' },
+          { name: 'Search', url: 'https://spacesmate.com/search' },
+          { name: area.label_en, url: `https://spacesmate.com/en/area/${params.slug}` },
+        ]}
+      />
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '52px 24px 60px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>

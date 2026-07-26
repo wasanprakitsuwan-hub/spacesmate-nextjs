@@ -16,11 +16,21 @@
 // fill in dummy values, click "Get link" — the URL shows entry.XXXXXXXXX=value.
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRate } from '@/lib/rate-limit'
 import { sendManagementEnquiry } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  // Public lead form — spam brake.
+  const rl = checkRate(req, 'manage-lead', 10, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'ส่งข้อมูลบ่อยเกินไป กรุณาลองใหม่ในภายหลัง' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
   let body: { name?: string; phone?: string; type?: string; location?: string; channel?: string }
   try {
     body = await req.json()

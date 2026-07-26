@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
@@ -70,6 +70,13 @@ function SubmitNewForm() {
   const initialPkg   = PACKAGES.find(p => p.id === urlPkg) ? urlPkg : 'basic'
 
   const [step, setStep] = useState(0) // 0=package, 1=listing, 2=contact+pay
+
+  // Denominator for the funnel. Without this we can see who finishes but not who
+  // arrived, which is exactly the gap in the Facebook-ads question.
+  useEffect(() => {
+    trackEvent('listing_start', { package_id: initialPkg, referrer: typeof document !== 'undefined' ? document.referrer : '' })
+  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+
   const [form, setForm] = useState<FormState>({ ...BLANK, package_type: initialPkg })
 
   // Contact info (separate from listing FormState)
@@ -138,9 +145,13 @@ function SubmitNewForm() {
   // ── Submit to Stripe ───────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!contactName.trim() || !contactPhone.trim()) {
+      trackEvent('listing_validation_error', { step: 2, reason: 'missing_contact' })
       setError('กรุณากรอกชื่อและเบอร์โทรติดต่อ'); return
     }
-    if (!consent) { setError('กรุณายอมรับเงื่อนไขการให้บริการก่อนดำเนินการ'); return }
+    if (!consent) {
+      trackEvent('listing_validation_error', { step: 2, reason: 'no_consent' })
+      setError('กรุณายอมรับเงื่อนไขการให้บริการก่อนดำเนินการ'); return
+    }
     setError(null); setLoading(true)
     try {
       const { data: { session: authSess } } = await createBrowserClient().auth.getSession()
@@ -292,7 +303,10 @@ function SubmitNewForm() {
             </div>
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => {
+                trackEvent('listing_step', { step: 1, from: 0, package_id: form.package_type })
+                setStep(1)
+              }}
               style={{ width: '100%', marginTop: 24, padding: '15px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               ถัดไป — กรอกข้อมูลประกาศ
               <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>arrow_forward</span>
@@ -333,14 +347,26 @@ function SubmitNewForm() {
             )}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button type="button" onClick={() => { setError(null); setStep(0) }}
+              <button type="button" onClick={() => { trackEvent('listing_step_back', { from: 1, to: 0 }); setError(null); setStep(0) }}
                 style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 ย้อนกลับ
               </button>
               <button type="button"
                 onClick={() => {
                   const err = validateStep1()
+                  if (err) {
+                    // The single most useful signal we can collect: which field
+                    // stops people. Photo upload is the prime suspect.
+                    trackEvent('listing_validation_error', {
+                      step: 1,
+                      reason: err,
+                      property_type: form.property_type,
+                      has_images: form.images.length > 0,
+                      image_count: form.images.length,
+                    })
+                  }
                   if (err) { setError(err); return }
+                  trackEvent('listing_step', { step: 2, from: 1, property_type: form.property_type, image_count: form.images.length })
                   setError(null); setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
                 style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -473,7 +499,7 @@ function SubmitNewForm() {
             )}
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button type="button" onClick={() => { setError(null); setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              <button type="button" onClick={() => { trackEvent('listing_step_back', { from: 2, to: 1 }); setError(null); setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                 style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 ย้อนกลับ
               </button>

@@ -5,11 +5,21 @@
 //   2. Emails the founder via Resend
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRate } from '@/lib/rate-limit'
 import { sendContactEnquiry } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  // Public lead form — spam brake.
+  const rl = checkRate(req, 'contact-lead', 10, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'ส่งข้อมูลบ่อยเกินไป กรุณาลองใหม่ในภายหลัง' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
   let body: { name?: string; phone?: string; email?: string; intent?: string; message?: string }
   try {
     body = await req.json()

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ListingLd, BreadcrumbLd } from '@/components/seo/JsonLd'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
@@ -191,8 +192,30 @@ export default async function PropertyDetailPage({ params }: Props) {
     }
   }
 
+  const canonicalUrl = `https://spacesmate.com/property/${p.slug}`
+
   return (
     <div className="bg-white min-h-screen">
+
+      <ListingLd
+        name={p.title}
+        url={canonicalUrl}
+        images={p.images}
+        price={p.priceMin || undefined}
+        district={p.neighborhood}
+        address={p.address}
+        bedrooms={p.bedrooms}
+        bathrooms={p.bathrooms}
+        areaSqm={p.size ? Number(p.size) : undefined}
+        propertyType={p.propertyType}
+      />
+      <BreadcrumbLd
+        trail={[
+          { name: 'หน้าแรก', url: 'https://spacesmate.com/' },
+          { name: 'ค้นหาที่พัก', url: 'https://spacesmate.com/search' },
+          { name: p.title, url: canonicalUrl },
+        ]}
+      />
 
       {/* Photo gallery — single image falls back to hero-only view */}
       <PropertyGallery
