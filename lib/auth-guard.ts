@@ -58,6 +58,14 @@ export async function requireAdmin(req: NextRequest): Promise<AuthUser | NextRes
  * Returns { id, email } on success, NextResponse (error) on failure.
  */
 export async function requireAuth(req: NextRequest): Promise<{ id: string; email: string } | NextResponse> {
+  // Automation path — same static key as requireAdmin. Lets the n8n Content
+  // Pipeline upload generated images without holding a user session.
+  const apiKey = req.headers.get('x-api-key')?.trim()
+  const expected = process.env.AUTOMATION_API_KEY || process.env.Automation_API_Key
+  if (apiKey && expected && apiKey === expected) {
+    return { id: 'automation', email: 'automation@spacesmate.com' }
+  }
+
   const token = req.headers.get('authorization')?.replace('Bearer ', '').trim()
   if (!token) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
