@@ -12,7 +12,7 @@ export async function GET() {
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('property_names')
-      .select('id, name_th, name_en, created_at, updated_at')
+      .select('id, name_th, name_en, slug, created_at, updated_at')
       .order('name_th', { ascending: true })
 
     if (error) throw error

@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { AREA_KEYWORDS } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase'
 import { getGeneratedAreas } from '@/lib/areas'
+import { getBuildingsWithListings } from '@/lib/buildings'
 
 const SITE = 'https://spacesmate.com'
 
@@ -58,6 +59,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
   }))
 
+  // ── Building pages ─────────────────────────────────────────────────────────
+  // One per building with live inventory. Renters search by building name, so
+  // these target the highest-intent queries the site has.
+  const buildings = await getBuildingsWithListings()
+  const buildingPages: MetadataRoute.Sitemap = buildings.map(b => ({
+    url: encodeURI(`${SITE}/building/${b.slug}`),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+    lastModified: now,
+  }))
+
   // ── Live data ──────────────────────────────────────────────────────────────
   // A sitemap must never break the build. If Supabase is unavailable we still
   // serve the static and area entries rather than returning nothing at all.
@@ -109,5 +121,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...areaPages, ...generatedAreaPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...areaPages, ...generatedAreaPages, ...buildingPages, ...propertyPages, ...blogPages]
 }

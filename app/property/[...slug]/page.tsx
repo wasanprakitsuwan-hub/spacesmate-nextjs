@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ListingLd, BreadcrumbLd } from '@/components/seo/JsonLd'
+import { createServerClient as buildingClient } from '@/lib/supabase'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
@@ -217,6 +218,20 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   const canonicalUrl = `https://spacesmate.com/property/${p.slug}`
 
+  // Link the listing to its building. Building pages carry the highest-intent
+  // queries on the site, and a page nothing links to is a page Google discounts.
+  let building: { slug: string; name: string } | null = null
+  if (raw?.property_name_id) {
+    try {
+      const { data: b } = await buildingClient()
+        .from('property_names')
+        .select('slug, name_th')
+        .eq('id', raw.property_name_id)
+        .maybeSingle()
+      if (b?.slug) building = { slug: b.slug as string, name: b.name_th as string }
+    } catch { /* a missing building link must not break the listing page */ }
+  }
+
   return (
     <div className="bg-white min-h-screen">
 
@@ -236,6 +251,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         trail={[
           { name: 'หน้าแรก', url: 'https://spacesmate.com/' },
           { name: 'ค้นหาที่พัก', url: 'https://spacesmate.com/search' },
+          ...(building ? [{ name: building.name, url: `https://spacesmate.com/building/${encodeURI(building.slug)}` }] : []),
           { name: p.title, url: canonicalUrl },
         ]}
       />
@@ -283,6 +299,18 @@ export default async function PropertyDetailPage({ params }: Props) {
               <span>{p.neighborhood}</span>
               {p.address && <span style={{ color: '#94a3b8', fontWeight: 400 }}>— {p.address}</span>}
             </div>
+
+            {building && (
+              <div style={{ marginBottom: 24 }}>
+                <a href={`/building/${encodeURI(building.slug)}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 15px', borderRadius: 22,
+                    border: '1px solid #d6e6e0', background: '#f2f9f6', color: '#02402e',
+                    fontSize: 13.5, fontWeight: 600, textDecoration: 'none' }}>
+                  <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>apartment</span>
+                  ดูห้องอื่นใน {building.name}
+                </a>
+              </div>
+            )}
 
             {/* Key specs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, marginBottom: 28, padding: 16, borderRadius: 16, border: '1px solid #eef0ef', background: '#f7f9f8' }}>
