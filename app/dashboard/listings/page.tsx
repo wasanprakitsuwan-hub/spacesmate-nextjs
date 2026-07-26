@@ -2106,7 +2106,14 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
           bathrooms: parseInt(form.bathrooms),
           lat: form.lat ? parseFloat(form.lat) : null,
           lng: form.lng ? parseFloat(form.lng) : null,
-          expires_at: computeExpiry(form.package_type),
+          // Only recompute the expiry when the package actually changed. This
+          // used to run on every save, so editing a listing silently reset its
+          // expiry to a full term from today — a listing created on 10 Jul and
+          // edited on 26 Jul gained an extra fortnight for free, and a premium
+          // listing edited while the dropdown read 'basic' would lose months.
+          expires_at: form.package_type === listing.package_type
+            ? listing.expires_at
+            : computeExpiry(form.package_type),
         }),
       })
       const d = await res.json()
