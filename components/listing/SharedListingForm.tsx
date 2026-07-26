@@ -38,6 +38,7 @@ export interface RentalCharges {
   water_type: RateType; water_fixed: string; water_min_rate: string
   electricity_type: RateType; electricity_fixed: string; electricity_min_rate: string
   security_deposit: string; advance_deposit: string
+  key_deposit: string           // fixed baht amount, optional — rendered as ค่ากุญแจ
   other_charges: string[]; other_charges_fees: Record<string, string>
 }
 
@@ -73,7 +74,7 @@ export const BLANK_CONDO: CondoRentalDetail = {
 export const BLANK_CHARGES: RentalCharges = {
   water_type: 'ask', water_fixed: '', water_min_rate: '',
   electricity_type: 'ask', electricity_fixed: '', electricity_min_rate: '',
-  security_deposit: '2', advance_deposit: '1',
+  security_deposit: '2', advance_deposit: '1', key_deposit: '',
   other_charges: [], other_charges_fees: {},
 }
 export const BLANK: FormState = {
@@ -165,17 +166,20 @@ export function prepareSubmitData(form: FormState) {
     const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
     price_from = prices.length > 0 ? Math.min(...prices) : 0
     price_to   = prices.length > 1 ? Math.max(...prices) : (prices[0] ?? null)
-    room_types = form.property_type === 'apartment'
-      ? [
-          { _type: 'charges', ...form.rental_charges },
-          ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
-        ]
-      : form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u }))
+    // Charges are persisted for every type. This previously applied to apartments
+    // only, so deposits entered for office and co-working were silently discarded.
+    room_types = [
+      { _type: 'charges', ...form.rental_charges },
+      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
+    ]
   } else if (['condo', 'house'].includes(form.property_type)) {
     const r = form.condo_rental
     price_from = parseFloat(r.price_12mo || r.price_1mo || '0') || 0
     price_to   = r.price_1mo ? parseFloat(r.price_1mo) : null
-    room_types = [{ _type: 'rental_detail', ...r }]
+    room_types = [
+      { _type: 'charges', ...form.rental_charges },
+      { _type: 'rental_detail', ...r },
+    ]
     floor      = r.floor ? parseInt(r.floor) : null
     area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
     property_name_id = r.property_name_id || null
@@ -356,6 +360,46 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
 }
 
 // ── Rental Charges Section (Apartment) ────────────────────────────────────────
+/**
+ * Deposits only — for condo, house, office and co-working.
+ *
+ * The admin screen has always shown this for non-apartment types; this form did
+ * not, and prepareSubmitData dropped rental_charges for those types entirely. So
+ * a landlord listing a condo could not record a deposit, and the charges table on
+ * the public page came up empty. Added here so both forms behave the same.
+ */
+export function DepositSection({ charges, onChange }: {
+  charges: RentalCharges
+  onChange: (c: RentalCharges) => void
+}) {
+  function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+        <div>
+          <label style={SLBL}>เงินประกัน (เดือน)</label>
+          <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 2 เดือน</p>
+        </div>
+        <div>
+          <label style={SLBL}>เงินล่วงหน้า (เดือน)</label>
+          <input type="number" value={charges.advance_deposit} onChange={e => u('advance_deposit', e.target.value)} placeholder="1" style={SINP} />
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 1 เดือน</p>
+        </div>
+      </div>
+      <div>
+        <label style={SLBL}>เงินมัดจำกุญแจ (บาท) — ไม่บังคับ</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="number" value={charges.key_deposit} onChange={e => u('key_deposit', e.target.value)}
+            placeholder="เช่น 500" style={{ ...SINP, maxWidth: 180 }} />
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท</span>
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>หากเว้นว่าง จะไม่แสดงรายการนี้บนหน้าประกาศ</p>
+      </div>
+    </div>
+  )
+}
+
 export function RentalChargesSection({ charges, onChange }: {
   charges: RentalCharges; onChange: (c: RentalCharges) => void
 }) {
@@ -1122,12 +1166,18 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
         )}
       </div>
 
-      {/* ── 3B · รายละเอียดการเช่า (Apartment charges) ── */}
-      {isApartment && (
+      {/* ── 3B · รายละเอียดการเช่า ── */}
+      {isApartment ? (
         <div style={{ marginBottom: 24 }}>
           <SectionHead text="3B · รายละเอียดการเช่า" />
           <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>ค่าสาธารณูปโภค เงินมัดจำ และค่าใช้จ่ายอื่น ๆ ที่เรียกเก็บ</p>
           <RentalChargesSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} />
+        </div>
+      ) : (
+        <div style={{ marginBottom: 24 }}>
+          <SectionHead text="3B · รายละเอียดการเช่า" />
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>เงินประกัน เงินล่วงหน้า และค่ามัดจำอื่น ๆ (เช่น กุญแจ)</p>
+          <DepositSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} />
         </div>
       )}
 

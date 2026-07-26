@@ -208,6 +208,7 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
     electricity_min_rate: String(chargesRaw.electricity_min_rate ?? ''),
     security_deposit:     String(chargesRaw.security_deposit ?? '2'),
     advance_deposit:      String(chargesRaw.advance_deposit  ?? '1'),
+    key_deposit:          String(chargesRaw.key_deposit ?? ''),
     other_charges:        chargesRaw.other_charges      ?? [],
     other_charges_fees:   chargesRaw.other_charges_fees ?? {},
   } : { ...BLANK_CHARGES }
