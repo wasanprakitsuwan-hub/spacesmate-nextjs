@@ -26,7 +26,9 @@ export interface CondoRentalDetail {
   price_12mo: string; price_6mo: string; price_3mo: string; price_1mo: string
 }
 
-export type RateType = 'fixed' | 'min_rate' | 'ask'
+// 'gov' = ตามเรทรัฐ. Stored as an enum, never as a copied number — MEA and MWA
+// tariffs change, and a hardcoded figure would go stale silently.
+export type RateType = 'fixed' | 'min_rate' | 'gov' | 'ask'
 export interface RentalCharges {
   water_type: RateType; water_fixed: string; water_min_rate: string
   electricity_type: RateType; electricity_fixed: string; electricity_min_rate: string
@@ -110,6 +112,8 @@ export const FACING_OPTIONS = [
   { value: 'SW', label: 'ทิศตะวันตกเฉียงใต้ (SW)' },
 ]
 export const OTHER_CHARGES_OPTIONS = [
+  // Amount is captured per selected charge in other_charges_fees.
+  { value: 'common_fee', label: 'ค่าส่วนกลาง' },
   { value: 'parking',   label: 'ค่าจอดรถ' },
   { value: 'internet',  label: 'ค่าอินเทอร์เน็ต' },
   { value: 'fridge',    label: 'ค่าเช่าตู้เย็น' },
@@ -287,6 +291,11 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
 
   return (
     <div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={SLBL}>{isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}</label>
+        <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
+          placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'} style={SINP} />
+      </div>
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
           <label style={SLBL}>{isHouse ? 'บ้านเลขที่ / House No.' : 'เลขห้อง / Unit No.'}</label>
@@ -309,11 +318,6 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
           <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) *</label>
           <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder={isHouse ? '120' : '35'} style={SINP} />
         </div>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={SLBL}>{isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}</label>
-        <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
-          placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'} style={SINP} />
       </div>
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>payments</span>ราคาเช่าตามระยะสัญญา</p>
@@ -361,6 +365,7 @@ export function RentalChargesSection({ charges, onChange }: {
   const rateOpts: { value: RateType; label: string }[] = [
     { value: 'fixed',    label: 'ราคาคงที่ (บาท/หน่วย)' },
     { value: 'min_rate', label: 'ราคาขั้นต่ำ' },
+    { value: 'gov',      label: 'ตามเรทรัฐ' },
     { value: 'ask',      label: 'สอบถามเจ้าของ' },
   ]
 
@@ -371,7 +376,7 @@ export function RentalChargesSection({ charges, onChange }: {
     return (
       <div style={{ marginBottom: 16 }}>
         <label style={SLBL}>{label}</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: type !== 'ask' ? 8 : 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (type === 'fixed' || type === 'min_rate') ? 8 : 0 }}>
           {rateOpts.map(o => (
             <button key={o.value} type="button" onClick={() => onType(o.value)}
               style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
@@ -383,6 +388,12 @@ export function RentalChargesSection({ charges, onChange }: {
             </button>
           ))}
         </div>
+        {type === 'gov' && (
+          <p style={{ fontSize: 11.5, color: '#64748b', margin: '2px 0 0' }}>
+            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4, verticalAlign: 'middle' }}>info</span>
+            คิดตามอัตราของการไฟฟ้า/การประปานครหลวง — ไม่ต้องระบุตัวเลข ระบบจะแสดงว่า “ตามเรทรัฐ”
+          </p>
+        )}
         {type === 'fixed' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="text" inputMode="decimal" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="6.50" style={{ ...SINP, width: 130 }} />
@@ -989,7 +1000,9 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
   const isCondoOrHouse = ['condo', 'house'].includes(form.property_type)
   const isOfficeOrCo   = ['office', 'coworking'].includes(form.property_type)
   const showBedsBaths  = isCondoOrHouse
-  const showAreaSqm    = isApartment || isOfficeOrCo
+  // Apartments capture size per room type in ประเภทห้องและราคาห้อง — asking again
+  // for a building average duplicates the input and lets the two disagree.
+  const showAreaSqm    = isOfficeOrCo
   const showFloor      = isOfficeOrCo
   const [descTab, setDescTab] = useState<'th' | 'en'>('th')
 
@@ -1066,16 +1079,11 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
       {/* ── 3 · ขนาดและลักษณะ ── */}
       <div style={{ marginBottom: 24 }}>
         <SectionHead text="3 · ขนาดและลักษณะ" />
-        {isApartment && (
-          <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
-            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 5, verticalAlign: 'middle' }}>tips_and_updates</span>ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
-          </div>
-        )}
         {showAreaSqm && (
           <div style={{ display: 'grid', gridTemplateColumns: showFloor ? '1fr 1fr' : '1fr', gap: 12, marginBottom: showBedsBaths ? 12 : 0 }}>
             <div>
               <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
-              <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder={isApartment ? '28 (ขนาดเฉลี่ย)' : '28'} style={SINP} />
+              <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28" style={SINP} />
             </div>
             {showFloor && (
               <div>

@@ -42,7 +42,10 @@ interface CondoRentalDetail {
 }
 
 // Apartment — charges & deposit detail
-type RateType = 'fixed' | 'min_rate' | 'ask'
+// Kept in step with components/listing/SharedListingForm.tsx, which owns the
+// canonical definition. Duplicated because this screen does not import that form;
+// if a third value is ever added, both must change.
+type RateType = 'fixed' | 'min_rate' | 'gov' | 'ask'
 interface RentalCharges {
   water_type: RateType
   water_fixed: string
@@ -189,6 +192,7 @@ const FACING_OPTIONS = [
   { value: 'SW', label: 'ทิศตะวันตกเฉียงใต้ (SW)' },
 ]
 const OTHER_CHARGES_OPTIONS = [
+  { value: 'common_fee', label: 'ค่าส่วนกลาง' },
   { value: 'parking',   label: 'ค่าจอดรถ' },
   { value: 'internet',  label: 'ค่าอินเทอร์เน็ต' },
   { value: 'fridge',    label: 'ค่าเช่าตู้เย็น' },
@@ -1295,6 +1299,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
   const rateOpts: { value: RateType; label: string }[] = [
     { value: 'fixed',    label: 'ราคาคงที่ (บาท/หน่วย)' },
     { value: 'min_rate', label: 'ราคาขั้นต่ำ' },
+    { value: 'gov',      label: 'ตามเรทรัฐ' },
     { value: 'ask',      label: 'สอบถามเจ้าของ' },
   ]
 
@@ -1305,7 +1310,7 @@ function RentalChargesSection({ charges, onChange, isMobile }: {
     return (
       <div style={{ marginBottom: 16 }}>
         <label style={SLBL}>{label}</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: type !== 'ask' ? 8 : 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (type === 'fixed' || type === 'min_rate') ? 8 : 0 }}>
           {rateOpts.map(o => (
             <button key={o.value} type="button" onClick={() => onType(o.value)}
               style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',

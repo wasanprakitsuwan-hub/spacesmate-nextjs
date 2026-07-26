@@ -189,6 +189,9 @@ export default async function PropertyDetailPage({ params }: Props) {
     const rateLabel = (type: string, fixed: string, minRate: string): string => {
       if (type === 'fixed') return fixed ? `฿${fixed}/หน่วย` : 'แจ้งตามจริง'
       if (type === 'min_rate') return minRate ? `ขั้นต่ำ ฿${minRate}` : 'แจ้งตามจริง'
+      // 'gov' carries no number by design — the authority's tariff applies, and
+      // copying a figure here would go stale when MEA/MWA change it.
+      if (type === 'gov') return 'ตามเรทรัฐ'
       return 'แจ้งตามจริง'
     }
     if (chargesRow.security_deposit)
@@ -202,6 +205,7 @@ export default async function PropertyDetailPage({ params }: Props) {
     if (chargesRow.electricity_type)
       chargesDisplay.push({ label: 'ค่าไฟ', value: rateLabel(chargesRow.electricity_type, chargesRow.electricity_fixed ?? '', chargesRow.electricity_min_rate ?? '') })
     const OTHER_LABELS: Record<string, string> = {
+      common_fee: 'ค่าส่วนกลาง',
       parking: 'ค่าจอดรถ', internet: 'ค่าอินเทอร์เน็ต',
       fridge: 'ค่าเช่าตู้เย็น', tv: 'ค่าเช่าโทรทัศน์', microwave: 'ค่าเช่าไมโครเวฟ',
     }
