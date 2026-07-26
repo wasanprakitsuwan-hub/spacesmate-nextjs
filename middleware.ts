@@ -16,8 +16,10 @@ async function getUnpublishedPaths(origin: string): Promise<string[]> {
   if (now < cacheExpiry) return unpublishedPaths
 
   try {
+    const secret = process.env.INTERNAL_API_SECRET
     const res = await fetch(`${origin}/api/dashboard/pages/unpublished`, {
       next: { revalidate: 60 },
+      headers: secret ? { 'x-internal-secret': secret } : undefined,
     })
     if (res.ok) {
       const data = await res.json()

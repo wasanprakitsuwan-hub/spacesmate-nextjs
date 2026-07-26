@@ -3,11 +3,21 @@
 // Used by /submit/new to show live discounted price before checkout.
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRate } from '@/lib/rate-limit'
 import { stripe } from '@/lib/stripe'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
+  // Unlimited guesses made discount codes enumerable.
+  const rl = checkRate(req, 'validate-promo', 20, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { valid: false, error: 'ลองใหม่อีกครั้งในภายหลัง' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
   try {
     const { code } = await req.json()
     if (!code?.trim()) {

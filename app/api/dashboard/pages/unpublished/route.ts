@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
 // GET /api/dashboard/pages/unpublished
@@ -8,7 +8,17 @@ import { createServerClient } from '@/lib/supabase'
 
 export const revalidate = 60 // ISR-style: revalidate every 60 seconds
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // This is the one route middleware calls on every request, so it cannot use
+  // requireAdmin — guarding it would take the site down. Instead it accepts a
+  // shared secret, and only enforces it when INTERNAL_API_SECRET is configured.
+  // Unset, behaviour is unchanged; set it in Vercel and middleware starts sending
+  // it, closing the endpoint to the public.
+  const expected = process.env.INTERNAL_API_SECRET
+  if (expected && req.headers.get('x-internal-secret') !== expected) {
+    return NextResponse.json({ paths: [] }, { status: 403 })
+  }
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

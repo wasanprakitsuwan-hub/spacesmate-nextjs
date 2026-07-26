@@ -496,7 +496,20 @@ function TypesAndAmenities() {
                     background: '#e8f5f0', color: '#02402e', fontSize: 13, fontWeight: 500,
                   }}>
                     {am.name_th}
-                    <button onClick={() => setAmenities(a => a.filter(x => x.id !== am.id))} style={{
+                    <button
+                      title={`ลบ "${am.name_th}"`}
+                      onClick={() => {
+                        // properties.amenities stores the Thai name, so removing
+                        // or renaming an item orphans it on every listing that
+                        // already selected it — it simply stops being displayed.
+                        const ok = window.confirm(
+                          `ลบ "${am.name_th}" ออกจากรายการ?\n\n` +
+                          'ประกาศที่เลือกรายการนี้ไว้แล้วจะไม่แสดงรายการนี้อีก ' +
+                          '(ข้อมูลอื่นของประกาศไม่ได้รับผลกระทบ)'
+                        )
+                        if (ok) setAmenities(a => a.filter(x => x.id !== am.id))
+                      }}
+                      style={{
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, color: '#94a3b8',
                     }}>
                       <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span>

@@ -56,8 +56,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'
   const canonicalUrl = `https://spacesmate.com/blog/${params.slug}`
   const ogImage = post.thumbnail
-    ? [{ url: post.thumbnail, width: 1200, height: 630, alt: post.thumbnail_alt ?? post.title }]
-    : [{ url: 'https://spacesmate.com/og-image.jpg', width: 1200, height: 630 }]
+    // No width/height: the generated thumbnails are 1536x1024, and declaring
+    // 1200x630 told Facebook and LINE the wrong aspect. Omitting them lets each
+    // platform read the real dimensions from the file.
+    ? [{ url: post.thumbnail, alt: post.thumbnail_alt ?? post.title }]
+    : [{ url: 'https://spacesmate.com/og-image.jpg' }]
 
   return {
     title: `${pageTitle} | SpacesMate`,
