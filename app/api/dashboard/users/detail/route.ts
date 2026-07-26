@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { requireSuperAdmin, isErr } from '@/lib/auth-guard'
 
 // GET /api/dashboard/users/detail?id=xxx
 // Returns full user profile + all their listings with package/expiry detail
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin(req)
+  const auth = await requireSuperAdmin(req)
   if (isErr(auth)) return auth
 
   try {

@@ -54,6 +54,38 @@ export async function requireAdmin(req: NextRequest): Promise<AuthUser | NextRes
 }
 
 /**
+ * Require super_admin specifically.
+ *
+ * admin and super_admin are otherwise equivalent; the one thing reserved to
+ * super_admin is control of user accounts — listing, editing, deleting users and
+ * resending confirmations. requireAdmin accepts both roles, so user-management
+ * routes must use this instead.
+ *
+ * Deliberately does NOT accept the automation API key. That key exists for the
+ * content pipeline; nothing automated should be able to touch user accounts.
+ */
+export async function requireSuperAdmin(req: NextRequest): Promise<AuthUser | NextResponse> {
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+
+  if (auth.id === 'automation') {
+    return NextResponse.json(
+      { error: 'Automation credentials cannot manage user accounts' },
+      { status: 403 },
+    )
+  }
+
+  if (auth.role !== 'super_admin') {
+    return NextResponse.json(
+      { error: 'Super admin access required' },
+      { status: 403 },
+    )
+  }
+
+  return auth
+}
+
+/**
  * Verify JWT from Authorization header — any authenticated user.
  * Returns { id, email } on success, NextResponse (error) on failure.
  */

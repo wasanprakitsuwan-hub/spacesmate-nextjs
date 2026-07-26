@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { requireSuperAdmin, isErr } from '@/lib/auth-guard'
 
 // POST /api/dashboard/users/resend-confirmation
 // Body: { id: string }
 // Resends the email confirmation link for a user who never confirmed their email.
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin(req)
+  const auth = await requireSuperAdmin(req)
   if (isErr(auth)) return auth
 
   try {

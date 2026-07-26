@@ -8,7 +8,9 @@ import { createBrowserClient } from '@/lib/supabase'
 const NAV = [
   { href: '/dashboard',                  label: 'ภาพรวมระบบ',    icon: 'grid_view',        exact: true },
   { href: '/dashboard/listings',         label: 'จัดการประกาศ',  icon: 'apartment',         exact: false },
-  { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false },
+  // superAdminOnly: admin and super_admin are otherwise equivalent — control of
+  // user accounts is the one capability reserved to super_admin.
+  { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false, superAdminOnly: true },
   { href: '/dashboard/pages',            label: 'Pages',          icon: 'web',               exact: false },
   { href: '/dashboard/property-names',   label: 'ชื่ออสังหา',     icon: 'domain',            exact: false },
   { href: '/dashboard/seo',              label: 'SEO Tracker',    icon: 'travel_explore',    exact: false },
@@ -109,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Nav */}
-        {NAV.map(n => {
+        {NAV.filter(n => !('superAdminOnly' in n && n.superAdminOnly) || userRole === 'super_admin').map(n => {
           const isActive = n.exact ? pathname === n.href : (pathname ?? '').startsWith(n.href)
           const badge = n.href === '/dashboard/listings' ? pendingBadge : 0
           return (
