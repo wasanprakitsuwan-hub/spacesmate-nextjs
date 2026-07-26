@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { slugify } from '@/lib/slug'
 import { createBrowserClient } from '@/lib/supabase'
 
@@ -35,6 +36,7 @@ interface CondoRentalDetail {
   facing: string
   size_sqm: string
   property_name: string
+  property_name_id: string
   price_12mo: string
   price_6mo: string
   price_3mo: string
@@ -265,7 +267,7 @@ function computeExpiry(packageId: string): string | null {
 
 const BLANK_CONDO_RENTAL: CondoRentalDetail = {
   unit_number: '', floor: '', facing: '', size_sqm: '',
-  property_name: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
+  property_name: '', property_name_id: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
 }
 const BLANK_CHARGES: RentalCharges = {
   water_type: 'ask', water_fixed: '', water_min_rate: '',
@@ -1207,6 +1209,17 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
 
   return (
     <div>
+      {/* Building first — it is the parent of the unit. Uses the shared
+          BuildingAutocomplete so the listing links to a building page. */}
+      <BuildingAutocomplete
+        label={isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}
+        labelStyle={SLBL}
+        inputStyle={SINP}
+        value={detail.property_name}
+        valueId={detail.property_name_id}
+        placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'}
+        onChange={(name, id) => onChange({ ...detail, property_name: name, property_name_id: id })}
+      />
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
           <label style={SLBL}>{isHouse ? 'บ้านเลขที่ / House No.' : 'เลขห้อง / Unit No.'}</label>
@@ -1229,25 +1242,6 @@ function CondoHouseRentalDetail({ detail, propertyType, onChange, isMobile }: {
           <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) *</label>
           <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder={isHouse ? '120' : '35'} style={SINP} />
         </div>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={SLBL}>
-          {isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}
-          {!isHouse && (
-            <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 400, color: '#048c73' }}>
-              — เลือกจากรายการ SEO เพื่อ ranking ที่ดีขึ้น
-            </span>
-          )}
-        </label>
-        {isHouse ? (
-          <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
-            placeholder="เช่น บ้านปลายฟ้า พระราม 9" style={SINP} />
-        ) : (
-          <PropertyNameAutocomplete
-            value={detail.property_name}
-            onChange={v => u('property_name', v)}
-          />
-        )}
       </div>
       {/* Price grid */}
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
@@ -1463,6 +1457,7 @@ function prepareSubmitData(form: ListingFormState) {
   let room_types: any[] = form.room_types
   let floor: number | null = form.floor ? parseInt(form.floor) : null
   let area_sqm: number | null = form.area_sqm ? parseFloat(form.area_sqm) : null
+  let property_name_id: string | null = null
 
   if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
     const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
@@ -1484,9 +1479,10 @@ function prepareSubmitData(form: ListingFormState) {
     ]
     floor      = r.floor ? parseInt(r.floor) : null
     area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
+    property_name_id = r.property_name_id || null
   }
 
-  return { price_from, price_to, room_types, floor, area_sqm }
+  return { price_from, price_to, room_types, floor, area_sqm, property_name_id }
 }
 
 // ── Form Fields (all 9 sections) ──────────────────────────────────────────────
@@ -1699,17 +1695,9 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
         <div style={{ marginBottom: 24 }}>
           <SectionHead text="3 · ขนาดและลักษณะ" />
 
-          {isApartment && (
-            <>
-              <div style={{ padding: '10px 14px', background: '#fef9c3', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#92400e' }}>
-                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>tips_and_updates</span>ขนาดเฉลี่ยของห้องในอาคาร — รายละเอียดแต่ละประเภทห้องอยู่ในตารางด้านบน
-              </div>
-              <div>
-                <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) — ขนาดเฉลี่ย</label>
-                <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28 (ขนาดเฉลี่ย)" style={{ ...SINP, maxWidth: 180 }} />
-              </div>
-            </>
-          )}
+          {/* Apartments capture size per room type in ประเภทห้องและราคาห้อง — a
+              separate building average duplicated the input and could disagree
+              with it. Removed; office/co-working keep their own field below. */}
 
           {form.property_type === 'house' && (
             <div style={g2}>
@@ -2042,6 +2030,7 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
     facing:        condoRaw.facing       ?? '',
     size_sqm:      String(condoRaw.size_sqm ?? listing.area_sqm ?? ''),
     property_name: condoRaw.property_name ?? '',
+    property_name_id: String((listing as any).property_name_id ?? ''),
     price_12mo:    String(condoRaw.price_12mo ?? ''),
     price_6mo:     String(condoRaw.price_6mo  ?? ''),
     price_3mo:     String(condoRaw.price_3mo  ?? ''),
