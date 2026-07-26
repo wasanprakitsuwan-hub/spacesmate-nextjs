@@ -1581,36 +1581,21 @@ function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, on
         </div>
 
         {/* ── Slug (editable, auto-generated from title_en → title_th) ── */}
-        <div style={{ marginTop: 14 }}>
-          <label style={SLBL}>
-            Slug (URL)
-            {['condo', 'house'].includes(form.property_type) && (
-              <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 400, color: '#94a3b8' }}>
-                คอนโด/บ้าน → ใช้รูปแบบ ชื่ออาคาร/ประเภท-unique
-              </span>
-            )}
-          </label>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none', whiteSpace: 'nowrap' }}>/property/</span>
-              <input
-                value={form.slug}
-                onChange={e => onChange('slug', e.target.value.replace(/\s+/g, '-').replace(/[^฀-๿\w/-]/g, '').toLowerCase())}
-                placeholder="building-name/condo-abc123"
-                style={{ ...SINP, paddingLeft: 72 }}
-              />
-            </div>
-            <button type="button"
-              onClick={() => onChange('slug', buildAutoSlug(form.title_en, form.title_th, form.property_type))}
-              title="สร้าง Slug ใหม่"
-              style={{ padding: '0 12px', borderRadius: 8, border: '1.5px solid #eef0ef', background: '#f8fafc', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle' }}>refresh</span>
-            </button>
+        {/* Slug is generated, never typed. It is derived from the title via
+            lib/slug.ts at creation and deliberately never changes afterwards —
+            editing it breaks every existing link and discards accumulated
+            ranking. Existing URLs are shown read-only for reference. */}
+        {form.slug && (
+          <div style={{ marginTop: 14 }}>
+            <label style={SLBL}>URL ของประกาศ</label>
+            <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, wordBreak: 'break-all' }}>
+              spacesmate.com/property/{form.slug}
+            </p>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+              สร้างอัตโนมัติจากชื่อประกาศ — ไม่สามารถแก้ไขได้ เพื่อไม่ให้ลิงก์เดิมเสีย
+            </p>
           </div>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
-            URL จริง: spacesmate.com/property/{form.slug || 'ชื่อ-อาคาร-unique'}
-          </p>
-        </div>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════

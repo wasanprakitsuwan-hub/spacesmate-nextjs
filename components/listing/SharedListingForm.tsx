@@ -1310,7 +1310,7 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
       {/* ── 10 · ข้อมูลการติดต่อ ── */}
       <div style={{ marginBottom: 8 }}>
         <SectionHead text="10 · ข้อมูลการติดต่อ" />
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>ข้อมูลนี้จะแสดงในหน้าประกาศเพื่อให้ผู้เช่าติดต่อได้ — อีเมลใช้จากบัญชีของคุณอัตโนมัติ</p>
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>ข้อมูลนี้จะแสดงในหน้าประกาศเพื่อให้ผู้เช่าติดต่อได้</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
             <label style={SLBL}>ชื่อผู้ติดต่อ</label>
@@ -1329,6 +1329,14 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
             <input value={form.contact_line} onChange={e => onChange('contact_line', e.target.value)}
               placeholder="@yourid หรือ yourid" style={SINP} />
           </div>
+        </div>
+        <div>
+          <label style={SLBL}>อีเมล — ไม่บังคับ</label>
+          <input type="email" value={form.contact_email} onChange={e => onChange('contact_email', e.target.value)}
+            placeholder="email@example.com" style={SINP} />
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+            เว้นว่างได้ — ระบบจะใช้อีเมลจากบัญชีของคุณ
+          </p>
         </div>
       </div>
     </>

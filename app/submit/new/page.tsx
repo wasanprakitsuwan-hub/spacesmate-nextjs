@@ -80,9 +80,6 @@ function SubmitNewForm() {
   const [form, setForm] = useState<FormState>({ ...BLANK, package_type: initialPkg })
 
   // Contact info (separate from listing FormState)
-  const [contactName,  setContactName]  = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
 
   // Promo code state
   const [promoInput,  setPromoInput]  = useState('')
@@ -144,7 +141,7 @@ function SubmitNewForm() {
 
   // ── Submit to Stripe ───────────────────────────────────────────────────────
   async function handleSubmit() {
-    if (!contactName.trim() || !contactPhone.trim()) {
+    if (!form.contact_name.trim() || !form.contact_phone.trim()) {
       trackEvent('listing_validation_error', { step: 2, reason: 'missing_contact' })
       setError('กรุณากรอกชื่อและเบอร์โทรติดต่อ'); return
     }
@@ -184,10 +181,11 @@ function SubmitNewForm() {
           bedrooms:       parseInt(form.bedrooms)  || null,
           bathrooms:      parseInt(form.bathrooms) || null,
           ...extra,
-          // Contact
-          contactName,
-          contactPhone,
-          contactEmail,
+          // Contact — single source: the listing form's section 10
+          contactName:  form.contact_name,
+          contactPhone: form.contact_phone,
+          contactEmail: form.contact_email,
+          contactLine:  form.contact_line,
           // Package + promo
           packageId:       form.package_type,
           promotionCodeId: promoData?.promotionCodeId ?? '',
@@ -401,28 +399,9 @@ function SubmitNewForm() {
               </div>
             </div>
 
-            {/* Contact info */}
-            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #eef0ef', padding: '20px', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>person</span>ข้อมูลติดต่อ
-              </h2>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>ชื่อผู้ติดต่อ *</label>
-                <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="ชื่อ-นามสกุล หรือชื่อบริษัท" style={SINP} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>เบอร์โทรศัพท์ *</label>
-                  <input value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="08x-xxx-xxxx" type="tel" style={SINP} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>อีเมล (ถ้ามี)</label>
-                  <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="email@example.com" type="email" style={SINP} />
-                </div>
-              </div>
-              <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0 }}>ข้อมูลติดต่อจะแสดงบนประกาศของคุณเพื่อให้ผู้เช่าติดต่อได้โดยตรง</p>
-            </div>
-
+            {/* Contact info is collected once, in the listing form itself
+                (section 10). It used to be asked again here, so a landlord filled
+                the same three fields twice. */}
             {/* Promo code */}
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #eef0ef', padding: '20px', marginBottom: 16 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
