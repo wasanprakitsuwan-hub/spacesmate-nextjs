@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { slugify } from '@/lib/slug'
 import { createBrowserClient } from '@/lib/supabase'
 
 import RichEditor from '@/components/RichEditor'
@@ -197,13 +198,8 @@ const OTHER_CHARGES_OPTIONS = [
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
 function slugifyText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')   // strip non-ASCII (Thai chars, symbols)
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 55)
+  // Thai is preserved — see lib/slug.ts for why.
+  return slugify(text, 55)
 }
 
 function buildAutoSlug(titleEn: string, titleTh: string, propertyType: string): string {

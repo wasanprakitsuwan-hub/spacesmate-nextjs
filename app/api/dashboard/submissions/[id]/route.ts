@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
 import { PACKAGE_DAYS } from '@/lib/stripe'
 
@@ -6,6 +8,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const { status } = await req.json()
     if (!['pending', 'approved', 'rejected'].includes(status)) {
@@ -41,16 +46,10 @@ export async function PATCH(
 
           if (!existing) {
             // Generate a URL-safe slug
-            const slug =
-              ((sub.title || 'listing') as string)
-                .toLowerCase()
-                .replace(/[^\w\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .trim()
-                .slice(0, 60) +
-              '-' +
-              Date.now().toString(36)
+            const slug = buildListingSlug(
+              (sub.title || 'listing') as string,
+              sub.property_type as string,
+            )
 
             // Calculate expiry
             const packageId = (sub.package_type as string) || 'free_trial'

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
@@ -112,12 +113,7 @@ export async function POST(req: NextRequest) {
 
     const pkg = fields.package_type || 'basic'
     const rawSlug = fields.slug?.trim() ||
-      ((fields.title_th || 'listing') as string)
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .slice(0, 80) + '-' + Date.now().toString(36)
+      buildListingSlug((fields.title_th || 'listing') as string, fields.property_type as string)
 
     const payload: Record<string, unknown> = {
       slug:           rawSlug,

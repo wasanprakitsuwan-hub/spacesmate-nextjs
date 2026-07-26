@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { slugify } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 
@@ -62,13 +63,7 @@ export async function POST(req: NextRequest) {
     const titleForSlug = (body.title_en || body.title_th || 'listing') as string
     const propertyType  = (body.property_type as string | undefined) || 'condo'
     const shortId = Date.now().toString(36)
-    const baseSlugPart  = titleForSlug
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 55)
+    const baseSlugPart  = slugify(titleForSlug, 55)
     const fallbackSlug = ['condo', 'house'].includes(propertyType)
       ? `${baseSlugPart || 'listing'}/${propertyType}-${shortId}`
       : `${baseSlugPart || 'listing'}-${shortId}`

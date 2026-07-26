@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin, isErr } from '@/lib/auth-guard'
 import { createServerClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status') // 'all' | 'pending' | 'approved' | 'rejected'
