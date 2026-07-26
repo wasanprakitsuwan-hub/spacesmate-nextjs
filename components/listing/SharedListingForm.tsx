@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
 import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
 import RichEditor from '@/components/RichEditor'
@@ -92,21 +93,6 @@ export const BLANK: FormState = {
   contact_name: '', contact_phone: '', contact_email: '', contact_line: '',
 }
 
-export const AMENITY_BUILDING = [
-  'ที่จอดรถ', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)', 'กล้องวงจรปิด (CCTV)',
-  'ลิฟท์', 'สวนสาธารณะ', 'สนามบาสเกตบอล', 'ห้องเกม', 'ตู้หยอดเหรียญ',
-  'ห้องซักรีด', 'รปภ 24 ชม', 'ระบบ Keycard',
-]
-export const AMENITY_ROOM = [
-  'เฟอร์นิเจอร์พร้อมอยู่', 'เฟอร์นิเจอร์บางส่วน', 'แอร์', 'โทรทัศน์',
-  'ตู้เย็น', 'โซฟา', 'โต๊ะกินข้าว', 'ไมโครเวฟ', 'เตาแม่เหล็กไฟฟ้า',
-]
-export const AMENITY_OPTIONS = [
-  'WiFi', 'แอร์', 'ที่จอดรถ', 'ลิฟท์', 'สระว่ายน้ำ', 'ห้องออกกำลังกาย (GYM)',
-  'รปภ 24 ชม', 'กล้องวงจรปิด (CCTV)', 'เฟอร์นิเจอร์พร้อมอยู่', 'ห้องครัว',
-  'เครื่องซักผ้า', 'ตู้เย็น', 'ไมโครเวฟ', 'โทรทัศน์', 'ระเบียง',
-  'ร้านสะดวกซื้อ', 'ร้านอาหาร', 'ร้านซักรีด', 'สวนสาธารณะ',
-]
 export const FACING_OPTIONS = [
   { value: 'N',  label: 'ทิศเหนือ (N)' },
   { value: 'S',  label: 'ทิศใต้ (S)' },
@@ -1051,6 +1037,11 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
   isPublicUpload?: boolean
 }) {
   const roomOpts = getRoomTypeOptions(form.property_type)
+
+  // Editable in Settings; defaults until it loads.
+  const [amenityList, setAmenityList] = useState<Amenity[]>(DEFAULT_AMENITIES)
+  useEffect(() => { fetchAmenities().then(setAmenityList) }, [])
+
   const isApartment    = form.property_type === 'apartment'
   const isCondoOrHouse = ['condo', 'house'].includes(form.property_type)
   const isOfficeOrCo   = ['office', 'coworking'].includes(form.property_type)
@@ -1235,58 +1226,40 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
         )}
       </div>
 
-      {/* ── 7 · สิ่งอำนวยความสะดวก ── */}
+      {/* ── 7 · สิ่งอำนวยความสะดวก ──
+          Always two sections, for every property type. The list is loaded from
+          Settings so admins can add, edit and remove items; it falls back to
+          lib/amenities defaults if that request fails, because a form showing no
+          amenities looks broken and would publish listings with none selected. */}
       <div style={{ marginBottom: 24 }}>
-        {(isApartment || isCondoOrHouse) ? (
-          <>
-            <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>chair</span>ภายในห้อง</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-              {AMENITY_ROOM.map(a => {
-                const on = form.amenities.includes(a)
-                return (
-                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
-                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
-                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
-                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
-                  </button>
-                )
-              })}
+        <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
+        {AMENITY_SECTIONS.map(sec => {
+          const items = bySection(amenityList, sec.key)
+          if (!items.length) return null
+          return (
+            <div key={sec.key} style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{sec.icon}</span>
+                {sec.label_th}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {items.map(a => {
+                  const on = form.amenities.includes(a.name_th)
+                  return (
+                    <button key={a.id} type="button" onClick={() => onAmenityToggle(a.name_th)}
+                      title={a.name_en || undefined}
+                      style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
+                        border: on ? 'none' : '1px solid #eef0ef',
+                        background: on ? (sec.key === 'unit' ? '#02402e' : '#048c73') : '#f8fafc',
+                        color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
+                      {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a.name_th}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>domain</span>ภายในอาคาร</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {AMENITY_BUILDING.map(a => {
-                const on = form.amenities.includes(a)
-                return (
-                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
-                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
-                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#048c73' : '#f8fafc',
-                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
-                  </button>
-                )
-              })}
-            </div>
-          </>
-        ) : (
-          <>
-            <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {AMENITY_OPTIONS.map(a => {
-                const on = form.amenities.includes(a)
-                return (
-                  <button key={a} type="button" onClick={() => onAmenityToggle(a)}
-                    style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
-                      border: on ? 'none' : '1px solid #eef0ef', background: on ? '#02402e' : '#f8fafc',
-                      color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                    {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a}
-                  </button>
-                )
-              })}
-            </div>
-          </>
-        )}
+          )
+        })}
       </div>
 
       {/* ── 8 · รูปภาพห้อง ── */}

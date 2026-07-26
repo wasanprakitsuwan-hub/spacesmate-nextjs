@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { AMENITY_SECTIONS, DEFAULT_AMENITIES as SHARED_DEFAULT_AMENITIES, normaliseAmenity, type Amenity, type AmenitySection } from '@/lib/amenities'
 import { createBrowserClient } from '@/lib/supabase'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,12 +30,9 @@ interface PropertyType {
   active: boolean
 }
 
-interface AmenityTag {
-  id: string
-  name_th: string
-  name_en: string
-  category: string
-}
+// Amenities are defined once in lib/amenities.ts — the listing form reads the
+// same model, which is what this screen previously failed to control.
+type AmenityTag = Amenity
 
 // ── Defaults (used as initial state + fallback if API returns nothing) ─────────
 
@@ -56,22 +54,7 @@ const DEFAULT_PROPERTY_TYPES: PropertyType[] = [
   { id: '6', name_th: 'อาคารพาณิชย์',       name_en: 'Commercial', active: false },
 ]
 
-const AMENITY_CATEGORIES = ['ห้องและสิ่งอำนวยความสะดวก', 'บริการส่วนกลาง', 'ความปลอดภัย', 'การเดินทาง']
-
-const DEFAULT_AMENITIES: AmenityTag[] = [
-  { id: '1',  name_th: 'เครื่องปรับอากาศ',       name_en: 'Air Conditioning', category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '2',  name_th: 'เฟอร์นิเจอร์ครบ',         name_en: 'Fully Furnished',  category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '3',  name_th: 'อินเทอร์เน็ต',             name_en: 'Internet',         category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '4',  name_th: 'สระว่ายน้ำ',               name_en: 'Swimming Pool',    category: 'บริการส่วนกลาง' },
-  { id: '5',  name_th: 'ฟิตเนส',                   name_en: 'Fitness',          category: 'บริการส่วนกลาง' },
-  { id: '6',  name_th: 'ที่จอดรถ',                 name_en: 'Parking',          category: 'บริการส่วนกลาง' },
-  { id: '7',  name_th: 'รักษาความปลอดภัย 24 ชม.', name_en: '24hr Security',    category: 'ความปลอดภัย' },
-  { id: '8',  name_th: 'กล้องวงจรปิด',             name_en: 'CCTV',             category: 'ความปลอดภัย' },
-  { id: '9',  name_th: 'ใกล้ BTS/MRT',             name_en: 'Near BTS/MRT',     category: 'การเดินทาง' },
-  { id: '10', name_th: 'ใกล้ห้างสรรพสินค้า',       name_en: 'Near Shopping',    category: 'การเดินทาง' },
-  { id: '11', name_th: 'รับสัตว์เลี้ยง',            name_en: 'Pet Friendly',     category: 'ห้องและสิ่งอำนวยความสะดวก' },
-  { id: '12', name_th: 'ลิฟต์',                    name_en: 'Elevator',         category: 'บริการส่วนกลาง' },
-]
+const DEFAULT_AMENITIES: AmenityTag[] = SHARED_DEFAULT_AMENITIES
 
 const DEFAULT_COMPANY_INFO = {
   name_th:   'บริษัท เสปซเวิร์คส จำกัด',
@@ -399,7 +382,7 @@ function TypesAndAmenities() {
   const [propTypes, setPropTypes] = useState<PropertyType[]>(DEFAULT_PROPERTY_TYPES)
   const [amenities, setAmenities] = useState<AmenityTag[]>(DEFAULT_AMENITIES)
   const [newType, setNewType]     = useState({ th: '', en: '' })
-  const [newAm, setNewAm]         = useState({ th: '', en: '', cat: AMENITY_CATEGORIES[0] })
+  const [newAm, setNewAm]         = useState<{ th: string; en: string; sec: AmenitySection }>({ th: '', en: '', sec: 'unit' })
   const [saved, setSaved]         = useState(false)
   const [saving, setSaving]       = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -410,7 +393,14 @@ function TypesAndAmenities() {
       fetch('/api/dashboard/settings?key=amenities').then(r => r.json()),
     ]).then(([ptRes, amRes]) => {
       if (Array.isArray(ptRes.data)) setPropTypes(ptRes.data)
-      if (Array.isArray(amRes.data)) setAmenities(amRes.data)
+      // Older saved lists used four categories; normaliseAmenity maps them onto
+      // the two sections so nothing has to be re-entered by hand.
+      if (Array.isArray(amRes.data) && amRes.data.length) {
+        const list = amRes.data
+          .map((r: Record<string, unknown>, k: number) => normaliseAmenity(r, k))
+          .filter(Boolean) as AmenityTag[]
+        if (list.length) setAmenities(list)
+      }
     }).catch(() => {})
   }, [])
 
@@ -434,9 +424,9 @@ function TypesAndAmenities() {
     setNewType({ th: '', en: '' })
   }
   function addAmenity() {
-    if (!newAm.th || !newAm.en) return
-    setAmenities(a => [...a, { id: String(Date.now()), name_th: newAm.th, name_en: newAm.en, category: newAm.cat }])
-    setNewAm({ th: '', en: '', cat: AMENITY_CATEGORIES[0] })
+    if (!newAm.th) return   // Thai name is the identity; English is optional
+    setAmenities(a => [...a, { id: String(Date.now()), name_th: newAm.th, name_en: newAm.en, section: newAm.sec }])
+    setNewAm({ th: '', en: '', sec: 'unit' })
   }
 
   return (
@@ -491,11 +481,12 @@ function TypesAndAmenities() {
       {/* Amenities */}
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, marginBottom: 20 }}>
         <h3 style={{ fontSize: 14.5, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>สิ่งอำนวยความสะดวก</h3>
-        {AMENITY_CATEGORIES.map(cat => {
-          const items = amenities.filter(a => a.category === cat)
+        {AMENITY_SECTIONS.map(sec => {
+          const cat = sec.label_th
+          const items = amenities.filter(a => a.section === sec.key)
           if (items.length === 0) return null
           return (
-            <div key={cat} style={{ marginBottom: 18 }}>
+            <div key={sec.key} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>{cat}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {items.map(am => (
@@ -527,9 +518,9 @@ function TypesAndAmenities() {
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>หมวดหมู่</label>
-            <select value={newAm.cat} onChange={e => setNewAm(n => ({ ...n, cat: e.target.value }))}
+            <select value={newAm.sec} onChange={e => setNewAm(n => ({ ...n, sec: e.target.value as AmenitySection }))}
               style={{ ...inputStyle, cursor: 'pointer' }}>
-              {AMENITY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {AMENITY_SECTIONS.map(sc => <option key={sc.key} value={sc.key}>{sc.label_th}</option>)}
             </select>
           </div>
           <button onClick={addAmenity} style={{

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AMENITY_SECTIONS, groupSelected } from '@/lib/amenities'
 import { ListingLd, BreadcrumbLd } from '@/components/seo/JsonLd'
 import { createServerClient as buildingClient } from '@/lib/supabase'
 import type { Metadata } from 'next'
@@ -392,19 +393,37 @@ export default async function PropertyDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* Amenities */}
-            {p.amenities.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>สิ่งอำนวยความสะดวก</h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {p.amenities.map((a) => (
-                    <span key={a} style={{ fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500, background: '#eaf6f1', color: '#02402e', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span>{a}
-                    </span>
-                  ))}
+            {/* Amenities — split into what is in the unit and what the building
+                provides. A flat list made a tenant work out which was which. */}
+            {p.amenities.length > 0 && (() => {
+              const grouped = groupSelected(p.amenities)
+              return (
+                <div style={{ marginBottom: 32 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>สิ่งอำนวยความสะดวก</h2>
+                  {AMENITY_SECTIONS.map(sec => {
+                    const items = grouped[sec.key]
+                    if (!items.length) return null
+                    return (
+                      <div key={sec.key} style={{ marginBottom: 16 }}>
+                        <p style={{ fontSize: 12.5, fontWeight: 700, color: '#64748b', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{sec.icon}</span>
+                          {sec.label_th}
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {items.map(a => (
+                            <span key={a} style={{ fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500,
+                              background: sec.key === 'unit' ? '#eaf6f1' : '#f2f9f6',
+                              color: '#02402e', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span>{a}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {/* Map */}
             {p.lat && p.lng && (
