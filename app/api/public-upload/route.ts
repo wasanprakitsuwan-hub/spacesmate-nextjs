@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRate, isSameOrigin, ALLOWED_HOSTS } from '@/lib/rate-limit'
 import { createServerClient } from '@/lib/supabase'
 import sharp from 'sharp'
 
@@ -27,6 +28,20 @@ async function ensureBucket(supabase: ReturnType<typeof createServerClient>) {
 // Public endpoint — no auth required. Used by the public listing submit wizard.
 // Server uses service role key, so anon users can't write directly to Storage.
 export async function POST(req: NextRequest) {
+  // Public by necessity — used by the submit form before an account exists.
+  // currentCount arrives from the client, so the per-package limit below is
+  // advisory only; this is the actual brake on storage abuse.
+  if (!isSameOrigin(req, ALLOWED_HOSTS)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const rl = checkRate(req, 'public-upload', 40, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในภายหลัง' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 })
   }
