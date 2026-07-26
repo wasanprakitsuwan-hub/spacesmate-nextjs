@@ -166,6 +166,8 @@ export async function PATCH(req: NextRequest) {
       'package_type', 'expires_at',
       // extended columns (run supabase/fix-permissions.sql to enable)
       'room_types', 'images', 'video_url',
+      // links the listing to a building page — see lib/buildings.ts
+      'property_name_id',
       // contact fields (run supabase/migrations/20260703_contact_fields.sql)
       'contact_name', 'contact_phone', 'contact_line',
     ]

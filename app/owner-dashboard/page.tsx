@@ -23,6 +23,7 @@ interface SubscriptionItem {
 interface OwnerListing {
   id: string
   slug: string
+  property_name_id?: string | null
   title_th: string
   title_en: string | null
   property_type: string
@@ -189,6 +190,8 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
     facing:        condoRaw.facing       ?? '',
     size_sqm:      String(condoRaw.size_sqm ?? listing.area_sqm ?? ''),
     property_name: condoRaw.property_name ?? '',
+    // stored on the row, not in the JSONB — see lib/buildings.ts
+    property_name_id: String(listing.property_name_id ?? ''),
     price_12mo:    String(condoRaw.price_12mo ?? ''),
     price_6mo:     String(condoRaw.price_6mo  ?? ''),
     price_3mo:     String(condoRaw.price_3mo  ?? ''),

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveBuildingId } from '@/lib/resolve-building'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import Stripe from 'stripe'
@@ -176,8 +177,10 @@ export async function POST(req: NextRequest) {
           const normalizedType = PROP_TYPE_MAP[rawPropType] ?? (rawPropType || 'apartment')
           const safeIntW = (v: unknown) => { const n = parseInt(String(v ?? ''), 10); return isNaN(n) ? null : n }
 
+          const buildingId = await resolveBuildingId(supabase, sub.room_types)
           const { error: propErr } = await supabase.from('properties').insert({
             slug,
+            property_name_id:     buildingId,
             source_submission_id: submissionId,
             landlord_id:          resolvedUserId,   // always the account UUID now
             title_th:             sub.title       || '',

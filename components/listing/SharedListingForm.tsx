@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
 import RichEditor from '@/components/RichEditor'
 
@@ -22,7 +23,11 @@ export interface ApartmentUnitRow {
 
 export interface CondoRentalDetail {
   unit_number: string; floor: string; facing: string; size_sqm: string
+  // property_name is the text the owner sees; property_name_id is the reference
+  // that actually links this listing to a building page. The text is kept so the
+  // form can display something before a match is chosen.
   property_name: string
+  property_name_id: string
   price_12mo: string; price_6mo: string; price_3mo: string; price_1mo: string
 }
 
@@ -63,7 +68,7 @@ export interface FormState {
 // ── Constants ──────────────────────────────────────────────────────────────────
 export const BLANK_CONDO: CondoRentalDetail = {
   unit_number: '', floor: '', facing: '', size_sqm: '',
-  property_name: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
+  property_name: '', property_name_id: '', price_12mo: '', price_6mo: '', price_3mo: '', price_1mo: '',
 }
 export const BLANK_CHARGES: RentalCharges = {
   water_type: 'ask', water_fixed: '', water_min_rate: '',
@@ -154,6 +159,7 @@ export function prepareSubmitData(form: FormState) {
   let room_types: any[] = form.room_types
   let floor: number | null = form.floor ? parseInt(form.floor) : null
   let area_sqm: number | null = form.area_sqm ? parseFloat(form.area_sqm) : null
+  let property_name_id: string | null = null
 
   if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
     const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
@@ -172,10 +178,11 @@ export function prepareSubmitData(form: FormState) {
     room_types = [{ _type: 'rental_detail', ...r }]
     floor      = r.floor ? parseInt(r.floor) : null
     area_sqm   = r.size_sqm ? parseFloat(r.size_sqm) : null
+    property_name_id = r.property_name_id || null
   }
 
   return {
-    price_from, price_to, room_types, floor, area_sqm,
+    price_from, price_to, room_types, floor, area_sqm, property_name_id,
     contact_name:  form.contact_name  || null,
     contact_phone: form.contact_phone || null,
     contact_email: form.contact_email || null,
@@ -291,11 +298,15 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={SLBL}>{isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}</label>
-        <input value={detail.property_name} onChange={e => u('property_name', e.target.value)}
-          placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'} style={SINP} />
-      </div>
+      <BuildingAutocomplete
+        label={isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}
+        labelStyle={SLBL}
+        inputStyle={SINP}
+        value={detail.property_name}
+        valueId={detail.property_name_id}
+        placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'}
+        onChange={(name, id) => { u('property_name', name); u('property_name_id', id) }}
+      />
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
           <label style={SLBL}>{isHouse ? 'บ้านเลขที่ / House No.' : 'เลขห้อง / Unit No.'}</label>

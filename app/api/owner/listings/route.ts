@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(fields.images) && fields.images.length > 0) payload.images = fields.images
     if (fields.video_url) payload.video_url = fields.video_url
+    if (fields.property_name_id) payload.property_name_id = fields.property_name_id
     if (fields.contact_name)  payload.contact_name  = fields.contact_name
     if (fields.contact_phone) payload.contact_phone = fields.contact_phone
     // contact_email is always sourced from the authenticated account — never from user input
@@ -231,6 +232,7 @@ export async function PATCH(req: NextRequest) {
       'address_th', 'district', 'sub_district', 'province', 'postcode',
       'lat', 'lng', 'amenities', 'rental_term', 'images', 'video_url',
       'room_types',  // apartment unit grid, condo rental detail, and rental charges
+      'property_name_id',  // links the listing to a building page — lib/buildings.ts
       'contact_name', 'contact_phone', 'contact_line',
       // contact_email is immutable after creation — always the account email
     ]

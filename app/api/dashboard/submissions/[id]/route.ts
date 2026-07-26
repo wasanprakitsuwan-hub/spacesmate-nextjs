@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveBuildingId } from '@/lib/resolve-building'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
@@ -80,8 +81,10 @@ export async function PATCH(
               return isNaN(n) ? null : n
             }
 
+            const buildingId = await resolveBuildingId(supabase, sub.room_types)
             const { error: propErr } = await supabase.from('properties').insert({
               slug,
+              property_name_id:     buildingId,
               source_submission_id: params.id,
               landlord_id:          sub.user_id        || null,
               title_th:             sub.title          || '',
