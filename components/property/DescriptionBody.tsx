@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 interface Props {
   contentTh: string | null
@@ -47,7 +48,7 @@ export default function DescriptionBody({ contentTh, contentEn }: Props) {
         <div
           className="property-content"
           style={{ color: '#475569', lineHeight: 1.75, fontSize: 15 }}
-          dangerouslySetInnerHTML={{ __html: activeContent }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeContent) }}
         />
       )}
     </div>

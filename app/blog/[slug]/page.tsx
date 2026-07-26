@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { sanitizeHtml } from '@/lib/sanitize'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase'
@@ -214,7 +215,7 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Full content */}
         <div
           className="blog-content text-gray-700 leading-relaxed text-base"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
         />
 
         {/* CTA block */}

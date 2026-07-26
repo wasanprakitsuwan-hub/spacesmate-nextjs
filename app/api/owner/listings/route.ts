@@ -29,32 +29,17 @@ export async function GET(req: NextRequest) {
     const userEmail = auth.email ?? ''
     const supabase  = createServerClient()
 
-    // ── Auto-claim: stamp user_id on submissions with matching email ──────────
-    // Covers submissions created before account existed, or where webhook profile
-    // lookup failed to stamp user_id (e.g. Stripe customer email mismatch).
-    if (userEmail) {
-      const { data: orphaned } = await supabase
-        .from('submissions')
-        .select('id')
-        .eq('contact_email', userEmail)
-        .is('user_id', null)
-        .eq('status', 'approved')
-
-      if (orphaned && orphaned.length > 0) {
-        const orphanIds = orphaned.map((s: { id: string }) => s.id)
-
-        await supabase.from('submissions')
-          .update({ user_id: userId })
-          .in('id', orphanIds)
-
-        await supabase.from('properties')
-          .update({ landlord_id: userId })
-          .in('source_submission_id', orphanIds)
-          .is('landlord_id', null)
-
-        console.log(`[auto-claim] ${orphanIds.length} orphaned submission(s) claimed for ${userEmail}`)
-      }
-    }
+    // ── REMOVED: email-based auto-claim ───────────────────────────────────────
+    // This previously claimed any orphaned submission whose contact_email matched
+    // the caller's account email. That made a mutable field an authorisation key:
+    // whoever controlled an email address could take ownership of a listing.
+    //
+    // Ownership is landlord_id and nothing else. contact_email describes who
+    // tenants should contact — it may legitimately be a building manager or agent
+    // — and must never grant access.
+    //
+    // The user_id-based repair below is kept: it uses ownership that has already
+    // been established, and only fills a null landlord_id left by webhook timing.
 
     // ── Auto-claim: fix properties where submission is already owned but
     //    properties.landlord_id is null (webhook timing / profile lookup failure) ─
