@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { properties } from '@/lib/property-data'
 
 interface StatsData {
+  activeListings: number
+  listingsByType: Record<string, number>
   total: number
   pending: number
   approved: number
@@ -62,14 +63,9 @@ export default function DashboardOverview() {
 
   const now = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-  // Build byType from static property data (real live listings)
-  const staticByType: Record<string, number> = {}
-  for (const p of properties) {
-    const t = p.propertyType === 'Co-Working' ? 'Coworking' : p.propertyType
-    staticByType[t] = (staticByType[t] || 0) + 1
-  }
-
-  const byType = staticByType
+  // Live counts from the database. This previously read a hardcoded demo array,
+  // which meant every number on this screen was fiction.
+  const byType: Record<string, number> = stats?.listingsByType ?? {}
   const maxTypeCount = Math.max(...ALL_TYPES.map(t => byType[t] ?? 0), 1)
 
   return (
@@ -95,7 +91,7 @@ export default function DashboardOverview() {
             {[
               {
                 label: 'ประกาศทั้งหมด',
-                value: properties.length,
+                value: stats?.activeListings ?? 0,
                 delta: `${stats?.pending ?? 0} คำขอรอตรวจสอบ`,
                 deltaColor: (stats?.pending ?? 0) > 0 ? '#d97f11' : '#22c55e',
                 iconBg: '#e8f5f0',

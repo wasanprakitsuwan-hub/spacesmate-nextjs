@@ -15,7 +15,21 @@ interface Props {
 // slug is string[] because this is a catch-all route ([...slug])
 // e.g. /property/lumpini-place/condo-abc → ['lumpini-place', 'condo-abc']
 export async function generateStaticParams() {
-  return properties.map((p) => ({ slug: p.slug.split('/') }))
+  // Real listings only. This used to pre-render the hardcoded demo array from
+  // lib/property-data.ts, generating pages for properties that do not exist.
+  try {
+    const supabase = createServerClient()
+    const { data } = await supabase
+      .from('properties')
+      .select('slug')
+      .eq('listing_status', 'active')
+      .limit(5000)
+    return (data ?? [])
+      .filter(p => p.slug)
+      .map(p => ({ slug: String(p.slug).split('/') }))
+  } catch {
+    return []
+  }
 }
 
 // Allow runtime resolution of slugs not in generateStaticParams (e.g. DB listings)
@@ -83,21 +97,26 @@ function normalizeDbListing(raw: any): Property {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = params.slug.map(s => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
-  const staticP = getPropertyBySlug(slug)
-  if (staticP) {
-    return {
-      title: `${staticP.title} | SpacesMate`,
-      description: staticP.excerpt,
-      openGraph: {
-        title: staticP.title,
-        description: staticP.excerpt,
-        images: staticP.image ? [{ url: staticP.image, alt: staticP.title }] : [],
-        type: 'website',
-      },
-    }
-  }
+  // Database first. Static data is legacy demo content, and checking it first
+  // let a stale entry shadow a real listing that shared a slug.
   const raw = await getDbPropertyRaw(slug)
-  if (!raw) return { title: 'ไม่พบประกาศ | SpacesMate' }
+
+  if (!raw) {
+    const staticP = getPropertyBySlug(slug)
+    if (staticP) {
+      return {
+        title: `${staticP.title} | SpacesMate`,
+        description: staticP.excerpt,
+        openGraph: {
+          title: staticP.title,
+          description: staticP.excerpt,
+          images: staticP.image ? [{ url: staticP.image, alt: staticP.title }] : [],
+          type: 'website',
+        },
+      }
+    }
+    return { title: 'ไม่พบประกาศ | SpacesMate' }
+  }
   const title = raw.title_th || raw.title_en || 'ประกาศ'
   return {
     title: `${title} | SpacesMate`,
@@ -118,8 +137,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   // decodeURIComponent handles Next.js 14 bug where Thai params arrive percent-encoded
   const slug = params.slug.map(s => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
 
-  // 1. Try static data first (builds fast from property-data.ts)
-  const staticP = getPropertyBySlug(slug)
+  // Database first — see generateMetadata above for why.
 
   let p: Property
   let content: string | null = null
@@ -130,13 +148,14 @@ export default async function PropertyDetailPage({ params }: Props) {
   // Raw room_types JSONB from DB (for apartment units, charges, etc.)
   let rawRoomTypes: any[] = []
 
+  const raw = await getDbPropertyRaw(slug)
+  const staticP = raw ? null : getPropertyBySlug(slug)
+
   if (staticP) {
     p = staticP
-    // Fetch WP HTML content at runtime (cached by Next.js)
+    // Legacy WordPress content, fetched at runtime and cached by Next.js
     content = await fetchPropertyContent(p.id)
   } else {
-    // 2. Fall back to Supabase for admin-created / user-submitted listings
-    const raw = await getDbPropertyRaw(slug)
     if (!raw) notFound()
     p = normalizeDbListing(raw)
     content = raw.description_th || null

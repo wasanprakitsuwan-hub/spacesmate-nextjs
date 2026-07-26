@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { FaqLd } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -93,8 +94,32 @@ const FAQS = [
   },
 ]
 
+
+// Must mirror the FAQ rendered below. Schema that doesn't match visible content
+// is a guidelines violation, not a shortcut.
+const PRICING_FAQ = [
+  {
+    q: '1 แพ็กเกจ = 1 ประกาศ หมายความว่าอย่างไร?',
+    a: 'แต่ละแพ็กเกจรองรับ 1 ประกาศ ถ้าต้องการลงหลายห้องหรือหลายทรัพย์ สามารถซื้อหลายแพ็กเกจแยกกันได้ไม่จำกัดจำนวน แต่ละประกาศนับและจัดการแยกกันในแดชบอร์ด',
+  },
+  {
+    q: 'ชำระเงินอย่างไร?',
+    a: 'ชำระผ่าน Stripe รองรับบัตรเครดิตและเดบิตทุกธนาคาร ประกาศจะเผยแพร่ทันทีอัตโนมัติหลังชำระสำเร็จ ไม่ต้องรอทีมงาน',
+  },
+  {
+    q: 'แพ็กเกจหมดอายุแล้ว ต่ออายุหรืออัปเกรดได้ไหม?',
+    a: 'ได้ สามารถซื้อแพ็กเกจใหม่ได้ตลอดเวลา หรืออัปเกรดจาก Basic เป็น Standard หรือ Premium เพื่อระยะเวลาและจำนวนรูปภาพที่มากขึ้น',
+  },
+  {
+    q: 'SpacesMate ต่างจากเว็บประกาศอสังหาทั่วไปอย่างไร?',
+    a: 'SpacesMate ใช้ระบบ Fair Rotation ประกาศจะหมุนขึ้นหน้าแรกแบบสุ่มโดยอัตโนมัติ ไม่มีระบบจ่ายเงินเพื่อขึ้นอันดับ ทุกประกาศมีโอกาสแสดงผลเท่าเทียมกัน',
+  },
+]
+
 export default function PricingPage() {
   return (
+    <>
+      <FaqLd qa={PRICING_FAQ} />
     <div className="bg-white min-h-screen">
 
       {/* Header */}
@@ -194,5 +219,6 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

@@ -39,6 +39,28 @@ export async function GET(req: NextRequest) {
         .limit(6),
     ])
 
+    // ── Real listings ────────────────────────────────────────────────────────
+    // The dashboard previously counted a hardcoded demo array in
+    // lib/property-data.ts, so every figure shown was fiction. These are the
+    // actual rows in `properties`.
+    const [{ count: activeListings }, { data: liveTypes }] = await Promise.all([
+      supabase.from('properties').select('*', { count: 'exact', head: true })
+        .eq('listing_status', 'active'),
+      supabase.from('properties').select('property_type')
+        .eq('listing_status', 'active'),
+    ])
+
+    // DB stores lowercase; the dashboard renders Capitalised labels.
+    const DISPLAY: Record<string, string> = {
+      condo: 'Condo', apartment: 'Apartment', house: 'House',
+      office: 'Office', coworking: 'Coworking',
+    }
+    const listingsByType: Record<string, number> = {}
+    for (const row of liveTypes ?? []) {
+      const key = DISPLAY[String(row.property_type ?? '').toLowerCase()] ?? 'Other'
+      listingsByType[key] = (listingsByType[key] || 0) + 1
+    }
+
     // Count by type
     const typeMap: Record<string, number> = {}
     for (const row of byTypeRaw ?? []) {
@@ -53,6 +75,8 @@ export async function GET(req: NextRequest) {
     const uniqueUsers = new Set((emailRows ?? []).map(r => r.contact_email).filter(Boolean)).size
 
     return NextResponse.json({
+      activeListings: activeListings ?? 0,
+      listingsByType,
       total: total ?? 0,
       pending: pending ?? 0,
       approved: approved ?? 0,
@@ -66,6 +90,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('stats error:', err)
     return NextResponse.json({
+      activeListings: 0, listingsByType: {},
       total: 0, pending: 0, approved: 0, rejected: 0, thisMonth: 0,
       byType: {}, staleCount: 0, uniqueUsers: 0, recentActivity: [],
     }, { status: 500 })
