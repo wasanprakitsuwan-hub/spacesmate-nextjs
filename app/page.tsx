@@ -29,6 +29,7 @@ import WhySpacesMate from '@/components/sections/WhySpacesMate'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
+import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
 
 export default function HomePage() {
   return (
@@ -40,6 +41,7 @@ export default function HomePage() {
       <ManagementCTA />
       <BlogSection />
       <AreaLinks />
+      <GeneratedAreaLinks />
     </>
   )
 }

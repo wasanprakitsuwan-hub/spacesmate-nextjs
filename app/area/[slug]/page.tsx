@@ -3,6 +3,7 @@ import { ItemListLd, BreadcrumbLd } from '@/components/seo/JsonLd'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { AREA_KEYWORDS } from '@/lib/constants'
+import { getGeneratedArea, getGeneratedAreas } from '@/lib/areas'
 import { AREA_CONTENT } from '@/lib/area-content'
 import { createServerClient } from '@/lib/supabase'
 
@@ -29,13 +30,33 @@ const AREA_MATCH: Record<string, { type: string; terms: string[] }> = {
 }
 
 export async function generateStaticParams() {
-  return AREA_KEYWORDS.map(a => ({ slug: a.slug }))
+  // Hand-written slugs plus every (district, type) pair with live inventory.
+  const generated = await getGeneratedAreas()
+  return [
+    ...AREA_KEYWORDS.map(a => ({ slug: a.slug })),
+    ...generated.map(a => ({ slug: a.slug })),
+  ]
 }
 export const dynamicParams = true
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const area = AREA_KEYWORDS.find(a => a.slug === params.slug)
-  if (!area) return { title: 'ไม่พบหน้า | SpacesMate' }
+
+  if (!area) {
+    // Data-driven area page
+    const gen = await getGeneratedArea(params.slug)
+    if (!gen) return { title: 'ไม่พบหน้า | SpacesMate' }
+    const title = `${gen.labelTh} — ${gen.count} ประกาศ | SpacesMate`
+    const description =
+      `${gen.labelTh} ในกรุงเทพฯ รวม ${gen.count} ประกาศให้เช่า ` +
+      `ดูราคา รูปภาพ และติดต่อเจ้าของโดยตรงที่ SpacesMate`
+    return {
+      title,
+      description,
+      openGraph: { title, description, type: 'website' },
+      alternates: { canonical: `/area/${encodeURI(gen.slug)}` },
+    }
+  }
   const content = AREA_CONTENT[params.slug]
   const description = content
     ? content.body_th[0].slice(0, 155)
@@ -68,8 +89,18 @@ const MATCH_TYPE_TO_DB: Record<string, string> = {
 }
 
 export default async function AreaPage({ params }: Props) {
-  const area = AREA_KEYWORDS.find(a => a.slug === params.slug)
-  if (!area) notFound()
+  const hardcoded = AREA_KEYWORDS.find(a => a.slug === params.slug)
+  const generated = hardcoded ? null : await getGeneratedArea(params.slug)
+  if (!hardcoded && !generated) notFound()
+
+  // Generated pages present the same shape as the hand-written ones so the whole
+  // template below works unchanged.
+  const area = hardcoded ?? {
+    slug: generated!.slug,
+    label_th: generated!.labelTh,
+    label_en: generated!.labelEn,
+    property_type: generated!.propertyType as typeof AREA_KEYWORDS[number]['property_type'],
+  }
 
   const content = AREA_CONTENT[params.slug]
   const match = AREA_MATCH[params.slug]
@@ -86,7 +117,19 @@ export default async function AreaPage({ params }: Props) {
   }
   let areaProps: AreaProp[] = []
 
-  if (match) {
+  if (generated) {
+    // Exact field match — no substring guessing. This is the whole point of
+    // generating from data: a listing cannot be missed because its address text
+    // happened not to contain the area name.
+    const supabase = createServerClient()
+    const { data } = await supabase
+      .from('properties')
+      .select('slug, property_type, title_th, district, address_th, images, price_from')
+      .eq('listing_status', 'active')
+      .eq('property_type', generated.propertyType)
+      .eq('district', generated.district)
+    areaProps = data ?? []
+  } else if (match) {
     const supabase = createServerClient()
     const dbType = MATCH_TYPE_TO_DB[match.type] ?? match.type.toLowerCase()
     const { data } = await supabase
@@ -103,9 +146,18 @@ export default async function AreaPage({ params }: Props) {
   }
 
   // Related areas (same property type)
-  const related = AREA_KEYWORDS
+  let related: { slug: string; label_th: string; label_en: string }[] = AREA_KEYWORDS
     .filter(a => a.slug !== params.slug && a.property_type === area.property_type)
     .slice(0, 4)
+    .map(a => ({ slug: a.slug, label_th: a.label_th, label_en: a.label_en }))
+
+  if (generated) {
+    const all = await getGeneratedAreas()
+    related = all
+      .filter(a => a.slug !== generated.slug && a.propertyType === generated.propertyType)
+      .slice(0, 4)
+      .map(a => ({ slug: a.slug, label_th: a.labelTh, label_en: a.labelEn }))
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -300,7 +352,7 @@ export default async function AreaPage({ params }: Props) {
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 16px' }}>ทำเลใกล้เคียงที่น่าสนใจ</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }} className="sm-related4">
               {related.map(r => (
-                <Link key={r.slug} href={`/area/${r.slug}`}
+                <Link key={r.slug} href={`/area/${encodeURI(r.slug)}`}
                   style={{ padding: '14px 16px', background: '#f7f9f8', border: '1px solid #eef0ef', borderRadius: 14, textDecoration: 'none', display: 'block', transition: 'all .2s' }}
                   className="sm-area-related">
                   <p style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', margin: '0 0 4px' }}>{r.label_th}</p>

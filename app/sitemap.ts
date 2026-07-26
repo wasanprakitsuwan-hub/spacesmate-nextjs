@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { AREA_KEYWORDS } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase'
+import { getGeneratedAreas } from '@/lib/areas'
 
 const SITE = 'https://spacesmate.com'
 
@@ -45,6 +46,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/area/${a.slug}`,    changeFrequency: 'weekly' as const, priority: 0.8, lastModified: now },
     { url: `${SITE}/en/area/${a.slug}`, changeFrequency: 'weekly' as const, priority: 0.6, lastModified: now },
   ]))
+
+  // ── Data-driven area pages ─────────────────────────────────────────────────
+  // One per (district, property type) with live inventory. These are the pages
+  // that actually compete for "เช่าคอนโด บางนา" style queries.
+  const generated = await getGeneratedAreas()
+  const generatedAreaPages: MetadataRoute.Sitemap = generated.map(a => ({
+    url: encodeURI(`${SITE}/area/${a.slug}`),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+    lastModified: now,
+  }))
 
   // ── Live data ──────────────────────────────────────────────────────────────
   // A sitemap must never break the build. If Supabase is unavailable we still
@@ -97,5 +109,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...areaPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...areaPages, ...generatedAreaPages, ...propertyPages, ...blogPages]
 }
