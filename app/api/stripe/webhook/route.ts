@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { resolveBuildingId } from '@/lib/resolve-building'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
-import { grantSlots, extendSlotsForSubscription } from '@/lib/slots'
+import { grantSlots, extendSlotsForSubscription, claimSlot, syncListingFromSlot } from '@/lib/slots'
 import Stripe from 'stripe'
 import { sendNewListingAlert, sendListingConfirmation, sendPaymentConfirmation } from '@/lib/email'
 
@@ -52,6 +52,34 @@ export async function POST(req: NextRequest) {
         stripeCustomerId:       customerId,
       })
       console.log(`[slots] granted ${granted}×${packageId} to ${userId}`)
+
+      // Renewal came through this route: publish the listing straight into the
+      // slot it just paid for. Ownership was verified in buy-slots, where there
+      // was a session to verify it against — re-check the owner here anyway,
+      // because webhook metadata should never be trusted on its own.
+      const publishId = session.metadata?.publish_property_id
+      if (granted > 0 && publishId) {
+        try {
+          const { data: target } = await supabase
+            .from('properties')
+            .select('id, landlord_id')
+            .eq('id', publishId)
+            .maybeSingle()
+
+          if (target?.landlord_id === userId) {
+            const slot = await claimSlot(supabase, userId, publishId)
+            if (slot) {
+              await syncListingFromSlot(supabase, slot)
+              console.log(`[slots] auto-published ${publishId} into slot ${slot.id}`)
+            }
+          } else {
+            console.error('[slots] publish_property_id does not belong to buyer — ignored')
+          }
+        } catch (pubErr) {
+          // The slot is still granted; they can publish by hand.
+          console.error('[slots] auto-publish (non-fatal):', pubErr)
+        }
+      }
 
       // Keep the profile in step so anything still reading package_type there
       // (the role API, the admin screen) sees an active customer.

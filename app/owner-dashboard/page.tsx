@@ -480,15 +480,24 @@ export default function OwnerDashboardPage() {
     }
   }
 
+  /**
+   * "Renew" is not a separate concept any more — it is buying a slot and putting
+   * this listing back into it. Same purchase, same entitlement, same reusable
+   * term as any other slot.
+   *
+   * publish_property_id tells the webhook to publish this listing automatically
+   * once the slot exists, so the owner does not come back from Stripe to a
+   * listing that is still down.
+   */
   async function renewListing(listingId: string, packageId: string) {
     setRenewing(true)
     setRenewError('')
     try {
       const { data: { session } } = await createBrowserClient().auth.getSession()
-      const r = await fetch('/api/stripe/renew', {
+      const r = await fetch('/api/stripe/buy-slots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ property_id: listingId, package_id: packageId }),
+        body: JSON.stringify({ package_id: packageId, quantity: 1, publish_property_id: listingId }),
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error ?? 'เกิดข้อผิดพลาด')
@@ -834,7 +843,7 @@ export default function OwnerDashboardPage() {
                 <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>
               </div>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ต่ออายุประกาศ</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ซื้อสล็อตเพื่อเผยแพร่อีกครั้ง</h3>
                 <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>{renewTarget.title_th}</p>
               </div>
             </div>

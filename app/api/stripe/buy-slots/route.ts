@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { package_id = 'basic', quantity = 1 } = await req.json()
+    const { package_id = 'basic', quantity = 1, publish_property_id = null } = await req.json()
 
     const priceId = STRIPE_PRICES[package_id as keyof typeof STRIPE_PRICES]
     if (!priceId) return NextResponse.json({ error: 'Invalid package' }, { status: 400 })
@@ -29,6 +29,21 @@ export async function POST(req: NextRequest) {
     const qty = Math.max(1, Math.min(Math.floor(Number(quantity) || 1), 50))
 
     const supabase = createServerClient()
+
+    // Optional: publish this listing into the slot as soon as it exists, so
+    // "renew" is one step for the customer rather than pay-then-go-find-it.
+    // Ownership is checked HERE, not in the webhook, where a forged metadata
+    // value would arrive with no session to verify it against.
+    let publishId: string | null = null
+    if (publish_property_id) {
+      const { data: owned } = await supabase
+        .from('properties')
+        .select('id, landlord_id')
+        .eq('id', publish_property_id)
+        .maybeSingle()
+      if (owned?.landlord_id === auth.id) publishId = owned.id as string
+    }
+
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('email, stripe_customer_id')
@@ -55,6 +70,7 @@ export async function POST(req: NextRequest) {
           package_id,
           quantity:      String(qty),
           duration_days: String(days),
+          publish_property_id: publishId ?? '',
         },
       },
       metadata: {
@@ -62,6 +78,7 @@ export async function POST(req: NextRequest) {
         user_id:       auth.id,
         package_id,
         quantity:      String(qty),
+        publish_property_id: publishId ?? '',
       },
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}`,
       cancel_url:  `${siteUrl}/pricing`,
