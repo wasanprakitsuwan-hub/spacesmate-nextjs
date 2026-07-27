@@ -43,7 +43,15 @@ export default function LoginPage() {
           headers: { Authorization: `Bearer ${data.session?.access_token}` },
         })
         const { role } = await r.json()
-        router.push(role === 'admin' || role === 'super_admin' ? '/dashboard' : '/owner-dashboard')
+
+        // Honour ?redirect= so someone sent here mid-task (buying slots from
+        // /pricing, for example) lands back where they were rather than on a
+        // dashboard, having to find their way again.
+        // Only same-site paths — an open redirect is a phishing primitive.
+        const wanted = new URLSearchParams(window.location.search).get('redirect')
+        const safe = wanted && wanted.startsWith('/') && !wanted.startsWith('//') ? wanted : null
+
+        router.push(safe ?? (role === 'admin' || role === 'super_admin' ? '/dashboard' : '/owner-dashboard'))
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

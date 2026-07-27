@@ -164,8 +164,8 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
       if (!res.ok) throw new Error(d.error || 'ไม่สำเร็จ')
       // Tell them plainly which of the two things just happened. Saving work and
       // silently not publishing it is the worst possible outcome here.
-      if (d?.listing?.listing_status === 'draft') {
-        alert('บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีแพ็กเกจว่าง\nซื้อแพ็กเกจแล้วกดปุ่ม “เผยแพร่” ในตารางประกาศได้ทันที')
+      if (d?.published === false || d?.listing?.listing_status === 'draft') {
+        alert('บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศถูกเก็บไว้ครบถ้วน แต่ยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีสล็อตว่าง\n1 สล็อต = เผยแพร่ได้ 1 ประกาศ — ซื้อสล็อตแล้วกด “เผยแพร่” ได้ทันที ไม่ต้องกรอกใหม่')
       }
       onCreated(); onClose()
     } catch (err: any) { setError(err.message || 'เกิดข้อผิดพลาด') }
@@ -367,6 +367,7 @@ export default function OwnerDashboardPage() {
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
+  const [freeSlots,          setFreeSlots]          = useState(0)
   const [publishing,         setPublishing]         = useState<string | null>(null)
   const [publishError,       setPublishError]       = useState('')
 
@@ -379,14 +380,12 @@ export default function OwnerDashboardPage() {
     (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
     hasActiveListing
 
-  // Slot logic: slots available = active subscriptions − active listings
-  const activeSubCount = subscriptions.filter(s =>
-    s.stripe_status === 'active' || s.stripe_status === 'trialing'
-  ).length
-  const activeListingCount = listings.filter(l =>
-    l.listing_status === 'active' && l.expires_at && new Date(l.expires_at) > new Date()
-  ).length
-  const canCreateNew = activeSubCount > activeListingCount
+  // Slots are a real table now (listing_slots), counted server-side and returned
+  // by /api/owner/listings. This used to be inferred as
+  // `activeSubCount > activeListingCount`, which was only ever an approximation
+  // — it could not see a slot bought ahead of time or one freed by taking a
+  // listing down.
+  const canPublishMore = freeSlots > 0
 
   const load = useCallback(async (_uid?: string) => {
     setLoading(true)
@@ -397,6 +396,7 @@ export default function OwnerDashboardPage() {
     ])
     const [ld, sd] = await Promise.all([lr.json(), sr.json()])
     setListings(ld.listings ?? [])
+    setFreeSlots(ld.free_slots ?? 0)
     setSubscriptions(sd.subscriptions ?? [])
     setLoading(false)
   }, [])
@@ -554,6 +554,19 @@ export default function OwnerDashboardPage() {
     setPublishing(null)
   }
 
+  async function unpublishListing(id: string) {
+    if (!confirm('นำประกาศนี้ลงจากเว็บไซต์?\n\nประกาศจะกลับไปเป็นฉบับร่าง และสล็อตจะว่างพร้อมวันที่เหลือ — ใช้กับประกาศอื่นได้ทันที')) return
+    setPublishing(id)
+    const { data: { session: uSess } } = await createBrowserClient().auth.getSession()
+    await fetch('/api/owner/listings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${uSess?.access_token}` },
+      body: JSON.stringify({ id, unpublish: true }),
+    })
+    await load()
+    setPublishing(null)
+  }
+
   const drafts   = listings.filter(l => l.listing_status === 'draft').length
   const active   = listings.filter(l => l.listing_status === 'active').length
   const expiring = listings.filter(l => { const d = daysLeft(l.expires_at); return d !== null && d > 0 && d <= 7 }).length
@@ -594,14 +607,13 @@ export default function OwnerDashboardPage() {
           >
             + เพิ่มประกาศใหม่
           </button>
-          {!canCreateNew && (
+          {!canPublishMore && (
             <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right', maxWidth: 260 }}>
               <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>info</span>
-              {hasPackage ? (
-                <>แพ็กเกจถูกใช้งานครบแล้ว — บันทึกเป็นฉบับร่างได้{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อเพิ่มเพื่อเผยแพร่</a></>
-              ) : (
-                <>สร้างประกาศได้เลย จะบันทึกเป็นฉบับร่าง{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>{' '}เมื่อพร้อมเผยแพร่</>
-              )}
+              {/* Slots, not packages: the wall is capacity, and the listing is
+                  never lost — it waits as a draft until one is free. */}
+              <>สล็อตใช้งานครบแล้ว — เขียนประกาศเก็บเป็นฉบับร่างได้{' '}
+              <a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อสล็อตเพิ่ม</a>{' '}เพื่อเผยแพร่</>
             </p>
           )}
         </div>
@@ -623,6 +635,7 @@ export default function OwnerDashboardPage() {
           { label: 'เผยแพร่อยู่',           value: active,          color: '#048c73', bg: '#eaf6f1' },
           { label: 'ใกล้หมดอายุ (7 วัน)', value: expiring,        color: '#d97f11', bg: '#fdf3e3' },
           ...(drafts > 0 ? [{ label: 'ฉบับร่าง', value: drafts, color: '#4338ca', bg: '#e0e7ff' }] : []),
+          { label: 'สล็อตว่าง', value: freeSlots, color: freeSlots > 0 ? '#048c73' : '#94a3b8', bg: '#eaf6f1' },
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '18px 20px', boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: s.color, letterSpacing: '-1px' }}>{s.value}</div>
@@ -1058,13 +1071,19 @@ export default function OwnerDashboardPage() {
                         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                           {l.listing_status === 'draft' ? (
                             <button
-                              onClick={() => publishListing(l.id)}
+                              onClick={() => {
+                                // A slot is capacity, not a purchase of this
+                                // listing — with none free the answer is to buy
+                                // capacity, not to check out against this row.
+                                if (canPublishMore) { publishListing(l.id); return }
+                                window.location.href = '/pricing'
+                              }}
                               disabled={publishing === l.id}
-                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canCreateNew ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
-                              title={canCreateNew ? 'เผยแพร่ประกาศนี้' : 'ยังไม่มีแพ็กเกจว่าง — กดเพื่อดูรายละเอียด'}
+                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canPublishMore ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
+                              title={canPublishMore ? 'เผยแพร่ประกาศนี้ทันที' : 'ไม่มีสล็อตว่าง — ซื้อสล็อตเพื่อเผยแพร่'}
                             >
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>publish</span>
-                              {publishing === l.id ? '…' : 'เผยแพร่'}
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{canPublishMore ? 'publish' : 'shopping_cart'}</span>
+                              {publishing === l.id ? '…' : canPublishMore ? 'เผยแพร่' : 'ซื้อสล็อต'}
                             </button>
                           ) : l.listing_status === 'expired' ? (
                             // Expired: show Renew button prominently
@@ -1077,6 +1096,13 @@ export default function OwnerDashboardPage() {
                             <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
                           )}
                           <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
+                          {l.listing_status === 'active' && (
+                            <button onClick={() => unpublishListing(l.id)} disabled={publishing === l.id}
+                              title="นำประกาศลง — สล็อตจะว่างและใช้กับประกาศอื่นได้ตามวันที่เหลือ"
+                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                              <span className="msym" style={{ fontSize: 14 }}>visibility_off</span>
+                            </button>
+                          )}
                           <button onClick={() => deleteListing(l.id)} disabled={deleting === l.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === l.id ? 0.5 : 1 }}>
                             {deleting === l.id ? '…' : 'ลบ'}
                           </button>

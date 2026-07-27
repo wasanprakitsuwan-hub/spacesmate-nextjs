@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FaqLd } from '@/components/seo/JsonLd'
+import BuySlotsCta from '@/components/pricing/BuySlotsCta'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -191,16 +191,16 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <Link
-                href={plan.ctaHref}
-                className={`block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+              {/* Sells slots, not listings — see components/pricing/BuySlotsCta */}
+              <BuySlotsCta
+                pkg={plan.ctaHref.split('package=')[1] ?? 'basic'}
+                label={plan.cta}
+                className={`w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${
                   plan.highlight
                     ? 'bg-spacemate-brandDark text-white hover:bg-spacemate-brandTeal'
                     : 'border border-spacemate-brandDark text-spacemate-brandDark hover:bg-spacemate-brandDark hover:text-white'
                 }`}
-              >
-                {plan.cta}
-              </Link>
+              />
             </div>
           ))}
         </div>

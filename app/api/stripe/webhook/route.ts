@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { resolveBuildingId } from '@/lib/resolve-building'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
+import { grantSlots, extendSlotsForSubscription } from '@/lib/slots'
 import Stripe from 'stripe'
 import { sendNewListingAlert, sendListingConfirmation, sendPaymentConfirmation } from '@/lib/email'
 
@@ -27,6 +28,48 @@ export async function POST(req: NextRequest) {
     const packageId      = session.metadata?.package_id || 'basic'
     const subscriptionId = session.subscription as string | null
     const customerId     = session.customer as string | null
+
+    // ── Slot purchase: grant entitlement, touch no listing ───────────────────
+    //
+    // Checked first because it is the only path with no listing in it at all.
+    // The customer bought the right to publish; which listing they use it for is
+    // their decision, made later, on the dashboard.
+    if (session.metadata?.slot_purchase === 'true') {
+      const userId   = session.metadata?.user_id
+      const quantity = parseInt(session.metadata?.quantity || '1', 10)
+
+      if (!userId) {
+        // Nothing sensible to do — grant nothing rather than guess an owner.
+        console.error('[slots] checkout completed without user_id', session.id)
+        return NextResponse.json({ received: true })
+      }
+
+      const granted = await grantSlots(supabase, {
+        userId,
+        packageType:            packageId,
+        quantity,
+        stripeSubscriptionId:   subscriptionId,
+        stripeCustomerId:       customerId,
+      })
+      console.log(`[slots] granted ${granted}×${packageId} to ${userId}`)
+
+      // Keep the profile in step so anything still reading package_type there
+      // (the role API, the admin screen) sees an active customer.
+      try {
+        const expires = new Date()
+        expires.setDate(expires.getDate() + (PACKAGE_DAYS[packageId] ?? 30))
+        await supabase.from('user_profiles').update({
+          package_type:           packageId,
+          package_expires_at:     expires.toISOString(),
+          stripe_subscription_id: subscriptionId,
+          stripe_customer_id:     customerId,
+        }).eq('id', userId)
+      } catch (profileErr) {
+        console.error('[slots profile sync] non-fatal:', profileErr)
+      }
+
+      return NextResponse.json({ received: true })
+    }
 
     // ── Renewal path: reactivate an existing property row ─────────────────────
     if (session.metadata?.renew_property_id) {
@@ -263,6 +306,30 @@ export async function POST(req: NextRequest) {
     const expiresAt    = new Date()
     expiresAt.setDate(expiresAt.getDate() + durationDays)
 
+    // Slots renew on the same invoice. Extending from the later of now and the
+    // current expiry means paying early adds time instead of resetting it.
+    try {
+      const extended = await extendSlotsForSubscription(supabase, subscriptionId, packageId)
+      if (extended > 0) {
+        console.log(`[slots] extended ${extended} slot(s) on ${subscriptionId}`)
+        // Mirror onto whatever listings occupy them.
+        const { data: occupied } = await supabase
+          .from('listing_slots')
+          .select('property_id, expires_at, package_type')
+          .eq('stripe_subscription_id', subscriptionId)
+          .not('property_id', 'is', null)
+        for (const slot of occupied ?? []) {
+          await supabase.from('properties').update({
+            listing_status: 'active',
+            package_type:   slot.package_type,
+            expires_at:     slot.expires_at,
+          }).eq('id', slot.property_id)
+        }
+      }
+    } catch (slotErr) {
+      console.error('[slots renewal] non-fatal:', slotErr)
+    }
+
     const { data: renewedSub, error } = await supabase
       .from('submissions')
       .update({ status: 'approved', expires_at: expiresAt.toISOString() })
@@ -349,6 +416,32 @@ export async function POST(req: NextRequest) {
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object as Stripe.Subscription
     const subscriptionId = subscription.id
+
+    // Cancelled slots stop being usable, and whatever they were holding comes
+    // down. The listing itself is untouched — it reverts to a draft the owner
+    // still owns and can republish by buying another slot.
+    try {
+      const { data: dead } = await supabase
+        .from('listing_slots')
+        .select('id, property_id')
+        .eq('stripe_subscription_id', subscriptionId)
+
+      if (dead?.length) {
+        await supabase.from('listing_slots')
+          .update({ status: 'cancelled', property_id: null, updated_at: new Date().toISOString() })
+          .eq('stripe_subscription_id', subscriptionId)
+
+        for (const slot of dead) {
+          if (!slot.property_id) continue
+          await supabase.from('properties')
+            .update({ listing_status: 'expired', expires_at: null })
+            .eq('id', slot.property_id)
+        }
+        console.log(`[slots] cancelled ${dead.length} slot(s) on ${subscriptionId}`)
+      }
+    } catch (slotErr) {
+      console.error('[slots cancellation] non-fatal:', slotErr)
+    }
 
     const { data: cancelledSub, error } = await supabase
       .from('submissions')

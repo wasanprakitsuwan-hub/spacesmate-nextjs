@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
+import { claimSlot, countFreeSlots, releaseSlot, syncListingFromSlot } from '@/lib/slots'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
@@ -69,63 +70,17 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return NextResponse.json({ listings: data ?? [] })
+    // The dashboard used to derive this from subscription counts. It is a real
+    // number now, counted where the slots actually live.
+    const freeSlots = await countFreeSlots(supabase, userId)
+    return NextResponse.json({ listings: data ?? [], free_slots: freeSlots })
   } catch (err: any) {
     console.error('owner GET error:', err)
-    return NextResponse.json({ listings: [] })
+    return NextResponse.json({ listings: [], free_slots: 0 })
   }
 }
 
 // ── POST — create a new listing for the owner ─────────────────────────────────
-
-/**
- * A "slot" is an active package that no live listing is using.
- *
- * The dashboard already worked this way — it just expressed it as a disabled
- * "add listing" button. Letting someone write the listing anyway and saving it
- * as a draft separates two very different reasons for giving up: the form was
- * too much, or the price was.
- *
- * Counted server-side. The client's own count is for display; it must not decide
- * whether something gets published.
- */
-async function hasFreeSlot(
-  supabase: ReturnType<typeof createServerClient>,
-  userId: string,
-): Promise<boolean> {
-  try {
-    const [{ count: liveListings }, { data: profile }] = await Promise.all([
-      supabase.from('properties')
-        .select('*', { count: 'exact', head: true })
-        .eq('landlord_id', userId)
-        .eq('listing_status', 'active'),
-      supabase.from('user_profiles')
-        .select('package_type, package_expires_at')
-        .eq('id', userId)
-        .maybeSingle(),
-    ])
-
-    const { count: paidSubs } = await supabase.from('submissions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'approved')
-      .gt('expires_at', new Date().toISOString())
-
-    // A profile package with a future expiry counts as one slot when there are
-    // no submission-backed ones — covers listings created before subscriptions.
-    const profileSlot =
-      profile?.package_type && (!profile.package_expires_at || new Date(profile.package_expires_at) > new Date())
-        ? 1 : 0
-
-    const slots = Math.max(paidSubs ?? 0, profileSlot)
-    return slots > (liveListings ?? 0)
-  } catch (err) {
-    // If we cannot prove a slot is free, do not publish. A draft is recoverable;
-    // an unpaid live listing is not.
-    console.error('hasFreeSlot check failed —', err)
-    return false
-  }
-}
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
@@ -175,14 +130,11 @@ export async function POST(req: NextRequest) {
       amenities:      fields.amenities || [],
       rental_term:    fields.rental_term || 'monthly',
       package_type:   pkg,
-      ...(await (async () => {
-        // A draft must not burn its term while it sits unpublished. The clock
-        // starts at publish, not at save.
-        const live = await hasFreeSlot(supabase, userId)
-        return live
-          ? { listing_status: 'active', expires_at: computeExpiry(pkg) }
-          : { listing_status: 'draft',  expires_at: null }
-      })()),
+      // A listing is always created as a draft. Whether it goes live is a
+      // separate question answered below, by whether a slot is free — the two
+      // are deliberately not decided in the same place.
+      listing_status: 'draft',
+      expires_at:     null,
       verified:       false,
       verified_at:    null,
     }
@@ -241,7 +193,24 @@ export async function POST(req: NextRequest) {
       console.error('[email] notification error (non-fatal):', emailErr)
     }
 
-    return NextResponse.json({ success: true, listing: data })
+    // Created as a draft above. If a slot is free, use it now — an owner who
+    // already paid should never have to press publish as a second step.
+    let published = false
+    let expiresAt: string | null = null
+    if (data?.id) {
+      const slot = await claimSlot(supabase, userId, data.id as string)
+      if (slot) {
+        await syncListingFromSlot(supabase, slot)
+        published = true
+        expiresAt = slot.expires_at
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      listing: { ...data, listing_status: published ? 'active' : 'draft', expires_at: expiresAt },
+      published,
+    })
   } catch (err: any) {
     console.error('owner POST error:', err)
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
@@ -290,32 +259,42 @@ export async function PATCH(req: NextRequest) {
     if (body.publish === true) {
       const { data: draft } = await supabase
         .from('properties')
-        .select('listing_status, package_type')
+        .select('listing_status')
         .eq('id', id)
         .single()
 
-      if (draft?.listing_status !== 'draft') {
-        return NextResponse.json({ error: 'Listing is not a draft' }, { status: 400 })
+      if (draft?.listing_status === 'active') {
+        return NextResponse.json({ success: true, published: true })  // already live
       }
-      if (!(await hasFreeSlot(supabase, userId))) {
+
+      const slot = await claimSlot(supabase, userId, id)
+      if (!slot) {
+        // Expected, not exceptional: they have written a listing and not yet
+        // bought anywhere to put it.
         return NextResponse.json(
-          { error: 'no_slot', message: 'ต้องมีแพ็กเกจว่างก่อนเผยแพร่ประกาศ' },
+          { error: 'no_slot', message: 'ต้องมีสล็อตว่างก่อนเผยแพร่ประกาศ — ซื้อแพ็กเกจเพื่อเพิ่มสล็อต' },
           { status: 402 },
         )
       }
 
-      const pkgId = draft.package_type || 'basic'
-      const { error: pubErr } = await supabase
+      // The slot carries the term; the listing mirrors it.
+      await syncListingFromSlot(supabase, slot)
+      return NextResponse.json({ success: true, published: true, expires_at: slot.expires_at })
+    }
+
+    // Special action: take a listing down without deleting it.
+    //
+    // The slot keeps its remaining days and becomes available for a different
+    // listing. An owner whose unit just rented should not lose the term — that
+    // is the moment the product worked.
+    if (body.unpublish === true) {
+      await releaseSlot(supabase, id)
+      const { error: unErr } = await supabase
         .from('properties')
-        .update({
-          listing_status: 'active',
-          package_type:   pkgId,
-          expires_at:     computeExpiry(pkgId),
-          updated_at:     new Date().toISOString(),
-        })
+        .update({ listing_status: 'draft', expires_at: null, updated_at: new Date().toISOString() })
         .eq('id', id)
-      if (pubErr) throw pubErr
-      return NextResponse.json({ success: true, published: true })
+      if (unErr) throw unErr
+      return NextResponse.json({ success: true, unpublished: true })
     }
 
     const ALLOWED = [
