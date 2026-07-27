@@ -63,6 +63,9 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   inactive: { bg: '#f1f5f9', color: '#64748b', label: 'ปิดใช้งาน' },
   pending:  { bg: '#fef3c7', color: '#92400e', label: 'รอตรวจสอบ' },
   expired:  { bg: '#fee2e2', color: '#b91c1c', label: 'หมดอายุ' },
+  // Written but not paid for. Invisible to the public, fully editable by the
+  // owner, one click from live once a slot is free.
+  draft:    { bg: '#e0e7ff', color: '#4338ca', label: 'ฉบับร่าง' },
 }
 function daysLeft(expiresAt: string | null): number | null {
   if (!expiresAt) return null
@@ -159,6 +162,11 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'ไม่สำเร็จ')
+      // Tell them plainly which of the two things just happened. Saving work and
+      // silently not publishing it is the worst possible outcome here.
+      if (d?.listing?.listing_status === 'draft') {
+        alert('บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีแพ็กเกจว่าง\nซื้อแพ็กเกจแล้วกดปุ่ม “เผยแพร่” ในตารางประกาศได้ทันที')
+      }
       onCreated(); onClose()
     } catch (err: any) { setError(err.message || 'เกิดข้อผิดพลาด') }
     finally { setSaving(false) }
@@ -359,6 +367,8 @@ export default function OwnerDashboardPage() {
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
+  const [publishing,         setPublishing]         = useState<string | null>(null)
+  const [publishError,       setPublishError]       = useState('')
 
   // Derived: user has a valid active package
   const hasActiveListing = listings.some(l =>
@@ -523,6 +533,28 @@ export default function OwnerDashboardPage() {
     setDeleting(null)
   }
 
+  async function publishListing(id: string) {
+    setPublishing(id)
+    setPublishError('')
+    const { data: { session: pSess } } = await createBrowserClient().auth.getSession()
+    const res = await fetch('/api/owner/listings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pSess?.access_token}` },
+      body: JSON.stringify({ id, publish: true }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // 402 is the expected, non-exceptional case: the listing is ready and the
+      // only thing missing is a package.
+      setPublishError(json?.message || 'เผยแพร่ไม่สำเร็จ')
+      setPublishing(null)
+      return
+    }
+    await load()
+    setPublishing(null)
+  }
+
+  const drafts   = listings.filter(l => l.listing_status === 'draft').length
   const active   = listings.filter(l => l.listing_status === 'active').length
   const expiring = listings.filter(l => { const d = daysLeft(l.expires_at); return d !== null && d > 0 && d <= 7 }).length
 
@@ -545,33 +577,44 @@ export default function OwnerDashboardPage() {
           <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>{userEmail}</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          {/* Always enabled.
+              Blocking the button here meant someone who came from an ad hit a
+              dead end before ever seeing the form, and we could not tell whether
+              they left because of the form or because of the price. Now the
+              listing is always writable; only publishing needs a slot. */}
           <button
-            onClick={() => canCreateNew && setShowCreate(true)}
+            onClick={() => setShowCreate(true)}
             style={{
-              background: canCreateNew ? '#02402e' : '#e2e8f0',
-              color: canCreateNew ? '#fff' : '#94a3b8',
+              background: '#02402e', color: '#fff',
               border: 'none', borderRadius: 24, padding: '12px 22px',
-              fontSize: 14, fontWeight: 700,
-              cursor: canCreateNew ? 'pointer' : 'not-allowed',
+              fontSize: 14, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
               transition: 'all .2s',
             }}
-            title={!canCreateNew ? (hasPackage ? 'แพ็กเกจปัจจุบันใช้งานอยู่ครบแล้ว กรุณาซื้อแพ็กเกจเพิ่ม' : 'กรุณาซื้อแพ็กเกจก่อนเพื่อลงประกาศ') : undefined}
           >
             + เพิ่มประกาศใหม่
           </button>
           {!canCreateNew && (
-            <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right' }}>
-              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>warning</span>
+            <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right', maxWidth: 260 }}>
+              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>info</span>
               {hasPackage ? (
-                <>แพ็กเกจถูกใช้งานครบแล้ว{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อเพิ่ม</a></>
+                <>แพ็กเกจถูกใช้งานครบแล้ว — บันทึกเป็นฉบับร่างได้{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อเพิ่มเพื่อเผยแพร่</a></>
               ) : (
-                <>กรุณา{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>{' '}ก่อนเพื่อลงประกาศ</>
+                <>สร้างประกาศได้เลย จะบันทึกเป็นฉบับร่าง{' '}<a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อแพ็กเกจ</a>{' '}เมื่อพร้อมเผยแพร่</>
               )}
             </p>
           )}
         </div>
       </div>
+
+      {publishError && (
+        <div style={{ background: '#fdf3e3', border: '1px solid #f3d9ae', color: '#8a5a10', borderRadius: 12, padding: '12px 16px', marginBottom: 18, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="msym" style={{ fontSize: 18, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>info</span>
+          <span style={{ flex: 1, minWidth: 0 }}>{publishError}</span>
+          <a href="/pricing" style={{ background: '#d97f11', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>ดูแพ็กเกจ</a>
+          <button onClick={() => setPublishError('')} style={{ border: 'none', background: 'transparent', color: '#8a5a10', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: 14, marginBottom: 28 }}>
@@ -579,6 +622,7 @@ export default function OwnerDashboardPage() {
           { label: 'ประกาศทั้งหมด',       value: listings.length, color: '#02402e', bg: '#f0f7f4' },
           { label: 'เผยแพร่อยู่',           value: active,          color: '#048c73', bg: '#eaf6f1' },
           { label: 'ใกล้หมดอายุ (7 วัน)', value: expiring,        color: '#d97f11', bg: '#fdf3e3' },
+          ...(drafts > 0 ? [{ label: 'ฉบับร่าง', value: drafts, color: '#4338ca', bg: '#e0e7ff' }] : []),
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '18px 20px', boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: s.color, letterSpacing: '-1px' }}>{s.value}</div>
@@ -1012,7 +1056,17 @@ export default function OwnerDashboardPage() {
                       </td>
                       <td style={{ padding: '14px 16px' }}>
                         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                          {l.listing_status === 'expired' ? (
+                          {l.listing_status === 'draft' ? (
+                            <button
+                              onClick={() => publishListing(l.id)}
+                              disabled={publishing === l.id}
+                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canCreateNew ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
+                              title={canCreateNew ? 'เผยแพร่ประกาศนี้' : 'ยังไม่มีแพ็กเกจว่าง — กดเพื่อดูรายละเอียด'}
+                            >
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>publish</span>
+                              {publishing === l.id ? '…' : 'เผยแพร่'}
+                            </button>
+                          ) : l.listing_status === 'expired' ? (
                             // Expired: show Renew button prominently
                             <button
                               onClick={() => { setRenewError(''); setRenewPkg('basic'); setRenewTarget(l) }}

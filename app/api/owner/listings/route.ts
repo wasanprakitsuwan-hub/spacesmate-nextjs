@@ -77,6 +77,56 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST — create a new listing for the owner ─────────────────────────────────
+
+/**
+ * A "slot" is an active package that no live listing is using.
+ *
+ * The dashboard already worked this way — it just expressed it as a disabled
+ * "add listing" button. Letting someone write the listing anyway and saving it
+ * as a draft separates two very different reasons for giving up: the form was
+ * too much, or the price was.
+ *
+ * Counted server-side. The client's own count is for display; it must not decide
+ * whether something gets published.
+ */
+async function hasFreeSlot(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const [{ count: liveListings }, { data: profile }] = await Promise.all([
+      supabase.from('properties')
+        .select('*', { count: 'exact', head: true })
+        .eq('landlord_id', userId)
+        .eq('listing_status', 'active'),
+      supabase.from('user_profiles')
+        .select('package_type, package_expires_at')
+        .eq('id', userId)
+        .maybeSingle(),
+    ])
+
+    const { count: paidSubs } = await supabase.from('submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'approved')
+      .gt('expires_at', new Date().toISOString())
+
+    // A profile package with a future expiry counts as one slot when there are
+    // no submission-backed ones — covers listings created before subscriptions.
+    const profileSlot =
+      profile?.package_type && (!profile.package_expires_at || new Date(profile.package_expires_at) > new Date())
+        ? 1 : 0
+
+    const slots = Math.max(paidSubs ?? 0, profileSlot)
+    return slots > (liveListings ?? 0)
+  } catch (err) {
+    // If we cannot prove a slot is free, do not publish. A draft is recoverable;
+    // an unpaid live listing is not.
+    console.error('hasFreeSlot check failed —', err)
+    return false
+  }
+}
+
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if (isErr(auth)) return auth
@@ -125,8 +175,14 @@ export async function POST(req: NextRequest) {
       amenities:      fields.amenities || [],
       rental_term:    fields.rental_term || 'monthly',
       package_type:   pkg,
-      expires_at:     computeExpiry(pkg),
-      listing_status: 'active',
+      ...(await (async () => {
+        // A draft must not burn its term while it sits unpublished. The clock
+        // starts at publish, not at save.
+        const live = await hasFreeSlot(supabase, userId)
+        return live
+          ? { listing_status: 'active', expires_at: computeExpiry(pkg) }
+          : { listing_status: 'draft',  expires_at: null }
+      })()),
       verified:       false,
       verified_at:    null,
     }
@@ -224,6 +280,42 @@ export async function PATCH(req: NextRequest) {
         .eq('id', id)
       if (cpErr) throw cpErr
       return NextResponse.json({ success: true })
+    }
+
+    // Special action: publish a draft.
+    //
+    // Deliberately NOT settable through the normal field list — listing_status is
+    // excluded from ALLOWED so it can only change through this path, where the
+    // slot is checked and the expiry clock is started.
+    if (body.publish === true) {
+      const { data: draft } = await supabase
+        .from('properties')
+        .select('listing_status, package_type')
+        .eq('id', id)
+        .single()
+
+      if (draft?.listing_status !== 'draft') {
+        return NextResponse.json({ error: 'Listing is not a draft' }, { status: 400 })
+      }
+      if (!(await hasFreeSlot(supabase, userId))) {
+        return NextResponse.json(
+          { error: 'no_slot', message: 'ต้องมีแพ็กเกจว่างก่อนเผยแพร่ประกาศ' },
+          { status: 402 },
+        )
+      }
+
+      const pkgId = draft.package_type || 'basic'
+      const { error: pubErr } = await supabase
+        .from('properties')
+        .update({
+          listing_status: 'active',
+          package_type:   pkgId,
+          expires_at:     computeExpiry(pkgId),
+          updated_at:     new Date().toISOString(),
+        })
+        .eq('id', id)
+      if (pubErr) throw pubErr
+      return NextResponse.json({ success: true, published: true })
     }
 
     const ALLOWED = [
