@@ -88,10 +88,15 @@ export async function claimSlot(
   propertyId: string,
 ): Promise<Slot | null> {
   // Already in a slot? Publishing twice should be harmless, not double-charged.
+  // Only an ACTIVE slot counts as already holding this listing. Filtering on
+  // status also keeps this to one row: a listing that has lapsed and been
+  // republished several times leaves an expired slot behind each time, and an
+  // unfiltered .maybeSingle() would error on the second one.
   const { data: existing } = await supabase
     .from('listing_slots')
     .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
     .eq('property_id', propertyId)
+    .eq('status', 'active')
     .maybeSingle()
   if (existing && isLive(existing as Slot)) return existing as Slot
 

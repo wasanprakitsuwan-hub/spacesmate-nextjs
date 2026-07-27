@@ -144,8 +144,14 @@ export async function GET(req: NextRequest) {
       .lt('expires_at', now.toISOString())   // NULL never matches — never-expiring slots are safe
 
     for (const slot of deadSlots ?? []) {
+      // Release the listing as well as expiring the slot.
+      //
+      // The unique index on property_id is what makes double-claiming
+      // impossible — but a dead slot still holding property_id would use up
+      // that one allowed row, and the listing could never claim a new slot
+      // again. Expiry has to let go.
       await supabase.from('listing_slots')
-        .update({ status: 'expired', updated_at: now.toISOString() })
+        .update({ status: 'expired', property_id: null, updated_at: now.toISOString() })
         .eq('id', slot.id)
 
       if (slot.property_id) {
