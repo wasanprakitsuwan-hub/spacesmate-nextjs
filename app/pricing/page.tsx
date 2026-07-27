@@ -1,6 +1,6 @@
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FaqLd } from '@/components/seo/JsonLd'
-import PlanCta from '@/components/pricing/PlanCta'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -191,17 +191,16 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              {/* Routes to the draft the visitor already wrote, if there is one,
-                  instead of a blank form. See components/pricing/PlanCta.tsx */}
-              <PlanCta
-                pkg={plan.ctaHref.split('package=')[1] ?? 'basic'}
-                label={plan.cta}
+              <Link
+                href={plan.ctaHref}
                 className={`block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
                   plan.highlight
                     ? 'bg-spacemate-brandDark text-white hover:bg-spacemate-brandTeal'
                     : 'border border-spacemate-brandDark text-spacemate-brandDark hover:bg-spacemate-brandDark hover:text-white'
                 }`}
-              />
+              >
+                {plan.cta}
+              </Link>
             </div>
           ))}
         </div>

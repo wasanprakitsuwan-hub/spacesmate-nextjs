@@ -34,11 +34,6 @@ export async function POST(req: NextRequest) {
       .eq('id', auth.id)
       .single()
 
-    // Publishing a draft and renewing an expired listing are the same operation
-    // as far as Stripe and the webhook are concerned: pay, then set the listing
-    // active with a fresh term. Only what we say to the customer differs.
-    const isDraft = property.listing_status === 'draft'
-
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
     const durationDays = PACKAGE_DAYS[package_id as keyof typeof PACKAGE_DAYS] ?? 30
 
@@ -66,15 +61,13 @@ export async function POST(req: NextRequest) {
         renew_property_id:    property_id,
         package_id,
       },
-      success_url: `${siteUrl}/owner-dashboard?${isDraft ? 'published=1' : 'renewed=1'}`,
+      success_url: `${siteUrl}/owner-dashboard?renewed=1`,
       cancel_url:  `${siteUrl}/owner-dashboard`,
       allow_promotion_codes: true,
       locale: 'auto',
       custom_text: {
         submit: {
-          message: isDraft
-            ? `เผยแพร่ประกาศ "${property.title_th || 'ทรัพย์สินของคุณ'}" — จะขึ้นเว็บไซต์ทันทีหลังชำระเงิน`
-            : `ต่ออายุประกาศ "${property.title_th || 'ทรัพย์สินของคุณ'}" — จะเผยแพร่ทันทีหลังชำระเงิน`,
+          message: `ต่ออายุประกาศ "${property.title_th || 'ทรัพย์สินของคุณ'}" — จะเผยแพร่ทันทีหลังชำระเงิน`,
         },
       },
     })
