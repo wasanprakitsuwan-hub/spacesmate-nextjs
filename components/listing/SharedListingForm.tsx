@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ADMIN_PACKAGES, computeExpiry } from '@/lib/packages'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
 import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
@@ -1028,19 +1029,43 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
 }
 
 // ── Listing Form Fields (master form component) ────────────────────────────────
-export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesChange, isPublicUpload = false }: {
+export function ListingFormFields({
+  form, onChange, onAmenityToggle, onImagesChange,
+  isPublicUpload = false, isAdmin = false, isMobile = false,
+}: {
   form: FormState
   onChange: (k: string, v: any) => void
   onAmenityToggle: (a: string) => void
   onImagesChange: (imgs: string[]) => void
-  /** Pass true when used in the public /submit/new landlord form (uses public upload endpoint) */
+  /** Public /submit/new form — uses the unauthenticated upload endpoint */
   isPublicUpload?: boolean
+  /** Admin screen — shows the package selector and the read-only slug */
+  isAdmin?: boolean
+  /** Single-column grids on narrow screens */
+  isMobile?: boolean
 }) {
   const roomOpts = getRoomTypeOptions(form.property_type)
 
   // Editable in Settings; defaults until it loads.
   const [amenityList, setAmenityList] = useState<Amenity[]>(DEFAULT_AMENITIES)
   useEffect(() => { fetchAmenities().then(setAmenityList) }, [])
+
+  const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }
+
+  // Admin picks the package directly; everyone else sees what was bought.
+  const PackageSelector = isAdmin ? (
+    <div style={{ marginBottom: 16 }}>
+      <label style={SLBL}>แพ็กเกจประกาศ (Admin)</label>
+      <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={SINP}>
+        {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+      </select>
+      <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
+        {form.package_type === 'admin'
+          ? 'ไม่มีวันหมดอายุ — อยู่บนเว็บจนกว่าจะลบ'
+          : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
+      </p>
+    </div>
+  ) : null
 
   const isApartment    = form.property_type === 'apartment'
   const isCondoOrHouse = ['condo', 'house'].includes(form.property_type)
@@ -1089,11 +1114,26 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
         </div>
       </div>
 
+      {/* Slug is generated at creation and never edited — changing it breaks
+          every existing link. Shown here for reference only. */}
+      {isAdmin && form.slug && (
+        <div style={{ marginBottom: 20, marginTop: -8 }}>
+          <label style={SLBL}>URL ของประกาศ</label>
+          <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, wordBreak: 'break-all' }}>
+            spacesmate.com/property/{form.slug}
+          </p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+            สร้างอัตโนมัติจากชื่อประกาศ — ไม่สามารถแก้ไขได้ เพื่อไม่ให้ลิงก์เดิมเสีย
+          </p>
+        </div>
+      )}
+
       {/* ── 2 · ราคาและประเภทห้อง ── */}
       <div style={{ marginBottom: 24 }}>
         {/* Apartment */}
         {isApartment && (
           <>
+            {PackageSelector}
             <SectionHead text="2 · ประเภทและราคาห้อง" />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
               เพิ่มแต่ละประเภทห้องพร้อมขนาดและราคา (ราคาในหน้าค้นหาจะดึงจาก ต่ำสุด–สูงสุด ของตาราง)
@@ -1105,6 +1145,7 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
         {/* Condo / House */}
         {isCondoOrHouse && (
           <>
+            {PackageSelector}
             <SectionHead text="2 · รายละเอียดการเช่า" />
             <CondoHouseRentalDetail detail={form.condo_rental} propertyType={form.property_type} onChange={d => onChange('condo_rental', d)} />
           </>
@@ -1113,6 +1154,7 @@ export function ListingFormFields({ form, onChange, onAmenityToggle, onImagesCha
         {/* Office / Coworking */}
         {isOfficeOrCo && (
           <>
+            {PackageSelector}
             <SectionHead text="2 · ประเภทและราคาพื้นที่" />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
               เพิ่มแต่ละประเภทพื้นที่พร้อมขนาดและราคา
