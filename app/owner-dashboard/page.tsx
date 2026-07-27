@@ -959,7 +959,7 @@ export default function OwnerDashboardPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', minWidth: 0, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+            <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', fontSize: 13.5, tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ background: '#f8faf9', borderBottom: '1px solid #eef0ef' }}>
                   {['ทรัพย์สิน', 'ประเภท', 'ราคา', 'แพ็กเกจ', 'หมดอายุ', 'สถานะ', ''].map(h => (
@@ -975,14 +975,20 @@ export default function OwnerDashboardPage() {
                   return (
                     <tr key={l.id} style={{ borderBottom: i < listings.length - 1 ? '1px solid #f1f5f4' : 'none', background: i % 2 === 0 ? '#fff' : '#fafffe' }}>
                       <td style={{ padding: '14px 16px', minWidth: 220 }}>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        {/* minWidth:0 lets the text shrink; without it a flex item
+                            refuses to go below its content width and spills into
+                            the next column. */}
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
                           {(l.images ?? [])[0]
                             ? <img src={l.images![0]} alt="" style={{ width: 42, height: 34, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />
                             : <div style={{ width: 42, height: 34, borderRadius: 7, background: '#eaf6f1', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 18, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span></div>
                           }
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title_th}</div>
-                            {l.district && <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1 }}>{l.district}</div>}
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            {/* was maxWidth:200 — wider than the space left after the
+                                42px thumbnail and gap, so it overflowed rather than
+                                truncating. Now it fits whatever the column allows. */}
+                            <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title_th}</div>
+                            {l.district && <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.district}</div>}
                           </div>
                         </div>
                       </td>
