@@ -92,21 +92,23 @@ function useIsNarrow(breakpoint = 780) {
 
 // ── Drawer Wrapper ────────────────────────────────────────────────────────────
 function Drawer({ title, subtitle, onClose, children }: { title: string; subtitle?: string; onClose: () => void; children: React.ReactNode }) {
+  const isNarrow = useIsNarrow()
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
       <div style={{ flex: 1, background: 'rgba(2,64,46,0.3)', backdropFilter: 'blur(2px)' }} />
-      {/* 620px was too narrow for the room-type grid, which has six columns —
-          on a wide desktop the form used half the screen while its own table was
-          cramped. min() keeps it full-width on mobile and generous on desktop. */}
-      <div style={{ width: '100%', maxWidth: 'min(1040px, 82vw)', background: '#fff', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100vh' }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: '22px 28px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
+      {/* 620px was too narrow for the room-type grid, which has six columns — on a
+          wide desktop the form used half the screen while its own table was
+          cramped. On a phone it must stay full width: capping at 82vw would leave
+          a useless strip of backdrop on a 390px screen. */}
+      <div style={{ width: '100%', maxWidth: isNarrow ? '100%' : 'min(1040px, 82vw)', background: '#fff', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100vh' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: isNarrow ? '18px 16px 14px' : '22px 28px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: '#02402e' }}>{title}</h2>
             {subtitle && <p style={{ margin: '3px 0 0', fontSize: 13, color: '#94a3b8' }}>{subtitle}</p>}
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', lineHeight: 1, padding: '2px 4px' }}>×</button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>{children}</div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isNarrow ? '18px 16px 32px' : '24px 28px', minWidth: 0 }}>{children}</div>
       </div>
     </div>
   )
@@ -572,7 +574,7 @@ export default function OwnerDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: 14, marginBottom: 28 }}>
         {[
           { label: 'ประกาศทั้งหมด',       value: listings.length, color: '#02402e', bg: '#f0f7f4' },
           { label: 'เผยแพร่อยู่',           value: active,          color: '#048c73', bg: '#eaf6f1' },
