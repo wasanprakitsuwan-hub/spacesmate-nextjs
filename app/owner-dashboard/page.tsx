@@ -173,7 +173,12 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
           id: `au-${i}`,
           room_type: r.room_type || 'Studio',
           size_sqm:  String(r.size_sqm ?? ''),
-          price_1mo: String(r.price_1mo ?? r.price_from ?? ''),
+          // Legacy rows stored the headline rate in price_1mo, because the main
+          // input wrote to that field. If price_12mo is absent the row predates
+          // the change: move the value across and leave the real 1-month
+          // contract price empty rather than claiming a rate nobody set.
+          price_12mo: String(r.price_12mo ?? r.price_1mo ?? r.price_from ?? ''),
+          price_1mo:  String(r.price_12mo ? (r.price_1mo ?? '') : ''),
           price_daily: String(r.price_daily ?? ''),
           available_1mo: r.available_1mo ?? false,
           available_3mo: r.available_3mo ?? false,

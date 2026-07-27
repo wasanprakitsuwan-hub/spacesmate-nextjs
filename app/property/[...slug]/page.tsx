@@ -360,11 +360,16 @@ export default async function PropertyDetailPage({ params }: Props) {
                 only when at least one unit actually has that term, to avoid a
                 table of empty dashes. */}
             {aptUnits.length > 0 && (() => {
+              // All prices are per month; the columns are contract lengths.
+              // Legacy rows kept the headline rate in price_1mo, so fall back to
+              // it when price_12mo is absent.
+              const rate12 = (u: any) => u.price_12mo || u.price_1mo
+              const has1 = aptUnits.some((u: any) => u.price_12mo && u.price_1mo)
               const has3 = aptUnits.some((u: any) => u.price_3mo)
               const has6 = aptUnits.some((u: any) => u.price_6mo)
               const hasDaily = aptUnits.some((u: any) => u.price_daily)
               const cols = ['1.4fr', '0.8fr', '1fr',
-                ...(has3 ? ['1fr'] : []), ...(has6 ? ['1fr'] : []),
+                ...(has6 ? ['1fr'] : []), ...(has3 ? ['1fr'] : []), ...(has1 ? ['1fr'] : []),
                 ...(hasDaily ? ['1fr'] : [])].join(' ')
               const money = (v: any) => v ? `฿${Number(v).toLocaleString()}` : '—'
               return (
@@ -374,25 +379,27 @@ export default async function PropertyDetailPage({ params }: Props) {
                     <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '9px 16px', background: '#f7f9f8', fontSize: 11, fontWeight: 600, color: '#94a3b8', gap: 8 }}>
                       <span>ประเภทห้อง</span>
                       <span>ขนาด</span>
-                      <span>1 เดือน</span>
-                      {has3 && <span>3 เดือน</span>}
-                      {has6 && <span>6 เดือน</span>}
-                      {hasDaily && <span>ราคา/วัน</span>}
+                      <span>สัญญา 12 เดือน</span>
+                      {has6 && <span>สัญญา 6 เดือน</span>}
+                      {has3 && <span>สัญญา 3 เดือน</span>}
+                      {has1 && <span>สัญญา 1 เดือน</span>}
+                      {hasDaily && <span>รายวัน</span>}
                     </div>
                     {aptUnits.map((u: any, i: number) => (
                       <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: cols, padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600, color: '#231f20' }}>{u.room_type || '—'}</span>
                         <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? `${u.size_sqm} ตร.ม.` : '—'}</span>
-                        <span style={{ fontWeight: 700, color: '#d97f11' }}>{money(u.price_1mo)}</span>
-                        {has3 && <span style={{ color: u.price_3mo ? '#02402e' : '#94a3b8', fontWeight: u.price_3mo ? 600 : 400 }}>{money(u.price_3mo)}</span>}
+                        <span style={{ fontWeight: 700, color: '#d97f11' }}>{money(rate12(u))}</span>
                         {has6 && <span style={{ color: u.price_6mo ? '#02402e' : '#94a3b8', fontWeight: u.price_6mo ? 600 : 400 }}>{money(u.price_6mo)}</span>}
+                        {has3 && <span style={{ color: u.price_3mo ? '#02402e' : '#94a3b8', fontWeight: u.price_3mo ? 600 : 400 }}>{money(u.price_3mo)}</span>}
+                        {has1 && <span style={{ color: u.price_1mo ? '#02402e' : '#94a3b8', fontWeight: u.price_1mo ? 600 : 400 }}>{money(u.price_1mo)}</span>}
                         {hasDaily && <span style={{ color: u.price_daily ? '#d97f11' : '#94a3b8', fontWeight: u.price_daily ? 600 : 400 }}>{money(u.price_daily)}</span>}
                       </div>
                     ))}
                   </div>
-                  {(has3 || has6) && (
+                  {(has1 || has3 || has6) && (
                     <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '8px 0 0' }}>
-                      ราคาต่อเดือนเมื่อทำสัญญาตามระยะเวลาที่ระบุ
+                      ทุกราคาเป็นค่าเช่าต่อเดือน — ต่างกันตามระยะเวลาสัญญา สัญญายาวกว่าราคาต่อเดือนถูกกว่า
                     </p>
                   )}
                 </div>

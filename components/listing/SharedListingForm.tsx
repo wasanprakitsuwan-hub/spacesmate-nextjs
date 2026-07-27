@@ -16,6 +16,17 @@ export interface ApartmentUnitRow {
   id: string
   room_type: string
   size_sqm: string
+  /**
+   * Contract length, all paid monthly — matching CondoRentalDetail.
+   *   price_12mo  headline rate, 12-month contract
+   *   price_1mo   1-month contract
+   *   price_3mo   3-month contract
+   *   price_6mo   6-month contract
+   *
+   * The main input used to write price_1mo, so the "1 เดือน" tick had nothing of
+   * its own to edit and simply echoed the headline rate back.
+   */
+  price_12mo: string
   price_1mo: string
   price_daily: string
   available_1mo: boolean
@@ -150,7 +161,12 @@ export function prepareSubmitData(form: FormState) {
   let property_name_id: string | null = null
 
   if (['apartment', 'office', 'coworking'].includes(form.property_type)) {
-    const prices = form.apartment_units.map(u => parseFloat(u.price_1mo) || 0).filter(n => n > 0)
+    // Every contract length counts — the headline range should reflect the
+    // cheapest and dearest a tenant could actually pay, not just one term.
+    const prices = form.apartment_units
+      .flatMap(u => [u.price_12mo, u.price_1mo, u.price_3mo, u.price_6mo])
+      .map(v => parseFloat(v) || 0)
+      .filter(n => n > 0)
     price_from = prices.length > 0 ? Math.min(...prices) : 0
     price_to   = prices.length > 1 ? Math.max(...prices) : (prices[0] ?? null)
     // Charges are persisted for every type. This previously applied to apartments
@@ -198,7 +214,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
   function addRow() {
     onChange([...rows, {
       id: `au-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio',
-      size_sqm: '', price_1mo: '', price_daily: '',
+      size_sqm: '', price_12mo: '', price_1mo: '', price_daily: '',
       available_1mo: false, available_3mo: false, price_3mo: '',
       available_6mo: false, price_6mo: '',
     }])
@@ -213,7 +229,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'ราคา/เดือน', 'ราคา/วัน', ''].map(h => (
+            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'สัญญา 12 เดือน (บาท/เดือน)', 'ราคา/วัน', ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
@@ -226,7 +242,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                 <input type="number" value={row.size_sqm} onChange={e => upd(row.id, 'size_sqm', e.target.value)} placeholder="28" style={{ ...SINP, padding: '7px 10px' }} />
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
-                  <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
+                  <input type="number" value={row.price_12mo} onChange={e => upd(row.id, 'price_12mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
                 </div>
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
@@ -235,19 +251,16 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                 <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>ระยะสั้น:</span>
+                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>สัญญาสั้นกว่า:</span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_1mo} onChange={e => upd(row.id, 'available_1mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
                   <span style={{ fontSize: 12, color: '#334155' }}>1 เดือน</span>
                 </label>
                 {row.available_1mo && (
-                  /* Was a read-only echo of the base price while 3 and 6 months
-                     each had an input, so ticking "1 เดือน" looked broken — there
-                     was nowhere to type the amount. Now editable like the others. */
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 11, color: '#94a3b8' }}>฿</span>
                     <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)}
-                      placeholder="7,000" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
+                      placeholder="8,000" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
                   </div>
                 )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
