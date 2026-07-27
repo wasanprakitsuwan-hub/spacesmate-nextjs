@@ -353,30 +353,51 @@ export default async function PropertyDetailPage({ params }: Props) {
               <DescriptionBody contentTh={content} contentEn={contentEn} />
             )}
 
-            {/* Apartment Unit Pricing Table */}
-            {aptUnits.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>ราคาเช่าต่อห้อง</h2>
-                <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', padding: '9px 16px', background: '#f7f9f8', fontSize: 11, fontWeight: 600, color: '#94a3b8', gap: 8 }}>
-                    <span>ประเภทห้อง</span>
-                    <span>ขนาด</span>
-                    <span>ราคา/เดือน</span>
-                    <span>ราคา/วัน</span>
-                  </div>
-                  {aptUnits.map((u: any, i: number) => (
-                    <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600, color: '#231f20' }}>{u.room_type || '—'}</span>
-                      <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? `${u.size_sqm} ตร.ม.` : '—'}</span>
-                      <span style={{ fontWeight: 700, color: '#d97f11' }}>{u.price_1mo ? `฿${Number(u.price_1mo).toLocaleString()}` : '—'}</span>
-                      <span style={{ color: u.price_daily ? '#d97f11' : '#94a3b8', fontWeight: u.price_daily ? 600 : 400 }}>
-                        {u.price_daily ? `฿${Number(u.price_daily).toLocaleString()}` : '—'}
-                      </span>
+            {/* Apartment Unit Pricing Table
+                3- and 6-month prices were collected on the form and stored, but
+                this table only ever rendered 1-month and daily — so a landlord
+                filled them in and they appeared nowhere. Columns are now added
+                only when at least one unit actually has that term, to avoid a
+                table of empty dashes. */}
+            {aptUnits.length > 0 && (() => {
+              const has3 = aptUnits.some((u: any) => u.price_3mo)
+              const has6 = aptUnits.some((u: any) => u.price_6mo)
+              const hasDaily = aptUnits.some((u: any) => u.price_daily)
+              const cols = ['1.4fr', '0.8fr', '1fr',
+                ...(has3 ? ['1fr'] : []), ...(has6 ? ['1fr'] : []),
+                ...(hasDaily ? ['1fr'] : [])].join(' ')
+              const money = (v: any) => v ? `฿${Number(v).toLocaleString()}` : '—'
+              return (
+                <div style={{ marginBottom: 32 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>ราคาเช่าต่อห้อง</h2>
+                  <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '9px 16px', background: '#f7f9f8', fontSize: 11, fontWeight: 600, color: '#94a3b8', gap: 8 }}>
+                      <span>ประเภทห้อง</span>
+                      <span>ขนาด</span>
+                      <span>1 เดือน</span>
+                      {has3 && <span>3 เดือน</span>}
+                      {has6 && <span>6 เดือน</span>}
+                      {hasDaily && <span>ราคา/วัน</span>}
                     </div>
-                  ))}
+                    {aptUnits.map((u: any, i: number) => (
+                      <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: cols, padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, color: '#231f20' }}>{u.room_type || '—'}</span>
+                        <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? `${u.size_sqm} ตร.ม.` : '—'}</span>
+                        <span style={{ fontWeight: 700, color: '#d97f11' }}>{money(u.price_1mo)}</span>
+                        {has3 && <span style={{ color: u.price_3mo ? '#02402e' : '#94a3b8', fontWeight: u.price_3mo ? 600 : 400 }}>{money(u.price_3mo)}</span>}
+                        {has6 && <span style={{ color: u.price_6mo ? '#02402e' : '#94a3b8', fontWeight: u.price_6mo ? 600 : 400 }}>{money(u.price_6mo)}</span>}
+                        {hasDaily && <span style={{ color: u.price_daily ? '#d97f11' : '#94a3b8', fontWeight: u.price_daily ? 600 : 400 }}>{money(u.price_daily)}</span>}
+                      </div>
+                    ))}
+                  </div>
+                  {(has3 || has6) && (
+                    <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '8px 0 0' }}>
+                      ราคาต่อเดือนเมื่อทำสัญญาตามระยะเวลาที่ระบุ
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {/* Rental Charges & Conditions */}
             {chargesDisplay.length > 0 && (

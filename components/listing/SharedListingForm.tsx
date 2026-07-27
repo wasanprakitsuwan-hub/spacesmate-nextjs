@@ -241,9 +241,14 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                   <span style={{ fontSize: 12, color: '#334155' }}>1 เดือน</span>
                 </label>
                 {row.available_1mo && (
-                  <span style={{ fontSize: 11, color: '#048c73', background: '#eaf6f1', padding: '2px 8px', borderRadius: 10 }}>
-                    ฿{row.price_1mo ? Number(row.price_1mo).toLocaleString() : '—'}/เดือน
-                  </span>
+                  /* Was a read-only echo of the base price while 3 and 6 months
+                     each had an input, so ticking "1 เดือน" looked broken — there
+                     was nowhere to type the amount. Now editable like the others. */
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>฿</span>
+                    <input type="number" value={row.price_1mo} onChange={e => upd(row.id, 'price_1mo', e.target.value)}
+                      placeholder="7,000" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
+                  </div>
                 )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_3mo} onChange={e => upd(row.id, 'available_3mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
