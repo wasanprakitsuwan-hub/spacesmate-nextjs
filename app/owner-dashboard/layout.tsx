@@ -64,14 +64,19 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
       {/* Top Navigation */}
       <header style={{
         background: '#02402e',
-        padding: '0 32px',
-        height: 64,
+        padding: '8px clamp(12px, 4vw, 32px)',
+        minHeight: 64,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        // Five items in a fixed-height row do not fit a phone. Wrapping keeps
+        // them on screen instead of pushing the document wider than the viewport.
+        flexWrap: 'wrap',
+        rowGap: 6,
         position: 'sticky',
         top: 0,
         zIndex: 50,
+        maxWidth: '100%',
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -87,7 +92,7 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
         </div>
 
         {/* Nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', whiteSpace: 'nowrap' }}>
           <Link href="/owner-dashboard" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.1)' }}>
             ประกาศของฉัน
           </Link>
@@ -116,7 +121,7 @@ export default function OwnerDashboardLayout({ children }: { children: React.Rea
         </div>
       </header>
 
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 24px 72px' }}>
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px clamp(12px, 4vw, 24px) 72px', minWidth: 0 }}>
         {children}
       </main>
     </div>

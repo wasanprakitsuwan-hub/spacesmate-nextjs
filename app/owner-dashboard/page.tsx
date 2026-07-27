@@ -525,7 +525,10 @@ export default function OwnerDashboardPage() {
   const expiring = listings.filter(l => { const d = daysLeft(l.expires_at); return d !== null && d > 0 && d <= 7 }).length
 
   return (
-    <div>
+    // minWidth:0 stops a wide child (the listings table) forcing the whole
+    // document wider than the viewport, which is what caused the sideways scroll
+    // and the clipped header on mobile.
+    <div style={{ minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
       {showCreate && userId && (
         <CreateDrawer userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load()} />
       )}
@@ -569,7 +572,7 @@ export default function OwnerDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 28 }}>
         {[
           { label: 'ประกาศทั้งหมด',       value: listings.length, color: '#02402e', bg: '#f0f7f4' },
           { label: 'เผยแพร่อยู่',           value: active,          color: '#048c73', bg: '#eaf6f1' },
@@ -953,7 +956,7 @@ export default function OwnerDashboardPage() {
             )}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', minWidth: 0, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
               <thead>
                 <tr style={{ background: '#f8faf9', borderBottom: '1px solid #eef0ef' }}>
