@@ -45,6 +45,7 @@ export async function getBuildingsWithListings(): Promise<Building[]> {
       .from('properties')
       .select('property_name_id, property_names!inner(id, slug, name_th, name_en)')
       .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .not('property_name_id', 'is', null)
       .limit(5000)
 
@@ -97,6 +98,7 @@ export async function getBuilding(slug: string): Promise<{ building: Building; l
       .from('properties')
       .select('slug, title_th, property_type, district, address_th, images, price_from, bedrooms, area_sqm')
       .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .eq('property_name_id', nameRow.id)
       .order('price_from', { ascending: true })
 

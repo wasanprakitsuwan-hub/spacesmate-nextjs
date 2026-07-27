@@ -129,11 +129,68 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── 3. Expire slots, and take down whatever they were holding ────────────
+  //
+  // The slot owns the term, so this is where expiry actually happens now. Until
+  // this ran, a listing could sit past its end date with listing_status still
+  // 'active' — /api/listings/public filtered it out, but search and the building
+  // pages did not, so it stayed reachable.
+  let slotExpireCount = 0
+  try {
+    const { data: deadSlots } = await supabase
+      .from('listing_slots')
+      .select('id, property_id')
+      .eq('status', 'active')
+      .lt('expires_at', now.toISOString())   // NULL never matches — never-expiring slots are safe
+
+    for (const slot of deadSlots ?? []) {
+      await supabase.from('listing_slots')
+        .update({ status: 'expired', updated_at: now.toISOString() })
+        .eq('id', slot.id)
+
+      if (slot.property_id) {
+        // The listing itself survives as the owner's own record — only its
+        // public visibility ends.
+        await supabase.from('properties')
+          .update({ listing_status: 'expired' })
+          .eq('id', slot.property_id)
+      }
+      slotExpireCount++
+    }
+    if (slotExpireCount) console.log(`[cron] expired ${slotExpireCount} slot(s)`)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    errors.push(`slot-expiry: ${msg}`)
+  }
+
+  // ── 4. Legacy sweep: live listings past their own expiry with no slot ─────
+  // Covers anything created before slots existed, or by a path that failed to
+  // record one. Cheap, and it keeps every reader agreeing about what is live.
+  let staleCount = 0
+  try {
+    const { data: stale } = await supabase
+      .from('properties')
+      .select('id')
+      .eq('listing_status', 'active')
+      .lt('expires_at', now.toISOString())
+
+    for (const p of stale ?? []) {
+      await supabase.from('properties').update({ listing_status: 'expired' }).eq('id', p.id)
+      staleCount++
+    }
+    if (staleCount) console.log(`[cron] expired ${staleCount} stale listing(s)`)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    errors.push(`stale-listings: ${msg}`)
+  }
+
   const summary = {
     ok:               true,
-    ran_at:           now.toISOString(),
-    warnings_sent:    warnCount,
-    listings_expired: expireCount,
+    ran_at:              now.toISOString(),
+    warnings_sent:       warnCount,
+    submissions_expired: expireCount,
+    slots_expired:       slotExpireCount,
+    listings_expired:    staleCount,
     errors,
   }
 

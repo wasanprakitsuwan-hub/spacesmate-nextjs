@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       .from('properties')
       .select('*, images:property_images(*)', { count: 'exact' })
       .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
 
     // Filters
     if (type) {

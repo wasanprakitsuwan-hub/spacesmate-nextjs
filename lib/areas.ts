@@ -75,6 +75,7 @@ export async function getGeneratedAreas(): Promise<GeneratedArea[]> {
       .from('properties')
       .select('district, property_type')
       .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .not('district', 'is', null)
       .limit(5000)
 
