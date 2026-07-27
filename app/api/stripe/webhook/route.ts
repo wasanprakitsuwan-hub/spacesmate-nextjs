@@ -90,7 +90,48 @@ export async function POST(req: NextRequest) {
         .eq('id', propertyId)
 
       if (propErr) console.error('[renew] Failed to reactivate property:', propErr)
-      else console.log(`Property ${propertyId} reactivated → package=${packageId}`)
+      else {
+        console.log(`Property ${propertyId} reactivated → package=${packageId}`)
+
+        // Give the renewed listing a slot too, or extend the one it already has,
+        // so every live listing is backed by exactly one slot regardless of which
+        // route paid for it.
+        try {
+          const { data: existingSlot } = await supabase
+            .from('listing_slots')
+            .select('id')
+            .eq('property_id', propertyId)
+            .maybeSingle()
+
+          if (existingSlot) {
+            await supabase.from('listing_slots').update({
+              status:                 'active',
+              package_type:           packageId,
+              expires_at:             expiresAt.toISOString(),
+              stripe_subscription_id: subscriptionId,
+              stripe_customer_id:     customerId,
+              updated_at:             new Date().toISOString(),
+            }).eq('id', existingSlot.id)
+          } else {
+            const { data: owner } = await supabase
+              .from('properties').select('landlord_id').eq('id', propertyId).maybeSingle()
+            if (owner?.landlord_id) {
+              await supabase.from('listing_slots').insert({
+                user_id:                owner.landlord_id,
+                package_type:           packageId,
+                status:                 'active',
+                expires_at:             expiresAt.toISOString(),
+                property_id:            propertyId,
+                stripe_subscription_id: subscriptionId,
+                stripe_customer_id:     customerId,
+                source:                 'purchase',
+              })
+            }
+          }
+        } catch (slotErr) {
+          console.error('[renew] slot sync (non-fatal):', slotErr)
+        }
+      }
 
       // Keep the original submission in sync so invoice.payment_succeeded works
       if (sourceSubmissionId) {
@@ -221,7 +262,7 @@ export async function POST(req: NextRequest) {
           const safeIntW = (v: unknown) => { const n = parseInt(String(v ?? ''), 10); return isNaN(n) ? null : n }
 
           const buildingId = await resolveBuildingId(supabase, sub.room_types)
-          const { error: propErr } = await supabase.from('properties').insert({
+          const { data: createdProp, error: propErr } = await supabase.from('properties').insert({
             slug,
             property_name_id:     buildingId,
             source_submission_id: submissionId,
@@ -250,10 +291,34 @@ export async function POST(req: NextRequest) {
             expires_at:           expiresAt.toISOString(),
             listing_status:       'active',
             verified:             false,
-          })
+          }).select('id').maybeSingle()
 
           if (propErr) console.error('[webhook] auto-create property error:', propErr)
-          else console.log(`Property auto-created from submission ${submissionId} → landlord=${resolvedUserId} slug=${slug}`)
+          else {
+            console.log(`Property auto-created from submission ${submissionId} → landlord=${resolvedUserId} slug=${slug}`)
+
+            // The public submit flow pays for a listing and a slot in the same
+            // checkout, so record the slot it just bought — occupied by this
+            // listing. Without this the listing would be live with no slot
+            // behind it, and taking it down would silently destroy a paid term
+            // that the owner should be able to reuse.
+            try {
+              if (createdProp?.id && resolvedUserId) {
+                await supabase.from('listing_slots').insert({
+                  user_id:                resolvedUserId,
+                  package_type:           packageId,
+                  status:                 'active',
+                  expires_at:             expiresAt.toISOString(),
+                  property_id:            createdProp.id,
+                  stripe_subscription_id: subscriptionId,
+                  stripe_customer_id:     customerId,
+                  source:                 'purchase',
+                })
+              }
+            } catch (slotErr) {
+              console.error('[webhook] slot for submitted listing (non-fatal):', slotErr)
+            }
+          }
         }
       } catch (propCreateErr) {
         console.error('[webhook] auto-create property (non-fatal):', propCreateErr)
