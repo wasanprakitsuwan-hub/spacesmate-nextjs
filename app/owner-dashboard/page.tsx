@@ -74,12 +74,31 @@ function fmtDate(iso: string | null) {
 }
 
 
+/**
+ * The drawer is full-width on a phone, so the form's two-column grids have to
+ * collapse. Neither owner form passed isMobile, so they stayed side by side and
+ * overflowed on small screens.
+ */
+function useIsNarrow(breakpoint = 780) {
+  const [narrow, setNarrow] = useState(false)
+  useEffect(() => {
+    const check = () => setNarrow(window.innerWidth < breakpoint)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [breakpoint])
+  return narrow
+}
+
 // ── Drawer Wrapper ────────────────────────────────────────────────────────────
 function Drawer({ title, subtitle, onClose, children }: { title: string; subtitle?: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
       <div style={{ flex: 1, background: 'rgba(2,64,46,0.3)', backdropFilter: 'blur(2px)' }} />
-      <div style={{ width: '100%', maxWidth: 620, background: '#fff', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100vh' }} onClick={e => e.stopPropagation()}>
+      {/* 620px was too narrow for the room-type grid, which has six columns —
+          on a wide desktop the form used half the screen while its own table was
+          cramped. min() keeps it full-width on mobile and generous on desktop. */}
+      <div style={{ width: '100%', maxWidth: 'min(1040px, 82vw)', background: '#fff', boxShadow: '-8px 0 40px rgba(2,64,46,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100vh' }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '22px 28px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: '#02402e' }}>{title}</h2>
@@ -95,6 +114,7 @@ function Drawer({ title, subtitle, onClose, children }: { title: string; subtitl
 
 // ── Create Drawer ─────────────────────────────────────────────────────────────
 function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: string; userEmail: string; onClose: () => void; onCreated: () => void }) {
+  const isNarrow = useIsNarrow()
   const [form, setForm]     = useState<FormState>({ ...BLANK })
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -145,7 +165,7 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
   return (
     <Drawer title="เพิ่มประกาศใหม่" subtitle="ประกาศจะเผยแพร่บนเว็บไซต์ทันที" onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <ListingFormFields form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
+        <ListingFormFields isMobile={isNarrow} form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}</div>}
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
@@ -160,6 +180,7 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
 
 // ── Edit Drawer ───────────────────────────────────────────────────────────────
 function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListing; userId: string; onClose: () => void; onSaved: () => void }) {
+  const isNarrow = useIsNarrow()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
 
@@ -297,7 +318,7 @@ function EditDrawer({ listing, userId, onClose, onSaved }: { listing: OwnerListi
   return (
     <Drawer title="แก้ไขประกาศ" subtitle={listing.title_th} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <ListingFormFields form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
+        <ListingFormFields isMobile={isNarrow} form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}</div>}
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>ยกเลิก</button>
