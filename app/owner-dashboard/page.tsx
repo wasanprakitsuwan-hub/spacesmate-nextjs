@@ -401,6 +401,28 @@ export default function OwnerDashboardPage() {
     setLoading(false)
   }, [])
 
+  /**
+   * Arriving from /pricing with ?pay=<package>.
+   *
+   * The visitor has already written a listing and come back to pay for it, so
+   * open checkout on that listing rather than making them find it. With more
+   * than one draft we cannot know which they meant — open the most recent and
+   * let them switch, rather than guessing silently.
+   */
+  useEffect(() => {
+    if (loading) return
+    const pay = new URLSearchParams(window.location.search).get('pay')
+    if (!pay) return
+    const draft = listings.find(l => l.listing_status === 'draft')
+    if (draft) {
+      setRenewError('')
+      setRenewPkg(pay)
+      setRenewTarget(draft)
+    }
+    // Clear the parameter so a refresh does not reopen the modal.
+    window.history.replaceState({}, '', '/owner-dashboard')
+  }, [loading, listings])
+
   useEffect(() => {
     const supabase = createBrowserClient()
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -818,10 +840,10 @@ export default function OwnerDashboardPage() {
           <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
               <div style={{ background: '#fdf3e3', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>
+                <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{renewTarget.listing_status === 'draft' ? 'publish' : 'autorenew'}</span>
               </div>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>ต่ออายุประกาศ</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>{renewTarget.listing_status === 'draft' ? 'เผยแพร่ประกาศ' : 'ต่ออายุประกาศ'}</h3>
                 <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>{renewTarget.title_th}</p>
               </div>
             </div>
@@ -860,7 +882,7 @@ export default function OwnerDashboardPage() {
                 style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: !renewPkg || renewing ? '#94a3b8' : '#d97f11', color: '#fff', fontSize: 14, fontWeight: 700, cursor: !renewPkg || renewing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {renewing
                   ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังโหลด...</>
-                  : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>credit_card</span>ไปชำระเงิน</>}
+                  : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>credit_card</span>{renewTarget.listing_status === 'draft' ? 'ชำระเงินและเผยแพร่' : 'ไปชำระเงิน'}</>}
               </button>
             </div>
           </div>
@@ -1058,13 +1080,19 @@ export default function OwnerDashboardPage() {
                         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                           {l.listing_status === 'draft' ? (
                             <button
-                              onClick={() => publishListing(l.id)}
+                              onClick={() => {
+                                // A free slot means this is already paid for —
+                                // publish it. Otherwise send them to checkout
+                                // for THIS listing, never to a blank form.
+                                if (canCreateNew) { publishListing(l.id); return }
+                                setRenewError(''); setRenewPkg(''); setRenewTarget(l)
+                              }}
                               disabled={publishing === l.id}
                               style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canCreateNew ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
-                              title={canCreateNew ? 'เผยแพร่ประกาศนี้' : 'ยังไม่มีแพ็กเกจว่าง — กดเพื่อดูรายละเอียด'}
+                              title={canCreateNew ? 'เผยแพร่ประกาศนี้ทันที' : 'ซื้อแพ็กเกจเพื่อเผยแพร่ประกาศนี้'}
                             >
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>publish</span>
-                              {publishing === l.id ? '…' : 'เผยแพร่'}
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{canCreateNew ? 'publish' : 'credit_card'}</span>
+                              {publishing === l.id ? '…' : canCreateNew ? 'เผยแพร่' : 'ซื้อแพ็กเกจ'}
                             </button>
                           ) : l.listing_status === 'expired' ? (
                             // Expired: show Renew button prominently
