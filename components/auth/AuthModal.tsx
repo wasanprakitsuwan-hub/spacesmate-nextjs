@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
+import GoogleSignInButton from './GoogleSignInButton'
 
 interface Props {
   onClose: () => void
@@ -341,6 +342,15 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               </p>
             </form>
           ) : tab === 'login' ? (
+            <>
+              {/* Google first, deliberately. The one-tap path should be the
+                  one people see before they start typing a password. */}
+              <GoogleSignInButton label="เข้าสู่ระบบด้วย Google" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>หรือ</span>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
             <form onSubmit={handleLogin}>
               <div style={FG}>
                 <label style={LBL}>อีเมล</label>
@@ -377,7 +387,17 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 </button>
               </p>
             </form>
+            </>
           ) : (
+            <>
+              {/* Google first, deliberately. The one-tap path should be the
+                  one people see before they start typing a password. */}
+              <GoogleSignInButton label="สมัครด้วย Google — ไม่ต้องยืนยันอีเมล" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>หรือ</span>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
             <form onSubmit={handleSignup}>
               {/* ── Honeypot: hidden from humans, but bots fill it ── */}
               <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
@@ -467,6 +487,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 </button>
               </p>
             </form>
+            </>
           )}
         </div>
       </div>

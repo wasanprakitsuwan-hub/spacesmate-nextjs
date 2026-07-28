@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import PhonePrompt from '@/components/auth/PhonePrompt'
 import { trackEvent } from '@/lib/analytics'
 import { PACKAGE_PRICE_THB } from '@/lib/packages'
 import {
@@ -669,6 +670,9 @@ export default function OwnerDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Google-registered owners have no phone number; ask once, here. */}
+      <PhonePrompt />
 
       {publishError && (
         <div style={{ background: '#fdf3e3', border: '1px solid #f3d9ae', color: '#8a5a10', borderRadius: 12, padding: '12px 16px', marginBottom: 18, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>

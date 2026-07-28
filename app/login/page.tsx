@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -120,6 +121,17 @@ export default function LoginPage() {
           </div>
 
           <div className="p-7">
+            {/* Google above the fold on both tabs — the one-tap path should be
+                visible before anyone starts typing a password. */}
+            <GoogleSignInButton
+              label={tab === 'login' ? 'เข้าสู่ระบบด้วย Google' : 'สมัครด้วย Google — ไม่ต้องยืนยันอีเมล'}
+            />
+            <div className="flex items-center gap-3 my-5">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">หรือ</span>
+              <span className="flex-1 h-px bg-gray-200" />
+            </div>
+
             {/* ── LOGIN FORM ── */}
             {tab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
