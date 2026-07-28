@@ -259,12 +259,24 @@ export async function PATCH(req: NextRequest) {
     if (body.publish === true) {
       const { data: draft } = await supabase
         .from('properties')
-        .select('listing_status')
+        .select('listing_status, package_type')
         .eq('id', id)
         .single()
 
       if (draft?.listing_status === 'active') {
         return NextResponse.json({ success: true, published: true })  // already live
+      }
+
+      // Admin listings need no slot — SpacesMate granted them, nobody bought
+      // them, and they never expire. Without this, an owner who takes one down
+      // could not put it back up without paying for something they were given.
+      if (draft?.package_type === 'admin') {
+        const { error: adminErr } = await supabase
+          .from('properties')
+          .update({ listing_status: 'active', expires_at: null, updated_at: new Date().toISOString() })
+          .eq('id', id)
+        if (adminErr) throw adminErr
+        return NextResponse.json({ success: true, published: true, expires_at: null })
       }
 
       const slot = await claimSlot(supabase, userId, id)
