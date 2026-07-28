@@ -384,14 +384,16 @@ export default function OwnerDashboardPage() {
   const [publishing,         setPublishing]         = useState<string | null>(null)
   const [publishError,       setPublishError]       = useState('')
 
-  // Derived: user has a valid active package
+  // Still used by the subscriptions panel to show a package held without a
+  // Stripe subscription behind it.
   const hasActiveListing = listings.some(l =>
     l.expires_at && new Date(l.expires_at) > new Date() && l.listing_status !== 'expired'
   )
-  const hasPackage =
-    subscriptions.some(s => s.stripe_status === 'active' || s.stripe_status === 'trialing') ||
-    (activePackage !== null && (packageExpiresAt === null || new Date(packageExpiresAt) > new Date())) ||
-    hasActiveListing
+
+  // hasPackage removed 29 Jul 2026. It inferred entitlement from subscriptions
+  // and live listings, which listing_slots now answers exactly. Its last use was
+  // gating the empty state's create button — the very wall the slot model exists
+  // to remove.
 
   // Slots are a real table now (listing_slots), counted server-side and returned
   // by /api/owner/listings. This used to be inferred as
@@ -1056,17 +1058,19 @@ export default function OwnerDashboardPage() {
             <p style={{ margin: '0 0 12px' }}><span className="msym" style={{ fontSize: 44, color: '#c7d2d0', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span></p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ยังไม่มีประกาศ</h3>
             <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 24px' }}>เริ่มต้นลงประกาศทรัพย์สินแรกของคุณวันนี้</p>
-            {hasPackage ? (
-              <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                + เพิ่มประกาศใหม่
-              </button>
-            ) : (
-              <div>
-                <p style={{ fontSize: 13.5, color: '#d97f11', margin: '0 0 14px', fontWeight: 500 }}>คุณยังไม่มีแพ็กเกจที่ใช้งานอยู่</p>
-                <a href="/pricing" style={{ background: '#d97f11', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                  <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>ดูแพ็กเกจ
-                </a>
-              </div>
+            {/* Always creatable. Writing a listing and buying a slot are two
+                separate steps now — gating creation on a package sent a first-time
+                owner to the pricing page before they had seen the product, which
+                is the same dead end the header button used to have. With no free
+                slot the listing simply saves as a draft. */}
+            <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              + เพิ่มประกาศใหม่
+            </button>
+            {!canPublishMore && (
+              <p style={{ fontSize: 13, color: '#64748b', margin: '14px 0 0' }}>
+                ยังไม่มีสล็อตว่าง — ประกาศจะถูกบันทึกเป็นฉบับร่าง{' '}
+                <a href="/pricing" style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>ซื้อสล็อต</a>{' '}เมื่อพร้อมเผยแพร่
+              </p>
             )}
           </div>
         ) : (
