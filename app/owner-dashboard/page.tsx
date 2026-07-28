@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import { trackEvent } from '@/lib/analytics'
+import { PACKAGE_PRICE_THB } from '@/lib/packages'
 import {
   FormState, ApartmentUnitRow, CondoRentalDetail, RentalCharges,
   BLANK, BLANK_CONDO, BLANK_CHARGES, PKG_LABEL, TYPE_LABEL,
@@ -164,6 +166,16 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated }: { userId: strin
       if (!res.ok) throw new Error(d.error || 'ไม่สำเร็จ')
       // Tell them plainly which of the two things just happened. Saving work and
       // silently not publishing it is the worst possible outcome here.
+      // The two outcomes are counted separately. This is the whole point of
+      // splitting drafts from slots: an abandonment before this event means the
+      // FORM lost them; an abandonment after it means the PRICE did.
+      trackEvent(d?.published ? 'listing_published' : 'listing_draft_saved', {
+        property_type: form.property_type,
+        image_count:   (form.images ?? []).length,
+        source:        'owner_dashboard',
+        had_free_slot: Boolean(d?.published),
+      })
+
       if (d?.published === false || d?.listing?.listing_status === 'draft') {
         alert('บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศถูกเก็บไว้ครบถ้วน แต่ยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีสล็อตว่าง\n1 สล็อต = เผยแพร่ได้ 1 ประกาศ — ซื้อสล็อตแล้วกด “เผยแพร่” ได้ทันที ไม่ต้องกรอกใหม่')
       }
@@ -401,6 +413,33 @@ export default function OwnerDashboardPage() {
     setLoading(false)
   }, [])
 
+  /**
+   * Returning from Stripe.
+   *
+   * This is the conversion event, but it is NOT the source of truth — the
+   * webhook is. Someone who pays and closes the tab is a real customer who
+   * never fires this, so treat GA4 purchase counts as a floor and reconcile
+   * against listing_slots when the numbers matter.
+   *
+   * transaction_id is the Stripe session id, so refreshing the page cannot
+   * count as a second purchase.
+   */
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const slots = parseInt(q.get('slots') || '0', 10)
+    if (!slots) return
+
+    const pkg = q.get('pkg') || 'basic'
+    trackEvent('slot_purchased', {
+      transaction_id: q.get('sid') || undefined,
+      package_id:     pkg,
+      quantity:       slots,
+      value:          (PACKAGE_PRICE_THB[pkg] ?? 0) * slots,
+      currency:       'THB',
+    })
+    window.history.replaceState({}, '', '/owner-dashboard')
+  }, [])
+
   useEffect(() => {
     const supabase = createBrowserClient()
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -554,11 +593,13 @@ export default function OwnerDashboardPage() {
     const json = await res.json().catch(() => ({}))
     if (!res.ok) {
       // 402 is the expected, non-exceptional case: the listing is ready and the
-      // only thing missing is a package.
+      // only thing missing is a slot.
+      trackEvent('listing_publish_blocked', { reason: json?.error || 'unknown', source: 'publish_button' })
       setPublishError(json?.message || 'เผยแพร่ไม่สำเร็จ')
       setPublishing(null)
       return
     }
+    trackEvent('listing_published', { source: 'draft_publish' })
     await load()
     setPublishing(null)
   }
@@ -572,6 +613,7 @@ export default function OwnerDashboardPage() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${uSess?.access_token}` },
       body: JSON.stringify({ id, unpublish: true }),
     })
+    trackEvent('listing_unpublished', { source: 'owner_dashboard' })
     await load()
     setPublishing(null)
   }
@@ -1085,6 +1127,10 @@ export default function OwnerDashboardPage() {
                                 // listing — with none free the answer is to buy
                                 // capacity, not to check out against this row.
                                 if (canPublishMore) { publishListing(l.id); return }
+                                // The clearest churn signal there is: the
+                                // listing is written and the only thing left is
+                                // to pay.
+                                trackEvent('listing_publish_blocked', { reason: 'no_slot', source: 'draft_row' })
                                 window.location.href = '/pricing'
                               }}
                               disabled={publishing === l.id}

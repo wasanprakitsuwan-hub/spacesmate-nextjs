@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
+import { trackEvent } from '@/lib/analytics'
+import { PACKAGE_PRICE_THB } from '@/lib/packages'
 
 /**
  * Buy publishing slots from the pricing page.
@@ -33,8 +35,18 @@ export default function BuySlotsCta({
     setLoading(true)
     setError('')
     try {
+      trackEvent('slot_checkout_start', {
+        package_id: pkg,
+        quantity:   qty,
+        value:      (PACKAGE_PRICE_THB[pkg] ?? 0) * qty,
+        currency:   'THB',
+      })
+
       const { data: { session } } = await createBrowserClient().auth.getSession()
       if (!session) {
+        // Not a lost sale — a detour. Tracked separately so the gap between
+        // intent and purchase is not silently blamed on price.
+        trackEvent('slot_checkout_needs_account', { package_id: pkg, quantity: qty })
         router.push(`/login?redirect=${encodeURIComponent('/pricing')}`)
         return
       }

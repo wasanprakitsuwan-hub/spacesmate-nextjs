@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { FaqLd } from '@/components/seo/JsonLd'
 import BuySlotsCta from '@/components/pricing/BuySlotsCta'
+import TrackOnMount from '@/components/TrackOnMount'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -153,6 +154,8 @@ const PRICING_FAQ = [
 export default function PricingPage() {
   return (
     <>
+      {/* Denominator for the funnel: how many reach pricing at all. */}
+      <TrackOnMount eventName="pricing_view" />
       <FaqLd qa={PRICING_FAQ} />
     <div className="bg-white min-h-screen">
 

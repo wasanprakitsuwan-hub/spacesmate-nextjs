@@ -37,3 +37,14 @@ export function computeExpiry(packageId: string): string | null {
 export const PACKAGE_LABEL: Record<string, string> = Object.fromEntries(
   ADMIN_PACKAGES.map(p => [p.id, p.label]),
 )
+
+/**
+ * List price in THB per slot. Used only to give GA4 a purchase value — the
+ * amount actually charged is whatever Stripe says, after any promo code.
+ */
+export const PACKAGE_PRICE_THB: Record<string, number> = {
+  basic:    299,
+  standard: 699,
+  premium:  2499,
+  admin:    0,
+}
