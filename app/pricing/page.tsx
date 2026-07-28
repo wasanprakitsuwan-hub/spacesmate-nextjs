@@ -170,16 +170,23 @@ export default function PricingPage() {
       {/* Plans */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
 
-        {/* Promo banner — code must match a live Stripe promotion code.
-            SM299 was deleted 28 Jul 2026 (it was ฿299 off FOREVER, not once). */}
+        {/* Promo banner — the code here must match a live Stripe promotion code.
+            The original SM299 was deleted on 28 Jul 2026: it was ฿299 off
+            FOREVER rather than once, so a Basic subscriber would have been free
+            permanently. Recreated the same day as ฿299 off ONCE, restricted to
+            first-time orders.
+            A fixed amount, not a percentage, deliberately: 100%-off would give
+            away a whole year on Premium and every slot in a multi-slot purchase.
+            This caps the give-away at ฿299 per customer regardless of package
+            or quantity. */}
         <div style={{ maxWidth: 860, margin: '0 auto 32px', padding: '14px 22px', background: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: '1.5px solid #fde68a', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
           <span className="msym" style={{ fontSize: 26, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>sell</span>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#92400e' }}>ลงประกาศฟรีเดือนแรก!</p>
             <p style={{ margin: '3px 0 0', fontSize: 13.5, color: '#78350f' }}>
               ใช้โค้ด{' '}
-              <strong style={{ letterSpacing: 2, color: '#02402e', background: '#fff', padding: '2px 10px', borderRadius: 7, fontSize: 14, border: '1px solid #d97f11', fontFamily: 'monospace' }}>FREE1Month</strong>
-              {' '}ขั้นตอนสุดท้าย — สล็อตแรกฟรี 1 รอบบิล (แพ็กเกจ Basic)
+              <strong style={{ letterSpacing: 2, color: '#02402e', background: '#fff', padding: '2px 10px', borderRadius: 7, fontSize: 14, border: '1px solid #d97f11', fontFamily: 'monospace' }}>SM299</strong>
+              {' '}ขั้นตอนสุดท้าย — ลด ฿299 สำหรับการซื้อครั้งแรก (สล็อตแรกฟรีสำหรับ Basic)
             </p>
           </div>
         </div>
