@@ -44,6 +44,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
+      // Idempotency guard. Now that a shortfall returns 500 and Stripe retries,
+      // a delivery that inserted its rows and then failed to respond (timeout,
+      // cold-start kill) would be retried and grant a second set. Slots are
+      // money, so check before granting rather than trusting delivery-once.
+      //
+      // Safe on the resend path too: manually resending a processed event is a
+      // no-op instead of a duplicate grant.
+      if (subscriptionId) {
+        const { data: already, error: dupErr } = await supabase
+          .from('listing_slots')
+          .select('id')
+          .eq('stripe_subscription_id', subscriptionId)
+          .limit(1)
+
+        if (dupErr) {
+          console.error('[slots] idempotency check failed —', dupErr.message)
+          return NextResponse.json({ error: 'slot precheck failed' }, { status: 500 })
+        }
+        if ((already?.length ?? 0) > 0) {
+          console.log(`[slots] ${subscriptionId} already granted — skipping duplicate`)
+          return NextResponse.json({ received: true, duplicate: true })
+        }
+      }
+
       const granted = await grantSlots(supabase, {
         userId,
         packageType:            packageId,
@@ -51,6 +75,26 @@ export async function POST(req: NextRequest) {
         stripeSubscriptionId:   subscriptionId,
         stripeCustomerId:       customerId,
       })
+
+      // FAIL LOUDLY. grantSlots swallows its error and returns 0, so returning
+      // 200 here tells Stripe everything is fine and it never retries — the
+      // customer has paid and received nothing, and no system reports a problem.
+      // That is exactly how a missing GRANT on listing_slots went unnoticed.
+      //
+      // A non-2xx makes Stripe retry with backoff for ~3 days, which turns a
+      // transient database fault into a self-healing delay instead of lost
+      // money, and puts the failure on the Stripe dashboard where it is visible.
+      if (granted < quantity) {
+        console.error(
+          `[slots] GRANT SHORTFALL — paid for ${quantity}×${packageId}, granted ${granted}. ` +
+          `user=${userId} session=${session.id} sub=${subscriptionId}`,
+        )
+        return NextResponse.json(
+          { error: 'slot grant failed', granted, expected: quantity },
+          { status: 500 },
+        )
+      }
+
       console.log(`[slots] granted ${granted}×${packageId} to ${userId}`)
 
       // Renewal came through this route: publish the listing straight into the

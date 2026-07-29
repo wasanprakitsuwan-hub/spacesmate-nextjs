@@ -11,6 +11,14 @@ export interface SubscriptionItem {
   expires_at: string | null
   cancel_at_period_end: boolean
   next_billing_date: string | null
+  // ── Slot model ──────────────────────────────────────────────────────────────
+  // A subscription buys N slots, and each slot may or may not currently hold a
+  // listing. `listing_title` (singular, submission-derived) cannot express that
+  // and reads "ไม่ระบุประกาศ" for every slot purchase, because a slot purchase
+  // deliberately creates no submission row.
+  slot_count: number          // active slots this subscription pays for
+  slots_used: number          // how many currently hold a listing
+  listing_titles: string[]    // titles of the listings occupying them
 }
 
 // GET — return ALL subscriptions for the logged-in owner
@@ -136,15 +144,75 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 3b. Slots — the real answer to "which listing is this package paying for?"
+  //
+  //     In the slot model the link between money and listing lives on
+  //     listing_slots, not submissions. Reading it here also picks up pure slot
+  //     purchases that none of the paths above can see: those create no
+  //     submission row at all, so a customer whose stripe_customer_id was never
+  //     stamped would otherwise have an invisible subscription.
+  const slotInfo = new Map<string, { total: number; used: number; titles: string[] }>()
+  {
+    const { data: slotRows, error: slotErr } = await supabase
+      .from('listing_slots')
+      .select('stripe_subscription_id, property_id, status, properties:property_id (title_th, title_en)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .not('stripe_subscription_id', 'is', null)
+
+    if (slotErr) {
+      // Loud, because a silent failure here is exactly what hid the missing
+      // GRANT on this table for two days.
+      console.error('[subscription] slot lookup failed —', slotErr.message)
+    }
+
+    for (const row of slotRows ?? []) {
+      const subId = row.stripe_subscription_id as string
+      if (!subId) continue
+
+      const entry = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [] }
+      entry.total += 1
+
+      if (row.property_id) {
+        entry.used += 1
+        // PostgREST returns the embedded row as an object, or an array if it
+        // resolves the relationship as one-to-many. Handle both.
+        const prop = Array.isArray(row.properties) ? row.properties[0] : row.properties
+        const title = (prop as { title_th?: string; title_en?: string } | null)?.title_th
+          || (prop as { title_th?: string; title_en?: string } | null)?.title_en
+        if (title) entry.titles.push(title)
+      }
+      slotInfo.set(subId, entry)
+    }
+
+    // Surface slot-backed subscriptions the earlier paths missed entirely.
+    for (const subId of Array.from(slotInfo.keys())) {
+      if (!subMap.has(subId)) {
+        subMap.set(subId, {
+          submission_id: null,
+          listing_title: null,
+          package_type:  'basic',
+          expires_at:    null,
+        })
+      }
+    }
+  }
+
   // 4. Fetch live Stripe status for every entry in the map
   const results: SubscriptionItem[] = []
 
   for (const [subId, meta] of Array.from(subMap.entries())) {
+    const slots = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [] }
+    // Prefer a slot-derived title: it reflects what is published right now,
+    // whereas the submission title is whatever the listing was called when it
+    // was first paid for.
+    const primaryTitle = slots.titles[0] ?? meta.listing_title
+
     try {
       const stripeSub = await stripe.subscriptions.retrieve(subId)
       results.push({
         submission_id:           meta.submission_id,
-        listing_title:           meta.listing_title,
+        listing_title:           primaryTitle,
         stripe_subscription_id:  subId,
         stripe_status:           stripeSub.status,
         package_type:            (stripeSub.metadata?.package_id as string) || meta.package_type,
@@ -153,18 +221,24 @@ export async function GET(req: NextRequest) {
         next_billing_date:       stripeSub.current_period_end
           ? new Date(stripeSub.current_period_end * 1000).toISOString()
           : null,
+        slot_count:              slots.total,
+        slots_used:              slots.used,
+        listing_titles:          slots.titles,
       })
     } catch {
       // Subscription was deleted in Stripe — include as cancelled so owner can see it
       results.push({
         submission_id:          meta.submission_id,
-        listing_title:          meta.listing_title,
+        listing_title:          primaryTitle,
         stripe_subscription_id: subId,
         stripe_status:          'canceled',
         package_type:           meta.package_type,
         expires_at:             meta.expires_at,
         cancel_at_period_end:   false,
         next_billing_date:      null,
+        slot_count:             slots.total,
+        slots_used:             slots.used,
+        listing_titles:         slots.titles,
       })
     }
   }

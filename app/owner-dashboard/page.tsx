@@ -21,6 +21,9 @@ interface SubscriptionItem {
   expires_at: string | null
   cancel_at_period_end: boolean
   next_billing_date: string | null
+  slot_count?: number
+  slots_used?: number
+  listing_titles?: string[]
 }
 
 interface OwnerListing {
@@ -741,10 +744,43 @@ export default function OwnerDashboardPage() {
                     )}
                   </div>
                   <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {sub.listing_title
-                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{sub.listing_title}</span>
-                      : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่ระบุประกาศ</span>
-                    }
+                    {/* What this package is actually paying for. A subscription
+                        buys N slots; each may or may not hold a listing today. */}
+                    {(() => {
+                      const total  = sub.slot_count ?? 0
+                      const used   = sub.slots_used ?? 0
+                      const titles = sub.listing_titles ?? []
+                      const icon = (
+                        <span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>
+                      )
+
+                      // No slot rows — an older submission-era subscription.
+                      if (total === 0) {
+                        return sub.listing_title
+                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{icon}{sub.listing_title}</span>
+                          : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่ระบุประกาศ</span>
+                      }
+
+                      // Paid for, nothing published into it yet — actionable, so
+                      // say it in amber rather than grey.
+                      if (used === 0) {
+                        return (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d97f11' }}>
+                            {icon}{total === 1 ? 'ยังไม่ได้ใช้สล็อต' : `ยังไม่ได้ใช้ ${total} สล็อต`}
+                          </span>
+                        )
+                      }
+
+                      return (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          {icon}
+                          {titles.join(', ')}
+                          {total > 1 && (
+                            <span style={{ color: '#94a3b8' }}>&nbsp;— ใช้ {used} จาก {total} สล็อต</span>
+                          )}
+                        </span>
+                      )
+                    })()}
                     {sub.expires_at && <span style={{ color: '#94a3b8' }}>·</span>}
                     {sub.expires_at && (
                       <span>{isCancelled ? 'หมดอายุ' : 'ต่ออายุ'}: {new Date(sub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
@@ -848,7 +884,19 @@ export default function OwnerDashboardPage() {
               {targetSub && (
                 <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13, color: '#334155' }}>
                   <div style={{ fontWeight: 600 }}>แพ็กเกจ {pkgLabel}</div>
-                  {targetSub.listing_title && <div style={{ color: '#64748b', marginTop: 2 }}>ประกาศ: {targetSub.listing_title}</div>}
+                  {/* Cancelling voids every slot on this subscription, so name
+                      them all — not just the first. Cancelling a 3-slot package
+                      while three listings are live should not read as one. */}
+                  {(targetSub.listing_titles?.length ?? 0) > 0
+                    ? (
+                      <div style={{ color: '#64748b', marginTop: 2 }}>
+                        ประกาศที่ได้รับผลกระทบ ({targetSub.listing_titles!.length}): {targetSub.listing_titles!.join(', ')}
+                      </div>
+                    )
+                    : targetSub.listing_title && (
+                      <div style={{ color: '#64748b', marginTop: 2 }}>ประกาศ: {targetSub.listing_title}</div>
+                    )
+                  }
                   {targetSub.expires_at && (
                     <div style={{ color: '#64748b', marginTop: 2 }}>
                       หมดอายุ: <strong style={{ color: '#d97f11' }}>{new Date(targetSub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
