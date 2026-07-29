@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
 
 interface StatsData {
   activeListings: number
@@ -53,12 +54,36 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }
 export default function DashboardOverview() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
-      .then(r => r.json())
-      .then(d => { setStats(d); setLoading(false) })
-      .catch(() => setLoading(false))
+    ;(async () => {
+      try {
+        // /api/dashboard/stats is behind requireAdmin. This call previously sent
+        // no Authorization header at all, so it was answered with 401 every
+        // time — and because the old code never checked r.ok, the error body
+        // was set as `stats`, every field came back undefined, and `?? 0`
+        // painted a confident wall of zeros. The dashboard was not wrong about
+        // the data; it was never allowed to read any.
+        const { data: { session } } = await createBrowserClient().auth.getSession()
+        if (!session) { setError('เซสชันหมดอายุ — กรุณาเข้าสู่ระบบใหม่'); setLoading(false); return }
+
+        const r = await fetch('/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const d = await r.json()
+
+        // Never render a number we did not actually receive. A dashboard that
+        // shows 0 when it means "I don't know" is worse than one that shows
+        // nothing, because 0 is a fact people act on.
+        if (!r.ok) throw new Error(d?.error || `โหลดข้อมูลไม่สำเร็จ (${r.status})`)
+        setStats(d)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'โหลดข้อมูลไม่สำเร็จ')
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [])
 
   const now = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -84,13 +109,25 @@ export default function DashboardOverview() {
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <p style={{ margin: 0, fontSize: 13 }}>กำลังโหลด...</p>
         </div>
+      ) : error ? (
+        <div style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: 16, padding: '28px 24px', textAlign: 'center' }}>
+          <span className="msym" style={{ fontSize: 30, color: '#b91c1c', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>error</span>
+          <p style={{ fontSize: 14, color: '#b91c1c', fontWeight: 600, margin: '8px 0 4px' }}>{error}</p>
+          <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 16px' }}>
+            ไม่แสดงตัวเลขเมื่ออ่านข้อมูลไม่ได้ — ตัวเลข 0 ที่ไม่ใช่ของจริงอันตรายกว่าไม่แสดงเลย
+          </p>
+          <button onClick={() => location.reload()} style={{
+            background: '#02402e', color: '#fff', border: 0, borderRadius: 10,
+            padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>ลองใหม่</button>
+        </div>
       ) : (
         <>
           {/* ── KPI CARDS ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 20 }}>
             {[
               {
-                label: 'ประกาศทั้งหมด',
+                label: 'ประกาศที่เผยแพร่อยู่',
                 value: stats?.activeListings ?? 0,
                 delta: `${stats?.pending ?? 0} คำขอรอตรวจสอบ`,
                 deltaColor: (stats?.pending ?? 0) > 0 ? '#d97f11' : '#22c55e',
@@ -99,9 +136,12 @@ export default function DashboardOverview() {
                 icon: 'home_work',
               },
               {
-                label: 'ผู้ใช้ที่ลงประกาศ',
+                label: 'เจ้าของที่มีประกาศ',
                 value: stats?.uniqueUsers ?? 0,
-                delta: `จากประกาศทั้งหมด`,
+                // Distinct landlord_id across live listings — the same rows the
+                // card to the left counts. Previously this was distinct email
+                // in the submissions queue, a different population entirely.
+                delta: 'จากประกาศที่เผยแพร่อยู่',
                 deltaColor: '#94a3b8',
                 iconBg: '#e0f2f9',
                 iconColor: '#0284c7',
@@ -146,7 +186,10 @@ export default function DashboardOverview() {
             <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: '#02402e' }}>ประกาศตามประเภท</h2>
-                <span style={{ fontSize: 13, color: '#94a3b8' }}>รวม {stats?.total ?? 0} รายการ</span>
+                {/* This total must be the one the bars are drawn from. It used
+                    to read stats.total — the submissions queue — so the bars
+                    never added up to the number printed beside them. */}
+                <span style={{ fontSize: 13, color: '#94a3b8' }}>รวม {stats?.activeListings ?? 0} รายการ</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {ALL_TYPES.map(t => {

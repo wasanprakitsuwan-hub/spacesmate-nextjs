@@ -97,17 +97,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 4,
         position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
       }}>
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 10px 20px' }}>
-          <span style={{
-            width: 30, height: 30, borderRadius: 9, background: '#d97f11',
-            color: '#02402e', fontWeight: 700, fontSize: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>S</span>
-          <div style={{ lineHeight: 1.1 }}>
-            <div style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>SpacesMate</div>
-            <div style={{ color: '#d97f11', fontSize: 10, fontWeight: 600, letterSpacing: 1.5 }}>ADMIN</div>
-          </div>
+        {/* Brand.
+            The real mark, not an orange "S" placeholder. logo-white-h.png is
+            the white logo cropped to its own edges — the source file carries a
+            wide transparent margin, so setting a height on it renders the mark
+            at roughly two thirds the size asked for and it looks shrunken next
+            to everything else. Cropping is the fix; scaling up is not.
+            The mark already contains the SPACES MATE wordmark, so the only text
+            left here is what the logo does not say: which surface this is. */}
+        <div style={{ padding: '4px 10px 22px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-white-h.png"
+            alt="SpacesMate"
+            style={{ width: 140, height: 'auto', display: 'block' }}
+          />
+          <div style={{
+            color: '#d97f11', fontSize: 10, fontWeight: 600, letterSpacing: 1.6,
+            marginTop: 7,
+          }}>ADMIN</div>
         </div>
 
         {/* Nav */}

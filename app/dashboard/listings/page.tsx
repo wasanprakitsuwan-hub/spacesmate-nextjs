@@ -1325,10 +1325,19 @@ function SubmissionsTab() {
     try {
       const params = new URLSearchParams()
       if (filter) params.set('status', filter)
-      const r = await fetch(`/api/dashboard/submissions?${params}`)
+      // /api/dashboard/submissions is behind requireAdmin. Without this header
+      // it answers 401 and the empty catch below turns that into "no
+      // submissions" — the same failure that made the overview show zeros.
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch(`/api/dashboard/submissions?${params}`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      })
       const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || `โหลดคำขอไม่สำเร็จ (${r.status})`)
       setItems(d.data ?? [])
-    } catch {}
+    } catch (e) {
+      console.error('[submissions]', e)
+    }
     setLoading(false)
   }, [filter])
 
@@ -1336,7 +1345,19 @@ function SubmissionsTab() {
 
   async function updateStatus(id: string, status: string) {
     setActionLoading(id + status)
-    await fetch(`/api/dashboard/submissions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+    // Also guarded by requireAdmin. Without the token this silently did
+    // nothing: the PATCH was rejected, load() re-read unchanged data, and the
+    // row simply snapped back to its old status with no error shown.
+    const { data: { session } } = await createBrowserClient().auth.getSession()
+    const r = await fetch(`/api/dashboard/submissions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ status }),
+    })
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}))
+      alert(d?.error || `เปลี่ยนสถานะไม่สำเร็จ (${r.status})`)
+    }
     await load()
     setActionLoading(null)
   }
