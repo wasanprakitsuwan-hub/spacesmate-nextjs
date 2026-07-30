@@ -25,7 +25,11 @@ function toPost(r: Record<string, unknown>) {
 }
 
 // ── GET — fetch all posts (public — no auth required) ─────────────────────────
-export async function GET() {
+/** GUARDED. Returns unpublished drafts as well as live posts. */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

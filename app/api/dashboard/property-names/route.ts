@@ -7,7 +7,16 @@ import { requireAdmin, isErr } from '@/lib/auth-guard'
 // PATCH /api/dashboard/property-names — update name (admin+)
 // DELETE /api/dashboard/property-names?id=xxx — delete (super_admin only)
 
-export async function GET() {
+/**
+ * GUARDED. The listing form's autocomplete reads /api/property-names instead —
+ * a deliberately public route serving names and slugs only. Keeping this one
+ * guarded means every handler under /api/dashboard requires a session, which is
+ * what makes the audit in the commit message worth trusting.
+ */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

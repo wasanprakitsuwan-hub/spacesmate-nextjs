@@ -270,11 +270,12 @@ export default function PagesPage() {
   const load = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const r = await fetch('/api/dashboard/pages')
+      const r = await fetch('/api/dashboard/pages', { headers: await authHeaders() })
       const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || `โหลดข้อมูลไม่สำเร็จ (${r.status})`)
       setPages(d.pages ?? [])
-    } catch {
-      setError('ไม่สามารถโหลดข้อมูลได้')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'ไม่สามารถโหลดข้อมูลได้')
     } finally {
       setLoading(false)
     }

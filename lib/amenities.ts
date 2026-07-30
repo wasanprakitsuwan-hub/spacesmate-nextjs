@@ -112,10 +112,17 @@ export function normaliseAmenity(row: Record<string, unknown>, index: number): A
  * The fallback matters: if the settings request fails, a form rendering zero
  * amenities looks like a broken page and would silently produce listings with
  * none selected.
+ *
+ * Reads /api/settings/public, NOT /api/dashboard/settings. The listing form is
+ * rendered for the public submit page and the owner dashboard as well as for
+ * admins, so this call has to work without an admin session — and the dashboard
+ * settings route is admin-only because it will read any key in the table. If
+ * this is ever pointed back at the dashboard route, non-admins silently drop to
+ * DEFAULT_AMENITIES and the editable list stops applying without any error.
  */
 export async function fetchAmenities(): Promise<Amenity[]> {
   try {
-    const res = await fetch('/api/dashboard/settings?key=amenities')
+    const res = await fetch('/api/settings/public?key=amenities')
     if (!res.ok) return DEFAULT_AMENITIES
     const json = await res.json()
     const raw = json?.data

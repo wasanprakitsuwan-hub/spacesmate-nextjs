@@ -673,7 +673,8 @@ export default function BlogPage() {
 
   // ── Load posts from Supabase on mount ──────────────────────────────────────
   useEffect(() => {
-    fetch('/api/dashboard/blog')
+    getToken()
+      .then(token => fetch('/api/dashboard/blog', { headers: { Authorization: `Bearer ${token}` } }))
       .then(r => r.json())
       .then(d => {
         if (Array.isArray(d.posts)) {

@@ -64,10 +64,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!authReady) return
-    fetch('/api/dashboard/stats')
-      .then(r => r.json())
-      .then(d => setPendingBadge(d.pending ?? 0))
-      .catch(() => {})
+    // The sidebar's pending badge. Without the token this was a 401 and the
+    // badge silently stayed at 0 forever — so a queue of submissions waiting for
+    // review looked like an empty one.
+    ;(async () => {
+      try {
+        const { data: { session } } = await createBrowserClient().auth.getSession()
+        if (!session) return
+        const r = await fetch('/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (!r.ok) return
+        const d = await r.json()
+        setPendingBadge(d.pending ?? 0)
+      } catch { /* a missing badge is not worth interrupting the page for */ }
+    })()
   }, [authReady])
 
   async function handleLogout() {

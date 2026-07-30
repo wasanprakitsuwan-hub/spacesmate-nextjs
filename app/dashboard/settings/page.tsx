@@ -90,6 +90,28 @@ async function getToken(): Promise<string> {
   return session?.access_token ?? ''
 }
 
+/**
+ * Read one setting.
+ *
+ * /api/dashboard/settings is admin-only. Every read on this screen used to omit
+ * the token while every WRITE sent it — and that asymmetry was dangerous, not
+ * merely broken. The read came back 401, each empty .catch() swallowed it, the
+ * form sat on its hardcoded defaults as though nothing were saved, and then the
+ * next save wrote those defaults back over whatever was actually stored.
+ *
+ * Failures are thrown so a section can show them rather than silently present
+ * defaults as if they were the saved values.
+ */
+async function loadSetting<T = unknown>(key: string): Promise<T | null> {
+  const token = await getToken()
+  const r = await fetch(`/api/dashboard/settings?key=${encodeURIComponent(key)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const d = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(d?.error || `โหลดค่าไม่สำเร็จ (${r.status})`)
+  return (d?.data ?? null) as T | null
+}
+
 async function saveSetting(key: string, value: unknown): Promise<void> {
   const token = await getToken()
   const r = await fetch('/api/dashboard/settings', {
@@ -274,10 +296,9 @@ function EmailNotifications() {
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    fetch('/api/dashboard/settings?key=email_templates')
-      .then(r => r.json())
-      .then(({ data }) => { if (Array.isArray(data)) setTemplates(data) })
-      .catch(() => {})
+    loadSetting<EmailTemplate[]>('email_templates')
+      .then(data => { if (Array.isArray(data)) setTemplates(data) })
+      .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
   function toggle(id: string) {
@@ -389,19 +410,19 @@ function TypesAndAmenities() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/dashboard/settings?key=property_types').then(r => r.json()),
-      fetch('/api/dashboard/settings?key=amenities').then(r => r.json()),
-    ]).then(([ptRes, amRes]) => {
-      if (Array.isArray(ptRes.data)) setPropTypes(ptRes.data)
+      loadSetting<unknown[]>('property_types'),
+      loadSetting<Record<string, unknown>[]>('amenities'),
+    ]).then(([propertyTypes, amenityRows]) => {
+      if (Array.isArray(propertyTypes)) setPropTypes(propertyTypes as typeof propTypes)
       // Older saved lists used four categories; normaliseAmenity maps them onto
       // the two sections so nothing has to be re-entered by hand.
-      if (Array.isArray(amRes.data) && amRes.data.length) {
-        const list = amRes.data
-          .map((r: Record<string, unknown>, k: number) => normaliseAmenity(r, k))
+      if (Array.isArray(amenityRows) && amenityRows.length) {
+        const list = amenityRows
+          .map((r, k) => normaliseAmenity(r, k))
           .filter(Boolean) as AmenityTag[]
         if (list.length) setAmenities(list)
       }
-    }).catch(() => {})
+    }).catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
   async function handleSave() {
@@ -561,12 +582,11 @@ function CompanyInfo() {
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    fetch('/api/dashboard/settings?key=company_info')
-      .then(r => r.json())
-      .then(({ data }) => {
-        if (data && typeof data === 'object') setForm({ ...DEFAULT_COMPANY_INFO, ...data as typeof DEFAULT_COMPANY_INFO })
+    loadSetting<typeof DEFAULT_COMPANY_INFO>('company_info')
+      .then(data => {
+        if (data && typeof data === 'object') setForm({ ...DEFAULT_COMPANY_INFO, ...data })
       })
-      .catch(() => {})
+      .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
@@ -669,12 +689,11 @@ function SeoAeoSettings() {
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    fetch('/api/dashboard/settings?key=seo_settings')
-      .then(r => r.json())
-      .then(({ data }) => {
-        if (data && typeof data === 'object') setForm({ ...DEFAULT_SEO_SETTINGS, ...data as typeof DEFAULT_SEO_SETTINGS })
+    loadSetting<typeof DEFAULT_SEO_SETTINGS>('seo_settings')
+      .then(data => {
+        if (data && typeof data === 'object') setForm({ ...DEFAULT_SEO_SETTINGS, ...data })
       })
-      .catch(() => {})
+      .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
   function set(k: string, v: string | boolean) { setForm(f => ({ ...f, [k]: v })) }

@@ -58,7 +58,22 @@ export async function PATCH(req: NextRequest) {
 }
 
 // ── POST — submit a new location/project request (public) ────────────────────
+/**
+ * GUARDED.
+ *
+ * This handler has no caller anywhere in the app — the settings screen only
+ * reads and PATCHes. It looks like the server half of a "request a new district"
+ * feature that was never wired up on the front end, and it sat open: an
+ * unauthenticated insert into location_requests, which anyone could have used to
+ * fill the table.
+ *
+ * If that public feature is wanted later, it needs its own public route with
+ * rate limiting and length caps. Reopening this one is not the way to get it.
+ */
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const { text, type, submitted_by } = await req.json()
     if (!text || !type) {

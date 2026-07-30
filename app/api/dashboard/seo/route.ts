@@ -6,7 +6,11 @@ import { requireAdmin, isErr } from '@/lib/auth-guard'
 // POST /api/dashboard/seo — add a page
 // PATCH /api/dashboard/seo — update status/fields
 
-export async function GET() {
+/** GUARDED. The public site reads seo_pages server-side, not through here. */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

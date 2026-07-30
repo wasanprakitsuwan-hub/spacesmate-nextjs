@@ -45,7 +45,10 @@ export default function BuildingAutocomplete({
   useEffect(() => { setQuery(value) }, [value])
 
   useEffect(() => {
-    fetch('/api/dashboard/property-names')
+    // /api/property-names, not the /api/dashboard one. This form renders for
+    // the public submit page and the owner dashboard, neither of which has an
+    // admin token — and everything under /api/dashboard now requires one.
+    fetch('/api/property-names')
       .then(r => r.json())
       .then(d => setNames(d.names ?? []))
       .catch(() => { /* registry unavailable — field still works as free text */ })

@@ -1,6 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
+
+async function getToken(): Promise<string> {
+  const { data: { session } } = await createBrowserClient().auth.getSession()
+  return session?.access_token ?? ''
+}
 
 interface Submission {
   id: string
@@ -42,13 +48,24 @@ export default function EnquiriesPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [error, setError] = useState('')
+
+  // /api/dashboard/submissions requires an admin token. This page never sent
+  // one, so it has been showing an empty board and silently discarding every
+  // status change — the empty catch made a 401 indistinguishable from
+  // "no enquiries".
   const load = useCallback(async () => {
-    setLoading(true)
+    setLoading(true); setError('')
     try {
-      const r = await fetch('/api/dashboard/submissions')
+      const r = await fetch('/api/dashboard/submissions', {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      })
       const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || `โหลดข้อมูลไม่สำเร็จ (${r.status})`)
       setItems(d.data ?? d.submissions ?? [])
-    } catch {}
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'โหลดข้อมูลไม่สำเร็จ')
+    }
     setLoading(false)
   }, [])
 
@@ -56,9 +73,15 @@ export default function EnquiriesPage() {
 
   async function move(id: string, status: string) {
     setActionLoading(id)
-    await fetch(`/api/dashboard/submissions/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
+    const r = await fetch(`/api/dashboard/submissions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getToken()}` },
+      body: JSON.stringify({ status }),
     })
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}))
+      setError(d?.error || `เปลี่ยนสถานะไม่สำเร็จ (${r.status})`)
+    }
     await load()
     setActionLoading(null)
   }
@@ -72,6 +95,15 @@ export default function EnquiriesPage() {
         <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 3px', color: '#02402e' }}>คำขอรับบริการ</h1>
         <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>จัดการสถานะประกาศแบบ Kanban</p>
       </div>
+
+      {/* An error has to be visible. An empty Kanban board is a perfectly
+          plausible sight, which is why this page could fail for weeks unnoticed. */}
+      {error && (
+        <div style={{
+          background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 12,
+          padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#b91c1c', fontWeight: 500,
+        }}>{error}</div>
+      )}
 
       {loading ? (
         <div style={{ padding: 80, textAlign: 'center', color: '#94a3b8' }}>

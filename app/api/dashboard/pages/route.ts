@@ -3,7 +3,15 @@ import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 
 // GET /api/dashboard/pages — all pages (exclude deleted)
-export async function GET() {
+/**
+ * GUARDED. Middleware does NOT use this route — it calls
+ * /api/dashboard/pages/unpublished, which has its own shared-secret check and
+ * must stay reachable on every request. Guarding this one is safe.
+ */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

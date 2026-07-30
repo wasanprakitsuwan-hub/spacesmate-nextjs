@@ -3,7 +3,18 @@ import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 
 // ── GET — fetch one setting by ?key= or all settings ─────────────────────────
+/**
+ * GUARDED. This will read ANY key in site_settings, so it must stay admin-only
+ * regardless of how harmless the currently-stored keys look — the risk is what
+ * gets stored there later.
+ *
+ * Non-admins that need one specific setting go through /api/settings/public,
+ * which serves a named allowlist. Do not relax this route to serve them.
+ */
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const key = req.nextUrl.searchParams.get('key')

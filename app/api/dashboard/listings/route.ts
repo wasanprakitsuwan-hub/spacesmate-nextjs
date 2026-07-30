@@ -4,7 +4,18 @@ import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 
 // ── GET — fetch all properties from Supabase ─────────────────────────────────
-export async function GET() {
+/**
+ * GUARDED. This returns properties.* with the service-role client, which
+ * includes contact_name, contact_phone, contact_email, contact_line and
+ * landlord_id for every listing, drafts included. It ran unauthenticated until
+ * 30 Jul 2026 — anyone who knew the path could retrieve every owner's contact
+ * details. Do not remove the guard, and do not narrow it to a select() list and
+ * call that a fix: the guard is the fix.
+ */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req)
+  if (isErr(auth)) return auth
+
   try {
     const supabase = createServerClient()
     const { data, error } = await supabase

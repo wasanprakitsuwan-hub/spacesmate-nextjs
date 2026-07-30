@@ -1163,9 +1163,17 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
 
   const loadDb = useCallback(async () => {
     setLoadingDb(true)
-    const r = await fetch('/api/dashboard/listings')
-    const d = await r.json()
-    setDbListings(d.listings ?? [])
+    try {
+      const { data: { session } } = await createBrowserClient().auth.getSession()
+      const r = await fetch('/api/dashboard/listings', {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || `โหลดประกาศไม่สำเร็จ (${r.status})`)
+      setDbListings(d.listings ?? [])
+    } catch (e) {
+      console.error('[listings load]', e)
+    }
     setLoadingDb(false)
   }, [])
 
