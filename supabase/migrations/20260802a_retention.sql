@@ -12,7 +12,7 @@
 -- WHAT IS AND IS NOT HERE
 --
 --   A1  Listings, 24 months after inactive          ✓ below
---   A2  Submissions, 12 months / 6 months rejected  ✗ pending — see note at end
+--   A2  Submissions, 12 months / 6 months rejected  ✓ below
 --   A3  Accounts, 12 months after closure           ✗ not implementable — see below
 --   A4  Billing, 7 years                            — a floor, not a job. A1 honours it.
 --   A5  location_requests                           ✓ dropped below
@@ -94,6 +94,58 @@ BEGIN
 END $$;
 
 
+-- ── 3b. A2 · Submissions ─────────────────────────────────────────────────────
+--
+-- Columns confirmed against the live database on 2 August 2026:
+--   status text · created_at, updated_at, expires_at timestamptz
+--   contact_name, contact_phone, contact_email, contact_line text
+--
+-- Observed status values: rejected, approved, expired, pending_payment.
+--
+-- The approved rule was "12 months after the resulting listing is created".
+-- There is no column linking a submission to the property it became, so that
+-- join does not exist. `updated_at` is used instead — it moves when the
+-- submission is approved, which is the same moment. Equivalent in practice, and
+-- honest about what the data actually supports.
+--
+-- Deletes the row rather than clearing the contact fields: a submission with its
+-- contact details stripped is not a record of anything useful.
+
+CREATE OR REPLACE FUNCTION public.retention_purge_submissions_accepted()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE n INTEGER;
+BEGIN
+  DELETE FROM public.submissions
+  WHERE status = 'approved'
+    AND updated_at < (now() - INTERVAL '12 months');
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
+-- Rejected, expired and abandoned payment attempts — 6 months.
+-- No relationship was formed. Kept only long enough to answer "why was I turned
+-- down?", and `pending_payment` is included because a checkout never completed
+-- is an abandonment, not a pending decision.
+CREATE OR REPLACE FUNCTION public.retention_purge_submissions_rejected()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE n INTEGER;
+BEGIN
+  DELETE FROM public.submissions
+  WHERE status IN ('rejected', 'expired', 'pending_payment')
+    AND updated_at < (now() - INTERVAL '6 months');
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
+
 -- ── 4. Runner ────────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.retention_run_all()
@@ -103,7 +155,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  jobs TEXT[] := ARRAY['retention_purge_listings'];
+  jobs TEXT[] := ARRAY[
+    'retention_purge_listings',
+    'retention_purge_submissions_accepted',
+    'retention_purge_submissions_rejected'
+  ];
   j TEXT;
   n INTEGER;
 BEGIN
@@ -137,18 +193,17 @@ SELECT cron.schedule(
 -- STILL OUTSTANDING
 -- ═════════════════════════════════════════════════════════════════════════════
 --
--- A2 · SUBMISSIONS
---   The approved rule is 12 months after the resulting listing exists, 6 months
---   for rejected or unactioned. Not written yet because `submissions` is not
---   created by any migration in this repository — it was made by hand — so its
---   columns have not been verified. Writing a DELETE against a table whose
---   shape is assumed is how retention jobs quietly destroy the wrong rows.
+-- SUBMISSIONS IS NOT UNDER MIGRATION CONTROL
+--   The retention jobs above are written against columns verified directly on
+--   the live database, but no migration in this repository creates the table.
+--   It was made by hand. Rebuilding this database from the repo — a new
+--   environment, a staging copy, disaster recovery — would produce a site whose
+--   listing form fails on first use.
 --
---   Once its columns are confirmed, this becomes two short functions.
---
---   Separately: the table should be brought under migration control, or a
---   rebuild of this database from the repo would produce a site whose listing
---   form fails on first use.
+--   Nothing is broken in production. The gap is in the rebuild path, and it is
+--   the kind of gap only discovered at the worst possible moment. A migration
+--   capturing the 37 columns, constraints, indexes and RLS policies as they
+--   currently stand should follow.
 --
 -- A3 · ACCOUNTS
 --   "12 months after closure" cannot be implemented: nothing records that an
