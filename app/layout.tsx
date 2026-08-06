@@ -4,8 +4,8 @@ import Script from 'next/script'
 import './globals.css'
 import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
 import { OrganizationLd, WebSiteLd } from '@/components/seo/JsonLd'
-
-const GTM_ID = 'GTM-PJ6X4NHS'
+import Analytics from '@/components/consent/Analytics'
+import ConsentBanner from '@/components/consent/ConsentBanner'
 
 // ── Prompt font — self-hosted via next/font (eliminates render-blocking external request)
 const prompt = Prompt({
@@ -40,30 +40,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
         <OrganizationLd />
         <WebSiteLd />
-        {/* GTM noscript fallback — immediately after <body> */}
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
 
         <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
 
-        {/* Google Tag Manager */}
-        <Script
-          id="gtm"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${GTM_ID}');`,
-          }}
-        />
+        {/* Tracking now lives behind consent.
+            The GTM snippet and its <noscript> iframe used to sit here and fired
+            on every page load, before the visitor had been asked anything.
+            <Analytics /> loads GTM only once consent has been given.
+
+            The <noscript> fallback is deliberately not reinstated: a visitor
+            with JavaScript disabled cannot be shown a banner, cannot answer it,
+            and cannot have an answer stored, so the only defensible behaviour
+            is to track them not at all. */}
+        <Analytics />
+        <ConsentBanner />
 
         {/* Material Symbols Rounded — loaded non-blocking after page is interactive.
             The 5.2 MB variable font must NOT block initial render.
