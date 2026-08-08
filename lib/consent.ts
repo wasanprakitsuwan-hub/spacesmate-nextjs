@@ -56,6 +56,48 @@ export function readConsent(): Consent | null {
   }
 }
 
+/**
+ * A stable random id for this browser, so a later withdrawal can be tied to the
+ * consent it withdraws.
+ *
+ * Deliberately random and stored beside the consent itself: it identifies the
+ * DECISION, not the person. It is never sent anywhere except with a consent
+ * record, and links to nothing else.
+ */
+function subjectRef(): string {
+  const KEY = 'sm_consent_ref'
+  try {
+    let ref = window.localStorage.getItem(KEY)
+    if (!ref) { ref = crypto.randomUUID(); window.localStorage.setItem(KEY, ref) }
+    return ref
+  } catch {
+    return crypto.randomUUID()   // not persisted; still better than nothing
+  }
+}
+
+/**
+ * Send the decision to the server so it can be evidenced.
+ *
+ * Fire-and-forget. The visitor's choice takes effect in their browser
+ * regardless — a logging failure must never stop someone refusing cookies.
+ */
+function recordServerSide(c: Consent, action: 'granted' | 'withdrawn') {
+  try {
+    void fetch('/api/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        kind: 'cookies',
+        action,
+        subject_ref: subjectRef(),
+        notice_version: c.version,
+        granted: { analytics: c.analytics, marketing: c.marketing },
+      }),
+    }).catch(() => {})
+  } catch { /* the choice still stands locally */ }
+}
+
 export function writeConsent(choice: { analytics: boolean; marketing: boolean }): Consent {
   const consent: Consent = {
     version:   CONSENT_VERSION,
@@ -70,6 +112,10 @@ export function writeConsent(choice: { analytics: boolean; marketing: boolean })
     // annoying but correct — better than tracking someone whose refusal we
     // cannot remember.
   }
+  // A decision that grants nothing is still a decision worth evidencing — being
+  // able to show that someone REFUSED is the more useful half of the record.
+  recordServerSide(consent, (choice.analytics || choice.marketing) ? 'granted' : 'withdrawn')
+
   window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: consent }))
   return consent
 }

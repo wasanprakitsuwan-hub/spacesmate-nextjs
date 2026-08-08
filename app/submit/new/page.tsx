@@ -150,6 +150,28 @@ function SubmitNewForm() {
       setError('กรุณายอมรับเงื่อนไขการให้บริการก่อนดำเนินการ'); return
     }
     setError(null); setLoading(true)
+
+    // Record the consent tick. Until now it gated the form in the browser and
+    // was never sent anywhere — so nothing could be produced if a data subject
+    // or the PDPC asked whether consent had been given. Section 19 requires the
+    // controller to be able to demonstrate it; a tick nobody stored is not
+    // evidence of anything.
+    //
+    // Fire-and-forget, before the checkout call: if the logging fails, the
+    // person still gets to submit their listing. Their consent stands either
+    // way; it is our record-keeping that is deficient, not their decision.
+    void fetch('/api/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        kind: 'listing_submission',
+        action: 'granted',
+        notice_version: 1,
+        granted: { terms: true, privacy: true },
+      }),
+    }).catch(() => {})
+
     try {
       const { data: { session: authSess } } = await createBrowserClient().auth.getSession()
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
