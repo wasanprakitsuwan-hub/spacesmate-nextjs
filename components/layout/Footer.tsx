@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import CookieSettingsLink from '@/components/consent/CookieSettingsLink'
 
 export default function Footer() {
   return (
@@ -74,6 +75,10 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
+              {/* Withdrawing consent must be as easy as giving it (PDPA s.19). */}
+              <li>
+                <CookieSettingsLink className="text-white/60 hover:text-white text-sm transition-colors text-left" />
+              </li>
             </ul>
           </div>
         </div>
