@@ -64,17 +64,16 @@ export interface UserProfile {
 
 // ─── Subscription Types ───────────────────────────────────────────────────────
 
-export type PackageName = 'trial' | 'basic' | 'standard' | 'premium'
-
-export interface SubscriptionPackage {
-  id: string
-  name: PackageName
-  name_th: string
-  price_thb: number
-  duration_days: number
-  max_listings: number
-  features: string[]
-}
+// PackageName and SubscriptionPackage were removed on 3 Sep 2026. Nothing
+// imported either of them, and both described a product that does not exist:
+// a 'trial' tier and a max_listings quota, in a system that sells one slot at
+// a time and has no free tier.
+//
+// They mirrored the public.subscription_packages table (supabase/schema.sql),
+// which is still seeded with the same wrong figures — trial ฿0, Standard ฿799,
+// quotas of 1/3/10 — and which no application code reads. See the note there.
+//
+// Real package definitions live in lib/packages.ts.
 
 export interface Subscription {
   id: string

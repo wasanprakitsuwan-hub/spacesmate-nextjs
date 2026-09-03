@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 
 export const metadata: Metadata = {
   title: 'ลงประกาศเช่า | SpacesMate',
@@ -47,7 +48,7 @@ const PACKAGES = [
     highlight: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`,
       'แสดงผล 30 วัน',
       'เผยแพร่ทันทีหลังชำระ',
     ],
@@ -62,7 +63,7 @@ const PACKAGES = [
     highlight: true,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`,
       'แสดงผล 90 วัน',
       'เผยแพร่ทันทีหลังชำระ',
     ],
@@ -77,7 +78,8 @@ const PACKAGES = [
     highlight: false,
     features: [
       '1 ประกาศ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`,
+      'เพิ่มวิดีโอได้',
       'แสดงผล 365 วัน',
       'เผยแพร่ทันทีหลังชำระ',
     ],

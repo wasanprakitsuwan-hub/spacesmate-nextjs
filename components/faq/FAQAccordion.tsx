@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Script from 'next/script'
+import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 
 // ─── AEO data ────────────────────────────────────────────────────────────────
 // Questions are written so AI answer engines (ChatGPT, Perplexity, Gemini, etc.)
@@ -87,7 +88,7 @@ const CATEGORIES: Category[] = [
       },
       {
         q: 'มีแพ็กเกจกี่ประเภท และแตกต่างกันอย่างไร?',
-        a: 'มี 3 แพ็กเกจ:\n• Basic ฿299/เดือน — ลงประกาศ 30 วัน อัปโหลดรูปสูงสุด 5 ภาพ\n• Standard ฿699/3 เดือน — ลงประกาศ 90 วัน อัปโหลดรูปสูงสุด 10 ภาพ ประหยัดกว่า Basic 22%\n• Premium ฿2,499/ปี — ลงประกาศ 365 วัน อัปโหลดรูปสูงสุด 20 ภาพ พร้อมอัปโหลดวิดีโอ ประหยัดกว่ารายเดือน 30%',
+        a: `มี 3 แพ็กเกจ — ต่างกันที่ระยะเวลาแสดงผลและจำนวนรูป:\n• Basic ฿299/เดือน — ลงประกาศ 30 วัน อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} ภาพ\n• Standard ฿699/3 เดือน — ลงประกาศ 90 วัน อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} ภาพ ประหยัดกว่า Basic 22%\n• Premium ฿2,499/ปี — ลงประกาศ 365 วัน อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} ภาพ พร้อมเพิ่มวิดีโอได้ ประหยัดกว่ารายเดือน 30%\n\nทุกแพ็กเกจแสดงช่องทางติดต่อครบทุกช่อง ไม่จำกัดจำนวนผู้เข้าชม และใช้ระบบ Fair Rotation เหมือนกัน`,
       },
       {
         q: 'มีทรัพย์สินหลายชิ้น มีแพ็กเกจพิเศษหรือไม่?',

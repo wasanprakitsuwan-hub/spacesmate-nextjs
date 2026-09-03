@@ -61,37 +61,12 @@ export const PRICE_RANGES = [
 
 // ─── Subscription Packages ────────────────────────────────────────────────────
 
-export const PACKAGES = [
-  {
-    id: 'trial',
-    name_th: 'ทดลองใช้ฟรี',
-    price_thb: 0,
-    duration_days: 30,
-    max_listings: 1,
-    features: ['ลงประกาศได้ 1 รายการ', 'แสดงผลในระบบ 30 วัน', 'ไม่ต้องใช้บัตรเครดิต'],
-  },
-  {
-    id: 'basic',
-    name_th: 'แพ็กเกจ Basic',
-    price_thb: 299,
-    duration_days: 30,
-    max_listings: 1,
-    features: ['ลงประกาศได้ 1 รายการ', 'แสดงผล 30 วัน', 'อัปเดตข้อมูลไม่จำกัด'],
-  },
-  {
-    id: 'standard',
-    name_th: 'แพ็กเกจ Standard',
-    price_thb: 799,
-    duration_days: 90,
-    max_listings: 3,
-    features: ['ลงประกาศได้ 3 รายการ', 'แสดงผล 90 วัน', 'ส่วนลด 11%'],
-  },
-  {
-    id: 'premium',
-    name_th: 'แพ็กเกจ Premium',
-    price_thb: 2499,
-    duration_days: 365,
-    max_listings: 10,
-    features: ['ลงประกาศได้ 10 รายการ', 'แสดงผล 365 วัน', 'ส่วนลด 30%', 'Priority support'],
-  },
-]
+// PACKAGES lived here and was deleted on 3 Sep 2026. It was dead code that no
+// module imported, and it described a product that has never existed: a ฿0
+// trial tier, Standard at ฿799, and multi-listing packages (3 and 10) in a
+// system that sells one slot at a time.
+//
+// It was not harmless. Read in isolation it looks authoritative, and it was
+// cited in a pricing discussion as evidence that a free trial had already
+// shipped. The real package definitions are in lib/packages.ts — prices,
+// durations, image limits and the video entitlement, all in one place.

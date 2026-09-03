@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO } from '@/lib/packages'
 import { createBrowserClient } from '@/lib/supabase'
 import {
   FormState, BLANK, prepareSubmitData, ListingFormFields,
@@ -21,9 +22,9 @@ const PACKAGES = [
     badge: null as string | null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 20,
-    allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 20 รูป', 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
+    maxImages: PACKAGE_IMAGE_LIMITS.basic,
+    allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`, 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
   },
   {
     id: 'standard',
@@ -35,9 +36,9 @@ const PACKAGES = [
     badge: 'ยอดนิยม' as string | null,
     highlight: false,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 20,
-    allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 20 รูป', 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 22%'],
+    maxImages: PACKAGE_IMAGE_LIMITS.standard,
+    allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`, 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 22%'],
   },
   {
     id: 'premium',
@@ -49,9 +50,9 @@ const PACKAGES = [
     badge: 'คุ้มที่สุด' as string | null,
     highlight: true,
     note: 'เผยแพร่ทันทีหลังชำระ',
-    maxImages: 20,
-    allowVideo: false,
-    features: ['1 ประกาศ', 'รูปภาพสูงสุด 20 รูป', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 30%'],
+    maxImages: PACKAGE_IMAGE_LIMITS.premium,
+    allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`, 'เพิ่มวิดีโอได้', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 30%'],
   },
 ]
 

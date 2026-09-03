@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { FaqLd } from '@/components/seo/JsonLd'
 import BuySlotsCta from '@/components/pricing/BuySlotsCta'
 import TrackOnMount from '@/components/TrackOnMount'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO } from '@/lib/packages'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -24,11 +25,11 @@ const PLANS = [
     highlight: false,
     badge: null as string | null,
     savings: null as string | null,
-    maxImages: '20 รูป',
-    allowVideo: false,
+    maxImages: `${PACKAGE_IMAGE_LIMITS.basic} รูป`,
+    allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
     features: [
       '1 สล็อต = ประกาศออนไลน์ 1 รายการ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`,
       'แสดงผล 30 วัน',
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
@@ -44,11 +45,11 @@ const PLANS = [
     highlight: false,
     badge: 'ยอดนิยม' as string | null,
     savings: '22%' as string | null,
-    maxImages: '20 รูป',
-    allowVideo: false,
+    maxImages: `${PACKAGE_IMAGE_LIMITS.standard} รูป`,
+    allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
     features: [
       '1 สล็อต = ประกาศออนไลน์ 1 รายการ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`,
       'แสดงผล 90 วัน',
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
@@ -64,11 +65,15 @@ const PLANS = [
     highlight: true,
     badge: 'คุ้มที่สุด' as string | null,
     savings: '30%' as string | null,
-    maxImages: '20 รูป',
-    allowVideo: false,
+    maxImages: `${PACKAGE_IMAGE_LIMITS.premium} รูป`,
+    // Premium-only, and genuinely enforced — VideoUploadZone gates on
+    // packageType === 'premium'. This flag read false until 3 Sep 2026, which
+    // hid the only feature difference between Premium and the cheaper tiers.
+    allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
     features: [
       '1 สล็อต = ประกาศออนไลน์ 1 รายการ',
-      'รูปภาพสูงสุด 20 รูป',
+      `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`,
+      'เพิ่มวิดีโอได้ — อัปโหลด หรือลิงก์ YouTube/Vimeo',
       'แสดงผล 365 วัน',
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
@@ -191,6 +196,60 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* What every package includes.
+            Deliberately above the cards, not inside them: all three are true of
+            every tier, so repeating them per-card would burn nine identical
+            rows and bury the argument.
+
+            These are the three places SpacesMate beats the incumbents, and each
+            is checkable:
+              · Contacts — RentHub shows one phone number on its free tier and
+                withholds LINE/WhatsApp until ฿1,200/yr.
+              · Views — RentHub caps free AND ฿1,200/yr listings at 500 views a
+                month; unlimited is its ฿4,800/yr tier.
+              · Position — RentHub sells Top Ads and nine paid homepage
+                Highlight slots. Ours is a genuine shuffle: see
+                app/api/search/route.ts.
+            Do not soften these into vague benefit copy — the specificity is
+            what makes them persuasive to an owner who has used those sites. */}
+        <div className="max-w-4xl mx-auto mb-12 rounded-2xl border border-spacemate-borderLight bg-white p-6 shadow-premium">
+          <p className="text-center text-sm font-semibold text-spacemate-brandDark mb-5">
+            ทุกแพ็กเกจได้ครบเท่ากัน — ไม่มีการกั๊กฟีเจอร์
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: 'call',
+                title: 'แสดงช่องทางติดต่อครบทุกช่อง',
+                body: 'เบอร์โทร LINE WhatsApp อีเมล — ไม่จำกัดจำนวน ผู้เช่าติดต่อคุณได้โดยตรง',
+              },
+              {
+                icon: 'visibility',
+                title: 'ไม่จำกัดจำนวนผู้เข้าชม',
+                body: 'ไม่มีเพดานรายเดือน ประกาศไม่ถูกปิดกลางคันเพราะมีคนสนใจมากเกินไป',
+              },
+              {
+                icon: 'shuffle',
+                title: 'Fair Rotation — ไม่มีการซื้อลำดับ',
+                body: 'ทุกประกาศสุ่มขึ้นหน้าแรกเท่าเทียมกัน จ่ายเพิ่มก็ซื้อตำแหน่งไม่ได้',
+              },
+            ].map((a) => (
+              <div key={a.title} className="flex gap-3 items-start">
+                <span
+                  className="msym flex-shrink-0 flex items-center justify-center rounded-lg"
+                  style={{ width: 34, height: 34, background: '#e8f5f1', color: '#048c73', fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0" }}
+                >
+                  {a.icon}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-spacemate-textCharcoal mb-0.5">{a.title}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed font-light">{a.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           {PLANS.map((plan) => (
             <div
@@ -248,6 +307,30 @@ export default function PricingPage() {
               />
             </div>
           ))}
+        </div>
+
+        {/* Concierge route. Not every owner will finish a listing form —
+            especially the older landlords who own the older buildings, which
+            are exactly the ones missing from the site. This gives them a way
+            in that does not require them to do the data entry. */}
+        <div
+          className="max-w-4xl mx-auto mb-16 rounded-2xl p-7 flex items-center gap-6 flex-wrap"
+          style={{ background: 'linear-gradient(100deg,#02402e,#048c73)' }}
+        >
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <p className="text-white font-semibold text-base mb-1">
+              ไม่สะดวกกรอกเอง? ให้ทีมงานช่วยลงประกาศให้
+            </p>
+            <p className="text-white/85 text-sm font-light leading-relaxed m-0">
+              ส่งรายละเอียดห้องและรูปภาพมาที่หน้าติดต่อ ทีมงาน SpacesMate จะจัดทำประกาศให้เรียบร้อย พร้อมเผยแพร่
+            </p>
+          </div>
+          <a
+            href="/contact"
+            className="bg-white text-spacemate-brandDark font-semibold text-sm px-6 py-3 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity"
+          >
+            ให้ทีมงานช่วยลงประกาศ →
+          </a>
         </div>
 
         {/* FAQs */}

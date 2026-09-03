@@ -130,6 +130,21 @@ CREATE INDEX idx_property_images_property ON public.property_images(property_id)
 
 -- ────────────────────────────────────────────────────────────
 -- 4. SUBSCRIPTION PACKAGES
+--
+-- ⚠️ ORPHANED as of 3 Sep 2026. No application code reads this table.
+--
+-- The seed rows below describe a product that has never existed: a free
+-- 'trial' tier, Standard at ฿799, and max_listings quotas of 1/3/10 in a
+-- system that sells one slot at a time. Its mirrors in lib/constants.ts and
+-- lib/types.ts were deleted the same day, after the ฿0 trial row was cited in
+-- a pricing discussion as evidence that a free tier had already shipped.
+--
+-- Live package definitions — prices, durations, image limits, video
+-- entitlement — are in lib/packages.ts.
+--
+-- Left in place rather than dropped: dropping a seeded table is destructive
+-- and needs a deliberate decision. Either delete it or correct the seed, but
+-- do not leave it as a second answer to "what do the packages include".
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE public.subscription_packages (
   id              TEXT PRIMARY KEY,  -- 'trial', 'basic', 'standard', 'premium'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ADMIN_PACKAGES, computeExpiry } from '@/lib/packages'
+import { ADMIN_PACKAGES, computeExpiry, PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
 import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
@@ -842,7 +842,9 @@ export function ThaiAddressSelect({ form, onChange }: {
 }
 
 // ── Image Upload Zone ──────────────────────────────────────────────────────────
-const IMAGE_LIMITS: Record<string, number> = { basic: 20, standard: 20, premium: 20 }
+// Was a local copy of the limits. Removed — it silently drifted from the
+// server's copy, and the two only agreed by luck. Single source: lib/packages.ts.
+const IMAGE_LIMITS = PACKAGE_IMAGE_LIMITS
 
 export function ImageUploadZone({ images, onImagesChange, packageType = 'basic', isPublic = false }: {
   images: string[]

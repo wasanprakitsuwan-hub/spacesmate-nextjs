@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
-import { PACKAGE_IMAGE_LIMITS } from '@/lib/stripe'
+import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 import sharp from 'sharp'
 
 // ── Bucket names ──────────────────────────────────────────────────────────────

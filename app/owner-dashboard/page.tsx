@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import PhonePrompt from '@/components/auth/PhonePrompt'
 import { trackEvent } from '@/lib/analytics'
-import { PACKAGE_PRICE_THB } from '@/lib/packages'
+import { PACKAGE_PRICE_THB, PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 import {
   FormState, ApartmentUnitRow, CondoRentalDetail, RentalCharges,
   BLANK, BLANK_CONDO, BLANK_CHARGES, PKG_LABEL, TYPE_LABEL,
@@ -946,9 +946,12 @@ export default function OwnerDashboardPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
               {[
-                { id: 'basic',    label: 'Basic',    price: '฿299',   period: '/ 30 วัน',  desc: 'เผยแพร่ได้ 1 เดือน · อัปโหลดรูปสูงสุด 5 ภาพ' },
-                { id: 'standard', label: 'Standard', price: '฿699',   period: '/ 3 เดือน', desc: 'เผยแพร่ได้ 3 เดือน · อัปโหลดรูปสูงสุด 10 ภาพ · ประหยัด 22%' },
-                { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',      desc: 'เผยแพร่ได้ 12 เดือน · อัปโหลดรูปสูงสุด 20 ภาพ + วิดีโอ · ประหยัด 30%' },
+                // Image counts come from PACKAGE_IMAGE_LIMITS. These were hardcoded
+                // as 5/10/20 and were simply wrong — the system allowed 20 on every
+                // tier — so this screen under-sold the product at the moment of purchase.
+                { id: 'basic',    label: 'Basic',    price: '฿299',   period: '/ 30 วัน',  desc: `เผยแพร่ได้ 1 เดือน · อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} ภาพ` },
+                { id: 'standard', label: 'Standard', price: '฿699',   period: '/ 3 เดือน', desc: `เผยแพร่ได้ 3 เดือน · อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} ภาพ · ประหยัด 22%` },
+                { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',      desc: `เผยแพร่ได้ 12 เดือน · อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} ภาพ + วิดีโอ · ประหยัด 30%` },
               ].map(opt => (
                 <button key={opt.id} onClick={() => setRenewPkg(opt.id)}
                   style={{ textAlign: 'left', background: renewPkg === opt.id ? '#eaf6f1' : '#f8fafc', border: renewPkg === opt.id ? '2px solid #048c73' : '2px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
@@ -1035,8 +1038,8 @@ export default function OwnerDashboardPage() {
         const PKG_ORDER  = ['basic', 'standard', 'premium']
         const currentIdx = PKG_ORDER.indexOf(currentPkg)
         const upgradeOptions = [
-          { id: 'standard', label: 'Standard', price: '฿699', period: '/ 3 เดือน', desc: 'อัปโหลดรูปสูงสุด 10 ภาพ · ประหยัด 22%' },
-          { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',   desc: 'อัปโหลดรูปสูงสุด 20 ภาพ + วิดีโอ · ประหยัด 30%' },
+          { id: 'standard', label: 'Standard', price: '฿699', period: '/ 3 เดือน', desc: `อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} ภาพ · ประหยัด 22%` },
+          { id: 'premium',  label: 'Premium',  price: '฿2,499', period: '/ ปี',   desc: `อัปโหลดรูปสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} ภาพ + วิดีโอ · ประหยัด 30%` },
         ].filter(o => PKG_ORDER.indexOf(o.id) > currentIdx)
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>

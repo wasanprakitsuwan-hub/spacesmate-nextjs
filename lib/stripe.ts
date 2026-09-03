@@ -20,10 +20,6 @@ export const PACKAGE_DAYS: Record<string, number> = {
   premium:  365,
 }
 
-// Max images per listing — same for all packages (10)
-// Only differentiator between packages is listing duration (PACKAGE_DAYS above)
-export const PACKAGE_IMAGE_LIMITS: Record<string, number> = {
-  basic:    20,
-  standard: 20,
-  premium:  20,
-}
+// Image limits and the video entitlement live in lib/packages.ts, not here.
+// This module instantiates the Stripe SDK with the secret key at import time,
+// so anything a client component needs must not be defined in it.
