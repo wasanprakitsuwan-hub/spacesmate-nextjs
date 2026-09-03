@@ -158,7 +158,13 @@ DECLARE
   jobs TEXT[] := ARRAY[
     'retention_purge_listings',
     'retention_purge_submissions_accepted',
-    'retention_purge_submissions_rejected'
+    'retention_purge_submissions_rejected',
+    -- Added 10 August 2026. retention_purge_consent_records() was created by
+    -- 20260808a_consent_records.sql but never listed here, so it existed and was
+    -- never called — the privacy notice promised a 3-year period that nothing
+    -- enforced. The function is defined in that later migration; if it is not
+    -- present this entry fails safely and is recorded in retention_runs.
+    'retention_purge_consent_records'
   ];
   j TEXT;
   n INTEGER;
