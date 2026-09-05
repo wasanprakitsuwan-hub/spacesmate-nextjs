@@ -35,6 +35,79 @@ export async function POST(req: NextRequest) {
     // The customer bought the right to publish; which listing they use it for is
     // their decision, made later, on the dashboard.
     if (session.metadata?.slot_purchase === 'true') {
+      // ── Has this actually been paid? ───────────────────────────────────────
+      //
+      // A card is charged before checkout.session.completed fires, so this used
+      // to be safe to skip. PromptPay is not: the customer is shown a QR code
+      // and the session can complete while the payment is still pending — or
+      // never be paid at all. Granting here would hand out a slot for an
+      // abandoned QR.
+      //
+      // The condition is deliberately negative — hold when 'unpaid', grant
+      // otherwise — rather than `=== 'paid'`. A ฿0 total (SM299 taking Basic to
+      // nothing) collects no payment and completes as 'no_payment_required'.
+      // Written as an equality check against 'paid', this would refuse the slot
+      // to someone using the discount exactly as intended, and would break
+      // every existing free-first-month card subscription too.
+      if (session.payment_status === 'unpaid') {
+        console.log(
+          `[slots] ${session.id} completed but unpaid — holding. ` +
+          `Waiting for checkout.session.async_payment_succeeded.`,
+        )
+        return NextResponse.json({ received: true, pending: true })
+      }
+
+      return await grantSlotsForSession(supabase, session, 'completed')
+    }
+
+    // Fall through to the listing paths below.
+    return await handleListingCheckout(supabase, session, packageId, subscriptionId, customerId)
+  }
+
+  // ── Delayed payment resolved ───────────────────────────────────────────────
+  //
+  // PromptPay settles after the session completes. These two events are the
+  // only signal that a held purchase has been paid or abandoned — without them
+  // subscribed on the Stripe endpoint, a paid QR silently grants nothing and
+  // the customer has paid for a slot they never receive.
+  if (event.type === 'checkout.session.async_payment_succeeded') {
+    const session = event.data.object as Stripe.Checkout.Session
+    if (session.metadata?.slot_purchase === 'true') {
+      return await grantSlotsForSession(supabase, session, 'async_succeeded')
+    }
+    return NextResponse.json({ received: true })
+  }
+
+  if (event.type === 'checkout.session.async_payment_failed') {
+    const session = event.data.object as Stripe.Checkout.Session
+    // Nothing to revoke — the grant was held, not made. Logged loudly because
+    // silence here looks identical to a customer who simply never tried.
+    console.error(
+      `[slots] async payment FAILED for session ${session.id} ` +
+      `user=${session.metadata?.user_id ?? 'unknown'} ` +
+      `pkg=${session.metadata?.package_id ?? 'unknown'} — no slots granted`,
+    )
+    return NextResponse.json({ received: true, failed: true })
+  }
+
+  return await handleOtherEvents(supabase, event)
+}
+
+/**
+ * Grant the slots a checkout session paid for. Idempotent.
+ *
+ * Shared by checkout.session.completed and async_payment_succeeded so that a
+ * card purchase and a PromptPay purchase are granted by exactly the same code —
+ * the only difference between them is when this runs.
+ */
+async function grantSlotsForSession(
+  supabase: ReturnType<typeof createServerClient>,
+  session: Stripe.Checkout.Session,
+  via: 'completed' | 'async_succeeded',
+) {
+      const packageId      = session.metadata?.package_id || 'basic'
+      const subscriptionId = session.subscription as string | null
+      const customerId     = session.customer as string | null
       const userId   = session.metadata?.user_id
       const quantity = parseInt(session.metadata?.quantity || '1', 10)
 
@@ -49,13 +122,21 @@ export async function POST(req: NextRequest) {
       // cold-start kill) would be retried and grant a second set. Slots are
       // money, so check before granting rather than trusting delivery-once.
       //
-      // Safe on the resend path too: manually resending a processed event is a
-      // no-op instead of a duplicate grant.
-      if (subscriptionId) {
+      // Keyed on the subscription when there is one, and on the checkout
+      // session otherwise. The session is what makes this work for one-time
+      // payments: PromptPay has no subscription id, so the old guard skipped
+      // itself entirely and every retry granted another set of slots.
+      //
+      // It also covers the two-event PromptPay path, where completed and
+      // async_payment_succeeded can both arrive for the same purchase.
+      {
+        const col = subscriptionId ? 'stripe_subscription_id' : 'stripe_checkout_session_id'
+        const val = subscriptionId ?? session.id
+
         const { data: already, error: dupErr } = await supabase
           .from('listing_slots')
           .select('id')
-          .eq('stripe_subscription_id', subscriptionId)
+          .eq(col, val)
           .limit(1)
 
         if (dupErr) {
@@ -63,7 +144,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'slot precheck failed' }, { status: 500 })
         }
         if ((already?.length ?? 0) > 0) {
-          console.log(`[slots] ${subscriptionId} already granted — skipping duplicate`)
+          console.log(`[slots] ${val} already granted — skipping duplicate (via ${via})`)
           return NextResponse.json({ received: true, duplicate: true })
         }
       }
@@ -74,6 +155,8 @@ export async function POST(req: NextRequest) {
         quantity,
         stripeSubscriptionId:   subscriptionId,
         stripeCustomerId:       customerId,
+        stripeCheckoutSessionId: session.id,
+        source:                 session.metadata?.payment_method === 'promptpay' ? 'promptpay' : 'purchase',
       })
 
       // FAIL LOUDLY. grantSlots swallows its error and returns 0, so returning
@@ -141,8 +224,21 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ received: true })
-    }
+}
 
+
+/**
+ * The listing-bearing checkout paths: renewing an existing property, and the
+ * public submit flow that creates one. Unchanged behaviour — lifted out of the
+ * event handler so the slot path above could be shared with the async events.
+ */
+async function handleListingCheckout(
+  supabase: ReturnType<typeof createServerClient>,
+  session: Stripe.Checkout.Session,
+  packageId: string,
+  subscriptionId: string | null,
+  customerId: string | null,
+) {
     // ── Renewal path: reactivate an existing property row ─────────────────────
     if (session.metadata?.renew_property_id) {
       const propertyId          = session.metadata.renew_property_id
@@ -428,7 +524,18 @@ export async function POST(req: NextRequest) {
         console.error('[email] notification error (non-fatal):', emailErr)
       }
     }
-  }
+
+  return NextResponse.json({ received: true })
+}
+
+/**
+ * Everything that is not a checkout session: renewals, failures, cancellations.
+ * Unchanged — split out so the handler above reads as one decision per event.
+ */
+async function handleOtherEvents(
+  supabase: ReturnType<typeof createServerClient>,
+  event: Stripe.Event,
+) {
 
   // Subscription renewed → extend expires_at on submissions + properties + user_profiles
   if (event.type === 'invoice.payment_succeeded') {

@@ -28,30 +28,41 @@ export default function BuySlotsCta({
 }) {
   const router = useRouter()
   const [qty,     setQty]     = useState(1)
-  const [loading, setLoading] = useState(false)
+  // Which button is working, so only the one that was pressed shows a spinner.
+  const [loading, setLoading] = useState<false | 'card' | 'promptpay'>(false)
   const [error,   setError]   = useState('')
 
-  async function buy() {
-    setLoading(true)
+  /**
+   * @param method 'card' buys a subscription that renews; 'promptpay' buys a
+   *   one-time term that expires. Stripe's PromptPay cannot do recurring, so
+   *   these are two routes rather than one route with two payment methods.
+   */
+  async function buy(method: 'card' | 'promptpay') {
+    setLoading(method)
     setError('')
     try {
       trackEvent('slot_checkout_start', {
-        package_id: pkg,
-        quantity:   qty,
-        value:      (PACKAGE_PRICE_THB[pkg] ?? 0) * qty,
-        currency:   'THB',
+        package_id:     pkg,
+        quantity:       qty,
+        value:          (PACKAGE_PRICE_THB[pkg] ?? 0) * qty,
+        currency:       'THB',
+        payment_method: method,
       })
 
       const { data: { session } } = await createBrowserClient().auth.getSession()
       if (!session) {
         // Not a lost sale — a detour. Tracked separately so the gap between
         // intent and purchase is not silently blamed on price.
-        trackEvent('slot_checkout_needs_account', { package_id: pkg, quantity: qty })
+        trackEvent('slot_checkout_needs_account', { package_id: pkg, quantity: qty, payment_method: method })
         router.push(`/login?redirect=${encodeURIComponent('/pricing')}`)
         return
       }
 
-      const res = await fetch('/api/stripe/buy-slots', {
+      const endpoint = method === 'promptpay'
+        ? '/api/stripe/buy-slots-promptpay'
+        : '/api/stripe/buy-slots'
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ package_id: pkg, quantity: qty }),
@@ -87,11 +98,32 @@ export default function BuySlotsCta({
         </div>
       </div>
 
-      <button type="button" onClick={buy} disabled={loading} className={className}>
-        {loading ? 'กำลังโหลด…' : qty > 1 ? `${label} × ${qty}` : label}
+      {/* Two buttons rather than a payment-method dropdown at checkout.
+          The difference is not only how you pay: a card buys a subscription
+          that renews, PromptPay buys a term that expires. A landlord who
+          assumes PromptPay renews and finds their listing gone after 30 days
+          is a support case and a churn event, so the renewal behaviour is on
+          the button itself, not in a footnote. */}
+      <button type="button" onClick={() => buy('card')} disabled={loading !== false} className={className}>
+        {loading === 'card' ? 'กำลังโหลด…' : qty > 1 ? `${label} × ${qty}` : label}
       </button>
+      <p className="mt-1 text-center text-[11px] text-gray-400">
+        บัตรเครดิต/เดบิต · ต่ออายุอัตโนมัติ ยกเลิกได้ทุกเมื่อ
+      </p>
 
-      <p className="mt-2 text-center text-xs text-gray-500">
+      <button
+        type="button"
+        onClick={() => buy('promptpay')}
+        disabled={loading !== false}
+        className="mt-3 w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 border border-spacemate-brandTeal text-spacemate-brandTeal hover:bg-spacemate-brandTeal hover:text-white"
+      >
+        {loading === 'promptpay' ? 'กำลังโหลด…' : 'จ่ายด้วยพร้อมเพย์'}
+      </button>
+      <p className="mt-1 text-center text-[11px] text-gray-400">
+        สแกน QR · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ
+      </p>
+
+      <p className="mt-3 text-center text-xs text-gray-500">
         1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เปลี่ยนประกาศในสล็อตได้ตลอดอายุ
       </p>
 

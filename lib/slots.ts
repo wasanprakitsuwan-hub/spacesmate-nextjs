@@ -146,6 +146,14 @@ export async function grantSlots(
     quantity: number
     stripeSubscriptionId?: string | null
     stripeCustomerId?: string | null
+    /**
+     * The checkout session that paid for these slots.
+     *
+     * Always pass it. For subscriptions it is useful provenance; for one-time
+     * payments it is the ONLY thing the webhook's duplicate guard can key on,
+     * because there is no subscription id.
+     */
+    stripeCheckoutSessionId?: string | null
     source?: string
   },
 ): Promise<number> {
@@ -161,6 +169,7 @@ export async function grantSlots(
     expires_at:             expires.toISOString(),
     stripe_subscription_id: opts.stripeSubscriptionId ?? null,
     stripe_customer_id:     opts.stripeCustomerId ?? null,
+    stripe_checkout_session_id: opts.stripeCheckoutSessionId ?? null,
     source:                 opts.source ?? 'purchase',
   }))
 
