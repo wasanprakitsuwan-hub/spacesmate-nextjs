@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { FaqLd } from '@/components/seo/JsonLd'
 import BuySlotsCta from '@/components/pricing/BuySlotsCta'
 import TrackOnMount from '@/components/TrackOnMount'
-import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO } from '@/lib/packages'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, pricePerMonth, savingsVsBasic } from '@/lib/packages'
 
 export const metadata: Metadata = {
   title: 'ราคาและแพ็กเกจ | SpacesMate',
@@ -18,13 +18,15 @@ export const metadata: Metadata = {
 
 const PLANS = [
   {
+    id: 'basic',
     name: 'Basic',
     price: '299',
     period: '/สล็อต/เดือน',
-    description: 'เริ่มต้นด้วย 1 สล็อต — เผยแพร่ประกาศได้ 1 รายการ',
+    description: 'สำหรับห้องที่ปล่อยเช่าง่าย หรือทดลองใช้งานก่อน',
+    durationLabel: 'แสดงผล 1 เดือน',
+    durationSub: '30 วันนับจากวันที่เผยแพร่',
     highlight: false,
     badge: null as string | null,
-    savings: null as string | null,
     maxImages: `${PACKAGE_IMAGE_LIMITS.basic} รูป`,
     allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
     features: [
@@ -38,13 +40,15 @@ const PLANS = [
     ctaHref: '/submit/new?package=basic',
   },
   {
+    id: 'standard',
     name: 'Standard',
     price: '699',
     period: '/สล็อต/3 เดือน',
-    description: 'ลงประกาศต่อเนื่อง 3 เดือน ซื้อหลายสล็อตพร้อมกันได้',
+    description: 'ระยะเวลาที่ห้องเช่าในกรุงเทพฯ ส่วนใหญ่หาผู้เช่าได้',
+    durationLabel: 'แสดงผล 3 เดือน',
+    durationSub: '90 วันนับจากวันที่เผยแพร่',
     highlight: false,
     badge: 'ยอดนิยม' as string | null,
-    savings: '22%' as string | null,
     maxImages: `${PACKAGE_IMAGE_LIMITS.standard} รูป`,
     allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
     features: [
@@ -58,13 +62,15 @@ const PLANS = [
     ctaHref: '/submit/new?package=standard',
   },
   {
+    id: 'premium',
     name: 'Premium',
     price: '2,499',
     period: '/สล็อต/12 เดือน',
-    description: 'ประกาศตลอดทั้งปี ต่อสล็อต — คุ้มที่สุดสำหรับเจ้าของหลายห้อง',
+    description: 'สำหรับเจ้าของที่ปล่อยเช่าต่อเนื่อง หรือห้องราคาสูง',
+    durationLabel: 'แสดงผล 12 เดือน',
+    durationSub: '365 วันนับจากวันที่เผยแพร่',
     highlight: true,
-    badge: 'คุ้มที่สุด' as string | null,
-    savings: '30%' as string | null,
+    badge: 'คุ้มที่สุดต่อเดือน' as string | null,
     maxImages: `${PACKAGE_IMAGE_LIMITS.premium} รูป`,
     // Premium-only, and genuinely enforced — VideoUploadZone gates on
     // packageType === 'premium'. This flag read false until 3 Sep 2026, which
@@ -268,18 +274,35 @@ export default function PricingPage() {
               <div className="mb-5">
                 <h3 className="font-bold text-spacemate-brandDark text-lg mb-1">{plan.name}</h3>
                 <p className="text-gray-400 text-xs mb-4">{plan.description}</p>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
-                    <span className="text-3xl font-bold text-spacemate-brandDark">฿{plan.price}</span>
-                    <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
-                  </div>
-                  {plan.savings && (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: '#048c73', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap', marginBottom: 2 }}>
-                      ประหยัด {plan.savings}
-                    </span>
-                  )}
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 6 }}>
+                  <span className="text-3xl font-bold text-spacemate-brandDark">฿{plan.price}</span>
+                  <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
                 </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f7f9f8', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, color: '#048c73', fontWeight: 600 }}>
+
+                {/* The per-month rate, derived from price ÷ term.
+                    ฿2,499 next to ฿299 reads as expensive; ฿208/เดือน next to
+                    ฿299/เดือน reads as the better deal, which is what it is.
+                    Computed rather than written down so it cannot drift from
+                    the price above it. */}
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 500, color: '#048c73' }}>
+                  เฉลี่ย {pricePerMonth(plan.id).toLocaleString()} บาท/เดือน
+                </p>
+
+                {savingsVsBasic(plan.id) > 0 && (
+                  <span style={{ display: 'inline-block', marginTop: 9, fontSize: 12, fontWeight: 700, color: '#048c73', background: '#e8f5f1', borderRadius: 20, padding: '3px 11px', whiteSpace: 'nowrap' }}>
+                    ประหยัด {savingsVsBasic(plan.id)}% เทียบกับ Basic
+                  </span>
+                )}
+
+                {/* Duration is the hero. It is the main thing that differs
+                    between the tiers, so it gets its own block rather than
+                    being the third bullet in a list. */}
+                <div style={{ marginTop: 18, background: '#f7faf9', border: '1px solid #e7eceb', borderRadius: 12, padding: '13px 14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#02402e', lineHeight: 1.2 }}>{plan.durationLabel}</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 300, marginTop: 2 }}>{plan.durationSub}</div>
+                </div>
+
+                <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f7f9f8', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, color: '#048c73', fontWeight: 600 }}>
                   <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4 }}>photo_camera</span>{plan.maxImages}{plan.allowVideo && <><span style={{ margin: '0 4px' }}>·</span><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 2 }}>videocam</span>วิดีโอ</>}
                 </div>
               </div>

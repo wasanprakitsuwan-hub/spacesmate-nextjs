@@ -77,3 +77,27 @@ export const PACKAGE_PRICE_THB: Record<string, number> = {
   premium:  2499,
   admin:    0,
 }
+
+/** Billed months in a package term. 365 days is sold as 12, not 12.17. */
+export function packageMonths(packageId: string): number {
+  const days = ADMIN_PACKAGES.find(p => p.id === packageId)?.days ?? 30
+  return Math.max(1, Math.round(days / 30))
+}
+
+/**
+ * Effective price per month — the number that makes Premium legible.
+ *
+ * ฿2,499 next to ฿299 reads as expensive. ฿208/เดือน next to ฿299/เดือน reads
+ * as the better deal, which is what it is. Derived rather than written down so
+ * it cannot drift from the price it is derived from.
+ */
+export function pricePerMonth(packageId: string): number {
+  return Math.round((PACKAGE_PRICE_THB[packageId] ?? 0) / packageMonths(packageId))
+}
+
+/** Saving against Basic's monthly rate, as a whole percent. 0 for Basic itself. */
+export function savingsVsBasic(packageId: string): number {
+  const base = PACKAGE_PRICE_THB.basic ?? 299
+  const pct  = Math.round((1 - pricePerMonth(packageId) / base) * 100)
+  return pct > 0 ? pct : 0
+}
