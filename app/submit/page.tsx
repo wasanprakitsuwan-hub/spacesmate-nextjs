@@ -246,7 +246,12 @@ export default function SubmitPage() {
                   ))}
                 </ul>
 
-                {/* CTA */}
+                {/* CTA.
+                    Was "เลือกแพ็กเกจนี้", which reads as buying but actually
+                    opens the listing form with payment at the end. Two
+                    different things were wearing the same label: this page
+                    starts a listing, /pricing sells a slot on its own. The
+                    label now says which one this is. */}
                 <Link href={`/submit/new?package=${pkg.id}`}
                   style={{
                     display: 'block', textAlign: 'center', fontWeight: 600, fontSize: 15,
@@ -255,10 +260,31 @@ export default function SubmitPage() {
                     color: pkg.highlight ? '#fff' : '#374151',
                     border: `1.5px solid ${pkg.highlight ? '#d97f11' : '#d1d5db'}`,
                   }}>
-                  เลือกแพ็กเกจนี้
+                  สร้างประกาศด้วยแพ็กเกจนี้
                 </Link>
+                <p style={{ fontSize: 11.5, color: '#9ca3af', textAlign: 'center', margin: '8px 0 0', fontWeight: 300, lineHeight: 1.4 }}>
+                  กรอกข้อมูลห้อง แล้วชำระเงินในขั้นตอนสุดท้าย
+                </p>
               </div>
             ))}
+          </div>
+
+          {/* The other route, stated rather than hidden.
+              Buying a slot and writing a listing are separate things and can
+              happen in either order — the pricing FAQ says so explicitly. This
+              page only ever offered the write-first path, so an owner who had
+              already drafted a listing, or who just wanted capacity for a
+              building, had nowhere obvious to go. */}
+          <div style={{ maxWidth: 860, margin: '26px auto 0', textAlign: 'center' }}>
+            <p style={{ fontSize: 13.5, color: '#6b7280', margin: 0, fontWeight: 300, lineHeight: 1.6 }}>
+              มีประกาศอยู่แล้ว หรือต้องการซื้อสล็อตไว้ก่อนโดยยังไม่กรอกข้อมูลห้อง?{' '}
+              <Link href="/pricing" style={{ color: '#048c73', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                ซื้อสล็อตอย่างเดียว →
+              </Link>
+            </p>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '6px 0 0', fontWeight: 300 }}>
+              1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เลือกได้ทีหลังว่าจะใช้กับประกาศไหน
+            </p>
           </div>
         </div>
       </section>
