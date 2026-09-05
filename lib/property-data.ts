@@ -16,6 +16,14 @@ export interface Property {
   lng: string
   image: string          // Primary / hero image
   images?: string[]      // Additional gallery images (index 0 = hero override if set)
+  /**
+   * Video to display, or '' when this listing's package does not include one.
+   *
+   * Already gated by package where the property is assembled — anything that
+   * reaches here should be rendered. Kept optional because the static seed
+   * listings below predate the field.
+   */
+  videoUrl?: string
   propertyType: 'Condo' | 'Apartment' | 'Office' | 'Co-Working'
   listingType: 'Rent' | 'Sale' | 'Daily'
   amenities: string[]

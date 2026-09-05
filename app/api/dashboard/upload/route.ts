@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
-import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
+import { MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
 import sharp from 'sharp'
 
 // ── Bucket names ──────────────────────────────────────────────────────────────
@@ -50,16 +50,24 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Image count enforcement ───────────────────────────────────────────────
-    // Only enforce for image uploads (videos have no per-package cap)
+    //
+    // One ceiling for everyone, not one per package. Packages decide how many
+    // images the public SEES (visibleImages in lib/packages, applied on the
+    // property page) — not how many an owner may store. Enforcing per package
+    // here meant that upgrading required re-uploading, and downgrading
+    // destroyed photos the owner had already provided.
+    //
+    // The cap still exists, so a single listing cannot be used as unbounded
+    // storage; it is just the largest package's allowance rather than the
+    // buyer's current one.
     if (mediaType !== 'video') {
-      const packageType   = (formData.get('packageType') as string) || 'basic'
       const currentCount  = parseInt((formData.get('currentCount') as string) || '0', 10)
-      const imageLimit    = PACKAGE_IMAGE_LIMITS[packageType] ?? PACKAGE_IMAGE_LIMITS.basic
+      const imageLimit    = MAX_IMAGES_ANY_PACKAGE
 
       if (currentCount >= imageLimit) {
         return NextResponse.json(
           {
-            error: `แพ็กเกจ ${packageType} อัปโหลดรูปได้สูงสุด ${imageLimit} รูป`,
+            error: `อัปโหลดรูปได้สูงสุด ${imageLimit} รูปต่อประกาศ`,
             limit: imageLimit,
             current: currentCount,
           },

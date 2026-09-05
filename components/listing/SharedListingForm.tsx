@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ADMIN_PACKAGES, computeExpiry, PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
+import { ADMIN_PACKAGES, computeExpiry, MAX_IMAGES_ANY_PACKAGE, visibleImageCount } from '@/lib/packages'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
 import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
@@ -842,10 +842,6 @@ export function ThaiAddressSelect({ form, onChange }: {
 }
 
 // ── Image Upload Zone ──────────────────────────────────────────────────────────
-// Was a local copy of the limits. Removed — it silently drifted from the
-// server's copy, and the two only agreed by luck. Single source: lib/packages.ts.
-const IMAGE_LIMITS = PACKAGE_IMAGE_LIMITS
-
 export function ImageUploadZone({ images, onImagesChange, packageType = 'basic', isPublic = false }: {
   images: string[]
   onImagesChange: (imgs: string[]) => void
@@ -860,9 +856,16 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
   const [hoveredIdx,      setHoveredIdx]      = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const imageLimit = IMAGE_LIMITS[packageType] ?? IMAGE_LIMITS.basic
+  // Upload up to the largest allowance regardless of package. The package
+  // decides how many of these the public sees, not how many may be added —
+  // see MAX_IMAGES_ANY_PACKAGE in lib/packages.
+  const imageLimit = MAX_IMAGES_ANY_PACKAGE
   const atLimit    = images.length >= imageLimit
   const remaining  = imageLimit - images.length
+
+  // How many of them will actually appear on the listing, for this package.
+  const shownCount  = visibleImageCount(packageType)
+  const hiddenCount = Math.max(0, images.length - shownCount)
 
   // ── Auth upload (owner-dashboard) ──────────────────────────────────────────
   function uploadFileXHR(fd: globalThis.FormData, token: string, onProgress: (pct: number) => void): Promise<{ url?: string; error?: string }> {
@@ -954,24 +957,49 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
         <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-          {images.length} / {imageLimit} รูป · แพ็กเกจ {packageType}
+          {images.length} / {imageLimit} รูป
           {!atLimit && remaining > 0 && <span style={{ color: '#048c73' }}> · เพิ่มได้อีก {remaining} รูป</span>}
         </p>
         {atLimit && (
-          <span style={{ fontSize: 11, color: '#d97f11', fontWeight: 600 }}>
-            อัปเกรดแพ็กเกจเพื่อเพิ่มรูปมากขึ้น
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+            อัปโหลดครบจำนวนสูงสุดแล้ว
           </span>
         )}
       </div>
+
+      {/* The package rule, said once and plainly.
+          The owner is allowed to upload more than their package displays, so
+          they must be told which ones will actually appear — otherwise the
+          extras look like a bug, or worse, like lost photos. */}
+      {hiddenCount > 0 && (
+        <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <span className="msym" style={{ fontSize: 16, color: '#d97f11', flexShrink: 0, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>info</span>
+          <p style={{ margin: 0, fontSize: 12, color: '#8a6234', lineHeight: 1.55 }}>
+            แพ็กเกจ <strong>{packageType}</strong> แสดงรูปได้ <strong>{shownCount} รูปแรก</strong> —
+            อีก <strong>{hiddenCount} รูป</strong> จะถูกเก็บไว้แต่ยังไม่แสดงบนเว็บไซต์
+            <br />
+            ลากสลับลำดับหรือกดตั้งหน้าปกเพื่อเลือกว่ารูปไหนจะแสดง · อัปเกรดแพ็กเกจแล้วรูปที่เหลือจะแสดงทันที โดยไม่ต้องอัปโหลดใหม่
+          </p>
+        </div>
+      )}
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {images.length > 0 && (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-            {images.map((url, i) => (
+            {images.map((url, i) => {
+              // Beyond the package's allowance — stored, but not shown publicly.
+              const isHidden = i >= shownCount
+              return (
               <div key={url + i} style={{ position: 'relative', flexShrink: 0, cursor: i !== 0 ? 'pointer' : 'default' }}
                 onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(null)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: i === 0 ? '2.5px solid #02402e' : hoveredIdx === i ? '2px solid #048c73' : '1px solid #eef0ef', transition: 'border-color .15s' }} />
+                <img src={url} alt="" style={{ width: 90, height: 68, objectFit: 'cover', borderRadius: 8, display: 'block', border: i === 0 ? '2.5px solid #02402e' : hoveredIdx === i ? '2px solid #048c73' : '1px solid #eef0ef', transition: 'border-color .15s, opacity .15s', opacity: isHidden ? 0.4 : 1, filter: isHidden ? 'grayscale(0.7)' : 'none' }} />
+                {isHidden && hoveredIdx !== i && (
+                  <span style={{ position: 'absolute', bottom: 4, left: 4, right: 4, fontSize: 8.5, background: 'rgba(217,127,17,.94)', color: '#fff', padding: '2px 4px', borderRadius: 4, fontWeight: 700, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1.2 }}>
+                    <span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>visibility_off</span>
+                    ยังไม่แสดง
+                  </span>
+                )}
                 {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>หน้าปก</span>}
                 {i !== 0 && hoveredIdx === i && (
                   <button type="button" onClick={() => setAsCover(i)}
@@ -983,10 +1011,12 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
                 <button type="button" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
                   style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, zIndex: 2 }}><span className="msym" style={{ fontSize: 12 }}>close</span></button>
               </div>
-            ))}
+              )
+            })}
           </div>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0' }}>
             คลิกบนรูปเพื่อตั้งเป็นรูปหน้าปก • รูปแรกจะแสดงเป็น Thumbnail บนเว็บไซต์
+            {hiddenCount > 0 && <> • รูปที่จางคือรูปที่ยังไม่แสดงบนเว็บไซต์</>}
           </p>
         </>
       )}
@@ -1014,18 +1044,21 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
     setUploading(false)
   }
 
-  if (!isPremium) {
-    return (
-      <div style={{ background: '#f8fafc', border: '1.5px dashed #eef0ef', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
-        <div style={{ marginBottom: 6 }}><span className="msym" style={{ fontSize: 28, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span></div>
-        <p style={{ color: '#94a3b8', fontSize: 13, margin: 0, fontWeight: 500 }}>วิดีโอเฉพาะแพ็กเกจ Premium</p>
-        <p style={{ color: '#c7d2d0', fontSize: 12, margin: '4px 0 0' }}>อัปเกรดแพ็กเกจของคุณเป็น Premium เพื่อเพิ่มวิดีโอ</p>
-      </div>
-    )
-  }
-
+  // Non-Premium owners can still add a video — it is simply not shown publicly
+  // until they hold a Premium slot. Blocking the field instead meant an owner
+  // upgrading had to come back and paste the link again, and the video they had
+  // already prepared was thrown away rather than held.
   return (
     <div>
+      {!isPremium && (
+        <div style={{ marginBottom: 10, padding: '10px 12px', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <span className="msym" style={{ fontSize: 16, color: '#d97f11', flexShrink: 0, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>visibility_off</span>
+          <p style={{ margin: 0, fontSize: 12, color: '#8a6234', lineHeight: 1.55 }}>
+            วิดีโอแสดงบนเว็บไซต์เฉพาะแพ็กเกจ <strong>Premium</strong> — เพิ่มไว้ตอนนี้ได้เลย
+            ระบบจะเก็บไว้ให้ และจะแสดงทันทีเมื่ออัปเกรด โดยไม่ต้องใส่ลิงก์ใหม่
+          </p>
+        </div>
+      )}
       <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
         style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>

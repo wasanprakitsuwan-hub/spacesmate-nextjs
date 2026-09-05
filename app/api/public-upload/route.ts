@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRate, isSameOrigin, ALLOWED_HOSTS } from '@/lib/rate-limit'
+import { MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
 import { createServerClient } from '@/lib/supabase'
 import sharp from 'sharp'
 
@@ -10,9 +11,12 @@ const IMG_QUALITY    = 82
 const THUMB_WIDTH    = 480
 const THUMB_QUALITY  = 72
 
-const PACKAGE_LIMITS: Record<string, number> = {
-  basic: 20, standard: 20, premium: 20,
-}
+// A sixth private copy of the image limits lived here — 20/20/20 with a
+// fallback of 5, which no package has ever had. Removed on 3 Sep 2026 in
+// favour of the single ceiling in lib/packages.
+//
+// One cap for everyone: the package governs how many images are publicly
+// shown, not how many may be uploaded.
 
 async function ensureBucket(supabase: ReturnType<typeof createServerClient>) {
   await supabase.storage
@@ -49,18 +53,17 @@ export async function POST(req: NextRequest) {
   try {
     const data        = await req.formData()
     const file        = data.get('file') as File | null
-    const packageId   = (data.get('packageId') as string) || 'basic'
     const currentCount = parseInt((data.get('currentCount') as string) || '0', 10)
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // ── Enforce per-package image limit ──────────────────────────────────────
-    const limit = PACKAGE_LIMITS[packageId] ?? 5
+    // ── Enforce the single per-listing ceiling ───────────────────────────────
+    const limit = MAX_IMAGES_ANY_PACKAGE
     if (currentCount >= limit) {
       return NextResponse.json(
-        { error: `แพ็กเกจ ${packageId} อัปโหลดรูปได้สูงสุด ${limit} รูป`, limit, current: currentCount },
+        { error: `อัปโหลดรูปได้สูงสุด ${limit} รูปต่อประกาศ`, limit, current: currentCount },
         { status: 400 },
       )
     }

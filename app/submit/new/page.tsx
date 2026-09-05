@@ -4,57 +4,18 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
-import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO } from '@/lib/packages'
+import { MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
 import { createBrowserClient } from '@/lib/supabase'
 import {
   FormState, BLANK, prepareSubmitData, ListingFormFields,
 } from '@/components/listing/SharedListingForm'
 
-// ── Packages ────────────────────────────────────────────────────────────────
-const PACKAGES = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: 299,
-    priceLabel: '฿299',
-    duration: 30,
-    durationLabel: '1 เดือน',
-    badge: null as string | null,
-    highlight: false,
-    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
-    maxImages: PACKAGE_IMAGE_LIMITS.basic,
-    allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`, 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ต่ออายุได้ทุกเดือน'],
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: 699,
-    priceLabel: '฿699',
-    duration: 90,
-    durationLabel: '3 เดือน',
-    badge: 'ยอดนิยม' as string | null,
-    highlight: false,
-    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
-    maxImages: PACKAGE_IMAGE_LIMITS.standard,
-    allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`, 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ประหยัดกว่า Basic 22%'],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 2499,
-    priceLabel: '฿2,499',
-    duration: 365,
-    durationLabel: '12 เดือน',
-    badge: 'คุ้มที่สุด' as string | null,
-    highlight: true,
-    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
-    maxImages: PACKAGE_IMAGE_LIMITS.premium,
-    allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`, 'เพิ่มวิดีโอได้', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ประหยัดกว่า Basic 30%'],
-  },
-]
+// The PACKAGES table lived here and was removed on 3 Sep 2026.
+//
+// It existed so this page could charge, and later so it could set an image
+// allowance. It does neither now: packages are a display entitlement decided by
+// the slot the owner buys, and this page only writes the listing. Prices live
+// in lib/packages and are shown on /pricing.
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const SINP: React.CSSProperties = {
@@ -68,12 +29,11 @@ const SINP: React.CSSProperties = {
 function SubmitNewForm() {
   const searchParams = useSearchParams()
   const urlPkg       = searchParams.get('package') || 'basic'
-  const initialPkg   = PACKAGES.find(p => p.id === urlPkg) ? urlPkg : 'basic'
+  const initialPkg   = ['basic','standard','premium'].includes(urlPkg) ? urlPkg : 'basic'
 
-  // Opens on the listing form. Step 0 (package picker) is still reachable from
-  // the "เปลี่ยนแพ็กเกจ" link on step 1, because the chosen package sets the
-  // image allowance — but it is a detour now, not the entrance.
-  const [step, setStep] = useState(1) // 0=package, 1=listing, 2=contact+save
+  // Two steps: the listing, then contact details and save. There is no package
+  // step any more — see the note where PACKAGES used to be.
+  const [step, setStep] = useState(1) // 1=listing, 2=contact+save
 
   // Denominator for the funnel. Without this we can see who finishes but not who
   // arrived, which is exactly the gap in the Facebook-ads question.
@@ -98,7 +58,7 @@ function SubmitNewForm() {
       const parsed = JSON.parse(saved) as Partial<FormState>
       if (parsed && typeof parsed === 'object' && parsed.title_th) {
         setForm(f => ({ ...f, ...parsed }))
-        setStep(1)   // back to the listing step, not the package picker
+        setStep(1)   // back to the listing step
       }
     } catch {
       // A malformed stash is not worth blocking the form for.
@@ -261,7 +221,6 @@ function SubmitNewForm() {
   }
 
   // ── Selected package helper ────────────────────────────────────────────────
-  const selectedPkg = PACKAGES.find(p => p.id === form.package_type) ?? PACKAGES[0]
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -312,95 +271,24 @@ function SubmitNewForm() {
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '28px 16px 0' }}>
 
-        {/* ═══════════════════════════════════════════════════
-            STEP 0 — Package Selection
-        ═══════════════════════════════════════════════════ */}
-        {step === 0 && (
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#02402e', margin: '0 0 6px', textAlign: 'center' }}>แพ็กเกจที่ตั้งใจจะใช้</h1>
-            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, margin: '0 0 28px', lineHeight: 1.6 }}>
-              มีผลกับจำนวนรูปที่อัปโหลดได้เท่านั้น — ยังไม่มีการเรียกเก็บเงินในขั้นตอนนี้
-              <br />เลือกซื้อสล็อตจริงหลังบันทึกประกาศ และเปลี่ยนใจได้ตอนนั้น
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {PACKAGES.map(pkg => (
-                <div
-                  key={pkg.id}
-                  onClick={() => setForm(f => ({ ...f, package_type: pkg.id }))}
-                  style={{
-                    background: '#fff',
-                    border: `2px solid ${form.package_type === pkg.id ? '#02402e' : '#eef0ef'}`,
-                    borderRadius: 14,
-                    padding: '18px 20px',
-                    cursor: 'pointer',
-                    transition: 'border-color .15s, box-shadow .15s',
-                    boxShadow: form.package_type === pkg.id ? '0 4px 16px rgba(2,64,46,0.12)' : 'none',
-                    position: 'relative',
-                  }}
-                >
-                  {pkg.badge && (
-                    <span style={{ position: 'absolute', top: -10, right: 18, background: '#d97f11', color: '#fff', padding: '2px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}>{pkg.badge}</span>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 17, fontWeight: 700, color: '#02402e', marginBottom: 2 }}>{pkg.name}</div>
-                      <div style={{ fontSize: 12.5, color: '#64748b' }}>แสดงผล {pkg.durationLabel} · รูปภาพ {pkg.maxImages} รูป{pkg.allowVideo ? ' · วิดีโอ' : ''}</div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      {/* Was "/เดือน" for all three, which overstated Standard
-                          by 3× and Premium by 12× — ฿699 buys three months, not
-                          one. The term comes from the package now. */}
-                      <span style={{ fontSize: 22, fontWeight: 700, color: '#02402e' }}>{pkg.priceLabel}</span>
-                      <span style={{ fontSize: 12, color: '#94a3b8' }}>/{pkg.durationLabel}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {pkg.features.map(f => (
-                      <span key={f} style={{ fontSize: 11.5, color: '#475569', background: '#f1f5f9', padding: '3px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span className="msym" style={{ fontSize: 12, color: '#048c73', fontVariationSettings: "'wght' 500, 'FILL' 1" }}>check</span>{f}
-                      </span>
-                    ))}
-                  </div>
-                  {form.package_type === pkg.id && (
-                    <div style={{ position: 'absolute', top: 16, right: 16, width: 22, height: 22, borderRadius: '50%', background: '#02402e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="msym" style={{ fontSize: 14, color: '#fff', fontVariationSettings: "'wght' 500, 'FILL' 1" }}>check</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                trackEvent('listing_step', { step: 1, from: 0, package_id: form.package_type })
-                setStep(1)
-              }}
-              style={{ width: '100%', marginTop: 24, padding: '15px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              กลับไปกรอกข้อมูลประกาศ
-              <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>arrow_forward</span>
-            </button>
-            <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '10px 0 0' }}>ยังไม่มีการเรียกเก็บเงิน · เลือกและชำระค่าสล็อตหลังบันทึกประกาศ</p>
-          </div>
-        )}
+        {/* The package-selection step was removed on 3 Sep 2026.
+            Packages became a display entitlement rather than an input
+            restriction: everyone may upload the largest allowance and add a
+            video, and the slot the owner buys decides how much of that the
+            public sees. So there is nothing to pick here, and asking would
+            only put a price list in front of someone who came to write a
+            listing. Pricing lives on /pricing. */}
 
         {/* ═══════════════════════════════════════════════════
             STEP 1 — Full Listing Form
         ═══════════════════════════════════════════════════ */}
         {step === 1 && (
           <div>
-            {/* Package badge.
-                No longer announces a price, because nothing is being bought on
-                this page. What it announces is the image allowance, which is
-                the only way the intended package affects the form — and the
-                only reason anyone would want to change it here. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, background: '#02402e', color: '#fff', padding: '4px 12px', borderRadius: 20 }}>
-                {selectedPkg.name} · รูปได้ถึง {selectedPkg.maxImages} รูป
-              </span>
-              <button type="button" onClick={() => setStep(0)} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                ต้องการลงรูปมากกว่านี้?
-              </button>
-            </div>
+            {/* No package badge any more.
+                Packages decide what the public sees, not what may be entered,
+                so there is nothing to choose here and nothing this form needs
+                to know. Pricing lives on /pricing; this page is only about
+                writing the listing. */}
 
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 20px' }}>ข้อมูลประกาศ</h2>
 
@@ -463,9 +351,11 @@ function SubmitNewForm() {
                 <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>{form.images.length} รูป
                 </span>
-                <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>package_2</span>{selectedPkg.name} · {selectedPkg.durationLabel}
-                </span>
+                {form.video_url && (
+                  <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span>วิดีโอ 1 รายการ
+                  </span>
+                )}
                 {form.province && (
                   <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>location_on</span>{form.province}
@@ -493,8 +383,13 @@ function SubmitNewForm() {
                 ยังไม่มีการเรียกเก็บเงิน และยังไม่แสดงบนเว็บไซต์
               </p>
               <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
-                หากคุณมีสล็อตว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อสล็อต
-                {' '}(แพ็กเกจ <strong style={{ color: '#02402e' }}>{selectedPkg.name} {selectedPkg.priceLabel}</strong> ที่คุณเลือกไว้) — ใช้โค้ดส่วนลดได้ในขั้นตอนนั้น
+                หากคุณมีสล็อตว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อสล็อต —
+                เลือกแพ็กเกจตอนนั้นได้เลย ไม่ต้องตัดสินใจตอนนี้
+              </p>
+              <p style={{ margin: '10px 0 0', fontSize: 12.5, color: '#8a6234', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 8, padding: '9px 11px', lineHeight: 1.6 }}>
+                <strong>กรอกได้เต็มที่</strong> — ใส่รูปได้ถึง {MAX_IMAGES_ANY_PACKAGE} รูปและใส่วิดีโอได้ทุกแพ็กเกจ
+                แพ็กเกจมีผลกับ<strong>จำนวนที่แสดงบนเว็บไซต์</strong>เท่านั้น ไม่ได้จำกัดสิ่งที่คุณกรอก
+                อัปเกรดเมื่อไหร่ รูปและวิดีโอที่เหลือจะแสดงทันทีโดยไม่ต้องอัปโหลดใหม่
               </p>
               <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
                 ประกาศฉบับร่างเก็บไว้ได้ตลอด ไม่มีวันหมดอายุ · แก้ไขได้ทุกเมื่อจากแดชบอร์ด

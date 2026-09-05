@@ -7,6 +7,8 @@ import { notFound } from 'next/navigation'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
 import PropertyGallery from '@/components/property/PropertyGallery'
+import PropertyVideo from '@/components/property/PropertyVideo'
+import { visibleImages, showsVideo } from '@/lib/packages'
 import DescriptionBody from '@/components/property/DescriptionBody'
 
 interface Props {
@@ -87,7 +89,19 @@ function normalizeDbListing(raw: any): Property {
     lat: raw.lat ? String(raw.lat) : '',
     lng: raw.lng ? String(raw.lng) : '',
     image: (() => { const imgs = Array.isArray(raw.images) ? raw.images : []; return imgs.find((i: string) => i.startsWith('https://')) ?? imgs.find((i: string) => i.startsWith('/')) ?? ''; })(),
-    images: Array.isArray(raw.images) ? raw.images.filter((img: string) => img.startsWith('https://') || img.startsWith('/')) : [],
+    // Packages are a display entitlement. An owner may store up to the largest
+    // allowance whatever they bought; this is where the package they actually
+    // hold decides how much of it the public sees — the first N in their own
+    // order, so the owner controls the selection by reordering rather than by
+    // deleting work.
+    images: visibleImages(
+      Array.isArray(raw.images) ? raw.images.filter((img: string) => img.startsWith('https://') || img.startsWith('/')) : [],
+      raw.package_type,
+    ),
+    // Held for every package, rendered only for the ones that include it, so an
+    // upgrade reveals a video the owner already supplied instead of asking for
+    // it again.
+    videoUrl: showsVideo(raw.package_type) ? (raw.video_url || '') : '',
     propertyType: DB_TYPE_MAP[raw.property_type] ?? 'Condo',
     listingType: 'Rent',
     amenities: raw.amenities || [],
@@ -352,6 +366,11 @@ export default async function PropertyDetailPage({ params }: Props) {
             {hasContent && (
               <DescriptionBody contentTh={content} contentEn={contentEn} />
             )}
+
+            {/* Video — Premium only. p.videoUrl is already empty for packages
+                that do not include it, so the gate lives in one place rather
+                than being re-decided here. */}
+            <PropertyVideo url={p.videoUrl ?? ''} title={p.title} />
 
             {/* Apartment Unit Pricing Table
                 3- and 6-month prices were collected on the form and stored, but

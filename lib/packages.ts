@@ -60,11 +60,48 @@ export const PACKAGE_IMAGE_LIMITS: Record<string, number> = {
   premium:  35,
 }
 
-/** Video is Premium-only. Enforced in VideoUploadZone via packageType. */
+/** Video is Premium-only — a display entitlement, not an input restriction. */
 export const PACKAGE_ALLOWS_VIDEO: Record<string, boolean> = {
   basic:    false,
   standard: false,
   premium:  true,
+}
+
+/**
+ * The most any package allows. Everyone may upload up to this while writing a
+ * listing, whatever they end up buying.
+ *
+ * Packages gate what the public SEES, not what the owner may ENTER. Gating the
+ * input instead means an owner who drafts on Basic and later buys Premium has
+ * to come back and upload fifteen more photos — and one who downgrades loses
+ * work permanently. Neither is recoverable, and both punish the customer for
+ * our billing model. Held content costs a little storage; lost content costs
+ * the listing.
+ */
+export const MAX_IMAGES_ANY_PACKAGE = Math.max(...Object.values(PACKAGE_IMAGE_LIMITS))
+
+/**
+ * How many of a listing's images are publicly visible.
+ *
+ * The first N in the owner's own order — so it is predictable, and the owner
+ * decides which ones by reordering rather than by deleting. An unknown package
+ * falls back to the smallest allowance rather than the largest: showing more
+ * than someone paid for is the worse failure.
+ */
+export function visibleImageCount(packageType: string | null | undefined): number {
+  if (!packageType) return PACKAGE_IMAGE_LIMITS.basic
+  return PACKAGE_IMAGE_LIMITS[packageType] ?? PACKAGE_IMAGE_LIMITS.basic
+}
+
+/** Trim an image list to what this package publicly shows. */
+export function visibleImages<T>(images: T[], packageType: string | null | undefined): T[] {
+  return (images ?? []).slice(0, visibleImageCount(packageType))
+}
+
+/** Whether this listing's video should render publicly. */
+export function showsVideo(packageType: string | null | undefined): boolean {
+  if (!packageType) return false
+  return PACKAGE_ALLOWS_VIDEO[packageType] === true
 }
 
 /**

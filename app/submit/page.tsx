@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
+import { PACKAGE_IMAGE_LIMITS, MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
 
 export const metadata: Metadata = {
   title: 'ลงประกาศเช่า | SpacesMate',
@@ -31,10 +31,13 @@ const WHY = [
   { icon: 'shuffle',         title: 'ไม่ต้องจ่ายเพื่อขึ้นหน้าแรก', desc: 'ระบบสุ่มแสดงผลเท่าเทียมทุกประกาศ ทุกเจ้าของมีสิทธิ์เท่ากัน ไม่มีใครได้เปรียบ' },
 ]
 
+// Order matters and it changed: writing comes first and costs nothing, buying
+// comes second. The old copy opened with "เลือกแพ็กเกจ", which put a price in
+// front of someone before they had a listing to publish.
 const STEPS = [
-  { num: '1', title: 'เลือกแพ็กเกจ',            desc: 'เลือก Basic ฿299 · Standard ฿699 · Premium ฿2,499 ที่เหมาะกับทรัพย์สินของคุณ' },
-  { num: '2', title: 'กรอกข้อมูลและอัปโหลดรูป', desc: 'ชื่อ ประเภท ราคา ที่อยู่ สิ่งอำนวยความสะดวก และรูปภาพ — ทำทีเดียวจบ' },
-  { num: '3', title: 'ชำระและเผยแพร่ทันที',      desc: 'ชำระผ่าน Stripe ปลอดภัย 100% — ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ' },
+  { num: '1', title: 'สร้างประกาศ — ฟรี',        desc: `กรอกข้อมูลห้องและอัปโหลดรูปได้ถึง ${MAX_IMAGES_ANY_PACKAGE} รูป พร้อมวิดีโอ บันทึกเป็นฉบับร่างไว้ได้ ยังไม่ต้องจ่าย` },
+  { num: '2', title: 'ซื้อสล็อตเมื่อพร้อม',      desc: 'เลือกแพ็กเกจตามระยะเวลาที่ต้องการแสดงผล 1 สล็อต = ประกาศออนไลน์ 1 รายการ ซื้อหลายสล็อตพร้อมกันได้' },
+  { num: '3', title: 'เผยแพร่ทันที',             desc: 'ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ สลับประกาศในสล็อตได้ตลอดอายุ' },
 ]
 
 const PACKAGES = [
@@ -186,8 +189,14 @@ export default function SubmitPage() {
           <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 600, margin: '0 0 8px', textAlign: 'center', color: '#111827' }}>
             แพ็กเกจราคา
           </h2>
-          <p style={{ color: '#6b7280', fontSize: 15, margin: '0 0 16px', textAlign: 'center', fontWeight: 300 }}>
-            1 ประกาศ/แพ็กเกจ — เผยแพร่ทันทีหลังชำระ ไม่ต้องรอ
+          <p style={{ color: '#6b7280', fontSize: 15, margin: '0 0 8px', textAlign: 'center', fontWeight: 300 }}>
+            1 สล็อต = ประกาศออนไลน์ 1 รายการ — เผยแพร่ทันที ไม่ต้องรอ
+          </p>
+          {/* The rule that removes the decision from the listing form: you are
+              never choosing what you may enter, only how much of it shows. */}
+          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px', textAlign: 'center', fontWeight: 300, lineHeight: 1.6 }}>
+            กรอกประกาศได้เต็มที่ทุกแพ็กเกจ — รูปสูงสุด {MAX_IMAGES_ANY_PACKAGE} รูปและใส่วิดีโอได้
+            <br />แพ็กเกจกำหนดแค่ว่า<strong style={{ color: '#02402e', fontWeight: 600 }}>แสดงบนเว็บไซต์กี่รูป</strong> อัปเกรดแล้วส่วนที่เหลือแสดงทันที
           </p>
           {/* Green promo note */}
           <p style={{ textAlign: 'center', fontSize: 14, color: '#02402e', fontWeight: 500, margin: '0 0 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -246,13 +255,13 @@ export default function SubmitPage() {
                   ))}
                 </ul>
 
-                {/* CTA.
-                    Was "เลือกแพ็กเกจนี้", which reads as buying but actually
-                    opens the listing form with payment at the end. Two
-                    different things were wearing the same label: this page
-                    starts a listing, /pricing sells a slot on its own. The
-                    label now says which one this is. */}
-                <Link href={`/submit/new?package=${pkg.id}`}
+                {/* CTA → /pricing, not the listing form.
+                    These are prices, so the button goes where buying happens.
+                    It used to open the listing form, which meant a visitor who
+                    clicked a price ended up filling in a property instead —
+                    the confusion that started this. Writing a listing is the
+                    single call to action below the grid. */}
+                <Link href="/pricing"
                   style={{
                     display: 'block', textAlign: 'center', fontWeight: 600, fontSize: 15,
                     borderRadius: 28, padding: '13px 0', textDecoration: 'none', transition: 'all .2s',
@@ -260,11 +269,8 @@ export default function SubmitPage() {
                     color: pkg.highlight ? '#fff' : '#374151',
                     border: `1.5px solid ${pkg.highlight ? '#d97f11' : '#d1d5db'}`,
                   }}>
-                  สร้างประกาศด้วยแพ็กเกจนี้
+                  ดูรายละเอียดและซื้อสล็อต
                 </Link>
-                <p style={{ fontSize: 11.5, color: '#9ca3af', textAlign: 'center', margin: '8px 0 0', fontWeight: 300, lineHeight: 1.4 }}>
-                  กรอกข้อมูลห้อง แล้วชำระเงินในขั้นตอนสุดท้าย
-                </p>
               </div>
             ))}
           </div>
@@ -275,15 +281,19 @@ export default function SubmitPage() {
               page only ever offered the write-first path, so an owner who had
               already drafted a listing, or who just wanted capacity for a
               building, had nowhere obvious to go. */}
-          <div style={{ maxWidth: 860, margin: '26px auto 0', textAlign: 'center' }}>
-            <p style={{ fontSize: 13.5, color: '#6b7280', margin: 0, fontWeight: 300, lineHeight: 1.6 }}>
-              มีประกาศอยู่แล้ว หรือต้องการซื้อสล็อตไว้ก่อนโดยยังไม่กรอกข้อมูลห้อง?{' '}
-              <Link href="/pricing" style={{ color: '#048c73', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                ซื้อสล็อตอย่างเดียว →
-              </Link>
-            </p>
-            <p style={{ fontSize: 12, color: '#9ca3af', margin: '6px 0 0', fontWeight: 300 }}>
-              1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เลือกได้ทีหลังว่าจะใช้กับประกาศไหน
+          {/* Writing a listing is free and needs no package, so it gets its own
+              call to action rather than hiding behind a price. */}
+          <div style={{ maxWidth: 860, margin: '30px auto 0', textAlign: 'center' }}>
+            <Link href="/submit/new"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, background: '#02402e', color: '#fff',
+                fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 28, textDecoration: 'none',
+              }}>
+              <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit_note</span>
+              สร้างประกาศก่อน — ฟรี ยังไม่ต้องจ่าย
+            </Link>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '10px 0 0', fontWeight: 300, lineHeight: 1.6 }}>
+              บันทึกเป็นฉบับร่างไว้ได้ตลอด แล้วค่อยซื้อสล็อตเมื่อพร้อมเผยแพร่
             </p>
           </div>
         </div>
