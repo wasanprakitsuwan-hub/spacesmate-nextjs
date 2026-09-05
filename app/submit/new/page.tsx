@@ -70,7 +70,10 @@ function SubmitNewForm() {
   const urlPkg       = searchParams.get('package') || 'basic'
   const initialPkg   = PACKAGES.find(p => p.id === urlPkg) ? urlPkg : 'basic'
 
-  const [step, setStep] = useState(0) // 0=package, 1=listing, 2=contact+pay
+  // Opens on the listing form. Step 0 (package picker) is still reachable from
+  // the "เปลี่ยนแพ็กเกจ" link on step 1, because the chosen package sets the
+  // image allowance — but it is a detour now, not the entrance.
+  const [step, setStep] = useState(1) // 0=package, 1=listing, 2=contact+save
 
   // Denominator for the funnel. Without this we can see who finishes but not who
   // arrived, which is exactly the gap in the Facebook-ads question.
@@ -275,9 +278,16 @@ function SubmitNewForm() {
       {/* ── Step indicator ── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #eef0ef', padding: '12px 20px', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'center', overflowX: 'auto' }}>
         {[
-          { num: 1, label: 'เลือกแพ็กเกจ', s: 0 },
-          { num: 2, label: 'ข้อมูลประกาศ', s: 1 },
-          { num: 3, label: 'ข้อมูลติดต่อ & บันทึก', s: 2 },
+          // Package selection is no longer a step. It used to be step 1 because
+          // this page charged, so the package had to be settled before payment.
+          // It does not charge any more: the package belongs to the slot, which
+          // is bought afterwards. Opening with a price list ahead of a form the
+          // visitor has not filled in asks them to choose before they have any
+          // reason to care. Step 0 still exists and is reachable from the
+          // listing step, for changing the intended package and with it the
+          // image allowance — it is just not the front door.
+          { num: 1, label: 'ข้อมูลประกาศ', s: 1 },
+          { num: 2, label: 'ข้อมูลติดต่อ & บันทึก', s: 2 },
         ].map((item, idx) => {
           const done    = step > item.s
           const current = step === item.s
@@ -307,8 +317,11 @@ function SubmitNewForm() {
         ═══════════════════════════════════════════════════ */}
         {step === 0 && (
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#02402e', margin: '0 0 6px', textAlign: 'center' }}>เลือกแพ็กเกจที่ต้องการ</h1>
-            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, margin: '0 0 28px' }}>เลือกไว้ก่อนได้ — ยังไม่ต้องชำระเงินในขั้นตอนนี้ ประกาศจะถูกบันทึกเป็นฉบับร่าง แล้วค่อยซื้อสล็อตเพื่อเผยแพร่</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#02402e', margin: '0 0 6px', textAlign: 'center' }}>แพ็กเกจที่ตั้งใจจะใช้</h1>
+            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, margin: '0 0 28px', lineHeight: 1.6 }}>
+              มีผลกับจำนวนรูปที่อัปโหลดได้เท่านั้น — ยังไม่มีการเรียกเก็บเงินในขั้นตอนนี้
+              <br />เลือกซื้อสล็อตจริงหลังบันทึกประกาศ และเปลี่ยนใจได้ตอนนั้น
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {PACKAGES.map(pkg => (
                 <div
@@ -334,8 +347,11 @@ function SubmitNewForm() {
                       <div style={{ fontSize: 12.5, color: '#64748b' }}>แสดงผล {pkg.durationLabel} · รูปภาพ {pkg.maxImages} รูป{pkg.allowVideo ? ' · วิดีโอ' : ''}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      {/* Was "/เดือน" for all three, which overstated Standard
+                          by 3× and Premium by 12× — ฿699 buys three months, not
+                          one. The term comes from the package now. */}
                       <span style={{ fontSize: 22, fontWeight: 700, color: '#02402e' }}>{pkg.priceLabel}</span>
-                      <span style={{ fontSize: 12, color: '#94a3b8' }}>/เดือน</span>
+                      <span style={{ fontSize: 12, color: '#94a3b8' }}>/{pkg.durationLabel}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -360,10 +376,10 @@ function SubmitNewForm() {
                 setStep(1)
               }}
               style={{ width: '100%', marginTop: 24, padding: '15px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              ถัดไป — กรอกข้อมูลประกาศ
+              กลับไปกรอกข้อมูลประกาศ
               <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>arrow_forward</span>
             </button>
-            <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '10px 0 0' }}>ราคาแสดงเป็น THB · ต่ออายุอัตโนมัติ ยกเลิกได้ทุกเมื่อ</p>
+            <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '10px 0 0' }}>ยังไม่มีการเรียกเก็บเงิน · เลือกและชำระค่าสล็อตหลังบันทึกประกาศ</p>
           </div>
         )}
 
@@ -372,12 +388,18 @@ function SubmitNewForm() {
         ═══════════════════════════════════════════════════ */}
         {step === 1 && (
           <div>
-            {/* Package badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+            {/* Package badge.
+                No longer announces a price, because nothing is being bought on
+                this page. What it announces is the image allowance, which is
+                the only way the intended package affects the form — and the
+                only reason anyone would want to change it here. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 12, fontWeight: 700, background: '#02402e', color: '#fff', padding: '4px 12px', borderRadius: 20 }}>
-                {selectedPkg.name} · {selectedPkg.priceLabel}/เดือน
+                {selectedPkg.name} · รูปได้ถึง {selectedPkg.maxImages} รูป
               </span>
-              <button type="button" onClick={() => setStep(0)} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>เปลี่ยนแพ็กเกจ</button>
+              <button type="button" onClick={() => setStep(0)} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                ต้องการลงรูปมากกว่านี้?
+              </button>
             </div>
 
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 20px' }}>ข้อมูลประกาศ</h2>
@@ -398,11 +420,10 @@ function SubmitNewForm() {
               </div>
             )}
 
+            {/* No "back" from here any more — this is the first step now, and a
+                back button that lands on a package picker the visitor never saw
+                would be disorienting. Changing the package is the link above. */}
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button type="button" onClick={() => { trackEvent('listing_step_back', { from: 1, to: 0 }); setError(null); setStep(0) }}
-                style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                ย้อนกลับ
-              </button>
               <button type="button"
                 onClick={() => {
                   const err = validateStep1()
@@ -443,7 +464,7 @@ function SubmitNewForm() {
                   <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>{form.images.length} รูป
                 </span>
                 <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>package_2</span>{selectedPkg.name} · {selectedPkg.priceLabel}/เดือน
+                  <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>package_2</span>{selectedPkg.name} · {selectedPkg.durationLabel}
                 </span>
                 {form.province && (
                   <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
