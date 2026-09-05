@@ -19,15 +19,20 @@ import { PACKAGE_PRICE_THB } from '@/lib/packages'
  */
 export default function BuySlotsCta({
   pkg,
-  label,
   className,
 }: {
   pkg: string
-  label: string
   className: string
 }) {
   const router = useRouter()
   const [qty,     setQty]     = useState(1)
+
+  // What they will actually be charged.
+  //
+  // The buttons used to read "ซื้อสล็อต ฿699 × 3", which is the unit price and
+  // a multiplication sign — leaving the buyer to work out ฿2,097 in their head
+  // at the exact moment they decide whether to commit. Show the total instead.
+  const total = (PACKAGE_PRICE_THB[pkg] ?? 0) * qty
   // Which button is working, so only the one that was pressed shows a spinner.
   const [loading, setLoading] = useState<false | 'card' | 'promptpay'>(false)
   const [error,   setError]   = useState('')
@@ -105,7 +110,7 @@ export default function BuySlotsCta({
           is a support case and a churn event, so the renewal behaviour is on
           the button itself, not in a footnote. */}
       <button type="button" onClick={() => buy('card')} disabled={loading !== false} className={className}>
-        {loading === 'card' ? 'กำลังโหลด…' : qty > 1 ? `${label} × ${qty}` : label}
+        {loading === 'card' ? 'กำลังโหลด…' : `จ่ายด้วยบัตรเครดิต · ฿${total.toLocaleString()}`}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
         บัตรเครดิต/เดบิต · ต่ออายุอัตโนมัติ ยกเลิกได้ทุกเมื่อ
@@ -117,7 +122,7 @@ export default function BuySlotsCta({
         disabled={loading !== false}
         className="mt-3 w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 border border-spacemate-brandTeal text-spacemate-brandTeal hover:bg-spacemate-brandTeal hover:text-white"
       >
-        {loading === 'promptpay' ? 'กำลังโหลด…' : 'จ่ายด้วยพร้อมเพย์'}
+        {loading === 'promptpay' ? 'กำลังโหลด…' : `จ่ายด้วยพร้อมเพย์ · ฿${total.toLocaleString()}`}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
         สแกน QR · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ

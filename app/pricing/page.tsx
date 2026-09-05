@@ -36,8 +36,6 @@ const PLANS = [
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
     ],
-    cta: 'ซื้อสล็อต ฿299',
-    ctaHref: '/submit/new?package=basic',
   },
   {
     id: 'standard',
@@ -58,8 +56,6 @@ const PLANS = [
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
     ],
-    cta: 'ซื้อสล็อต ฿699',
-    ctaHref: '/submit/new?package=standard',
   },
   {
     id: 'premium',
@@ -84,8 +80,6 @@ const PLANS = [
       'สลับประกาศในสล็อตได้ตลอดอายุ',
       'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
     ],
-    cta: 'ซื้อสล็อต ฿2,499',
-    ctaHref: '/submit/new?package=premium',
   },
 ]
 
@@ -320,8 +314,7 @@ export default function PricingPage() {
 
               {/* Sells slots, not listings — see components/pricing/BuySlotsCta */}
               <BuySlotsCta
-                pkg={plan.ctaHref.split('package=')[1] ?? 'basic'}
-                label={plan.cta}
+                pkg={plan.id}
                 className={`w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${
                   plan.highlight
                     ? 'bg-spacemate-brandDark text-white hover:bg-spacemate-brandTeal'
