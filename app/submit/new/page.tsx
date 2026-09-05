@@ -21,10 +21,10 @@ const PACKAGES = [
     durationLabel: '1 เดือน',
     badge: null as string | null,
     highlight: false,
-    note: 'เผยแพร่ทันทีหลังชำระ',
+    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
     maxImages: PACKAGE_IMAGE_LIMITS.basic,
     allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`, 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ต่ออายุได้ทุกเดือน'],
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.basic} รูป`, 'แสดงผล 1 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ต่ออายุได้ทุกเดือน'],
   },
   {
     id: 'standard',
@@ -35,10 +35,10 @@ const PACKAGES = [
     durationLabel: '3 เดือน',
     badge: 'ยอดนิยม' as string | null,
     highlight: false,
-    note: 'เผยแพร่ทันทีหลังชำระ',
+    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
     maxImages: PACKAGE_IMAGE_LIMITS.standard,
     allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`, 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 22%'],
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.standard} รูป`, 'แสดงผล 3 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ประหยัดกว่า Basic 22%'],
   },
   {
     id: 'premium',
@@ -49,10 +49,10 @@ const PACKAGES = [
     durationLabel: '12 เดือน',
     badge: 'คุ้มที่สุด' as string | null,
     highlight: true,
-    note: 'เผยแพร่ทันทีหลังชำระ',
+    note: 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง',
     maxImages: PACKAGE_IMAGE_LIMITS.premium,
     allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
-    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`, 'เพิ่มวิดีโอได้', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีหลังชำระ', 'ประหยัดกว่า Basic 30%'],
+    features: ['1 ประกาศ', `รูปภาพสูงสุด ${PACKAGE_IMAGE_LIMITS.premium} รูป`, 'เพิ่มวิดีโอได้', 'แสดงผล 12 เดือน', 'เผยแพร่ทันทีเมื่อมีสล็อตว่าง', 'ประหยัดกว่า Basic 30%'],
   },
 ]
 
@@ -80,15 +80,34 @@ function SubmitNewForm() {
 
   const [form, setForm] = useState<FormState>({ ...BLANK, package_type: initialPkg })
 
+  // Restore a form abandoned at the login wall.
+  //
+  // Saving a draft needs an account, so someone who fills the whole form while
+  // logged out gets bounced to /login. Without this they come back to an empty
+  // form and have to type everything again — including re-uploading photos,
+  // which is where they would give up. The stash is written just before that
+  // redirect; this reads it back and clears it so it cannot resurface later.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('spacesmate_pending_listing')
+      if (!saved) return
+      sessionStorage.removeItem('spacesmate_pending_listing')
+      const parsed = JSON.parse(saved) as Partial<FormState>
+      if (parsed && typeof parsed === 'object' && parsed.title_th) {
+        setForm(f => ({ ...f, ...parsed }))
+        setStep(1)   // back to the listing step, not the package picker
+      }
+    } catch {
+      // A malformed stash is not worth blocking the form for.
+      sessionStorage.removeItem('spacesmate_pending_listing')
+    }
+  }, [])
+
   // Contact info (separate from listing FormState)
 
-  // Promo code state
-  const [promoInput,  setPromoInput]  = useState('')
-  const [promoStatus, setPromoStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
-  const [promoData,   setPromoData]   = useState<{
-    promotionCodeId: string; discountTHB?: number; percentOff?: number
-  } | null>(null)
-  const [promoError, setPromoError] = useState('')
+  // Promo state was removed with the promo box — this page no longer charges,
+  // so there is nothing for a code to discount. Codes are entered at slot
+  // checkout, which has Stripe's own promo field.
 
   // UI state
   const [loading,  setLoading]  = useState(false)
@@ -118,29 +137,7 @@ function SubmitNewForm() {
     return null
   }
 
-  // ── Promo code ─────────────────────────────────────────────────────────────
-  async function applyPromo() {
-    const code = promoInput.trim().toUpperCase()
-    if (!code) return
-    setPromoStatus('checking'); setPromoError(''); setPromoData(null)
-    try {
-      const res  = await fetch('/api/stripe/validate-promo', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      })
-      const json = await res.json()
-      if (json.valid) {
-        setPromoStatus('valid')
-        setPromoData({ promotionCodeId: json.promotionCodeId, discountTHB: json.discountTHB, percentOff: json.percentOff })
-      } else {
-        setPromoStatus('invalid'); setPromoError(json.error || 'โค้ดไม่ถูกต้อง')
-      }
-    } catch {
-      setPromoStatus('invalid'); setPromoError('เกิดข้อผิดพลาด กรุณาลองใหม่')
-    }
-  }
-
-  // ── Submit to Stripe ───────────────────────────────────────────────────────
+  // ── Save the listing as a draft ────────────────────────────────────────────
   async function handleSubmit() {
     if (!form.contact_name.trim() || !form.contact_phone.trim()) {
       trackEvent('listing_validation_error', { step: 2, reason: 'missing_contact' })
@@ -173,18 +170,41 @@ function SubmitNewForm() {
       }),
     }).catch(() => {})
 
+    // ── Save the listing as a draft. No payment here. ────────────────────────
+    //
+    // Writing a listing and paying to publish it are two different decisions,
+    // and this route used to weld them together: it created a submission with
+    // status 'pending_payment' and went straight to Stripe, so the only way to
+    // get a listing into the system was to buy at the same moment.
+    //
+    // That contradicted the product. A slot is capacity, not a listing — you
+    // can hold several, swap which listing occupies one, and buy before you
+    // have written anything. The pricing FAQ says exactly that.
+    //
+    // POST /api/owner/listings already does the right thing: it creates the
+    // property as a draft and separately decides whether to publish it, based
+    // on whether a slot is free. This route just was not using it.
     try {
       const { data: { session: authSess } } = await createBrowserClient().auth.getSession()
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (authSess?.access_token) headers['Authorization'] = `Bearer ${authSess.access_token}`
+
+      // Drafts belong to an account. There is nowhere to put an anonymous one —
+      // it would not appear on any dashboard and nobody could publish it later.
+      if (!authSess?.access_token) {
+        trackEvent('listing_draft_needs_account', { package_id: form.package_type })
+        sessionStorage.setItem('spacesmate_pending_listing', JSON.stringify(form))
+        window.location.href = `/login?redirect=${encodeURIComponent('/submit/new')}`
+        return
+      }
 
       const extra = prepareSubmitData(form) // { price_from, price_to, room_types, floor, area_sqm }
 
-      const res = await fetch('/api/stripe/checkout', {
+      const res = await fetch('/api/owner/listings', {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authSess.access_token}`,
+        },
         body: JSON.stringify({
-          // Rich listing fields (new)
           title_th:       form.title_th,
           title_en:       form.title_en,
           property_type:  form.property_type,
@@ -204,22 +224,33 @@ function SubmitNewForm() {
           bedrooms:       parseInt(form.bedrooms)  || null,
           bathrooms:      parseInt(form.bathrooms) || null,
           ...extra,
-          // Contact — single source: the listing form's section 10
-          contactName:  form.contact_name,
-          contactPhone: form.contact_phone,
-          contactEmail: form.contact_email,
-          contactLine:  form.contact_line,
-          // Package + promo
-          packageId:       form.package_type,
-          promotionCodeId: promoData?.promotionCodeId ?? '',
+          contact_name:  form.contact_name,
+          contact_phone: form.contact_phone,
+          contact_line:  form.contact_line,
+          // Which package this listing is intended for. It does not buy
+          // anything here — it preselects the package on the slot purchase.
+          package_type:  form.package_type,
         }),
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || 'Server error')
-      if (json.url) {
-        trackEvent('listing_checkout', { package_id: form.package_type, property_type: form.property_type })
-        window.location.href = json.url
+
+      trackEvent('listing_draft_saved', {
+        package_id:    form.package_type,
+        property_type: form.property_type,
+        published:     json.published === true,
+      })
+
+      // If a slot was already free, the API published it — nothing left to buy.
+      if (json.published === true) {
+        window.location.href = '/owner-dashboard?published=1'
+        return
       }
+
+      // Otherwise the draft is saved and waiting for capacity. Send them
+      // straight at the slot purchase with the package they picked, rather
+      // than leaving them to find the pricing page themselves.
+      window.location.href = `/pricing?draft=1&package=${encodeURIComponent(form.package_type)}`
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
       setLoading(false)
@@ -246,7 +277,7 @@ function SubmitNewForm() {
         {[
           { num: 1, label: 'เลือกแพ็กเกจ', s: 0 },
           { num: 2, label: 'ข้อมูลประกาศ', s: 1 },
-          { num: 3, label: 'ข้อมูลติดต่อ & ชำระเงิน', s: 2 },
+          { num: 3, label: 'ข้อมูลติดต่อ & บันทึก', s: 2 },
         ].map((item, idx) => {
           const done    = step > item.s
           const current = step === item.s
@@ -277,7 +308,7 @@ function SubmitNewForm() {
         {step === 0 && (
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#02402e', margin: '0 0 6px', textAlign: 'center' }}>เลือกแพ็กเกจที่ต้องการ</h1>
-            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, margin: '0 0 28px' }}>ประกาศจะเผยแพร่บน spacesmate.com ทันทีหลังชำระเงิน</p>
+            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, margin: '0 0 28px' }}>เลือกไว้ก่อนได้ — ยังไม่ต้องชำระเงินในขั้นตอนนี้ ประกาศจะถูกบันทึกเป็นฉบับร่าง แล้วค่อยซื้อสล็อตเพื่อเผยแพร่</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {PACKAGES.map(pkg => (
                 <div
@@ -391,7 +422,7 @@ function SubmitNewForm() {
                   setError(null); setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
                 style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                ถัดไป — ข้อมูลติดต่อ & ชำระเงิน
+                ถัดไป — ข้อมูลติดต่อ
                 <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>arrow_forward</span>
               </button>
             </div>
@@ -425,61 +456,28 @@ function SubmitNewForm() {
             {/* Contact info is collected once, in the listing form itself
                 (section 10). It used to be asked again here, so a landlord filled
                 the same three fields twice. */}
-            {/* Promo code */}
-            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #eef0ef', padding: '20px', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>local_activity</span>โค้ดส่วนลด (ถ้ามี)
-              </h2>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  value={promoInput}
-                  onChange={e => { setPromoInput(e.target.value); setPromoStatus('idle'); setPromoError(''); setPromoData(null) }}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo() } }}
-                  placeholder="กรอกโค้ดส่วนลด"
-                  disabled={promoStatus === 'valid'}
-                  style={{ ...SINP, flex: 1, background: promoStatus === 'valid' ? '#f0fbf8' : '#fff', borderColor: promoStatus === 'valid' ? '#048c73' : promoStatus === 'invalid' ? '#fca5a5' : '#e2e8f0' }}
-                />
-                <button type="button" onClick={applyPromo} disabled={promoStatus === 'checking' || promoStatus === 'valid'}
-                  style={{ padding: '11px 16px', borderRadius: 10, border: 'none', background: promoStatus === 'valid' ? '#048c73' : '#02402e', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: promoStatus === 'valid' ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5, opacity: promoStatus === 'checking' ? 0.7 : 1 }}>
-                  {promoStatus === 'valid'    ? <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 500, 'FILL' 1" }}>check</span>ใช้แล้ว</> :
-                   promoStatus === 'checking' ? 'ตรวจสอบ...' : 'ใช้โค้ด'}
-                </button>
-              </div>
-              {promoStatus === 'valid' && promoData && (
-                <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12.5, color: '#048c73', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 500, 'FILL' 1" }}>check_circle</span>
-                  ส่วนลด{promoData.percentOff ? ` ${promoData.percentOff}%` : promoData.discountTHB ? ` ฿${promoData.discountTHB.toLocaleString()}` : ''} ถูกนำไปใช้แล้ว
-                </div>
-              )}
-              {promoStatus === 'invalid' && <p style={{ margin: '6px 0 0', fontSize: 12.5, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{promoError}</p>}
-            </div>
+            {/* The promo box and order summary lived here and were removed when
+                this page stopped charging. Both would now lie: a discount code
+                validated here applies to nothing, and an order summary implies
+                a purchase that does not happen on this page. The code belongs
+                at slot checkout, where Stripe's own promo field already sits. */}
 
-            {/* Order summary */}
+            {/* What happens next */}
             <div style={{ background: '#fafffe', borderRadius: 14, border: '1px solid #b2d8c9', padding: '18px 20px', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>receipt_long</span>สรุปคำสั่งซื้อ
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>save</span>ขั้นตอนถัดไป
               </h2>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eef0ef' }}>
-                <span style={{ fontSize: 13.5, color: '#475569' }}>SpacesMate {selectedPkg.name} — {selectedPkg.durationLabel}</span>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: '#231f20' }}>{selectedPkg.priceLabel}/เดือน</span>
-              </div>
-              {promoStatus === 'valid' && promoData && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eef0ef' }}>
-                  <span style={{ fontSize: 13, color: '#048c73' }}>ส่วนลดโค้ด</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#048c73' }}>
-                    -{promoData.percentOff ? `${promoData.percentOff}%` : promoData.discountTHB ? `฿${promoData.discountTHB.toLocaleString()}` : ''}
-                  </span>
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0 0' }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>ยอดรวม (ต่อเดือน)</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#02402e' }}>
-                  {promoData?.discountTHB
-                    ? `฿${(selectedPkg.price - promoData.discountTHB).toLocaleString()}/เดือน`
-                    : selectedPkg.priceLabel + '/เดือน'}
-                </span>
-              </div>
-              <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#94a3b8' }}>ราคา VAT ยังไม่รวม · บิลออกเดือนละครั้ง · ยกเลิกได้ทุกเมื่อ</p>
+              <p style={{ margin: 0, fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
+                กดบันทึกแล้วประกาศจะถูกเก็บเป็น <strong style={{ color: '#02402e' }}>ฉบับร่าง</strong> ในบัญชีของคุณ —
+                ยังไม่มีการเรียกเก็บเงิน และยังไม่แสดงบนเว็บไซต์
+              </p>
+              <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
+                หากคุณมีสล็อตว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อสล็อต
+                {' '}(แพ็กเกจ <strong style={{ color: '#02402e' }}>{selectedPkg.name} {selectedPkg.priceLabel}</strong> ที่คุณเลือกไว้) — ใช้โค้ดส่วนลดได้ในขั้นตอนนั้น
+              </p>
+              <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
+                ประกาศฉบับร่างเก็บไว้ได้ตลอด ไม่มีวันหมดอายุ · แก้ไขได้ทุกเมื่อจากแดชบอร์ด
+              </p>
             </div>
 
             {/* Consent */}
@@ -508,14 +506,14 @@ function SubmitNewForm() {
               <button type="button" onClick={handleSubmit} disabled={loading}
                 style={{ flex: 2, padding: '14px', borderRadius: 12, border: 'none', background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'background .15s' }}>
                 {loading
-                  ? <><span style={{ width: 17, height: 17, border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังดำเนินการ...</>
-                  : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>payment</span>ชำระเงินผ่าน Stripe</>
+                  ? <><span style={{ width: 17, height: 17, border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก...</>
+                  : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>save</span>บันทึกประกาศ</>
                 }
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
               <span className="msym" style={{ fontSize: 16, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>lock</span>
-              <span style={{ fontSize: 12, color: '#94a3b8' }}>ชำระเงินอย่างปลอดภัยผ่าน Stripe · SpacesMate ไม่เก็บข้อมูลบัตรเครดิต</span>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>บันทึกเป็นฉบับร่างก่อน — ยังไม่มีการเรียกเก็บเงิน ขั้นตอนถัดไปคือซื้อสล็อตเพื่อเผยแพร่</span>
             </div>
           </div>
         )}
