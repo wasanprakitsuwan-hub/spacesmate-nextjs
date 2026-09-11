@@ -32,6 +32,18 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
+
+  // Google Search Console ownership, rendered server-side on every page.
+  //
+  // Deliberately NOT verified via the Google Analytics or Tag Manager methods:
+  // GTM here loads only after cookie consent (components/consent/Analytics.tsx),
+  // and Google's verifier does not accept cookies — it would see a page with no
+  // container and fail. A static token in <head> is independent of consent and
+  // carries no tracking, so it is unconditional.
+  //
+  // Do not remove. Google re-checks periodically and silently unverifies the
+  // property if the tag disappears, taking the Search Console history with it.
+  verification: { google: 'KCDukdwBq8l045pDIYzH4VxLAvUzL7RwvAfBDnifJdw' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
