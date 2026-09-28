@@ -34,15 +34,21 @@ export default function BuySlotsCta({
   // at the exact moment they decide whether to commit. Show the total instead.
   const total = (PACKAGE_PRICE_THB[pkg] ?? 0) * qty
   // Which button is working, so only the one that was pressed shows a spinner.
-  const [loading, setLoading] = useState<false | 'card' | 'promptpay'>(false)
+  const [loading, setLoading] = useState<false | 'once' | 'subscription'>(false)
   const [error,   setError]   = useState('')
 
   /**
-   * @param method 'card' buys a subscription that renews; 'promptpay' buys a
-   *   one-time term that expires. Stripe's PromptPay cannot do recurring, so
-   *   these are two routes rather than one route with two payment methods.
+   * @param method What the buyer is choosing is a BILLING MODEL, not a payment
+   *   method — 'once' buys a term that expires, 'subscription' buys one that
+   *   renews on a card. The payment instrument is picked afterwards, at Stripe:
+   *   'once' offers PromptPay and card, 'subscription' can only offer card
+   *   because PromptPay cannot do recurring.
+   *
+   *   This used to read 'card' | 'promptpay', which framed the choice as a
+   *   payment method and quietly buried PromptPay — the method most Thai owners
+   *   reach for — on the secondary button.
    */
-  async function buy(method: 'card' | 'promptpay') {
+  async function buy(method: 'once' | 'subscription') {
     setLoading(method)
     setError('')
     try {
@@ -63,8 +69,8 @@ export default function BuySlotsCta({
         return
       }
 
-      const endpoint = method === 'promptpay'
-        ? '/api/stripe/buy-slots-promptpay'
+      const endpoint = method === 'once'
+        ? '/api/stripe/buy-slots-once'
         : '/api/stripe/buy-slots'
 
       const res = await fetch(endpoint, {
@@ -103,29 +109,31 @@ export default function BuySlotsCta({
         </div>
       </div>
 
-      {/* Two buttons rather than a payment-method dropdown at checkout.
-          The difference is not only how you pay: a card buys a subscription
-          that renews, PromptPay buys a term that expires. A landlord who
-          assumes PromptPay renews and finds their listing gone after 30 days
-          is a support case and a churn event, so the renewal behaviour is on
-          the button itself, not in a footnote. */}
-      <button type="button" onClick={() => buy('card')} disabled={loading !== false} className={className}>
-        {loading === 'card' ? 'กำลังโหลด…' : `จ่ายด้วยบัตรเครดิต · ฿${total.toLocaleString()}`}
+      {/* Two buttons, split by billing model rather than payment method.
+          The renewal behaviour is on the button itself and not in a footnote:
+          a landlord who assumes his payment renews and finds the listing gone
+          after 30 days is a support case and a churn event.
+
+          One-time leads because it takes PromptPay, which is how most Thai
+          owners actually pay. The previous order made them press the secondary,
+          outlined button to reach it. */}
+      <button type="button" onClick={() => buy('once')} disabled={loading !== false} className={className}>
+        {loading === 'once' ? 'กำลังโหลด…' : `จ่ายครั้งเดียว · ฿${total.toLocaleString()}`}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
-        บัตรเครดิต/เดบิต · ต่ออายุอัตโนมัติ ยกเลิกได้ทุกเมื่อ
+        พร้อมเพย์ หรือ บัตรเครดิต/เดบิต · ไม่ต่ออายุอัตโนมัติ
       </p>
 
       <button
         type="button"
-        onClick={() => buy('promptpay')}
+        onClick={() => buy('subscription')}
         disabled={loading !== false}
         className="mt-3 w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 border border-spacemate-brandTeal text-spacemate-brandTeal hover:bg-spacemate-brandTeal hover:text-white"
       >
-        {loading === 'promptpay' ? 'กำลังโหลด…' : `จ่ายด้วยพร้อมเพย์ · ฿${total.toLocaleString()}`}
+        {loading === 'subscription' ? 'กำลังโหลด…' : `ต่ออายุอัตโนมัติ · ฿${total.toLocaleString()}`}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
-        สแกน QR · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ
+        บัตรเครดิต/เดบิตเท่านั้น · ตัดบัตรอัตโนมัติทุกรอบ ยกเลิกได้ทุกเมื่อ
       </p>
 
       <p className="mt-3 text-center text-xs text-gray-500">

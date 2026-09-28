@@ -5,23 +5,33 @@ import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 
 /**
- * Buy publishing slots with PromptPay — a one-time payment.
+ * Buy publishing slots as a one-time payment — PromptPay or card.
  *
- * Separate from /api/stripe/buy-slots rather than a payment_method_types entry
- * on it, because Stripe's PromptPay supports one-time payments only: it cannot
- * be used for recurring billing and is hidden entirely on subscriptions with a
- * trial. A card buys a subscription that renews; PromptPay buys a fixed term
- * that expires. Those are genuinely different products and this route sells the
- * second one.
+ * THE PRIMARY PURCHASE PATH. /api/stripe/buy-slots is the secondary one: it
+ * sells the same slots as a card subscription that auto-renews, for owners who
+ * would rather not think about it again.
+ *
+ * Why the split is by BILLING MODEL and not by payment method
+ *   Stripe's PromptPay supports one-time payments only — it cannot back
+ *   recurring billing, and is hidden entirely on subscription sessions. So a
+ *   route that must offer PromptPay has to be `mode: 'payment'`. Once it is,
+ *   card works here too, which is why this route now carries both and the
+ *   customer picks at Stripe rather than before it.
+ *
+ *   The old shape — card here, PromptPay there — made the buyer choose a
+ *   billing model while thinking they were choosing a payment method. Thai
+ *   owners overwhelmingly reach for PromptPay, so the old default quietly
+ *   pushed the most common payment method onto the secondary button.
  *
  * Consequences the customer must be told about, and is, on the button:
  *   · no auto-renew — the slot lapses and the listing comes down
- *   · payment is asynchronous — the QR may be scanned minutes later
+ *   · PromptPay payment is asynchronous — the QR may be scanned minutes later
  *
- * The second one is why the webhook holds the grant until payment_status stops
+ * The last one is why the webhook holds the grant until payment_status stops
  * being 'unpaid', and why checkout.session.async_payment_succeeded must be
  * enabled on the Stripe endpoint. Without that event subscribed, a paid QR
- * grants nothing at all.
+ * grants nothing at all. Card on this route settles synchronously and is
+ * granted by checkout.session.completed like any other paid session.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
@@ -80,13 +90,18 @@ export async function POST(req: NextRequest) {
       // Recorded on the slot as `source`, so a one-time slot is
       // distinguishable from a subscription slot when one silently fails to
       // renew and somebody has to work out why.
-      payment_method: 'promptpay',
+      //
+      // 'once' rather than the method the buyer picks at Stripe: what matters
+      // downstream is that this slot does not renew. The actual instrument is
+      // on the PaymentIntent if anyone ever needs it.
+      payment_method: 'once',
     }
 
     const session = await stripe.checkout.sessions.create({
-      // One-time, not subscription. PromptPay cannot do recurring.
+      // One-time, not subscription — and therefore able to offer PromptPay,
+      // which cannot do recurring. Card rides along on the same session.
       mode: 'payment',
-      payment_method_types: ['promptpay'],
+      payment_method_types: ['promptpay', 'card'],
       ...customerParams,
       line_items: [{
         // Inline rather than a Price ID: STRIPE_PRICES holds recurring prices,
@@ -108,14 +123,20 @@ export async function POST(req: NextRequest) {
       cancel_url:  `${siteUrl}/pricing`,
       allow_promotion_codes: true,
       locale: 'auto',
-      // PromptPay QR codes expire. Give a generous window — an owner who walks
-      // away to find their banking app should not come back to a dead code.
+      // One hour, kept deliberately short now that card shares this session.
+      //
+      // The tempting change is 24h so a card buyer who wanders off still has a
+      // live session. It is the wrong trade: a QR that stays payable for a day
+      // can be scanned long after the buyer gave up and bought again, and a
+      // duplicate charge costs more — in money and in trust — than the re-click
+      // a lapsed session costs. An expired session is one button press to
+      // recreate; a duplicate payment is a refund conversation.
       expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
       custom_text: {
         submit: {
           message:
-            'สแกน QR เพื่อชำระผ่านพร้อมเพย์ — จ่ายครั้งเดียว ไม่มีการต่ออายุอัตโนมัติ ' +
-            `สล็อตจะใช้งานได้ ${days} วันนับจากวันที่เผยแพร่`,
+            'จ่ายครั้งเดียว ไม่มีการต่ออายุอัตโนมัติ — ' +
+            `สล็อตใช้งานได้ ${days} วันนับจากวันที่เผยแพร่ประกาศ`,
         },
       },
     })

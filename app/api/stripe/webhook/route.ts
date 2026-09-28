@@ -156,7 +156,14 @@ async function grantSlotsForSession(
         stripeSubscriptionId:   subscriptionId,
         stripeCustomerId:       customerId,
         stripeCheckoutSessionId: session.id,
-        source:                 session.metadata?.payment_method === 'promptpay' ? 'promptpay' : 'purchase',
+        // 'once' is what buy-slots-once now writes. 'promptpay' is what it
+        // wrote before the card/PromptPay merge, and must keep working: a QR
+        // created minutes before a deploy can be scanned minutes after it, and
+        // that session still carries the old metadata. Dropping the old value
+        // would file those slots as subscription purchases.
+        source: ['once', 'promptpay'].includes(session.metadata?.payment_method ?? '')
+          ? 'once'
+          : 'purchase',
       })
 
       // FAIL LOUDLY. grantSlots swallows its error and returns 0, so returning
