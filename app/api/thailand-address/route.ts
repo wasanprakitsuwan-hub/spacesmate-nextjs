@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Province { id: number; name_th: string }
-interface District { id: number; name_th: string; province_id: number }
-interface SubDistrict { id: number; name_th: string; district_id: number; zip_code: number }
+interface ThaiName { th: string; en: string }
+interface Province { id: number; name: ThaiName }
+interface District { id: number; name: ThaiName; province_id: number }
+interface SubDistrict { id: number; name: ThaiName; district_id: number; zip_code: number }
 
 // ── Module-level cache — survives multiple requests in the same process ────────
 let _cache: { provinces: Province[]; districts: District[]; subDistricts: SubDistrict[] } | null = null
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     if (level === 'provinces') {
       return NextResponse.json(
-        provinces.map(p => ({ id: p.id, name: p.name_th })),
+        provinces.map(p => ({ id: p.id, name: p.name?.th ?? '' })),
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       )
     }
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     if (level === 'amphures' && parent) {
       const pid = parseInt(parent)
       return NextResponse.json(
-        districts.filter(d => d.province_id === pid).map(d => ({ id: d.id, name: d.name_th })),
+        districts.filter(d => d.province_id === pid).map(d => ({ id: d.id, name: d.name?.th ?? '' })),
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       )
     }
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         subDistricts
           .filter(s => s.district_id === did)
-          .map(s => ({ id: s.id, name: s.name_th, zip: String(s.zip_code) })),
+          .map(s => ({ id: s.id, name: s.name?.th ?? '', zip: String(s.zip_code) })),
         { headers: { 'Cache-Control': 'public, max-age=86400' } }
       )
     }
