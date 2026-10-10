@@ -176,7 +176,8 @@ export default async function AreaPage({ params }: Props) {
           { name: area.label_th, url: `https://spacesmate.com/area/${params.slug}` },
         ]}
       />
-      {content.faq_th.length > 0 && <FaqLd qa={content.faq_th} />}
+      {/* content is undefined for data-driven area pages — guard, as every other use does */}
+      {content && content.faq_th.length > 0 && <FaqLd qa={content.faq_th} />}
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '52px 24px 60px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
