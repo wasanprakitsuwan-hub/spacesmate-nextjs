@@ -97,6 +97,7 @@ export type ListingLdProps = {
   amenities?: string[]
   listingType?: string
   datePosted?: string
+  dateModified?: string
 }
 
 /** schema.org has no Condo type; a condo unit is an Apartment. */
@@ -182,6 +183,7 @@ export function ListingLd(p: ListingLdProps) {
         name: p.name,
         inLanguage: 'th-TH',
         ...(p.datePosted ? { datePosted: p.datePosted } : {}),
+        ...(p.dateModified ? { dateModified: p.dateModified } : {}),
         ...(p.description ? { description: p.description.slice(0, 500) } : {}),
         mainEntity: unit,
         provider: { '@id': `${SITE}/#organization` },
