@@ -58,7 +58,7 @@ export default function AreaPageBody({ view, locale }: { view: AreaView; locale:
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
             <Link href={t.homeHref} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{t.home}</Link>
             <span>/</span>
-            <Link href={SEARCH_HREF} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{t.search}</Link>
+            <Link href={SEARCH_HREF} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{t.searchNav}</Link>
             <span>/</span>
             <span style={{ color: '#fff' }}>{labelSelf}</span>
           </div>

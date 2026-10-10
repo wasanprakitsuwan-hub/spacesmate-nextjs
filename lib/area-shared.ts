@@ -73,6 +73,7 @@ export const AREA_T = {
     homeHref: '/',
     homeUrl: `${SITE}/`,
     search: 'ค้นหาที่พัก',
+    searchNav: 'ค้นหาที่พัก',
     areaPath: '/area',
     switchPath: '/en/area',
     switchLabel: '🇬🇧 English',
@@ -100,7 +101,11 @@ export const AREA_T = {
     home: 'Home',
     homeHref: '/en',
     homeUrl: `${SITE}/en/`,
+    // The visible link and the breadcrumb schema deliberately differ here, as
+    // they always have: the nav reads 'Search Rentals', the structured data
+    // says 'Search'. Collapsing them changes the rendered page.
     search: 'Search',
+    searchNav: 'Search Rentals',
     areaPath: '/en/area',
     switchPath: '/area',
     switchLabel: '🇹🇭 ภาษาไทย',
