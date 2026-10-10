@@ -291,6 +291,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         amenities={p.amenities}
         listingType={p.listingType}
         datePosted={p.date}
+        dateModified={raw?.updated_at || undefined}
       />
       <BreadcrumbLd
         trail={[
