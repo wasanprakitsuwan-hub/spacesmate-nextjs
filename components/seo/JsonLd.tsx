@@ -92,19 +92,46 @@ export type ListingLdProps = {
   bathrooms?: number | null
   areaSqm?: number | null
   propertyType?: string
+  lat?: string | number | null
+  lng?: string | number | null
+  amenities?: string[]
+  listingType?: string
+  datePosted?: string
 }
 
-/** A single property. Price and location are what actually get quoted. */
+/** schema.org has no Condo type; a condo unit is an Apartment. */
+const ACCOM_TYPE: Record<string, string> = {
+  Condo: 'Apartment',
+  Apartment: 'Apartment',
+  House: 'House',
+}
+
+/**
+ * A single property.
+ *
+ * Emitted as a RealEstateListing page whose mainEntity is the unit, so an
+ * answer engine reads two separate facts: this page is a rental listing, and
+ * this is the thing being let.
+ *
+ * The rent carries a UnitPriceSpecification with an explicit period. A bare
+ * `price: 4800` is ambiguous — it reads as the price of the apartment rather
+ * than the monthly rent, and that is exactly the number that gets quoted back.
+ */
 export function ListingLd(p: ListingLdProps) {
-  const data: Record<string, unknown> = {
-    '@context': 'https://schema.org',
-    '@type': 'Accommodation',
+  const lat = p.lat !== null && p.lat !== undefined && p.lat !== '' ? Number(p.lat) : NaN
+  const lng = p.lng !== null && p.lng !== undefined && p.lng !== '' ? Number(p.lng) : NaN
+  const hasGeo = Number.isFinite(lat) && Number.isFinite(lng)
+  const daily = p.listingType === 'Daily'
+
+  const unit: Record<string, unknown> = {
+    '@type': (p.propertyType && ACCOM_TYPE[p.propertyType]) || 'Accommodation',
+    '@id': `${p.url}#unit`,
     name: p.name,
     url: p.url,
     inLanguage: 'th-TH',
     ...(p.description ? { description: p.description.slice(0, 500) } : {}),
     ...(p.images?.length ? { image: p.images.slice(0, 6) } : {}),
-    ...(p.bedrooms   ? { numberOfBedroomsTotal: p.bedrooms } : {}),
+    ...(p.bedrooms   ? { numberOfBedroomsTotal: p.bedrooms, numberOfRooms: p.bedrooms } : {}),
     ...(p.bathrooms  ? { numberOfBathroomsTotal: p.bathrooms } : {}),
     ...(p.areaSqm    ? { floorSize: { '@type': 'QuantitativeValue', value: p.areaSqm, unitCode: 'MTK' } } : {}),
     address: {
@@ -114,6 +141,16 @@ export function ListingLd(p: ListingLdProps) {
       addressRegion: 'กรุงเทพมหานคร',
       addressCountry: 'TH',
     },
+    ...(hasGeo ? { geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } } : {}),
+    ...(p.amenities?.length
+      ? {
+          amenityFeature: p.amenities.slice(0, 20).map(a => ({
+            '@type': 'LocationFeatureSpecification',
+            name: a,
+            value: true,
+          })),
+        }
+      : {}),
     ...(p.price
       ? {
           offers: {
@@ -123,12 +160,34 @@ export function ListingLd(p: ListingLdProps) {
             availability: 'https://schema.org/InStock',
             businessFunction: 'https://schema.org/LeaseOut',
             url: p.url,
+            priceSpecification: {
+              '@type': 'UnitPriceSpecification',
+              price: p.price,
+              priceCurrency: 'THB',
+              unitCode: daily ? 'DAY' : 'MON',
+              unitText: daily ? 'DAY' : 'MONTH',
+            },
           },
         }
       : {}),
     provider: { '@id': `${SITE}/#organization` },
   }
-  return <Ld data={data} />
+
+  return (
+    <Ld
+      data={{
+        '@context': 'https://schema.org',
+        '@type': 'RealEstateListing',
+        url: p.url,
+        name: p.name,
+        inLanguage: 'th-TH',
+        ...(p.datePosted ? { datePosted: p.datePosted } : {}),
+        ...(p.description ? { description: p.description.slice(0, 500) } : {}),
+        mainEntity: unit,
+        provider: { '@id': `${SITE}/#organization` },
+      }}
+    />
+  )
 }
 
 /** Area pages: a list of listings, so the page can be summarised as one. */
