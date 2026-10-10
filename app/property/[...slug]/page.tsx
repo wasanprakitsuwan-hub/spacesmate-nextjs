@@ -261,6 +261,12 @@ export default async function PropertyDetailPage({ params }: Props) {
         bathrooms={p.bathrooms}
         areaSqm={p.size ? Number(p.size) : undefined}
         propertyType={p.propertyType}
+        description={p.excerpt || undefined}
+        lat={p.lat}
+        lng={p.lng}
+        amenities={p.amenities}
+        listingType={p.listingType}
+        datePosted={p.date}
       />
       <BreadcrumbLd
         trail={[
