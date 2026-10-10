@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ItemListLd, BreadcrumbLd } from '@/components/seo/JsonLd'
+import { ItemListLd, BreadcrumbLd, FaqLd } from '@/components/seo/JsonLd'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { AREA_KEYWORDS } from '@/lib/constants'
@@ -176,6 +176,7 @@ export default async function AreaPage({ params }: Props) {
           { name: area.label_th, url: `https://spacesmate.com/area/${params.slug}` },
         ]}
       />
+      {content.faq_th.length > 0 && <FaqLd qa={content.faq_th} />}
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '52px 24px 60px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
