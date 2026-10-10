@@ -83,9 +83,6 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
                 {priceSelf}
               </span>
             )}
-            <Link href={`${t.switchPath}/${slug}`} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 20, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>
-              {t.switchLabel}
-            </Link>
           </div>
         </div>
       </div>

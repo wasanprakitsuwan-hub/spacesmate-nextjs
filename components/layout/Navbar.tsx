@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import { createBrowserClient } from '@/lib/supabase'
 // Lazy-load AuthModal — 369-line component, only needed when user clicks เข้าสู่ระบบ
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false })
+import LanguageToggle, { MobileLanguageToggle } from '@/components/layout/LanguageToggle'
 
 interface UserInfo {
   role:               string | null
@@ -273,6 +274,9 @@ export default function Navbar() {
             )
           )}
 
+          {/* Language switch — renders only when this page has a counterpart */}
+          <LanguageToggle className="sm-hide-mobile" />
+
           {/* ลงประกาศ CTA — checks package status before routing */}
           <Link href="/submit" onClick={handleListingClick}
             style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none', display: 'inline-block' }}
@@ -302,6 +306,9 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {/* Language switch — same rule as desktop: only when a counterpart exists */}
+            <MobileLanguageToggle onNavigate={() => setMobileOpen(false)} />
+
             {session ? (
               <>
                 <Link href="/owner-dashboard/profile" onClick={() => setMobileOpen(false)}

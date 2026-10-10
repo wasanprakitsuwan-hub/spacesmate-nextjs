@@ -75,8 +75,6 @@ export const AREA_T = {
     search: 'ค้นหาที่พัก',
     searchNav: 'ค้นหาที่พัก',
     areaPath: '/area',
-    switchPath: '/en/area',
-    switchLabel: '🇬🇧 English',
     subtitleSuffix: 'กรุงเทพมหานคร ประเทศไทย',
     popularArea: 'ทำเลยอดนิยม',
     listingsCount: (n: number) => `${n} ประกาศ`,
@@ -99,16 +97,15 @@ export const AREA_T = {
   },
   en: {
     home: 'Home',
-    homeHref: '/en',
-    homeUrl: `${SITE}/en/`,
+    // `/en` does not exist and returns 404; there is no English home page yet.
+    homeHref: '/',
+    homeUrl: `${SITE}/`,
     // The visible link and the breadcrumb schema deliberately differ here, as
     // they always have: the nav reads 'Search Rentals', the structured data
     // says 'Search'. Collapsing them changes the rendered page.
     search: 'Search',
     searchNav: 'Search Rentals',
     areaPath: '/en/area',
-    switchPath: '/area',
-    switchLabel: '🇹🇭 ภาษาไทย',
     subtitleSuffix: 'Bangkok, Thailand',
     popularArea: 'Popular Area',
     listingsCount: (n: number) => `${n} listings`,
