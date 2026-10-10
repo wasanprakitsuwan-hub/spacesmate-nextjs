@@ -43,9 +43,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // ── Area landing pages, Thai and English ───────────────────────────────────
+  // Each entry names its counterpart. The <link rel="alternate"> tags are
+  // already in page metadata, but crawlers that read the sitemap instead of
+  // rendering the page only see the pairing if it is stated here too.
+  const areaAlternates = (slug: string) => ({
+    languages: {
+      th: `${SITE}/area/${slug}`,
+      en: `${SITE}/en/area/${slug}`,
+    },
+  })
+
   const areaPages: MetadataRoute.Sitemap = AREA_KEYWORDS.flatMap(a => ([
-    { url: `${SITE}/area/${a.slug}`,    changeFrequency: 'weekly' as const, priority: 0.8, lastModified: now },
-    { url: `${SITE}/en/area/${a.slug}`, changeFrequency: 'weekly' as const, priority: 0.6, lastModified: now },
+    { url: `${SITE}/area/${a.slug}`,    changeFrequency: 'weekly' as const, priority: 0.8, lastModified: now, alternates: areaAlternates(a.slug) },
+    { url: `${SITE}/en/area/${a.slug}`, changeFrequency: 'weekly' as const, priority: 0.6, lastModified: now, alternates: areaAlternates(a.slug) },
   ]))
 
   // ── Data-driven area pages ─────────────────────────────────────────────────
