@@ -136,9 +136,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = raw.title_th || raw.title_en || 'ประกาศ'
   return {
     title: `${title} | SpacesMate`,
-    description: raw.description_th || '',
-    openGraph: { title, description: raw.description_th || '', type: 'website' },
+    description: plainText(raw.description_th, 160),
+    openGraph: { title, description: plainText(raw.description_th, 160), type: 'website' },
   }
+}
+
+/**
+ * RichEditor stores HTML. Meta tags and JSON-LD need plain, bounded text —
+ * the meta description was shipping the whole description body as raw markup.
+ */
+function plainText(html: string | null | undefined, max: number): string {
+  if (!html) return ''
+  const txt = html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (txt.length <= max) return txt
+  const cut = txt.slice(0, max)
+  const sp = cut.lastIndexOf(' ')
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).trimEnd() + '…'
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -261,7 +285,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         bathrooms={p.bathrooms}
         areaSqm={p.size ? Number(p.size) : undefined}
         propertyType={p.propertyType}
-        description={p.excerpt || undefined}
+        description={plainText(content, 400) || undefined}
         lat={p.lat}
         lng={p.lng}
         amenities={p.amenities}
