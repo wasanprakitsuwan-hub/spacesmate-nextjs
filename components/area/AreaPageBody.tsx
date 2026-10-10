@@ -15,7 +15,13 @@ import {
   type AreaView, type Locale,
 } from '@/lib/area-shared'
 
-export default function AreaPageBody({ view, locale }: { view: AreaView; locale: Locale }) {
+/**
+ * `slug` is the raw route param, not `area.slug`. For the data-driven Thai
+ * areas the param arrives percent-encoded while the database value is decoded
+ * Thai, and the breadcrumb URL and language-switch link have always been built
+ * from the param. Using `area.slug` here silently changes those URLs.
+ */
+export default function AreaPageBody({ view, locale, slug }: { view: AreaView; locale: Locale; slug: string }) {
   const { area, content, areaProps, related } = view
   const t = AREA_T[locale]
   const types = TYPE_LABELS[locale]
@@ -30,7 +36,7 @@ export default function AreaPageBody({ view, locale }: { view: AreaView; locale:
   const priceSelf = locale === 'th' ? content?.price_from_th : content?.price_from_en
   const priceOther = locale === 'th' ? content?.price_from_en : content?.price_from_th
 
-  const areaUrl = `${SITE}${t.areaPath}/${area.slug}`
+  const areaUrl = `${SITE}${t.areaPath}/${slug}`
 
   return (
     <div className="bg-white min-h-screen">
@@ -77,7 +83,7 @@ export default function AreaPageBody({ view, locale }: { view: AreaView; locale:
                 {priceSelf}
               </span>
             )}
-            <Link href={`${t.switchPath}/${area.slug}`} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 20, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>
+            <Link href={`${t.switchPath}/${slug}`} style={{ display: 'inline-block', background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 20, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' }}>
               {t.switchLabel}
             </Link>
           </div>

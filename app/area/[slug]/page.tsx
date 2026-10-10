@@ -24,5 +24,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AreaPage({ params }: Props) {
   const view = await loadArea(params.slug, 'th')
   if (!view) notFound()
-  return <AreaPageBody view={view} locale="th" />
+  return <AreaPageBody view={view} locale="th" slug={params.slug} />
 }
