@@ -38,6 +38,41 @@ export async function getDbPropertyRaw(slug: string): Promise<any | null> {
   }
 }
 
+/**
+ * Related listings for a database listing — same property type, newest first.
+ *
+ * This used to come from the static array in lib/property-data, which is legacy
+ * demo content: its 14 entries are not in the sitemap, several duplicate a real
+ * listing of the same building under a different slug, and every string on them
+ * is hardcoded Thai, so the English page rendered "฿4,400/เดือน" on its own
+ * cards. Reading the database instead fixes the language, keeps the cards in
+ * step with what is actually let, and removes the only internal link path into
+ * the orphaned legacy pages.
+ *
+ * Returns [] on any failure — a missing related strip is not worth a 500.
+ */
+export async function getRelatedDbListings(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw: any,
+  locale: Locale,
+  limit = 3,
+): Promise<Property[]> {
+  try {
+    const supabase = createServerClient()
+    const { data } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('listing_status', 'active')
+      .eq('property_type', raw.property_type)
+      .neq('slug', raw.slug)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return (data ?? []).map(r => normalizeDbListing(r, locale))
+  } catch {
+    return []
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function normalizeDbListing(raw: any, locale: Locale): Property {
   const t = PROPERTY_T[locale]

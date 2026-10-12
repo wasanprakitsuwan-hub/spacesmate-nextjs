@@ -16,7 +16,7 @@ import { properties, getPropertyBySlug, fetchPropertyContent, type Property } fr
 import PropertyGallery from '@/components/property/PropertyGallery'
 import PropertyVideo from '@/components/property/PropertyVideo'
 import DescriptionBody from '@/components/property/DescriptionBody'
-import { getDbPropertyRaw, normalizeDbListing, plainText } from '@/lib/property-page'
+import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -62,10 +62,13 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
   const schemaBody = locale === 'en' ? (contentEn || content) : content
   const schemaBodyIsEnglish = locale === 'en' && !!contentEn
 
-  // Related properties — same type, exclude current, up to 3
-  const related = properties
-    .filter((r) => r.slug !== p.slug && r.propertyType === p.propertyType)
-    .slice(0, 3)
+  // Related properties — same type, exclude current, up to 3.
+  // A database listing gets database neighbours, localised like the rest of the
+  // page. The legacy static pages keep the static array, which is the only data
+  // they have.
+  const related = raw
+    ? await getRelatedDbListings(raw, locale, 3)
+    : properties.filter((r) => r.slug !== p.slug && r.propertyType === p.propertyType).slice(0, 3)
 
   const bedroomLabel = p.bedrooms === 0 ? t.studio : t.bedroomsValue(p.bedrooms)
   const typeLabel = types[p.propertyType] || p.propertyType
