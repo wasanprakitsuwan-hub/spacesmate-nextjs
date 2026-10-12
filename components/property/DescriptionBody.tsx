@@ -6,17 +6,24 @@ import { sanitizeHtml } from '@/lib/sanitize'
 interface Props {
   contentTh: string | null
   contentEn: string | null
+  /**
+   * Which language to show first. On the English page the visitor has already
+   * said what they want — defaulting to Thai there makes the English body look
+   * missing when it exists.
+   */
+  defaultLang?: 'th' | 'en'
 }
 
 /**
  * Renders the property description body with an optional TH/EN language toggle.
  * The toggle only appears when an English description is available.
  */
-export default function DescriptionBody({ contentTh, contentEn }: Props) {
-  const [lang, setLang] = useState<'th' | 'en'>('th')
+export default function DescriptionBody({ contentTh, contentEn, defaultLang = 'th' }: Props) {
+  const hasEnBody = !!contentEn
+  const [lang, setLang] = useState<'th' | 'en'>(defaultLang === 'en' && hasEnBody ? 'en' : 'th')
 
   const hasTh = contentTh && !contentTh.includes('เนื้อหาไม่พร้อม') && !contentTh.includes('ไม่พบเนื้อหา')
-  const hasEn = !!contentEn
+  const hasEn = hasEnBody
 
   if (!hasTh && !hasEn) return null
 

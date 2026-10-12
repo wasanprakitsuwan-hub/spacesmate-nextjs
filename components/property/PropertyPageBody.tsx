@@ -247,7 +247,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
 
             {/* Full description — TH/EN toggle when English body is available */}
             {hasContent && (
-              <DescriptionBody contentTh={content} contentEn={contentEn} />
+              <DescriptionBody contentTh={content} contentEn={contentEn} defaultLang={locale} />
             )}
 
             {/* Video — Premium only. p.videoUrl is already empty for packages
