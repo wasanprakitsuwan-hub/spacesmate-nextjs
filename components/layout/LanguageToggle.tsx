@@ -5,16 +5,18 @@ import { usePathname } from 'next/navigation'
 import { AREA_KEYWORDS } from '@/lib/constants'
 
 /**
- * One-click language switch, in the navbar.
+ * One-click language switch, in the navbar. Always visible.
  *
- * It renders only when the current page actually has a counterpart in the other
- * language. That restraint is the whole point: today the only English pages are
- * the 16 hand-written area pages, and `/en`, `/en/search` and `/en/faq` all
- * return 404. A toggle that is always visible would send most visitors to a
- * dead page, which is worse than no toggle.
+ * Where an exact counterpart exists — the 16 hand-written area pages — it goes
+ * straight there and keeps your place. Everywhere else it falls back to the
+ * English front door at `/en`, and from the English side back to `/`.
  *
- * As English versions of other routes are added, add a rule to COUNTERPARTS and
- * the toggle starts appearing there — no change needed here or in the navbar.
+ * The fallback is what makes "always visible" safe. `/en` used to 404, so an
+ * unconditional toggle would have sent most visitors to a dead page; the
+ * landing page at app/en/page.tsx exists to give it a real destination.
+ *
+ * As English versions of other routes are added, add a rule to counterpartFor()
+ * and the toggle starts keeping place on those pages too.
  */
 
 /** Area slugs that have a hand-written English page. The data-driven Thai area pages do not. */
@@ -26,34 +28,40 @@ export type Counterpart = { href: string; label: string; hrefLang: 'th' | 'en'; 
  * Exported for testing and so the rules live in one readable place.
  * Returns null when this page has no counterpart.
  */
-export function counterpartFor(pathname: string): Counterpart | null {
-  if (!pathname) return null
+const TO_THAI = (href: string): Counterpart =>
+  ({ href, label: 'ไทย', hrefLang: 'th', title: 'ดูเว็บไซต์เป็นภาษาไทย' })
+const TO_ENGLISH = (href: string): Counterpart =>
+  ({ href, label: 'EN', hrefLang: 'en', title: 'View in English' })
 
-  // English area page → Thai. Every /en/area page has a Thai original.
-  const en = pathname.match(/^\/en\/area\/(.+?)\/?$/)
-  if (en) {
-    return { href: `/area/${en[1]}`, label: 'ไทย', hrefLang: 'th', title: 'ดูหน้านี้เป็นภาษาไทย' }
+export function counterpartFor(pathname: string): Counterpart {
+  const path = pathname || '/'
+
+  // ── Already on the English side ──
+  if (path === '/en' || path.startsWith('/en/')) {
+    // An English area page has an exact Thai original — keep the visitor's place.
+    const en = path.match(/^\/en\/area\/(.+?)\/?$/)
+    if (en) return TO_THAI(`/area/${en[1]}`)
+    return TO_THAI('/')
   }
 
-  // Thai area page → English, but only for the slugs that have one.
-  const th = pathname.match(/^\/area\/(.+?)\/?$/)
+  // ── Thai side → English ──
+  const th = path.match(/^\/area\/(.+?)\/?$/)
   if (th) {
     const raw = th[1]
     let decoded = raw
     try { decoded = decodeURIComponent(raw) } catch { /* malformed escape — compare raw */ }
+    // The data-driven area pages are Thai-only, so they fall through to /en.
     if (EN_AREA_SLUGS.has(decoded) || EN_AREA_SLUGS.has(raw)) {
-      return { href: `/en/area/${raw}`, label: 'EN', hrefLang: 'en', title: 'View this page in English' }
+      return TO_ENGLISH(`/en/area/${raw}`)
     }
   }
 
-  return null
+  return TO_ENGLISH('/en')
 }
 
 export default function LanguageToggle({ className = '' }: { className?: string }) {
   const pathname = usePathname()
   const target = counterpartFor(pathname || '')
-  if (!target) return null
-
   const flag = target.hrefLang === 'en' ? '🇬🇧' : '🇹🇭'
 
   return (
@@ -90,8 +98,6 @@ export default function LanguageToggle({ className = '' }: { className?: string 
 export function MobileLanguageToggle({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const target = counterpartFor(pathname || '')
-  if (!target) return null
-
   const flag = target.hrefLang === 'en' ? '🇬🇧' : '🇹🇭'
   const text = target.hrefLang === 'en' ? 'View in English' : 'ดูเป็นภาษาไทย'
 
