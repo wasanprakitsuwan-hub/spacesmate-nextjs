@@ -1,8 +1,13 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import CookieSettingsLink from '@/components/consent/CookieSettingsLink'
+import { SITE_T } from '@/lib/site-i18n'
+import { useLocale } from '@/lib/use-locale'
 
 export default function Footer() {
+  const t = SITE_T[useLocale()]
   return (
     <footer className="bg-spacemate-brandDark text-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6">
@@ -18,18 +23,18 @@ export default function Footer() {
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               Smarter spaces. Better returns.<br />
-              แพลตฟอร์มเช่าอสังหาฯ ที่โปร่งใสและเป็นธรรม
+              {t.footerTagline}
             </p>
           </div>
 
           {/* สำรวจ */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white">สำรวจ</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white">{t.footerExplore}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'ค้นหาที่พัก', href: '/search' },
-                { label: 'ทำเลยอดนิยม', href: '/search' },
-                { label: 'บทความ', href: '/blog' },
+                { label: t.navSearch, href: '/search' },
+                { label: t.footerPopularAreas, href: '/search' },
+                { label: t.navBlog, href: '/blog' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">
@@ -42,12 +47,12 @@ export default function Footer() {
 
           {/* สำหรับเจ้าของ */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white">สำหรับเจ้าของ</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white">{t.footerForOwners}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'ลงประกาศปล่อยเช่า', href: '/submit' },
-                { label: 'รับฝากบริหาร', href: '/manage' },
-                { label: 'แพ็กเกจราคา', href: '/pricing' },
+                { label: t.navSubmit, href: '/submit' },
+                { label: t.navManage, href: '/manage' },
+                { label: t.footerPricing, href: '/pricing' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">
@@ -60,14 +65,14 @@ export default function Footer() {
 
           {/* บริษัท & ช่วยเหลือ */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white">บริษัท & ช่วยเหลือ</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white">{t.footerCompany}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'เกี่ยวกับเรา', href: '/about' },
-                { label: 'ติดต่อเรา', href: '/contact' },
-                { label: 'คำถามที่พบบ่อย', href: '/faq' },
-                { label: 'นโยบายความเป็นส่วนตัว', href: '/privacy' },
-                { label: 'เงื่อนไขการใช้งาน', href: '/terms' },
+                { label: t.footerAbout, href: '/about' },
+                { label: t.footerContact, href: '/contact' },
+                { label: t.footerFaq, href: '/faq' },
+                { label: t.footerPrivacy, href: '/privacy' },
+                { label: t.footerTerms, href: '/terms' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">
@@ -86,7 +91,7 @@ export default function Footer() {
         {/* Divider + bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-white/40 text-xs">
-            © 2026 Space Works Co., Ltd. สงวนลิขสิทธิ์
+            {t.footerRights}
           </p>
 
           {/* Social icons */}

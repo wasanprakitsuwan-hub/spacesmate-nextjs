@@ -1,16 +1,18 @@
-const WHY_BLOCKS = [
-  { icon: 'update',              title: 'ข้อมูลแม่นยำเสมอ',    desc: 'ทุกประกาศต่ออายุสูงสุด 12 เดือน เจ้าของต้องอัปเดตเพื่อต่ออายุ ข้อมูลจึงใหม่กว่าเว็บอื่น' },
-  { icon: 'sell',                title: 'ลงประกาศง่าย ราคาเริ่มต้น ฿299', desc: 'เผยแพร่ทันทีหลังชำระ ไม่ต้องรอทีมงาน รองรับทุกประเภทอสังหาริมทรัพย์' },
-  { icon: 'category',            title: 'ครอบคลุมทุกประเภท',   desc: 'คอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ และตึกแถว — มากกว่าเว็บทั่วไป' },
-  { icon: 'dashboard_customize', title: 'จัดการง่าย',           desc: 'แดชบอร์ดเดียวจบ แก้ไขประกาศ ดูยอดเข้าชม และผู้สนใจได้ทันที' },
-]
+import { SITE_T, type Locale } from '@/lib/site-i18n'
 
-export default function WhySpacesMate() {
+export default function WhySpacesMate({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
+  const WHY_BLOCKS = [
+    { icon: 'update',              title: t.why1Title, desc: t.why1Desc },
+    { icon: 'sell',                title: t.why2Title, desc: t.why2Desc },
+    { icon: 'category',            title: t.why3Title, desc: t.why3Desc },
+    { icon: 'dashboard_customize', title: t.why4Title, desc: t.why4Desc },
+  ]
   return (
     <section style={{ background: 'linear-gradient(180deg,#eef5f1,#f4f9f6)', borderTop: '1px solid #e3ede8', borderBottom: '1px solid #e3ede8', padding: '60px 24px' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 8px', textAlign: 'center', letterSpacing: '-0.4px', color: '#02402e' }}>ทำไมต้อง SpacesMate</h2>
-        <p style={{ color: '#64748b', fontSize: 15, margin: '0 0 40px', textAlign: 'center', fontWeight: 300 }}>แพลตฟอร์มที่ออกแบบมาเพื่อความเป็นธรรมและความโปร่งใส</p>
+        <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 8px', textAlign: 'center', letterSpacing: '-0.4px', color: '#02402e' }}>{t.whyHeading}</h2>
+        <p style={{ color: '#64748b', fontSize: 15, margin: '0 0 40px', textAlign: 'center', fontWeight: 300 }}>{t.whySub}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }} className="sm-cats">
           {WHY_BLOCKS.map(w => (
             <div key={w.title} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: '30px 26px' }}>

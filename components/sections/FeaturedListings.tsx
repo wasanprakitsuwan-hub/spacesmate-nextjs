@@ -4,9 +4,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Property } from '@/lib/property-data'
+import { SITE_T, CARD_TERM_SUFFIX, CARD_DEFAULT_SUFFIX, type Locale } from '@/lib/site-i18n'
 
-const TYPE_LABELS: Record<string, string> = {
-  Apartment: 'อพาร์ทเม้นท์', Condo: 'คอนโด', Office: 'ออฟฟิศ', 'Co-Working': 'Co-space',
+const TYPE_KEYS: Record<string, 'apartment' | 'condoShort' | 'office' | 'coSpace'> = {
+  Apartment: 'apartment', Condo: 'condoShort', Office: 'office', 'Co-Working': 'coSpace',
 }
 const GRADS: Record<string, string> = {
   Apartment: 'linear-gradient(135deg,#02402e,#036b56)',
@@ -15,33 +16,30 @@ const GRADS: Record<string, string> = {
   default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
-// DB rental_term → price suffix
-const TERM_SUFFIX: Record<string, string> = {
-  daily: '/วัน', '1_month': '/เดือน', '3_months': '/เดือน',
-  '6_months': '/เดือน', '12_months': '/เดือน',
-}
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
   office: 'Office', coworking: 'Co-Working',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function adaptDbListing(l: any): Property {
-  const suffix = TERM_SUFFIX[l.rental_term] ?? '/เดือน'
+function adaptDbListing(l: any, locale: Locale): Property {
+  const t = SITE_T[locale]
+  const suffix = CARD_TERM_SUFFIX[locale][l.rental_term] ?? CARD_DEFAULT_SUFFIX[locale]
   return {
     id: 0,
     slug: l.slug,
-    title: l.title_th || l.title_en || 'ไม่ระบุชื่อ',
+    // The owner's own words, in their language where they supplied one.
+    title: (locale === 'en' ? (l.title_en || l.title_th) : (l.title_th || l.title_en)) || t.untitled,
     excerpt: l.description_th || '',
     priceMin: l.price_from || 0,
     priceDisplay: l.price_from
       ? `฿${Number(l.price_from).toLocaleString('en-US')}${suffix}`
-      : 'สอบถามราคา',
+      : t.askForPrice,
     bedrooms: l.bedrooms || 0,
     bathrooms: l.bathrooms || 0,
     size: l.area_sqm ? String(l.area_sqm) : '',
     address: l.address_th || '',
-    neighborhood: l.district || l.province || 'กรุงเทพมหานคร',
+    neighborhood: l.district || l.province || t.defaultProvince,
     lat: l.lat ? String(l.lat) : '',
     lng: l.lng ? String(l.lng) : '',
     image: (() => { const imgs = Array.isArray(l.images) ? l.images : []; return imgs.find((i: string) => i.startsWith('https://')) ?? imgs.find((i: string) => i.startsWith('/')) ?? ''; })(),
@@ -63,18 +61,19 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-export default function FeaturedListings() {
+export default function FeaturedListings({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
   const [displayed, setDisplayed] = useState<Property[]>([])
 
   useEffect(() => {
     fetch('/api/listings/public')
       .then(r => r.json())
       .then((d: { listings?: unknown[] }) => {
-        const dbListings = (d.listings ?? []).map(adaptDbListing)
+        const dbListings = (d.listings ?? []).map(l => adaptDbListing(l, locale))
         setDisplayed(shuffle(dbListings).slice(0, 6))
       })
       .catch(() => setDisplayed([]))
-  }, [])
+  }, [locale])
 
   return (
     <section style={{ background: '#f7f9f8', padding: '56px 0' }}>
@@ -83,21 +82,21 @@ export default function FeaturedListings() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>ประกาศที่พักล่าสุด</h2>
-            <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>คอนโดและอพาร์ทเม้นท์ให้เช่าในกรุงเทพฯ — สุ่มแสดงใหม่ทุกครั้ง</p>
+            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>{t.latestHeading}</h2>
+            <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>{t.latestSub}</p>
           </div>
           <Link href="/search" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, textDecoration: 'none' }}>
-            ดูประกาศทั้งหมด →
+            {t.viewAllArrow}
           </Link>
         </div>
 
         {/* Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="sm-feat-grid">
           {displayed.map((p) => {
-            const bedroomLabel = p.bedrooms === 0 ? 'สตูดิโอ' : `${p.bedrooms} ห้องนอน`
+            const bedroomLabel = p.bedrooms === 0 ? t.studio : t.bedroomsValue(p.bedrooms)
             const grad = GRADS[p.propertyType] || GRADS.default
             return (
-              <Link key={p.slug} href={`/property/${p.slug}`} className="sm-feat-card"
+              <Link key={p.slug} href={locale === 'en' ? `/en/property/${p.slug}` : `/property/${p.slug}`} className="sm-feat-card"
                 style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', display: 'block', textDecoration: 'none', transition: 'all .25s', boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)' }}>
                 {/* Image */}
                 <div style={{ height: 185, background: grad, position: 'relative', overflow: 'hidden' }}>
@@ -108,7 +107,7 @@ export default function FeaturedListings() {
                       style={{ objectFit: 'cover', transition: 'transform .3s' }} />
                   )}
                   <span style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.9)', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(4px)', padding: '3px 9px', borderRadius: 6 }}>
-                    {TYPE_LABELS[p.propertyType] || p.propertyType}
+                    {t[TYPE_KEYS[p.propertyType]] ?? p.propertyType}
                   </span>
                 </div>
                 {/* Content */}
@@ -121,12 +120,12 @@ export default function FeaturedListings() {
                   </h3>
                   <div style={{ display: 'flex', gap: 10, borderTop: '1px solid #f3f5f4', paddingTop: 10, marginBottom: 10, fontSize: 11, color: '#7a8a85' }}>
                     <span>{bedroomLabel}</span>
-                    {p.bathrooms > 0 && <span>{p.bathrooms} ห้องน้ำ</span>}
-                    {p.size && <span>{p.size} ตร.ม.</span>}
+                    {p.bathrooms > 0 && <span>{t.bathroomsValue(p.bathrooms)}</span>}
+                    {p.size && <span>{t.sqm(p.size)}</span>}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 16, fontWeight: 700, color: '#d97f11' }}>{p.priceDisplay}</span>
-                    <span style={{ color: '#048c73', fontSize: 12.5, fontWeight: 600 }}>ดูรายละเอียด →</span>
+                    <span style={{ color: '#048c73', fontSize: 12.5, fontWeight: 600 }}>{t.viewDetail}</span>
                   </div>
                 </div>
               </Link>
@@ -137,7 +136,7 @@ export default function FeaturedListings() {
         <div style={{ textAlign: 'center', marginTop: 28 }}>
           <Link href="/search"
             style={{ display: 'inline-block', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 28px', borderRadius: 24, textDecoration: 'none' }}>
-            ดูประกาศทั้งหมด
+            {t.viewAll}
           </Link>
         </div>
       </div>

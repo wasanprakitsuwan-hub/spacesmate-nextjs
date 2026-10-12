@@ -1,13 +1,20 @@
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
+import { SITE_T, TH_MONTHS, EN_MONTHS, type Locale } from '@/lib/site-i18n'
 
-function formatThaiDate(iso: string): string {
+/**
+ * Thai dates carry the Buddhist year, English dates the Gregorian one. Printing
+ * 2569 to an English reader reads as a typo, not as a calendar.
+ */
+function formatDate(iso: string, locale: Locale): string {
   const d = new Date(iso)
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`
+  return locale === 'en'
+    ? `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+    : `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
 }
 
-export default async function BlogSection() {
+export default async function BlogSection({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
   const supabase = createServerClient()
   const { data } = await supabase
     .from('blog_posts')
@@ -24,11 +31,11 @@ export default async function BlogSection() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>บทความล่าสุด</h2>
-          <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>เคล็ดลับ คู่มือ และข้อมูลตลาดเช่า-ขายอสังหาฯ</p>
+          <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>{t.blogHeading}</h2>
+          <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>{t.blogSub}</p>
         </div>
         <Link href="/blog" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, cursor: 'pointer', textDecoration: 'none' }}>
-          ดูบทความทั้งหมด →
+          {t.blogViewAll}
         </Link>
       </div>
 
@@ -79,9 +86,9 @@ export default async function BlogSection() {
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 11.5, color: '#94a3b8' }}>
-                  {post.published_at ? formatThaiDate(post.published_at) : ''}
+                  {post.published_at ? formatDate(post.published_at, locale) : ''}
                 </span>
-                <span style={{ color: '#048c73', fontSize: 13, fontWeight: 600 }}>อ่านต่อ →</span>
+                <span style={{ color: '#048c73', fontSize: 13, fontWeight: 600 }}>{t.blogReadMore}</span>
               </div>
             </div>
           </Link>

@@ -9,6 +9,8 @@ import { createBrowserClient } from '@/lib/supabase'
 // Lazy-load AuthModal — 369-line component, only needed when user clicks เข้าสู่ระบบ
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false })
 import LanguageToggle, { MobileLanguageToggle } from '@/components/layout/LanguageToggle'
+import { SITE_T } from '@/lib/site-i18n'
+import { useLocale } from '@/lib/use-locale'
 
 interface UserInfo {
   role:               string | null
@@ -25,14 +27,15 @@ function userHasActivePackage(info: UserInfo | null): boolean {
   return new Date(info.package_expires_at) > new Date()
 }
 
-function displayName(info: UserInfo | null, email: string | null | undefined): string {
+function displayName(info: UserInfo | null, email: string | null | undefined, fallback: string): string {
   if (info?.full_name?.trim()) return info.full_name.trim().split(' ')[0]
   if (email) return email.split('@')[0]
-  return 'บัญชีของฉัน'
+  return fallback
 }
 
 export default function Navbar() {
   const pathname   = usePathname()
+  const t          = SITE_T[useLocale()]
   const router     = useRouter()
   const [mobileOpen,  setMobileOpen]  = useState(false)
   const [authModal,   setAuthModal]   = useState(false)
@@ -126,14 +129,14 @@ export default function Navbar() {
   }
 
   const mobileLinks = [
-    { label: 'ค้นหาที่พัก',       icon: 'search',    href: '/search' },
-    { label: 'ลงประกาศปล่อยเช่า', icon: 'sell',       href: '/submit' },
-    { label: 'รับฝากบริหาร',      icon: 'handshake',  href: '/manage' },
-    { label: 'บทความ',            icon: 'article',    href: '/blog' },
-    ...(session ? [{ label: 'แดชบอร์ด', icon: 'dashboard', href: userInfo?.dashUrl ?? '/owner-dashboard' }] : []),
+    { label: t.navSearch,  icon: 'search',    href: '/search' },
+    { label: t.navSubmit,  icon: 'sell',       href: '/submit' },
+    { label: t.navManage,  icon: 'handshake',  href: '/manage' },
+    { label: t.navBlog,    icon: 'article',    href: '/blog' },
+    ...(session ? [{ label: t.navDashboard, icon: 'dashboard', href: userInfo?.dashUrl ?? '/owner-dashboard' }] : []),
   ]
 
-  const uName = displayName(userInfo, session?.user?.email)
+  const uName = displayName(userInfo, session?.user?.email, t.navMyAccount)
 
   return (
     <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#ffffff', borderBottom: '1px solid #eef0ef', boxShadow: '0 1px 8px -4px rgba(2,64,46,0.08)' }}>
@@ -150,7 +153,7 @@ export default function Navbar() {
           <Link href="/search" style={linkStyle('/search')}
             onMouseEnter={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
             onMouseLeave={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
-            ค้นหาที่พัก
+            {t.navSearch}
           </Link>
 
           {/* สำหรับเจ้าของ dropdown */}
@@ -161,7 +164,7 @@ export default function Navbar() {
               color: ownerActive ? '#d97f11' : '#334155',
               background: ownerActive ? 'rgba(217,127,17,0.12)' : 'transparent',
             }}>
-              สำหรับเจ้าของ <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
+              {t.navForOwners} <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
             </a>
             <div className="sm-owner-pop">
               <Link href="/submit" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
@@ -169,8 +172,8 @@ export default function Navbar() {
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>sell</span>
                 <span>
-                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>ลงประกาศปล่อยเช่า</span>
-                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>สร้างประกาศเอง ฟรี + แพ็กเกจ</span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navSubmit}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>{t.navSubmitDesc}</span>
                 </span>
               </Link>
               <Link href="/manage" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
@@ -178,8 +181,8 @@ export default function Navbar() {
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>handshake</span>
                 <span>
-                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>รับฝากบริหาร</span>
-                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>ให้เราดูแลให้ครบวงจร</span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navManage}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>{t.navManageDesc}</span>
                 </span>
               </Link>
             </div>
@@ -188,7 +191,7 @@ export default function Navbar() {
           <Link href="/blog" style={linkStyle('/blog')}
             onMouseEnter={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
             onMouseLeave={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
-            บทความ
+            {t.navBlog}
           </Link>
         </div>
 
@@ -237,7 +240,7 @@ export default function Navbar() {
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                       <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>person</span>
-                      ข้อมูลส่วนตัว
+                      {t.navProfile}
                     </Link>
 
                     {/* 2 · แดชบอร์ด */}
@@ -246,7 +249,7 @@ export default function Navbar() {
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                       <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>dashboard</span>
-                      แดชบอร์ด
+                      {t.navDashboard}
                     </Link>
 
                     {/* Divider */}
@@ -258,7 +261,7 @@ export default function Navbar() {
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                       <span className="msym" style={{ fontSize: 18 }}>logout</span>
-                      ออกจากระบบ
+                      {t.navSignOut}
                     </button>
                   </div>
                 )}
@@ -269,7 +272,7 @@ export default function Navbar() {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
                 <span className="msym" style={{ fontSize: 17 }}>login</span>
-                เข้าสู่ระบบ
+                {t.navSignIn}
               </button>
             )
           )}
@@ -282,7 +285,7 @@ export default function Navbar() {
             style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none', display: 'inline-block' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
-            ลงประกาศเช่า
+            {t.navListCta}
           </Link>
 
           {/* Burger */}
@@ -316,14 +319,14 @@ export default function Navbar() {
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                   <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>person</span>
-                  ข้อมูลส่วนตัว
+                  {t.navProfile}
                 </Link>
                 <button onClick={() => { setMobileOpen(false); handleSignOut() }}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#b91c1c', background: 'transparent', border: 'none', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                   <span className="msym" style={{ fontSize: 21, color: '#b91c1c' }}>logout</span>
-                  ออกจากระบบ
+                  {t.navSignOut}
                 </button>
               </>
             ) : (
@@ -332,7 +335,7 @@ export default function Navbar() {
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#02402e' }}>login</span>
-                เข้าสู่ระบบ / สมัครสมาชิก
+                {t.navSignInUp}
               </button>
             )}
           </div>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getGeneratedAreas } from '@/lib/areas'
+import { SITE_T, type Locale } from '@/lib/site-i18n'
 
 /**
  * Homepage links to the data-driven area pages.
@@ -12,7 +13,8 @@ import { getGeneratedAreas } from '@/lib/areas'
  *
  * Renders nothing when there is no inventory, rather than an empty heading.
  */
-export default async function GeneratedAreaLinks() {
+export default async function GeneratedAreaLinks({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
   const areas = await getGeneratedAreas()
   if (!areas.length) return null
 
@@ -20,10 +22,10 @@ export default async function GeneratedAreaLinks() {
     <section className="py-12 bg-white border-t border-spacemate-borderLight">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl md:text-3xl font-bold text-spacemate-brandDark mb-2">
-          ห้องเช่าตามเขต
+          {t.genAreaHeading}
         </h2>
         <p className="text-gray-500 text-sm mb-8">
-          รวมประกาศให้เช่าแยกตามเขตและประเภทที่พักในกรุงเทพฯ
+          {t.genAreaSub}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

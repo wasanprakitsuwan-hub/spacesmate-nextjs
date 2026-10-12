@@ -2,25 +2,25 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { SITE_T, type Locale } from '@/lib/site-i18n'
 
-const TYPE_CHIPS = [
-  { key: 'apartment', label: 'อพาร์ทเม้นท์', icon: 'apartment' },
-  { key: 'condo',     label: 'คอนโดมิเนียม',  icon: 'location_city' },
-  { key: 'house',     label: 'บ้าน',           icon: 'cottage' },
-  { key: 'cowork',    label: 'โคเวิร์กกิ้ง',  icon: 'groups' },
-  { key: 'office',    label: 'ออฟฟิศ',         icon: 'business_center' },
-]
-
-const PRICE_RANGES = [
-  { label: 'ทุกราคา', value: '' },
-  { label: '≤ 5,000 บาท', value: '0-5000' },
-  { label: '5,000–15,000 บาท', value: '5000-15000' },
-  { label: '15,000–30,000 บาท', value: '15000-30000' },
-  { label: '30,000–60,000 บาท', value: '30000-60000' },
-  { label: '60,000 บาท+', value: '60000-' },
-]
-
-export default function HeroSection() {
+export default function HeroSection({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
+  const TYPE_CHIPS = [
+    { key: 'apartment', label: t.apartment, icon: 'apartment' },
+    { key: 'condo',     label: t.condo,     icon: 'location_city' },
+    { key: 'house',     label: t.house,     icon: 'cottage' },
+    { key: 'cowork',    label: t.cowork,    icon: 'groups' },
+    { key: 'office',    label: t.office,    icon: 'business_center' },
+  ]
+  const PRICE_RANGES = [
+    { label: t.anyPrice,    value: '' },
+    { label: t.priceUnder,  value: '0-5000' },
+    { label: t.price5to15,  value: '5000-15000' },
+    { label: t.price15to30, value: '15000-30000' },
+    { label: t.price30to60, value: '30000-60000' },
+    { label: t.priceOver60, value: '60000-' },
+  ]
   const router = useRouter()
   const [keyword, setKeyword] = useState('')
   const [priceRange, setPriceRange] = useState('')
@@ -48,12 +48,12 @@ export default function HeroSection() {
 
         {/* Headline */}
         <h1 style={{ fontSize: 46, lineHeight: 1.18, fontWeight: 600, margin: '0 0 14px', letterSpacing: '-0.8px', color: '#02402e' }}>
-          ค้นหาที่พักที่ใช่ <span style={{ color: '#d97f11' }}>ในราคาที่คุ้มค่า</span>
+          {t.heroTitleA}<span style={{ color: '#d97f11' }}>{t.heroTitleB}</span>
         </h1>
 
         {/* Subtitle */}
         <p style={{ color: '#64748b', fontSize: 16, fontWeight: 300, margin: '0 0 32px' }}>
-          ทุกประเภททรัพย์สิน ทั่วกรุงเทพฯ — ค้นหาตามทำเล แล้วกรองตามที่คุณต้องการ
+          {t.heroSub}
         </p>
 
         {/* Search bar */}
@@ -61,10 +61,10 @@ export default function HeroSection() {
 
           {/* Location */}
           <div style={{ flex: '1.6', minWidth: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 16px', borderRadius: 13 }}>
-            <span style={{ fontSize: 10, color: '#aab', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>พื้นที่ / BTS / สถานศึกษา</span>
+            <span style={{ fontSize: 10, color: '#aab', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.heroAreaLabel}</span>
             <input
               type="text"
-              placeholder="เช่น สุขุมวิท, BTS อโศก, ม.เกษตร"
+              placeholder={t.heroAreaPlaceholder}
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
               style={{ border: 'none', background: 'transparent', fontSize: 15, color: '#231f20', outline: 'none', padding: '3px 0', width: '100%' }}
@@ -76,7 +76,7 @@ export default function HeroSection() {
 
           {/* Price */}
           <div style={{ flex: 1, minWidth: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 16px', borderRadius: 13 }}>
-            <span style={{ fontSize: 10, color: '#aab', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>ช่วงราคา</span>
+            <span style={{ fontSize: 10, color: '#aab', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.heroPriceLabel}</span>
             <select
               value={priceRange}
               onChange={e => setPriceRange(e.target.value)}
@@ -94,7 +94,7 @@ export default function HeroSection() {
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.filter = ''}
           >
             <span className="msym" style={{ fontSize: 20, marginRight: 2 }}>search</span>
-            ค้นหา
+            {t.heroSearch}
           </button>
         </form>
 
