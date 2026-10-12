@@ -118,7 +118,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(p.updated_at ?? p.created_at ?? now),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
+        alternates: {
+          languages: {
+            th: encodeURI(`${SITE}/property/${p.slug}`),
+            en: encodeURI(`${SITE}/en/property/${p.slug}`),
+          },
+        },
       }))
+      .flatMap(entry => [
+        entry,
+        {
+          ...entry,
+          url: entry.url.replace(`${SITE}/property/`, `${SITE}/en/property/`),
+          priority: 0.6,
+        },
+      ])
 
     blogPages = (posts.data ?? [])
       .filter(b => b.slug)

@@ -97,6 +97,15 @@ export type ListingLdProps = {
   amenities?: string[]
   listingType?: string
   datePosted?: string
+  /**
+   * BCP-47 tag for the description text, which is not always the page's own
+   * language: an English listing page shows the owner's Thai description when
+   * they wrote no English one. Labelling Thai prose as English is the kind of
+   * thing that gets a source distrusted rather than merely ignored.
+   */
+  descriptionLang?: string
+  /** BCP-47 tag for the page. Defaults to Thai, which is the site default. */
+  pageLang?: string
   dateModified?: string
 }
 
@@ -129,7 +138,7 @@ export function ListingLd(p: ListingLdProps) {
     '@id': `${p.url}#unit`,
     name: p.name,
     url: p.url,
-    inLanguage: 'th-TH',
+    inLanguage: p.descriptionLang ?? p.pageLang ?? 'th-TH',
     ...(p.description ? { description: p.description.slice(0, 500) } : {}),
     ...(p.images?.length ? { image: p.images.slice(0, 6) } : {}),
     ...(p.bedrooms   ? { numberOfBedroomsTotal: p.bedrooms, numberOfRooms: p.bedrooms } : {}),
@@ -181,7 +190,7 @@ export function ListingLd(p: ListingLdProps) {
         '@type': 'RealEstateListing',
         url: p.url,
         name: p.name,
-        inLanguage: 'th-TH',
+        inLanguage: p.pageLang ?? 'th-TH',
         ...(p.datePosted ? { datePosted: p.datePosted } : {}),
         ...(p.dateModified ? { dateModified: p.dateModified } : {}),
         ...(p.description ? { description: p.description.slice(0, 500) } : {}),

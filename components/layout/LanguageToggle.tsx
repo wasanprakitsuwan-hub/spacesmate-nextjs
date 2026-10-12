@@ -39,8 +39,10 @@ export function counterpartFor(pathname: string): Counterpart {
   // ── Already on the English side ──
   if (path === '/en' || path.startsWith('/en/')) {
     // An English area page has an exact Thai original — keep the visitor's place.
-    const en = path.match(/^\/en\/area\/(.+?)\/?$/)
-    if (en) return TO_THAI(`/area/${en[1]}`)
+    const enArea = path.match(/^\/en\/area\/(.+?)\/?$/)
+    if (enArea) return TO_THAI(`/area/${enArea[1]}`)
+    const enProp = path.match(/^\/en\/property\/(.+?)\/?$/)
+    if (enProp) return TO_THAI(`/property/${enProp[1]}`)
     return TO_THAI('/')
   }
 
@@ -55,6 +57,11 @@ export function counterpartFor(pathname: string): Counterpart {
       return TO_ENGLISH(`/en/area/${raw}`)
     }
   }
+
+  // Every listing has an English page — it falls back to the owner's Thai text
+  // where no English was written, rather than not existing.
+  const prop = path.match(/^\/property\/(.+?)\/?$/)
+  if (prop) return TO_ENGLISH(`/en/property/${prop[1]}`)
 
   return TO_ENGLISH('/en')
 }
