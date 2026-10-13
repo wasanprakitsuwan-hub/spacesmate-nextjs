@@ -1,4 +1,14 @@
 // build: 2026-06-24
+//
+// This revalidate has no effect today and must not be relied on. Several
+// sections here query through createServerClient, which passes cache:'no-store'
+// to every request and so opts the whole route out of prerendering — production
+// returns x-vercel-cache: MISS and renders fresh on every hit.
+//
+// That is load-bearing, not incidental: Fair Rotation reshuffles the featured
+// listings per request. If the no-store queries ever go away, this line would
+// quietly start caching the page for 60s and the rotation would freeze. Delete
+// it then, or make the shuffle explicit.
 export const revalidate = 60
 
 import type { Metadata } from 'next'

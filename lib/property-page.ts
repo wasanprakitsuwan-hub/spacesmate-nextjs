@@ -63,6 +63,10 @@ export async function getRelatedDbListings(
       .from('properties')
       .select('*')
       .eq('listing_status', 'active')
+      // Every other public query carries this; without it the strip can show a
+      // listing that is past its end date but still flagged active, because
+      // listing_status is only corrected when the expiry cron runs.
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .eq('property_type', raw.property_type)
       .neq('slug', raw.slug)
       .order('created_at', { ascending: false })

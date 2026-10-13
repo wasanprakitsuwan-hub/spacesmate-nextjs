@@ -1,9 +1,7 @@
-'use client'
-
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
 import { Property } from '@/lib/property-data'
+import { createServerClient } from '@/lib/supabase'
 import { SITE_T, CARD_TERM_SUFFIX, CARD_DEFAULT_SUFFIX, type Locale } from '@/lib/site-i18n'
 
 const TYPE_KEYS: Record<string, 'apartment' | 'condoShort' | 'office' | 'coSpace'> = {
@@ -61,19 +59,46 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-export default function FeaturedListings({ locale = 'th' }: { locale?: Locale }) {
-  const t = SITE_T[locale]
-  const [displayed, setDisplayed] = useState<Property[]>([])
+/**
+ * The six cards, loaded on the server.
+ *
+ * This used to fetch /api/listings/public from the browser, which meant the
+ * links to those six listings were never in the HTML the server sent. A crawler
+ * reads that HTML and follows its links; it got sixteen area links and not one
+ * property link, so every listing was discovered through the sitemap alone —
+ * a weaker signal than being linked from the home page. GeneratedAreaLinks is a
+ * server component for exactly this reason and says so in its own comment.
+ *
+ * Columns are listed rather than selected with *, so the home page does not
+ * start shipping full description bodies inside its HTML.
+ *
+ * Fair Rotation still rotates. A server shuffle would freeze if the page were
+ * statically generated, but createServerClient passes cache: 'no-store' to
+ * every query, which opts both home routes out of prerendering — they render
+ * fresh per request, and the cards are reshuffled each time.
+ */
+async function loadListings(locale: Locale): Promise<Property[]> {
+  try {
+    const supabase = createServerClient()
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('properties')
+      .select('id,slug,title_th,title_en,description_th,property_type,price_from,price_to,bedrooms,bathrooms,area_sqm,floor,address_th,district,sub_district,province,lat,lng,amenities,rental_term,created_at,images')
+      .eq('listing_status', 'active')
+      // A listing can sit past its end date with listing_status still 'active'
+      // until the expiry cron catches it, so every public query carries this.
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return shuffle((data ?? []).map(l => adaptDbListing(l, locale))).slice(0, 6)
+  } catch {
+    return []
+  }
+}
 
-  useEffect(() => {
-    fetch('/api/listings/public')
-      .then(r => r.json())
-      .then((d: { listings?: unknown[] }) => {
-        const dbListings = (d.listings ?? []).map(l => adaptDbListing(l, locale))
-        setDisplayed(shuffle(dbListings).slice(0, 6))
-      })
-      .catch(() => setDisplayed([]))
-  }, [locale])
+export default async function FeaturedListings({ locale = 'th' }: { locale?: Locale }) {
+  const t = SITE_T[locale]
+  const displayed = await loadListings(locale)
 
   return (
     <section style={{ background: '#f7f9f8', padding: '56px 0' }}>
