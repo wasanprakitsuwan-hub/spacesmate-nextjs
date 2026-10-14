@@ -17,6 +17,7 @@ import PropertyGallery from '@/components/property/PropertyGallery'
 import PropertyVideo from '@/components/property/PropertyVideo'
 import DescriptionBody from '@/components/property/DescriptionBody'
 import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
+import { provinceLabel } from '@/lib/geo-i18n'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -133,6 +134,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
         images={p.images}
         price={p.priceMin || undefined}
         district={p.neighborhood}
+        region={provinceLabel(raw?.province, locale) || undefined}
         address={p.address}
         bedrooms={p.bedrooms}
         bathrooms={p.bathrooms}

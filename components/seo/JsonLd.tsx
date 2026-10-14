@@ -87,6 +87,13 @@ export type ListingLdProps = {
   images?: string[]
   price?: number
   district?: string | null
+  /**
+   * The listing's province. This used to be hardcoded to กรุงเทพมหานคร, which
+   * told search engines that a Pak Kret listing was in Bangkok — it is in
+   * Nonthaburi. Omitted rather than defaulted when unknown: addressRegion is
+   * optional in schema.org, and no region is better than the wrong one.
+   */
+  region?: string | null
   address?: string | null
   bedrooms?: number | null
   bathrooms?: number | null
@@ -148,7 +155,7 @@ export function ListingLd(p: ListingLdProps) {
       '@type': 'PostalAddress',
       ...(p.address  ? { streetAddress: p.address } : {}),
       ...(p.district ? { addressLocality: p.district } : {}),
-      addressRegion: 'กรุงเทพมหานคร',
+      ...(p.region   ? { addressRegion: p.region } : {}),
       addressCountry: 'TH',
     },
     ...(hasGeo ? { geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } } : {}),
