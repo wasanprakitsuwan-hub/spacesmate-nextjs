@@ -8,6 +8,22 @@
  */
 export type Locale = 'th' | 'en'
 
+/**
+ * Paths with an English counterpart. Everything else keeps pointing at the Thai
+ * route, which exists, rather than at an /en path that would 404.
+ *
+ * Add a path here as each English page lands, and every footer link that uses
+ * localeHref starts keeping the visitor on the English side automatically.
+ */
+const EN_ROUTES = new Set(['/about', '/services'])
+
+/** Map a path to its English counterpart when one exists. */
+export function localeHref(path: string, locale: Locale): string {
+  if (locale !== 'en') return path
+  if (path === '/') return '/en'
+  return EN_ROUTES.has(path) ? `/en${path}` : path
+}
+
 export const SITE_T = {
   th: {
     // ── Hero ──

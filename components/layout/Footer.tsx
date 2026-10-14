@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import CookieSettingsLink from '@/components/consent/CookieSettingsLink'
-import { SITE_T } from '@/lib/site-i18n'
+import { SITE_T, localeHref } from '@/lib/site-i18n'
 import { useLocale } from '@/lib/use-locale'
 
 export default function Footer() {
-  const t = SITE_T[useLocale()]
+  const locale = useLocale()
+  const t = SITE_T[locale]
+  const href = (p: string) => localeHref(p, locale)
   return (
     <footer className="bg-spacemate-brandDark text-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6">
@@ -68,7 +70,7 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">{t.footerCompany}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: t.footerAbout, href: '/about' },
+                { label: t.footerAbout, href: href('/about') },
                 { label: t.footerContact, href: '/contact' },
                 { label: t.footerFaq, href: '/faq' },
                 { label: t.footerPrivacy, href: '/privacy' },
