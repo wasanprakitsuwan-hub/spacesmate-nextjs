@@ -41,9 +41,14 @@ export function OrganizationLd() {
         areaServed: { '@type': 'City', name: 'Bangkok', alternateName: 'กรุงเทพมหานคร' },
         address: {
           '@type': 'PostalAddress',
-          streetAddress: '4004/856 ถนนพระรามที่ 4 แขวงพระโขนง',
+          // Office address. Kept in the same Thai form the contact page, terms
+          // and dashboard settings already use, so the four agree.
+          // Note this is not the registered address on the privacy page, which
+          // is a separate legal value and deliberately left alone.
+          streetAddress: 'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง',
           addressLocality: 'เขตคลองเตย',
           addressRegion: 'กรุงเทพมหานคร',
+          postalCode: '10110',
           addressCountry: 'TH',
         },
         sameAs: [
