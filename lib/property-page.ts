@@ -11,6 +11,7 @@ import { getPropertyBySlug } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
 import { visibleImages, showsVideo } from '@/lib/packages'
 import { PROPERTY_T, TERM_SUFFIX, DEFAULT_TERM_SUFFIX, type Locale } from '@/lib/property-i18n'
+import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
 
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
@@ -98,7 +99,13 @@ export function normalizeDbListing(raw: any, locale: Locale): Property {
     bathrooms: raw.bathrooms || 0,
     size: raw.area_sqm ? String(raw.area_sqm) : '',
     address: raw.address_th || '',
-    neighborhood: raw.district || raw.province || t.defaultProvince,
+    // District and province come from the national list, not the owner's prose,
+    // so they can be shown in the reader's language. Unknown values fall back to
+    // the stored Thai rather than disappearing.
+    neighborhood:
+      districtLabel(raw.district, raw.province, locale) ||
+      provinceLabel(raw.province, locale) ||
+      t.defaultProvince,
     lat: raw.lat ? String(raw.lat) : '',
     lng: raw.lng ? String(raw.lng) : '',
     image: (() => { const imgs = Array.isArray(raw.images) ? raw.images : []; return imgs.find((i: string) => i.startsWith('https://')) ?? imgs.find((i: string) => i.startsWith('/')) ?? ''; })(),

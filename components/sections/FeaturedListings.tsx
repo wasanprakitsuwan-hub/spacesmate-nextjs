@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { Property } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
 import { SITE_T, CARD_TERM_SUFFIX, CARD_DEFAULT_SUFFIX, type Locale } from '@/lib/site-i18n'
+import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
 
 const TYPE_KEYS: Record<string, 'apartment' | 'condoShort' | 'office' | 'coSpace'> = {
   Apartment: 'apartment', Condo: 'condoShort', Office: 'office', 'Co-Working': 'coSpace',
@@ -37,7 +38,10 @@ function adaptDbListing(l: any, locale: Locale): Property {
     bathrooms: l.bathrooms || 0,
     size: l.area_sqm ? String(l.area_sqm) : '',
     address: l.address_th || '',
-    neighborhood: l.district || l.province || t.defaultProvince,
+    neighborhood:
+      districtLabel(l.district, l.province, locale) ||
+      provinceLabel(l.province, locale) ||
+      t.defaultProvince,
     lat: l.lat ? String(l.lat) : '',
     lng: l.lng ? String(l.lng) : '',
     image: (() => { const imgs = Array.isArray(l.images) ? l.images : []; return imgs.find((i: string) => i.startsWith('https://')) ?? imgs.find((i: string) => i.startsWith('/')) ?? ''; })(),
