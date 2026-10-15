@@ -43,7 +43,7 @@ export function counterpartFor(pathname: string): Counterpart {
     if (enArea) return TO_THAI(`/area/${enArea[1]}`)
     const enProp = path.match(/^\/en\/property\/(.+?)\/?$/)
     if (enProp) return TO_THAI(`/property/${enProp[1]}`)
-    const enStatic = path.match(/^\/en\/(about|services|pricing|faq|contact|search|submit)\/?$/)
+    const enStatic = path.match(/^\/en\/(about|services|pricing|faq|contact|search|submit|privacy|terms)\/?$/)
     if (enStatic) return TO_THAI(`/${enStatic[1]}`)
     return TO_THAI('/')
   }
@@ -65,7 +65,7 @@ export function counterpartFor(pathname: string): Counterpart {
   const prop = path.match(/^\/property\/(.+?)\/?$/)
   if (prop) return TO_ENGLISH(`/en/property/${prop[1]}`)
 
-  const stat = path.match(/^\/(about|services|pricing|faq|contact|search|submit)\/?$/)
+  const stat = path.match(/^\/(about|services|pricing|faq|contact|search|submit|privacy|terms)\/?$/)
   if (stat) return TO_ENGLISH(`/en/${stat[1]}`)
 
   return TO_ENGLISH('/en')

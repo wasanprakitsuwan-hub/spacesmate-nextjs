@@ -73,8 +73,8 @@ export default function Footer() {
                 { label: t.footerAbout, href: href('/about') },
                 { label: t.footerContact, href: href('/contact') },
                 { label: t.footerFaq, href: href('/faq') },
-                { label: t.footerPrivacy, href: '/privacy' },
-                { label: t.footerTerms, href: '/terms' },
+                { label: t.footerPrivacy, href: href('/privacy') },
+                { label: t.footerTerms, href: href('/terms') },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">
