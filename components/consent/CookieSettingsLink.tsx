@@ -1,5 +1,8 @@
 'use client'
 
+import { CONSENT_T } from '@/lib/pages-i18n'
+import { useLocale } from '@/lib/use-locale'
+
 import { resetConsent } from '@/lib/consent'
 
 /**
@@ -29,7 +32,7 @@ export default function CookieSettingsLink({ className }: { className?: string }
       // A button, not a link: it performs an action rather than navigating.
       // Screen readers should not announce it as a destination.
     >
-      ตั้งค่าคุกกี้
+      {CONSENT_T[useLocale()].settingsLink}
     </button>
   )
 }

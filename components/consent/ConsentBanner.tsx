@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CONSENT_T } from '@/lib/pages-i18n'
+import { useLocale } from '@/lib/use-locale'
 import Link from 'next/link'
 import { readConsent, writeConsent, onConsentChange, type Consent } from '@/lib/consent'
 
@@ -27,6 +29,8 @@ import { readConsent, writeConsent, onConsentChange, type Consent } from '@/lib/
  */
 
 export default function ConsentBanner() {
+  const t = CONSENT_T[useLocale()]
+
   const [decided, setDecided] = useState<Consent | null | undefined>(undefined)
   const [detail,  setDetail]  = useState(false)
   const [analytics, setAnalytics] = useState(false)
@@ -49,7 +53,7 @@ export default function ConsentBanner() {
     <div
       role="dialog"
       aria-modal="false"
-      aria-label="การตั้งค่าคุกกี้ / Cookie settings"
+      aria-label={t.dialogLabel}
       style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
         background: '#fff', borderTop: '1.5px solid #eef0ef',
@@ -60,11 +64,10 @@ export default function ConsentBanner() {
       <div style={{ maxWidth: 1080, margin: '0 auto' }}>
 
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#231f20' }}>
-          <strong style={{ color: '#02402e' }}>เราใช้คุกกี้</strong>{' '}
-          คุกกี้ที่จำเป็นทำให้เว็บไซต์ทำงานได้ และเปิดใช้งานอยู่เสมอ
-          ส่วนคุกกี้เพื่อการวิเคราะห์และการตลาดจะใช้ก็ต่อเมื่อคุณอนุญาตเท่านั้น{' '}
+          <strong style={{ color: '#02402e' }}>{t.weUseCookies}</strong>{' '}
+          {t.intro}{' '}
           <Link href="/privacy" style={{ color: '#048c73', textDecoration: 'underline' }}>
-            นโยบายความเป็นส่วนตัว
+            {t.privacyLink}
           </Link>
         </p>
 
@@ -77,18 +80,18 @@ export default function ConsentBanner() {
           <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
             <Row
               on={true} disabled
-              title="จำเป็น · Essential"
-              desc="เข้าสู่ระบบ ความปลอดภัย และการทำงานพื้นฐาน — ปิดไม่ได้"
+              title={t.necessary}
+              desc={t.necessaryDesc}
             />
             <Row
               on={analytics} onToggle={() => setAnalytics(v => !v)}
-              title="การวิเคราะห์ · Analytics"
-              desc="ช่วยให้เราเข้าใจว่าหน้าไหนมีคนใช้งาน (Google Analytics)"
+              title={t.analytics}
+              desc={t.analyticsDesc}
             />
             <Row
               on={marketing} onToggle={() => setMarketing(v => !v)}
-              title="การตลาด · Marketing"
-              desc="ใช้วัดผลโฆษณาบน Facebook และ Instagram"
+              title={t.marketing}
+              desc={t.marketingDesc}
             />
           </div>
         )}
@@ -98,16 +101,16 @@ export default function ConsentBanner() {
             "primary action" rather than "correct answer". */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
           {detail ? (
-            <button onClick={saveChoice} style={btnFilled}>บันทึกการตั้งค่า · Save</button>
+            <button onClick={saveChoice} style={btnFilled}>{t.save}</button>
           ) : (
-            <button onClick={acceptAll} style={btnFilled}>ยอมรับทั้งหมด · Accept all</button>
+            <button onClick={acceptAll} style={btnFilled}>{t.acceptAll}</button>
           )}
 
-          <button onClick={rejectAll} style={btnOutline}>ปฏิเสธทั้งหมด · Reject all</button>
+          <button onClick={rejectAll} style={btnOutline}>{t.rejectAll}</button>
 
           {!detail && (
             <button onClick={() => setDetail(true)} style={btnQuiet}>
-              ตั้งค่า · Customise
+              {t.customise}
             </button>
           )}
         </div>

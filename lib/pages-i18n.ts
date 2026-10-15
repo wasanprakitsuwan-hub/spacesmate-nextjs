@@ -371,3 +371,51 @@ export const SUBMIT_T = {
 export type ContactStrings = (typeof CONTACT_T)[Locale]
 export type SearchStrings = (typeof SEARCH_T)[Locale]
 export type SubmitStrings = (typeof SUBMIT_T)[Locale]
+
+/**
+ * Cookie consent banner and the footer link that reopens it.
+ *
+ * These render on every page in both locales. They were Thai-only until the
+ * English pages existed, which meant an English visitor read an English privacy
+ * policy explaining their right to withdraw consent, then gave that consent
+ * through a Thai interface. PDPA consent has to be informed; consent collected
+ * through wording the person cannot read is weak consent.
+ */
+export const CONSENT_T = {
+  th: {
+    dialogLabel: 'การตั้งค่าคุกกี้ / Cookie settings',
+    weUseCookies: 'เราใช้คุกกี้',
+    intro: 'คุกกี้ที่จำเป็นทำให้เว็บไซต์ทำงานได้ และเปิดใช้งานอยู่เสมอ ส่วนคุกกี้เพื่อการวิเคราะห์และการตลาดจะใช้ก็ต่อเมื่อคุณอนุญาตเท่านั้น',
+    privacyLink: 'นโยบายความเป็นส่วนตัว',
+    necessary: 'จำเป็น · Essential',
+    necessaryDesc: 'เข้าสู่ระบบ ความปลอดภัย และการทำงานพื้นฐาน — ปิดไม่ได้',
+    alwaysOn: 'ปิดไม่ได้',
+    analytics: 'การวิเคราะห์ · Analytics',
+    analyticsDesc: 'ช่วยให้เราเข้าใจว่าหน้าไหนมีคนใช้งาน (Google Analytics)',
+    marketing: 'การตลาด · Marketing',
+    marketingDesc: 'ใช้วัดผลโฆษณาบน Facebook และ Instagram',
+    save: 'บันทึกการตั้งค่า · Save',
+    acceptAll: 'ยอมรับทั้งหมด · Accept all',
+    rejectAll: 'ปฏิเสธทั้งหมด · Reject all',
+    customise: 'ตั้งค่า · Customise',
+    settingsLink: 'ตั้งค่าคุกกี้',
+  },
+  en: {
+    dialogLabel: 'Cookie settings / การตั้งค่าคุกกี้',
+    weUseCookies: 'We use cookies',
+    intro: 'Strictly necessary cookies make the site work and are always on. Analytics and marketing cookies are used only if you allow them.',
+    privacyLink: 'Privacy policy',
+    necessary: 'Essential · จำเป็น',
+    necessaryDesc: 'Login, security and basic functionality — cannot be switched off',
+    alwaysOn: 'Always on',
+    analytics: 'Analytics · การวิเคราะห์',
+    analyticsDesc: 'Helps us understand which pages people use (Google Analytics)',
+    marketing: 'Marketing · การตลาด',
+    marketingDesc: 'Measures advertising on Facebook and Instagram',
+    save: 'Save · บันทึกการตั้งค่า',
+    acceptAll: 'Accept all · ยอมรับทั้งหมด',
+    rejectAll: 'Reject all · ปฏิเสธทั้งหมด',
+    customise: 'Customise · ตั้งค่า',
+    settingsLink: 'Cookie settings',
+  },
+} as const
