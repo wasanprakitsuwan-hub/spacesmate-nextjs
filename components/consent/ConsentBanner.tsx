@@ -72,8 +72,7 @@ export default function ConsentBanner() {
         </p>
 
         <p style={{ margin: '6px 0 0', fontSize: 12.5, lineHeight: 1.55, color: '#64748b' }}>
-          Essential cookies keep the site working and are always on. Analytics and
-          marketing cookies are used only if you allow them.
+          {t.introAlt}
         </p>
 
         {detail && (

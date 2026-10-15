@@ -387,6 +387,11 @@ export const CONSENT_T = {
     weUseCookies: 'เราใช้คุกกี้',
     intro: 'คุกกี้ที่จำเป็นทำให้เว็บไซต์ทำงานได้ และเปิดใช้งานอยู่เสมอ ส่วนคุกกี้เพื่อการวิเคราะห์และการตลาดจะใช้ก็ต่อเมื่อคุณอนุญาตเท่านั้น',
     privacyLink: 'นโยบายความเป็นส่วนตัว',
+    // The banner has always shown both languages: the main line in the reader's
+    // language, a smaller gloss in the other. Before locale support the gloss
+    // was hardcoded English, which read correctly under Thai and duplicated
+    // itself under English.
+    introAlt: 'Essential cookies keep the site working and are always on. Analytics and marketing cookies are used only if you allow them.',
     necessary: 'จำเป็น · Essential',
     necessaryDesc: 'เข้าสู่ระบบ ความปลอดภัย และการทำงานพื้นฐาน — ปิดไม่ได้',
     alwaysOn: 'ปิดไม่ได้',
@@ -405,6 +410,7 @@ export const CONSENT_T = {
     weUseCookies: 'We use cookies',
     intro: 'Strictly necessary cookies make the site work and are always on. Analytics and marketing cookies are used only if you allow them.',
     privacyLink: 'Privacy policy',
+    introAlt: 'คุกกี้ที่จำเป็นทำให้เว็บไซต์ทำงานได้ และเปิดใช้งานอยู่เสมอ ส่วนคุกกี้เพื่อการวิเคราะห์และการตลาดจะใช้ก็ต่อเมื่อคุณอนุญาตเท่านั้น',
     necessary: 'Essential · จำเป็น',
     necessaryDesc: 'Login, security and basic functionality — cannot be switched off',
     alwaysOn: 'Always on',
