@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Script from 'next/script'
 import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
 
 // ─── AEO data ────────────────────────────────────────────────────────────────
@@ -19,7 +18,7 @@ interface Category {
   faqs: FAQ[]
 }
 
-const CATEGORIES: Category[] = [
+export const CATEGORIES: Category[] = [
   {
     id: 'about',
     icon: 'apartment',
@@ -122,18 +121,17 @@ const CATEGORIES: Category[] = [
   },
 ]
 
-// ─── JSON-LD FAQPage schema ────────────────────────────────────────────────────
-const FAQ_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: CATEGORIES.flatMap(c =>
-    c.faqs.map(f => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
-    }))
-  ),
-}
+// The FAQPage JSON-LD is emitted by app/faq/page.tsx, which is a server
+// component, using the same <FaqLd> that /pricing uses.
+//
+// It used to live here, injected with next/script strategy="afterInteractive".
+// That runs client-side after hydration, so the schema was absent from the HTML
+// the server sends — and the answers are absent too, because this accordion only
+// renders an answer once it is expanded. The comment at the top of this file says
+// the questions are written so AI answer engines can surface them verbatim; those
+// engines read raw HTML and do not execute JavaScript, so the one audience the
+// schema was written for was the one audience that could not see it.
+export const FAQ_QA = CATEGORIES.flatMap(c => c.faqs.map(f => ({ q: f.q, a: f.a })))
 
 // ─── Single accordion item ─────────────────────────────────────────────────────
 function FAQItem({ faq, isOpen, onToggle }: { faq: FAQ; isOpen: boolean; onToggle: () => void }) {
@@ -181,11 +179,6 @@ export default function FAQAccordion() {
 
   return (
     <>
-      {/* FAQPage JSON-LD — AEO structured data */}
-      <Script id="faq-schema" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify(FAQ_SCHEMA)}
-      </Script>
-
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '56px 24px 64px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>

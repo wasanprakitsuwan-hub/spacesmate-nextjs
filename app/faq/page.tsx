@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import FAQAccordion from '@/components/faq/FAQAccordion'
+import FAQAccordion, { FAQ_QA } from '@/components/faq/FAQAccordion'
+import { FaqLd } from '@/components/seo/JsonLd'
 
 // ─── AEO / SEO metadata ───────────────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -23,6 +24,8 @@ export const metadata: Metadata = {
 export default function FAQPage() {
   return (
     <div className="bg-white min-h-screen">
+      {/* Server-rendered, so it is in the HTML an answer engine actually fetches. */}
+      <FaqLd qa={FAQ_QA} />
       <FAQAccordion />
     </div>
   )
