@@ -34,8 +34,8 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">{t.footerExplore}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: t.navSearch, href: '/search' },
-                { label: t.footerPopularAreas, href: '/search' },
+                { label: t.navSearch, href: href('/search') },
+                { label: t.footerPopularAreas, href: href('/search') },
                 { label: t.navBlog, href: '/blog' },
               ].map((item) => (
                 <li key={item.label}>
@@ -71,7 +71,7 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {[
                 { label: t.footerAbout, href: href('/about') },
-                { label: t.footerContact, href: '/contact' },
+                { label: t.footerContact, href: href('/contact') },
                 { label: t.footerFaq, href: href('/faq') },
                 { label: t.footerPrivacy, href: '/privacy' },
                 { label: t.footerTerms, href: '/terms' },
