@@ -18,6 +18,7 @@ import PropertyVideo from '@/components/property/PropertyVideo'
 import DescriptionBody from '@/components/property/DescriptionBody'
 import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
 import { provinceLabel } from '@/lib/geo-i18n'
+import { roomTypeLabel } from '@/lib/room-types'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -294,7 +295,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                     </div>
                     {aptUnits.map((u: any, i: number) => (
                       <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: cols, padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, color: '#231f20' }}>{u.room_type || '—'}</span>
+                        <span style={{ fontWeight: 600, color: '#231f20' }}>{roomTypeLabel(u.room_type, locale) || '—'}</span>
                         <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? t.sizeValue(u.size_sqm) : '—'}</span>
                         <span style={{ fontWeight: 700, color: '#d97f11' }}>{money(rate12(u))}</span>
                         {has6 && <span style={{ color: u.price_6mo ? '#02402e' : '#94a3b8', fontWeight: u.price_6mo ? 600 : 400 }}>{money(u.price_6mo)}</span>}

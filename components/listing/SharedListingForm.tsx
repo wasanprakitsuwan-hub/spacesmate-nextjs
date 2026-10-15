@@ -1,5 +1,7 @@
 'use client'
 
+import { roomTypeOptions, type Locale } from '@/lib/room-types'
+
 import { useEffect, useRef, useState } from 'react'
 import { ADMIN_PACKAGES, computeExpiry, MAX_IMAGES_ANY_PACKAGE, visibleImageCount } from '@/lib/packages'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
@@ -142,14 +144,15 @@ export const SLBL: React.CSSProperties = {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-export function getRoomTypeOptions(propType: string): string[] {
-  switch (propType) {
-    case 'apartment': return ['Studio', '1 ห้องนอน', '2 ห้องนอน', '3 ห้องนอน', 'เชิงพาณิชย์']
-    case 'house':     return ['บ้านเดี่ยว', 'ทาวน์เฮ้าส์', '2 ห้องนอน', '3 ห้องนอน', '4 ห้องนอน+']
-    case 'office':    return ['Individual Desk', 'Private Office', 'Meeting Room', 'Full Floor', 'Shared Space']
-    case 'coworking': return ['Hot Desk', 'Dedicated Desk', 'Private Office', 'Meeting Room', 'Day Pass']
-    default:          return ['Studio', '1 ห้องนอน', '2 ห้องนอน', '3 ห้องนอน', '4 ห้องนอน+', 'Penthouse', 'ดูเพล็กซ์', 'ลอฟท์']
-  }
+/**
+ * Room-type options for a property type, as {value, label}.
+ *
+ * This used to return bare strings, which the form then stored verbatim — so
+ * the database held whatever language the owner happened to be using, and the
+ * public property page rendered it raw to everyone. See lib/room-types.
+ */
+export function getRoomTypeOptions(propType: string, locale: Locale = 'th') {
+  return roomTypeOptions(propType, locale)
 }
 
 export function prepareSubmitData(form: FormState) {
@@ -209,11 +212,11 @@ export function SectionHead({ text }: { text: string }) {
 
 // ── Apartment Unit Grid ────────────────────────────────────────────────────────
 export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
-  rows: ApartmentUnitRow[]; onChange: (rows: ApartmentUnitRow[]) => void; roomTypeOptions: string[]
+  rows: ApartmentUnitRow[]; onChange: (rows: ApartmentUnitRow[]) => void; roomTypeOptions: { value: string; label: string }[]
 }) {
   function addRow() {
     onChange([...rows, {
-      id: `au-${Date.now()}`, room_type: roomTypeOptions[0] ?? 'Studio',
+      id: `au-${Date.now()}`, room_type: roomTypeOptions[0]?.value ?? 'studio',
       size_sqm: '', price_12mo: '', price_1mo: '', price_daily: '',
       available_1mo: false, available_3mo: false, price_3mo: '',
       available_6mo: false, price_6mo: '',
@@ -237,7 +240,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
             <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
                 <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
-                  {roomTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                  {roomTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 <input type="number" value={row.size_sqm} onChange={e => upd(row.id, 'size_sqm', e.target.value)} placeholder="28" style={{ ...SINP, padding: '7px 10px' }} />
                 <div style={{ position: 'relative' }}>
