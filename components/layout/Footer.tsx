@@ -54,7 +54,7 @@ export default function Footer() {
               {[
                 { label: t.navSubmit, href: '/submit' },
                 { label: t.navManage, href: '/manage' },
-                { label: t.footerPricing, href: '/pricing' },
+                { label: t.footerPricing, href: href('/pricing') },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">
@@ -72,7 +72,7 @@ export default function Footer() {
               {[
                 { label: t.footerAbout, href: href('/about') },
                 { label: t.footerContact, href: '/contact' },
-                { label: t.footerFaq, href: '/faq' },
+                { label: t.footerFaq, href: href('/faq') },
                 { label: t.footerPrivacy, href: '/privacy' },
                 { label: t.footerTerms, href: '/terms' },
               ].map((item) => (

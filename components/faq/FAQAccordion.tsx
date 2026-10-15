@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { CATEGORIES, type FAQ } from '@/lib/faq-data'
+import { faqCategories, type FAQ } from '@/lib/faq-data'
+import { FAQ_T, type Locale } from '@/lib/faq-i18n'
 
 
 
@@ -44,7 +45,10 @@ function FAQItem({ faq, isOpen, onToggle }: { faq: FAQ; isOpen: boolean; onToggl
 }
 
 // ─── Main client component ─────────────────────────────────────────────────────
-export default function FAQAccordion() {
+export default function FAQAccordion({ locale = 'th' }: { locale?: Locale }) {
+  const t = FAQ_T[locale]
+  const CATEGORIES = faqCategories(locale)
+
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
   function toggle(key: string) {
     setOpenMap(prev => ({ ...prev, [key]: !prev[key] }))
@@ -57,16 +61,16 @@ export default function FAQAccordion() {
         <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
           {/* Breadcrumb */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-            <Link href="/" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>หน้าแรก</Link>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>{t.breadcrumbHome}</Link>
             <span>/</span>
-            <span style={{ color: '#fff' }}>คำถามที่พบบ่อย</span>
+            <span style={{ color: '#fff' }}>{t.breadcrumbHere}</span>
           </div>
           <h1 style={{ fontSize: 'clamp(26px,4vw,44px)', fontWeight: 700, color: '#fff', margin: '0 0 14px', letterSpacing: '-0.4px', lineHeight: 1.15 }}>
-            คำถามที่พบบ่อย (FAQ)
+            {t.heading}
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 16, margin: '0 0 32px', fontWeight: 300, lineHeight: 1.75 }}>
-            ทุกคำตอบที่คุณต้องการเกี่ยวกับ SpacesMate — แพลตฟอร์มลงประกาศ
-            และบริการบริหารทรัพย์สินครบวงจรทั่วประเทศไทย
+            {t.subA}
+            {' '}{t.subB}
           </p>
           {/* Category jump links */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
@@ -131,10 +135,10 @@ export default function FAQAccordion() {
         }}>
           <div>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.2px' }}>
-              ยังมีคำถามเพิ่มเติม?
+              {t.moreHeading}
             </h3>
             <p style={{ color: 'rgba(255,255,255,0.68)', fontSize: 14, margin: 0, fontWeight: 300 }}>
-              ติดต่อทีมงาน SpacesMate โดยตรง — เราพร้อมตอบทุกคำถาม
+              {t.moreBody}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -143,14 +147,14 @@ export default function FAQAccordion() {
               padding: '13px 26px', borderRadius: 24, textDecoration: 'none',
               whiteSpace: 'nowrap', boxShadow: '0 6px 18px -6px rgba(217,127,17,0.55)',
             }}>
-              ติดต่อเรา
+              {t.moreCta1}
             </Link>
             <Link href="/manage" style={{
               background: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, fontSize: 14,
               padding: '13px 26px', borderRadius: 24, textDecoration: 'none',
               border: '1px solid rgba(255,255,255,0.25)', whiteSpace: 'nowrap',
             }}>
-              ฝากบริหารทรัพย์สิน
+              {t.moreCta2}
             </Link>
           </div>
         </div>

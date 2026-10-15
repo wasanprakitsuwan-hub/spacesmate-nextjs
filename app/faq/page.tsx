@@ -1,33 +1,32 @@
 import type { Metadata } from 'next'
 import FAQAccordion from '@/components/faq/FAQAccordion'
-import { FAQ_QA } from '@/lib/faq-data'
+import { faqQa } from '@/lib/faq-data'
+import { FAQ_T } from '@/lib/faq-i18n'
 import { FaqLd } from '@/components/seo/JsonLd'
 
-// ─── AEO / SEO metadata ───────────────────────────────────────────────────────
+const t = FAQ_T.th
+
 export const metadata: Metadata = {
-  title: 'คำถามที่พบบ่อย (FAQ) | SpacesMate',
-  description:
-    'คำถามที่พบบ่อยเกี่ยวกับ SpacesMate — แพลตฟอร์มลงประกาศเช่าทั่วไทย ฿299/เดือน รองรับคอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ โคเวิร์กกิ้ง บริการบริหารทรัพย์สินรูปแบบ Profit Sharing',
-  keywords: [
-    'FAQ SpacesMate', 'คำถามที่พบบ่อย', 'ลงประกาศเช่า', 'ค่าบริการบริหารทรัพย์สิน',
-    'บริหารอพาร์ทเม้นท์', 'บริหารคอนโด', 'Fair Rotation', 'ประกาศอสังหาริมทรัพย์ไทย',
-    'ลงประกาศออฟฟิศ', 'ลงประกาศโคเวิร์กกิ้ง',
-  ],
+  title: t.metaTitle,
+  description: t.metaDesc,
   openGraph: {
-    title: 'คำถามที่พบบ่อย | SpacesMate',
-    description: 'ทุกคำตอบเกี่ยวกับแพลตฟอร์มลงประกาศและบริการบริหารทรัพย์สินของ SpacesMate',
+    title: t.ogTitle,
+    description: t.ogDesc,
     type: 'website',
     url: 'https://spacesmate.com/faq',
   },
-  alternates: { canonical: 'https://spacesmate.com/faq' },
+  alternates: {
+    canonical: 'https://spacesmate.com/faq',
+    languages: { en: 'https://spacesmate.com/en/faq' },
+  },
 }
 
-export default function FAQPage() {
+export default function Page() {
   return (
     <div className="bg-white min-h-screen">
       {/* Server-rendered, so it is in the HTML an answer engine actually fetches. */}
-      <FaqLd qa={FAQ_QA} />
-      <FAQAccordion />
+      <FaqLd qa={faqQa('th')} />
+      <FAQAccordion locale="th" />
     </div>
   )
 }

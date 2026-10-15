@@ -1,6 +1,9 @@
 /**
  * FAQ content and its types, in a module with no 'use client' directive.
  *
+ * Both locales live here side by side so a change to one is visible against
+ * the other.
+ *
  * This data is read from two places: the accordion, which is a client
  * component, and app/faq/page.tsx, which is a server component and renders the
  * FAQPage JSON-LD from it.
@@ -13,6 +16,7 @@
  * module is what makes it safe for both sides to import.
  */
 import { PACKAGE_IMAGE_LIMITS } from '@/lib/packages'
+import type { Locale } from '@/lib/faq-i18n'
 
 // ─── AEO data ────────────────────────────────────────────────────────────────
 // Questions are written so AI answer engines (ChatGPT, Perplexity, Gemini, etc.)
@@ -29,7 +33,7 @@ export interface Category {
   faqs: FAQ[]
 }
 
-export const CATEGORIES: Category[] = [
+const TH: Category[] = [
   {
     id: 'about',
     icon: 'apartment',
@@ -132,5 +136,115 @@ export const CATEGORIES: Category[] = [
   },
 ]
 
-/** Flat question/answer list for the FAQPage schema. */
-export const FAQ_QA = CATEGORIES.flatMap(c => c.faqs.map(f => ({ q: f.q, a: f.a })))
+const EN: Category[] = [
+  {
+    id: 'about',
+    icon: 'apartment',
+    title: 'About SpacesMate',
+    subtitle: 'What SpacesMate is, and how it works',
+    faqs: [
+      {
+        q: 'What is SpacesMate?',
+        a: 'SpacesMate (Space Works Co., Ltd.) is an asset-light property platform in Thailand offering two services — (1) a rental listing platform for property owners, from ฿299/month, and (2) full property management for apartment and condominium owners who want professionals to run it for them.',
+      },
+      {
+        q: 'How is SpacesMate different from other property listing sites?',
+        a: 'SpacesMate uses Fair Rotation — every listing whose owner has confirmed its details (at least every 6 months) is shuffled into a featured position at random on each page load. Position is not for sale, and every listing gets an equal chance. SpacesMate also accepts every property type, including offices and co-working space, which many platforms do not, and offers full property management, which ordinary listing sites do not.',
+      },
+      {
+        q: 'Where does SpacesMate operate?',
+        a: 'SpacesMate covers all of Thailand, not only Bangkok — an owner in any province can list immediately. Full property management currently takes on properties in Bangkok and the surrounding provinces first, and will expand nationwide after that.',
+      },
+      {
+        q: 'What property types does SpacesMate support?',
+        a: 'Five types: condominiums, apartments, houses, co-working spaces and offices to let. That is broader than most listing sites, which usually take residential only. SpacesMate supports daily, monthly and annual contracts.',
+      },
+    ],
+  },
+  {
+    id: 'tenants',
+    icon: 'search',
+    title: 'For renters',
+    subtitle: 'Finding a place and contacting the owner',
+    faqs: [
+      {
+        q: 'Does it cost renters anything to use SpacesMate?',
+        a: 'Nothing. Searching, viewing details and contacting owners through SpacesMate are all free. The platform fee is paid by property owners only.',
+      },
+      {
+        q: 'Can I trust the listings on SpacesMate?',
+        a: 'Listings go through an initial check, and Fair Rotation only shows listings whose owner has confirmed the details within the last 6 months. Listings that have not been updated are hidden automatically, so renters see only properties that are genuinely available.',
+      },
+      {
+        q: 'How do I search for a place on SpacesMate?',
+        a: 'Go to the search page (/search) and type a building name, a development name or a place — "Sukhumvit" or "BTS Asok", for example. There is also a "near me" map feature that finds properties around your current location, and you can filter by type (condo / apartment / house / office / co-working).',
+      },
+    ],
+  },
+  {
+    id: 'owners',
+    icon: 'real_estate_agent',
+    title: 'For owners',
+    subtitle: 'Listing, packages and property management',
+    faqs: [
+      {
+        q: 'How do I start listing a property on SpacesMate?',
+        a: 'Register a free account at spacesmate.com, choose the package you want, then fill in the property details in three steps — choose a package → enter the details and upload photos → pay. The listing goes live as soon as payment succeeds; there is no approval to wait for.',
+      },
+      {
+        q: 'What does listing on SpacesMate cost?',
+        a: 'There are 3 packages: Basic ฿299/month (30 days), Standard ฿699/3 months (90 days, the most popular) and Premium ฿2,499/year (365 days, with video upload). No commission and no hidden fees.',
+      },
+      {
+        q: 'Are there any special rules or conditions for listing?',
+        a: 'One that matters — the owner must confirm the listing details are still correct at least every 6 months, so renters get accurate, current information. A listing that is not confirmed in time is hidden from the site automatically until it is confirmed again.',
+      },
+      {
+        q: 'Can brokers or real estate agencies list?',
+        a: 'Yes. Brokers and agencies can list in their own name or on behalf of an owner who has authorised them. There is no restriction on who may list.',
+      },
+      {
+        q: 'How many packages are there, and how do they differ?',
+        a: `There are 3 packages — they differ in how long the listing runs and how many photos it carries:\n• Basic ฿299/month — live for 30 days, up to ${PACKAGE_IMAGE_LIMITS.basic} photos\n• Standard ฿699/3 months — live for 90 days, up to ${PACKAGE_IMAGE_LIMITS.standard} photos, 22% cheaper than Basic\n• Premium ฿2,499/year — live for 365 days, up to ${PACKAGE_IMAGE_LIMITS.premium} photos, with video, 30% cheaper than paying monthly\n\nEvery package shows all your contact channels, has no cap on views, and uses the same Fair Rotation.`,
+      },
+      {
+        q: 'I have several properties — is there a special package?',
+        a: 'Yes. Owners and agencies with several properties can contact the SpacesMate team directly at support@spacesmate.com or through the contact page for a tailored offer. The team will come back to you as soon as possible.',
+      },
+      {
+        q: 'If I want several listings, do I need a separate slot for each?',
+        a: 'Yes — each listing showing on the website needs its own slot: one slot = one live listing. If you have 3 condo units to list at the same time, for example, you buy 3 slots. But a slot is not tied permanently to one listing — once a room is let, you can swap another listing into the same slot for the rest of its term. Owners manage every listing and slot from a single Owner Dashboard, which shows each subscription with its own status and expiry date.',
+      },
+      {
+        q: 'Can I upgrade a package, and how is it charged?',
+        a: 'You can upgrade immediately from the Owner Dashboard — click "upgrade" on the subscription you want and choose a higher package. You are charged only the difference for the days remaining in the current period (proration), straight away through Stripe. There is no need to cancel and re-subscribe, the listing has no downtime, and the new allowances (more photos, video) are available as soon as the upgrade succeeds.',
+      },
+      {
+        q: 'If I cancel auto-renewal, is my listing deleted immediately?',
+        a: 'No. Cancelling from the Owner Dashboard only means it will not renew automatically. Your listing stays published and visible until the expiry date you have already paid for. If your package ends on 31 July and you cancel on 15 July, for example, the listing runs until 31 July. You do not lose days you have paid for.',
+      },
+      {
+        q: 'How is the Full Property Management fee calculated?',
+        a: 'SpacesMate works on profit sharing — we take a share of the rent actually collected, nothing else. The more the property earns, the more SpacesMate earns. The rate is set after SpacesMate has inspected and assessed your property, to be sure it has the right potential. To start, fill in the form on the property management page and the team will come back to you as soon as possible.',
+      },
+      {
+        q: 'After I submit the property management form, when will SpacesMate contact me?',
+        a: 'The SpacesMate team will be in touch as soon as possible after receiving your details, to arrange a property assessment and discuss management terms.',
+      },
+      {
+        q: 'Does SpacesMate hold the security deposit on the owner’s behalf?',
+        a: 'No. SpacesMate does not hold security deposits. The deposit belongs to the owner directly: the owner receives it and returns it to the tenant within 14 days of check-out. SpacesMate only coordinates.',
+      },
+    ],
+  },
+]
+
+/** The FAQ for a locale. Thai is the default everywhere that does not say otherwise. */
+export function faqCategories(locale: Locale): Category[] {
+  return locale === 'en' ? EN : TH
+}
+
+/** Flat question/answer list for the FAQPage schema, per locale. */
+export function faqQa(locale: Locale): { q: string; a: string }[] {
+  return faqCategories(locale).flatMap(c => c.faqs.map(f => ({ q: f.q, a: f.a })))
+}
