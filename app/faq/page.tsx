@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import FAQAccordion, { FAQ_QA } from '@/components/faq/FAQAccordion'
+import FAQAccordion from '@/components/faq/FAQAccordion'
+import { FAQ_QA } from '@/lib/faq-data'
 import { FaqLd } from '@/components/seo/JsonLd'
 
 // ─── AEO / SEO metadata ───────────────────────────────────────────────────────
