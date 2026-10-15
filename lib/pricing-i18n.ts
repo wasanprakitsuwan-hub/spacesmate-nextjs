@@ -10,7 +10,10 @@
  * Package names (Basic / Standard / Premium) and prices are not translated.
  * Neither is the promo code.
  */
-import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO } from '@/lib/packages'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, PACKAGE_PRICE_THB, savingsVsBasic } from '@/lib/packages'
+
+/** Display price, derived from the one constant rather than written out again. */
+const price = (id: string) => (PACKAGE_PRICE_THB[id] ?? 0).toLocaleString('en-US')
 
 export type Locale = 'th' | 'en'
 
@@ -211,6 +214,11 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
  * Names, prices and image limits are not locale-dependent, so they stay here
  * rather than in the dictionary — a price that could differ per language is a
  * bug waiting to happen.
+ *
+ * The price and the saving are derived from PACKAGE_PRICE_THB rather than
+ * written out, so changing a price in one place changes every page that shows
+ * it. /submit used to carry its own copy with savings: '22%' as a literal; it
+ * happened to be right, but only until the next price change.
  */
 export function buildPlans(locale: Locale) {
   const t = PRICING_T[locale]
@@ -218,13 +226,14 @@ export function buildPlans(locale: Locale) {
     {
       id: 'basic' as const,
       name: 'Basic',
-      price: '299',
+      price: price('basic'),
       period: t.basicPeriod,
       description: t.basicDesc,
       durationLabel: t.basicDuration,
       durationSub: t.basicDurationSub,
       highlight: false,
       badge: null as string | null,
+      savingsPct: savingsVsBasic('basic'),
       maxImages: PACKAGE_IMAGE_LIMITS.basic,
       allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
       features: [
@@ -238,13 +247,14 @@ export function buildPlans(locale: Locale) {
     {
       id: 'standard' as const,
       name: 'Standard',
-      price: '699',
+      price: price('standard'),
       period: t.standardPeriod,
       description: t.standardDesc,
       durationLabel: t.standardDuration,
       durationSub: t.standardDurationSub,
       highlight: false,
       badge: t.standardBadge as string | null,
+      savingsPct: savingsVsBasic('standard'),
       maxImages: PACKAGE_IMAGE_LIMITS.standard,
       allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
       features: [
@@ -258,13 +268,14 @@ export function buildPlans(locale: Locale) {
     {
       id: 'premium' as const,
       name: 'Premium',
-      price: '2,499',
+      price: price('premium'),
       period: t.premiumPeriod,
       description: t.premiumDesc,
       durationLabel: t.premiumDuration,
       durationSub: t.premiumDurationSub,
       highlight: true,
       badge: t.premiumBadge as string | null,
+      savingsPct: savingsVsBasic('premium'),
       maxImages: PACKAGE_IMAGE_LIMITS.premium,
       // Premium-only, and genuinely enforced — VideoUploadZone gates on
       // packageType === 'premium'. This flag read false until 3 Sep 2026, which

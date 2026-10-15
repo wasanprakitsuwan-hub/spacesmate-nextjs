@@ -52,7 +52,7 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">{t.footerForOwners}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: t.navSubmit, href: '/submit' },
+                { label: t.navSubmit, href: href('/submit') },
                 { label: t.navManage, href: '/manage' },
                 { label: t.footerPricing, href: href('/pricing') },
               ].map((item) => (

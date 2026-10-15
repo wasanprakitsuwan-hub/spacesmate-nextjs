@@ -43,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/en/faq`,   changeFrequency: 'monthly', priority: 0.6,  lastModified: now, alternates: { languages: { th: `${SITE}/faq`, en: `${SITE}/en/faq` } } },
     { url: `${SITE}/en/contact`, changeFrequency: 'yearly', priority: 0.4, lastModified: now, alternates: { languages: { th: `${SITE}/contact`, en: `${SITE}/en/contact` } } },
     { url: `${SITE}/en/search`, changeFrequency: 'daily',  priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/search`, en: `${SITE}/en/search` } } },
+    { url: `${SITE}/en/submit`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/submit`, en: `${SITE}/en/submit` } } },
     { url: `${SITE}/contact`,  changeFrequency: 'yearly',  priority: 0.5,  lastModified: now },
     { url: `${SITE}/faq`,      changeFrequency: 'monthly', priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/faq`, en: `${SITE}/en/faq` } } },
     { url: `${SITE}/terms`,    changeFrequency: 'yearly',  priority: 0.3,  lastModified: now },
