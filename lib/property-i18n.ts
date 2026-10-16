@@ -10,7 +10,7 @@
  * Where they did not, Thai is shown rather than nothing, and the structured
  * data marks the language of the text it actually contains.
  */
-import { DEFAULT_AMENITIES } from '@/lib/amenities'
+import { DEFAULT_AMENITIES, LEGACY_AMENITY_RENAMES } from '@/lib/amenities'
 
 export type Locale = 'th' | 'en'
 
@@ -178,35 +178,24 @@ export const OTHER_CHARGE_LABELS: Record<Locale, Record<string, string>> = {
 const AMENITY_TH_TO_EN = new Map(DEFAULT_AMENITIES.map(a => [a.name_th, a.name_en]))
 
 /**
- * The same amenity is stored under several spellings across the listings —
- * 'แอร์' / 'เครื่องปรับอากาศ' / 'เแอร์' (a typo), 'ลิฟท์' / 'ลิฟต์',
- * 'รปภ 24 ชม' / 'รักษาความปลอดภัย 24 ชม.'. 9 of the 29 distinct values in use
- * do not match the canonical list.
+ * A legacy spelling → the canonical name, so English display works whether or
+ * not migrations/2026-10-16-amenities-canonical.sql has run yet.
  *
- * Aliasing them here fixes the English display. It does not fix the underlying
- * data, which also affects Thai-side filtering — worth a cleanup pass on the
- * properties table separately.
+ * This used to be a hand-written map pointing the other way — the live names at
+ * the old DEFAULT_AMENITIES names — because DEFAULT_AMENITIES was then the stale
+ * list. When that array was made canonical on 16 Oct 2026 the direction
+ * inverted, and a second hand-written map would have had to invert with it. So
+ * there is now one: LEGACY_AMENITY_RENAMES, shared with the migration that
+ * rewrites the stored values.
+ *
+ * Which means display is tolerant and the code and the migration do not have to
+ * ship together. Once the migration has run this map stops matching anything,
+ * and that is the point at which it can go.
  */
-const AMENITY_ALIASES: Record<string, string> = {
-  'เครื่องปรับอากาศ': 'แอร์',
-  'เแอร์': 'แอร์',
-  'เฟอร์นิเจอร์ครบ': 'เฟอร์นิเจอร์พร้อมอยู่',
-  'ฟิตเนส': 'ห้องออกกำลังกาย (GYM)',
-  'รักษาความปลอดภัย 24 ชม.': 'รปภ 24 ชม',
-  'กล้องวงจรปิด': 'กล้องวงจรปิด (CCTV)',
-  'ลิฟต์': 'ลิฟท์',
-  'อินเทอร์เน็ต': 'WiFi',
-}
-
-/** Not in the canonical list at all, but in use on live listings. */
-const AMENITY_EXTRA_EN: Record<string, string> = {
-  'เครื่องทำน้ำอุ่น': 'Water heater',
-}
-
 export function localiseAmenity(name: string, locale: Locale): string {
   if (locale === 'th') return name
-  const canonical = AMENITY_ALIASES[name] ?? name
-  return AMENITY_TH_TO_EN.get(canonical) ?? AMENITY_EXTRA_EN[name] ?? name
+  const canonical = LEGACY_AMENITY_RENAMES[name] ?? name
+  return AMENITY_TH_TO_EN.get(canonical) ?? name
 }
 
 /** Section headings on the amenity block ('In the unit' / 'In the building'). */

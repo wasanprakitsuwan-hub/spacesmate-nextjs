@@ -1400,7 +1400,7 @@ export function ListingFormFields({
                   const on = form.amenities.includes(a.name_th)
                   return (
                     <button key={a.id} type="button" onClick={() => onAmenityToggle(a.name_th)}
-                      title={a.name_en || undefined}
+                      title={(locale === 'en' ? a.name_th : a.name_en) || undefined}
                       style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer', transition: 'all .15s',
                         border: on ? 'none' : '1px solid #eef0ef',
                         background: on ? (sec.key === 'unit' ? '#02402e' : '#048c73') : '#f8fafc',
