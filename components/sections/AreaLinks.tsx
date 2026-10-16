@@ -1,6 +1,8 @@
 'use client'
 
-import Link from 'next/link'
+// Link here is LocaleLink: it keeps the reader in the language they are already
+// reading. See components/ui/LocaleLink and lib/routes-i18n.
+import Link from '@/components/ui/LocaleLink'
 import { useEffect, useState } from 'react'
 import { AREA_KEYWORDS } from '@/lib/constants'
 import { SITE_T, type Locale } from '@/lib/site-i18n'

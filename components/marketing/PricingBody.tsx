@@ -2,7 +2,7 @@ import { FaqLd } from '@/components/seo/JsonLd'
 import BuySlotsCta from '@/components/pricing/BuySlotsCta'
 import TrackOnMount from '@/components/TrackOnMount'
 import { pricePerMonth, savingsVsBasic } from '@/lib/packages'
-import { localeHref } from '@/lib/site-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 import { PRICING_T, PRICING_FAQ_T, buildPlans, type Locale } from '@/lib/pricing-i18n'
 
 /**

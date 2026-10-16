@@ -1,7 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+// Link here is LocaleLink: it keeps the reader in the language they are already
+// reading, so an href written as a Thai path resolves to its English
+// counterpart on /en/* pages. Hrefs with no English page — /manage, /blog,
+// /building, the account surfaces — pass through unchanged. See
+// components/ui/LocaleLink and lib/routes-i18n.
+import Link from '@/components/ui/LocaleLink'
 import { faqCategories, type FAQ } from '@/lib/faq-data'
 import { FAQ_T, type Locale } from '@/lib/faq-i18n'
 

@@ -15,15 +15,9 @@ export type Locale = 'th' | 'en'
  * Add a path here as each English page lands, and every footer link that uses
  * localeHref starts keeping the visitor on the English side automatically.
  */
-const EN_ROUTES = new Set(['/about', '/services', '/pricing', '/faq', '/contact', '/search', '/submit', '/submit/new', '/privacy', '/terms'])
-
-/** Map a path to its English counterpart when one exists. */
-export function localeHref(path: string, locale: Locale): string {
-  if (locale !== 'en') return path
-  if (path === '/') return '/en'
-  return EN_ROUTES.has(path) ? `/en${path}` : path
-}
-
+// The route table moved to lib/routes-i18n on 16 Oct 2026, because the language
+// toggle needed the same knowledge and was keeping its own copy as regexes.
+// Import localeHref from there.
 export const SITE_T = {
   th: {
     // ── Hero ──

@@ -2,73 +2,44 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { AREA_KEYWORDS } from '@/lib/constants'
+import { enPath, isEnglishPath, thPath } from '@/lib/routes-i18n'
 
 /**
  * One-click language switch, in the navbar. Always visible.
  *
- * Where an exact counterpart exists — the 16 hand-written area pages — it goes
- * straight there and keeps your place. Everywhere else it falls back to the
- * English front door at `/en`, and from the English side back to `/`.
+ * Where a counterpart exists it goes straight there and keeps the visitor's
+ * place. Where it does not, it falls back to the English front door at `/en`,
+ * and from the English side back to `/`.
  *
  * The fallback is what makes "always visible" safe. `/en` used to 404, so an
  * unconditional toggle would have sent most visitors to a dead page; the
  * landing page at app/en/page.tsx exists to give it a real destination.
  *
- * As English versions of other routes are added, add a rule to counterpartFor()
- * and the toggle starts keeping place on those pages too.
+ * WHICH PAGES HAVE A COUNTERPART
+ *   lib/routes-i18n decides, and it is the only place that does. This component
+ *   used to carry its own regexes listing the English routes, a second copy of
+ *   what lib/site-i18n held as EN_ROUTES — so adding an English page meant
+ *   updating two lists, and nothing broke if you updated one. The toggle would
+ *   keep place on a page whose links all dropped to Thai, or the reverse.
  */
-
-/** Area slugs that have a hand-written English page. The data-driven Thai area pages do not. */
-const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
 
 export type Counterpart = { href: string; label: string; hrefLang: 'th' | 'en'; title: string }
 
-/**
- * Exported for testing and so the rules live in one readable place.
- * Returns null when this page has no counterpart.
- */
 const TO_THAI = (href: string): Counterpart =>
   ({ href, label: 'ไทย', hrefLang: 'th', title: 'ดูเว็บไซต์เป็นภาษาไทย' })
 const TO_ENGLISH = (href: string): Counterpart =>
   ({ href, label: 'EN', hrefLang: 'en', title: 'View in English' })
 
+/** Exported so the rule can be read, and tested, without rendering anything. */
 export function counterpartFor(pathname: string): Counterpart {
   const path = pathname || '/'
 
-  // ── Already on the English side ──
-  if (path === '/en' || path.startsWith('/en/')) {
-    // An English area page has an exact Thai original — keep the visitor's place.
-    const enArea = path.match(/^\/en\/area\/(.+?)\/?$/)
-    if (enArea) return TO_THAI(`/area/${enArea[1]}`)
-    const enProp = path.match(/^\/en\/property\/(.+?)\/?$/)
-    if (enProp) return TO_THAI(`/property/${enProp[1]}`)
-    const enStatic = path.match(/^\/en\/(about|services|pricing|faq|contact|search|submit|privacy|terms)\/?$/)
-    if (enStatic) return TO_THAI(`/${enStatic[1]}`)
-    return TO_THAI('/')
-  }
+  // Every English page has a Thai original, so this direction always keeps place.
+  if (isEnglishPath(path)) return TO_THAI(thPath(path))
 
-  // ── Thai side → English ──
-  const th = path.match(/^\/area\/(.+?)\/?$/)
-  if (th) {
-    const raw = th[1]
-    let decoded = raw
-    try { decoded = decodeURIComponent(raw) } catch { /* malformed escape — compare raw */ }
-    // The data-driven area pages are Thai-only, so they fall through to /en.
-    if (EN_AREA_SLUGS.has(decoded) || EN_AREA_SLUGS.has(raw)) {
-      return TO_ENGLISH(`/en/area/${raw}`)
-    }
-  }
-
-  // Every listing has an English page — it falls back to the owner's Thai text
-  // where no English was written, rather than not existing.
-  const prop = path.match(/^\/property\/(.+?)\/?$/)
-  if (prop) return TO_ENGLISH(`/en/property/${prop[1]}`)
-
-  const stat = path.match(/^\/(about|services|pricing|faq|contact|search|submit|privacy|terms)\/?$/)
-  if (stat) return TO_ENGLISH(`/en/${stat[1]}`)
-
-  return TO_ENGLISH('/en')
+  // The other way round can fail: /manage, /blog and the data-driven area pages
+  // have no English version. Those land on the English home page instead.
+  return TO_ENGLISH(enPath(path) ?? '/en')
 }
 
 export default function LanguageToggle({ className = '' }: { className?: string }) {

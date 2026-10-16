@@ -1,9 +1,15 @@
 'use client'
 
-import Link from 'next/link'
+// Link here is LocaleLink: it keeps the reader in the language they are already
+// reading, so an href written as a Thai path resolves to its English
+// counterpart on /en/* pages. Hrefs with no English page — /manage, /blog,
+// /building, the account surfaces — pass through unchanged. See
+// components/ui/LocaleLink and lib/routes-i18n.
+import Link from '@/components/ui/LocaleLink'
 import Image from 'next/image'
 import CookieSettingsLink from '@/components/consent/CookieSettingsLink'
-import { SITE_T, localeHref } from '@/lib/site-i18n'
+import { SITE_T } from '@/lib/site-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
 
 export default function Footer() {
