@@ -358,13 +358,24 @@ export function formatPrice(price: number): string {
 }
 
 export const PROPERTY_TYPES = ['ทั้งหมด', 'Apartment', 'Condo', 'Office'] as const
+/**
+ * Price filter buckets. The label is read by the visitor, so it follows the
+ * locale; min/max are the filter itself and do not.
+ *
+ * `label` is kept as the Thai string so existing callers that read it directly
+ * still work, and priceRangeLabel() is what the UI should use.
+ */
 export const PRICE_RANGES = [
-  { label: 'ทุกราคา', min: 0, max: Infinity },
-  { label: 'ต่ำกว่า ฿5,000', min: 0, max: 5000 },
-  { label: '฿5,000 - ฿10,000', min: 5000, max: 10000 },
-  { label: '฿10,000 - ฿20,000', min: 10000, max: 20000 },
-  { label: 'มากกว่า ฿20,000', min: 20000, max: Infinity },
+  { label: 'ทุกราคา',          en: 'Any price',      min: 0,     max: Infinity },
+  { label: 'ต่ำกว่า ฿5,000',   en: 'Under ฿5,000',   min: 0,     max: 5000 },
+  { label: '฿5,000 - ฿10,000', en: '฿5,000 – ฿10,000',  min: 5000,  max: 10000 },
+  { label: '฿10,000 - ฿20,000', en: '฿10,000 – ฿20,000', min: 10000, max: 20000 },
+  { label: 'มากกว่า ฿20,000',  en: 'Over ฿20,000',   min: 20000, max: Infinity },
 ]
+
+export function priceRangeLabel(r: { label: string; en: string }, locale: 'th' | 'en'): string {
+  return locale === 'en' ? r.en : r.label
+}
 
 // Returns empty string — property detail content is served from static data only.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

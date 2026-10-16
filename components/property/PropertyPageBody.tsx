@@ -172,6 +172,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
         priceDisplay={p.priceDisplay}
         typeLabel={typeLabel}
         featured={p.featured}
+        locale={locale}
       />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -264,7 +265,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
             {/* Video — Premium only. p.videoUrl is already empty for packages
                 that do not include it, so the gate lives in one place rather
                 than being re-decided here. */}
-            <PropertyVideo url={p.videoUrl ?? ''} title={p.title} />
+            <PropertyVideo url={p.videoUrl ?? ''} title={p.title} locale={locale} />
 
             {/* Apartment Unit Pricing Table
                 3- and 6-month prices were collected on the form and stored, but

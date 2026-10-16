@@ -28,17 +28,33 @@ export interface RichEditorProps {
   minHeight?: number
   showImage?: boolean
   onImageClick?: (insertHtml: (html: string) => void) => void
+  /** Toolbar tooltips and the link prompt. Thai by default. */
+  locale?: 'th' | 'en'
 }
 
 export default function RichEditor({
   value,
   initialValue,
   onChange,
-  placeholder = 'อธิบายรายละเอียด...',
+  placeholder,
   minHeight = 200,
   showImage = false,
   onImageClick,
+  locale = 'th',
 }: RichEditorProps) {
+  // The toolbar is icon-only, so these tooltips are the only text explaining
+  // what each button does — which makes them the whole affordance for anyone
+  // who does not recognise the icon, not decoration.
+  const L = locale === 'en'
+    ? { ph: 'Describe the details…', url: 'Enter a URL:', left: 'Align left', center: 'Align centre',
+        right: 'Align right', bullet: 'Bulleted list', number: 'Numbered list', bold: 'Bold',
+        italic: 'Italic', underline: 'Underline', link: 'Link', clear: 'Clear formatting',
+        undo: 'Undo', redo: 'Redo', image: 'Insert image', divider: 'Divider' }
+    : { ph: 'อธิบายรายละเอียด...', url: 'ใส่ URL:', left: 'จัดชิดซ้าย', center: 'จัดกึ่งกลาง',
+        right: 'จัดชิดขวา', bullet: 'รายการ (•)', number: 'รายการ (1.)', bold: 'ตัวหนา',
+        italic: 'ตัวเอียง', underline: 'ขีดเส้นใต้', link: 'ลิงก์', clear: 'ล้างรูปแบบ',
+        undo: 'ย้อนกลับ', redo: 'ทำซ้ำ', image: 'แทรกรูปภาพ', divider: 'เส้นคั่น' }
+  const ph = placeholder ?? L.ph
   const ref = useRef<HTMLDivElement>(null)
   const [fmts, setFmts] = useState<Set<string>>(new Set())
 
@@ -84,7 +100,7 @@ export default function RichEditor({
   const insertHtml = useCallback((html: string) => exec('insertHTML', html), [exec])
 
   const handleLink = useCallback(() => {
-    const url = prompt('ใส่ URL:', 'https://')
+    const url = prompt(L.url, 'https://')
     if (url) exec('createLink', url)
   }, [exec])
 
@@ -173,33 +189,33 @@ export default function RichEditor({
         <Sep />
 
         {/* Alignment */}
-        {btn('left',   on('left'),   'จัดชิดซ้าย',   'format_align_left',    () => exec('justifyLeft'))}
-        {btn('center', on('center'), 'จัดกึ่งกลาง',  'format_align_center',  () => exec('justifyCenter'))}
-        {btn('right',  on('right'),  'จัดชิดขวา',    'format_align_right',   () => exec('justifyRight'))}
+        {btn('left',   on('left'),   L.left,   'format_align_left',    () => exec('justifyLeft'))}
+        {btn('center', on('center'), L.center,  'format_align_center',  () => exec('justifyCenter'))}
+        {btn('right',  on('right'),  L.right,    'format_align_right',   () => exec('justifyRight'))}
 
         <Sep />
 
         {/* Lists */}
-        {btn('ul', on('ul'), 'รายการ (•)',  'format_list_bulleted', () => exec('insertUnorderedList'))}
-        {btn('ol', on('ol'), 'รายการ (1.)', 'format_list_numbered', () => exec('insertOrderedList'))}
+        {btn('ul', on('ul'), L.bullet,  'format_list_bulleted', () => exec('insertUnorderedList'))}
+        {btn('ol', on('ol'), L.number, 'format_list_numbered', () => exec('insertOrderedList'))}
 
         <Sep />
 
         {/* Link */}
-        {btn('link', false, 'ใส่ลิงก์', 'link', handleLink)}
+        {btn('link', false, L.link, 'link', handleLink)}
 
         {/* Image — blog only */}
         {showImage && onImageClick &&
-          btn('img', false, 'แทรกรูปภาพ (WebP)', 'add_photo_alternate', () => onImageClick(insertHtml))
+          btn('img', false, L.image, 'add_photo_alternate', () => onImageClick(insertHtml))
         }
 
         {/* HR */}
-        {btn('hr', false, 'เส้นคั่น', 'horizontal_rule', () => exec('insertHorizontalRule'))}
+        {btn('hr', false, L.divider, 'horizontal_rule', () => exec('insertHorizontalRule'))}
 
         <Sep />
 
         {/* Clear / Undo / Redo */}
-        {btn('clear', false, 'ล้างรูปแบบ', 'format_clear', () => exec('removeFormat'), true)}
+        {btn('clear', false, L.clear, 'format_clear', () => exec('removeFormat'), true)}
         {btn('undo',  false, 'Undo (Ctrl+Z)', 'undo',  () => exec('undo'),  true)}
         {btn('redo',  false, 'Redo (Ctrl+Y)', 'redo',  () => exec('redo'),  true)}
       </div>
@@ -209,7 +225,7 @@ export default function RichEditor({
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        data-placeholder={placeholder}
+        data-placeholder={ph}
         onInput={() => { onChange(ref.current?.innerHTML ?? ''); refreshFmts() }}
         onKeyUp={refreshFmts}
         onMouseUp={refreshFmts}

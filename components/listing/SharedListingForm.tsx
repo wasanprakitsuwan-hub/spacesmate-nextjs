@@ -355,6 +355,7 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange, locale 
         valueId={detail.property_name_id}
         placeholder={isHouse ? t.projectPlaceholder : t.condoPlaceholder}
         onChange={(name, id) => { u('property_name', name); u('property_name_id', id) }}
+        locale={locale}
       />
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
@@ -1367,6 +1368,7 @@ export function ListingFormFields({
             onChange={v => onChange('description_th', v)}
             placeholder={t.descPlaceholder}
             minHeight={220}
+            locale={locale}
           />
         ) : (
           <RichEditor
@@ -1375,6 +1377,7 @@ export function ListingFormFields({
             onChange={v => onChange('description_en', v)}
             placeholder="Describe the room, location, facilities and highlights in English..."
             minHeight={220}
+            locale={locale}
           />
         )}
       </div>

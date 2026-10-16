@@ -56,13 +56,13 @@ function toEmbedUrl(raw: string): string | null {
   return null
 }
 
-export default function PropertyVideo({ url, title }: Props) {
+export default function PropertyVideo({ url, title, locale = 'th' }: Props & { locale?: 'th' | 'en' }) {
   if (!url) return null
 
   const embed = toEmbedUrl(url)
 
   return (
-    <section style={{ marginTop: 28 }} aria-label="วิดีโอทรัพย์สิน">
+    <section style={{ marginTop: 28 }} aria-label={locale === 'en' ? 'Property video' : 'วิดีโอทรัพย์สิน'}>
       <h2
         style={{
           fontSize: 18,
@@ -80,7 +80,7 @@ export default function PropertyVideo({ url, title }: Props) {
         >
           videocam
         </span>
-        วิดีโอ
+        {locale === 'en' ? 'Video' : 'วิดีโอ'}
       </h2>
 
       <div
@@ -97,7 +97,7 @@ export default function PropertyVideo({ url, title }: Props) {
         {embed ? (
           <iframe
             src={embed}
-            title={title ? `วิดีโอ — ${title}` : 'วิดีโอทรัพย์สิน'}
+            title={locale === 'en' ? (title ? `Video — ${title}` : 'Property video') : (title ? `วิดีโอ — ${title}` : 'วิดีโอทรัพย์สิน')}
             loading="lazy"
             allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen

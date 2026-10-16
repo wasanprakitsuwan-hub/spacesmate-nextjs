@@ -10,7 +10,7 @@ interface Props {
   featured: boolean
 }
 
-export default function PropertyGallery({ images, title, priceDisplay, typeLabel, featured }: Props) {
+export default function PropertyGallery({ images, title, priceDisplay, typeLabel, featured, locale = 'th' }: Props & { locale?: 'th' | 'en' }) {
   const [active, setActive]         = useState(0)
   const [lightboxOpen, setLightbox] = useState(false)
   const [lightboxIdx, setLbIdx]     = useState(0)
@@ -42,7 +42,7 @@ export default function PropertyGallery({ images, title, priceDisplay, typeLabel
             <img
               key={active}
               src={images[active]}
-              alt={`${title} — รูปที่ ${active + 1}`}
+              alt={locale === 'en' ? `${title} — photo ${active + 1}` : `${title} — รูปที่ ${active + 1}`}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
           ) : (
@@ -90,12 +90,12 @@ export default function PropertyGallery({ images, title, priceDisplay, typeLabel
             <>
               <button
                 onClick={e => { e.stopPropagation(); prev() }}
-                aria-label="รูปก่อนหน้า"
+                aria-label={locale === 'en' ? 'Previous photo' : 'รูปก่อนหน้า'}
                 style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(6px)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}
               >‹</button>
               <button
                 onClick={e => { e.stopPropagation(); next() }}
-                aria-label="รูปถัดไป"
+                aria-label={locale === 'en' ? 'Next photo' : 'รูปถัดไป'}
                 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(6px)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}
               >›</button>
             </>
@@ -109,7 +109,7 @@ export default function PropertyGallery({ images, title, priceDisplay, typeLabel
               <button
                 key={i}
                 onClick={() => setActive(i)}
-                aria-label={`ดูรูปที่ ${i + 1}`}
+                aria-label={locale === 'en' ? `View photo ${i + 1}` : `ดูรูปที่ ${i + 1}`}
                 style={{
                   flexShrink: 0, width: 80, height: 56, border: 'none', padding: 0, cursor: 'pointer',
                   borderRadius: 6, overflow: 'hidden', scrollSnapAlign: 'start',
@@ -153,7 +153,7 @@ export default function PropertyGallery({ images, title, priceDisplay, typeLabel
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '85vh', position: 'relative' }}>
             <img
               src={images[lightboxIdx]}
-              alt={`${title} รูปที่ ${lightboxIdx + 1}`}
+              alt={locale === 'en' ? `${title} photo ${lightboxIdx + 1}` : `${title} รูปที่ ${lightboxIdx + 1}`}
               style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: 12, objectFit: 'contain', display: 'block' }}
             />
           </div>

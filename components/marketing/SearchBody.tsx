@@ -11,7 +11,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 // components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
 import { localeHref } from '@/lib/routes-i18n'
-import { PRICE_RANGES, type Property } from '@/lib/property-data'
+import { PRICE_RANGES, priceRangeLabel, type Property } from '@/lib/property-data'
 
 // ── Haversine distance (km) between two lat/lng points ───────────────────────
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -287,7 +287,7 @@ function SearchContent({ locale }: { locale: Locale }) {
                   return (
                     <button key={i} onClick={() => setPriceRangeIdx(i)}
                       style={{ textAlign: 'left', padding: '9px 12px', borderRadius: 10, fontSize: 14, cursor: 'pointer', transition: 'all .2s', border: `1px solid ${on ? '#048c73' : '#eef0ef'}`, background: on ? '#eaf6f1' : '#fff', color: on ? '#02402e' : '#475569', fontWeight: on ? 600 : 400 }}>
-                      {r.label}
+                      {priceRangeLabel(r, locale)}
                     </button>
                   )
                 })}

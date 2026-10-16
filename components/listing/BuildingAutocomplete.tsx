@@ -27,7 +27,7 @@ type NameRow = { id: string; name_th: string; name_en: string | null; slug?: str
 const norm = (s: string) => String(s || '').toLowerCase().replace(/\s+/g, '')
 
 export default function BuildingAutocomplete({
-  value, valueId, onChange, placeholder, inputStyle, labelStyle, label,
+  value, valueId, onChange, placeholder, inputStyle, labelStyle, label, locale = 'th',
 }: {
   value: string
   valueId: string
@@ -36,6 +36,7 @@ export default function BuildingAutocomplete({
   inputStyle?: React.CSSProperties
   labelStyle?: React.CSSProperties
   label?: string
+  locale?: 'th' | 'en'
 }) {
   const [names, setNames]   = useState<NameRow[]>([])
   const [open, setOpen]     = useState(false)
@@ -94,12 +95,16 @@ export default function BuildingAutocomplete({
       {linked && (
         <p style={{ fontSize: 11.5, color: '#048c73', margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
           <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
-          เชื่อมกับอาคารในระบบแล้ว — ประกาศนี้จะแสดงในหน้าอาคาร
+          {locale === 'en'
+                ? 'Linked to a building — this listing will appear on that building’s page'
+                : 'เชื่อมกับอาคารในระบบแล้ว — ประกาศนี้จะแสดงในหน้าอาคาร'}
         </p>
       )}
       {!linked && query.trim() !== '' && (
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '5px 0 0' }}>
-          ยังไม่ได้เลือกจากรายการ — บันทึกได้ แต่จะยังไม่มีหน้าอาคาร
+          {locale === 'en'
+                ? 'Not picked from the list — you can still save, but there will be no building page'
+                : 'ยังไม่ได้เลือกจากรายการ — บันทึกได้ แต่จะยังไม่มีหน้าอาคาร'}
         </p>
       )}
 
