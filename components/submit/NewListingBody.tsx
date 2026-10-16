@@ -169,7 +169,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
       if (!authSess?.access_token) {
         trackEvent('listing_draft_needs_account', { package_id: form.package_type })
         sessionStorage.setItem('spacesmate_pending_listing', JSON.stringify(form))
-        window.location.href = `/login?redirect=${encodeURIComponent(lp('/submit/new'))}`
+        window.location.href = `${lp('/login')}?redirect=${encodeURIComponent(lp('/submit/new'))}`
         return
       }
 

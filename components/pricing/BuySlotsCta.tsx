@@ -71,7 +71,7 @@ export default function BuySlotsCta({
         // intent and purchase is not silently blamed on price.
         trackEvent('slot_checkout_needs_account', { package_id: pkg, quantity: qty, payment_method: method })
         // Back to the pricing page they were reading, not the Thai one.
-        router.push(`/login?redirect=${encodeURIComponent(localeHref('/pricing', locale))}`)
+        router.push(`${localeHref('/login', locale)}?redirect=${encodeURIComponent(localeHref('/pricing', locale))}`)
         return
       }
 

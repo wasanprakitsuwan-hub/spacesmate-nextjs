@@ -87,6 +87,25 @@ export const AUTH_T = {
     signingUp: 'กำลังสมัคร...',
     haveAccount: 'มีบัญชีแล้ว?',
 
+
+    // ── The standalone /login page ──
+    loginSub: 'เข้าสู่ระบบเพื่อจัดการประกาศของคุณ',
+    signupSub: 'สมัครสมาชิกเพื่อลงประกาศฟรี',
+    signingUpLong: 'กำลังสมัครสมาชิก...',
+    checkEmailSent: 'เราได้ส่งลิงก์ยืนยันบัญชีไปที่',
+    checkEmailAction: 'กรุณาคลิกลิงก์ในอีเมลเพื่อยืนยันบัญชีก่อนเข้าสู่ระบบ',
+    checkEmailSpam: 'หากไม่พบอีเมล ให้ตรวจสอบในโฟลเดอร์ Spam',
+    /**
+     * NOTE: this page enforces 6 characters while the modal enforces 8, against
+     * the same Supabase account. Flagged on 16 Oct 2026 — the copy matches the
+     * code as it stands rather than papering over the difference.
+     */
+    pwdTooShort6: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    min6: 'อย่างน้อย 6 ตัวอักษร',
+    fullNameLogin: 'ชื่อ-นามสกุล',
+    googleContinue: 'ดำเนินการต่อด้วย Google',
+    googleFailed: 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ',
+    connecting: 'กำลังเชื่อมต่อ…',
     // ── Consent. Changes in both languages, same commit. ──
     consentLead: 'การสมัครสมาชิกถือว่าคุณยอมรับ',
     terms: 'เงื่อนไขการใช้งาน',
@@ -149,6 +168,20 @@ export const AUTH_T = {
     confirmPwd: 'Confirm password',
     signingUp: 'Creating your account…',
     haveAccount: 'Already have an account?',
+
+
+    loginSub: 'Sign in to manage your listings',
+    signupSub: 'Create an account and list for free',
+    signingUpLong: 'Creating your account…',
+    checkEmailSent: 'We have sent a confirmation link to',
+    checkEmailAction: 'Click the link in that email to confirm your account before signing in',
+    checkEmailSpam: 'If it has not arrived, check your Spam folder',
+    pwdTooShort6: 'Your password needs at least 6 characters',
+    min6: 'At least 6 characters',
+    fullNameLogin: 'Full name',
+    googleContinue: 'Continue with Google',
+    googleFailed: 'Could not sign in with Google',
+    connecting: 'Connecting…',
 
     consentLead: 'By creating an account you accept our',
     terms: 'Terms of Use',

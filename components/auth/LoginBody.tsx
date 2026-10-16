@@ -1,0 +1,273 @@
+'use client'
+
+import { useState } from 'react'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase'
+import { AUTH_T, type Locale } from '@/lib/auth-i18n'
+import { localeHref } from '@/lib/routes-i18n'
+
+export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
+  const t = AUTH_T[locale]
+  const [tab,      setTab]      = useState<'login' | 'signup'>('login')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState('')
+  const router = useRouter()
+
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPwd,   setLoginPwd]   = useState('')
+
+  // Signup fields
+  const [signName,  setSignName]  = useState('')
+  const [signEmail, setSignEmail] = useState('')
+  const [signPwd,   setSignPwd]   = useState('')
+  const [signPwd2,  setSignPwd2]  = useState('')
+
+  function switchTab(t: 'login' | 'signup') {
+    setTab(t); setError(''); setSuccess('')
+  }
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try {
+      const supabase = createBrowserClient()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: loginEmail, password: loginPwd,
+      })
+      if (authError) {
+        setError(t.badCredentials)
+      } else if (data.user) {
+        // Use service-role API to bypass RLS
+        const r = await fetch('/api/auth/role', {
+          headers: { Authorization: `Bearer ${data.session?.access_token}` },
+        })
+        const { role } = await r.json()
+
+        // Honour ?redirect= so someone sent here mid-task (buying slots from
+        // /pricing, for example) lands back where they were rather than on a
+        // dashboard, having to find their way again.
+        // Only same-site paths — an open redirect is a phishing primitive.
+        const wanted = new URLSearchParams(window.location.search).get('redirect')
+        const safe = wanted && wanted.startsWith('/') && !wanted.startsWith('//') ? wanted : null
+
+        router.push(safe ?? (role === 'admin' || role === 'super_admin' ? '/dashboard' : '/owner-dashboard'))
+      }
+    } catch {
+      setError(t.genericError)
+    }
+    setLoading(false)
+  }
+
+  // ── Sign Up ───────────────────────────────────────────────────────────────
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    if (signPwd !== signPwd2) { setError(t.pwdMismatch); return }
+    if (signPwd.length < 6)  { setError(t.pwdTooShort6); return }
+    setLoading(true); setError('')
+    try {
+      const supabase = createBrowserClient()
+      const { data, error: authErr } = await supabase.auth.signUp({
+        email: signEmail, password: signPwd,
+        options: { data: { full_name: signName } },
+      })
+      if (authErr) {
+        setError(authErr.message || t.signupFailedShort)
+      } else if (data.user) {
+        // Profile is created automatically via DB trigger on auth.users insert.
+        // Show the email confirmation screen immediately.
+        setSuccess(signEmail)
+      }
+    } catch {
+      setError(t.genericError)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-spacemate-bgLight flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/">
+            <span className="text-2xl font-bold text-spacemate-brandDark tracking-tight">
+              Spaces<span className="text-spacemate-brandTeal">Mate</span>
+            </span>
+          </Link>
+          <p className="text-gray-400 text-sm mt-2">
+            {tab === 'login' ? t.loginSub : t.signupSub}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-spacemate-borderLight shadow-premium overflow-hidden">
+
+          {/* Tabs */}
+          <div className="flex border-b border-spacemate-borderLight">
+            {(['login', 'signup'] as const).map(tb => (
+              <button
+                key={tb}
+                onClick={() => switchTab(tb)}
+                className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
+                  tab === tb
+                    ? 'text-spacemate-brandDark border-b-2 border-spacemate-brandDark bg-white'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {tb === 'login' ? t.login : t.signup}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-7">
+            {/* Google above the fold on both tabs — the one-tap path should be
+                visible before anyone starts typing a password. */}
+            <GoogleSignInButton
+              locale={locale}
+              label={tab === 'login' ? t.googleLogin : t.googleSignup}
+            />
+            <div className="flex items-center gap-3 my-5">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">{t.or}</span>
+              <span className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* ── LOGIN FORM ── */}
+            {tab === 'login' && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="label block mb-1.5">{t.email}</label>
+                  <input
+                    type="email" value={loginEmail}
+                    onChange={e => { setLoginEmail(e.target.value); setError('') }}
+                    required placeholder="email@example.com"
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="label">{t.password}</label>
+                    <a href="#" className="text-xs text-spacemate-brandTeal hover:underline">{t.forgotPwd}</a>
+                  </div>
+                  <input
+                    type="password" value={loginPwd}
+                    onChange={e => { setLoginPwd(e.target.value); setError('') }}
+                    required placeholder="••••••••"
+                    className="input-field w-full"
+                  />
+                </div>
+                {error && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <p className="text-amber-700 text-xs">{error}</p>
+                  </div>
+                )}
+                <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
+                  {loading ? t.loggingIn : t.login}
+                </button>
+                <p className="text-center text-sm text-gray-400 pt-1">
+                  {t.noAccount}{' '}
+                  <button type="button" onClick={() => switchTab('signup')} className="text-spacemate-brandTeal font-medium hover:underline">
+                    {t.signupFree}
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {/* ── SIGNUP SUCCESS ── */}
+            {tab === 'signup' && success && (
+              <div className="text-center py-4 space-y-4">
+                <div><span className="msym" style={{ fontSize: 44, color: '#02402e', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>mail</span></div>
+                <h3 className="text-lg font-bold text-spacemate-brandDark">{t.checkEmailTitle}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {t.checkEmailSent}<br/>
+                  <span className="font-semibold text-spacemate-brandDark">{success}</span>
+                </p>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  {t.checkEmailAction}<br/>
+                  {t.checkEmailSpam}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setSuccess(''); switchTab('login') }}
+                  className="btn-primary w-full"
+                >
+                  {t.backToLogin}
+                </button>
+              </div>
+            )}
+
+            {/* ── SIGNUP FORM ── */}
+            {tab === 'signup' && !success && (
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div>
+                  <label className="label block mb-1.5">{t.fullNameLogin}</label>
+                  <input
+                    type="text" value={signName}
+                    onChange={e => { setSignName(e.target.value); setError('') }}
+                    required placeholder={t.fullNamePlaceholder}
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t.email}</label>
+                  <input
+                    type="email" value={signEmail}
+                    onChange={e => { setSignEmail(e.target.value); setError('') }}
+                    required placeholder="email@example.com"
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t.password}</label>
+                  <input
+                    type="password" value={signPwd}
+                    onChange={e => { setSignPwd(e.target.value); setError('') }}
+                    required placeholder={t.min6}
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t.confirmPwd}</label>
+                  <input
+                    type="password" value={signPwd2}
+                    onChange={e => { setSignPwd2(e.target.value); setError('') }}
+                    required placeholder="••••••••"
+                    className="input-field w-full"
+                  />
+                </div>
+                {error && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <p className="text-amber-700 text-xs">{error}</p>
+                  </div>
+                )}
+                {success && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                    <p className="text-green-700 text-xs">{success}</p>
+                  </div>
+                )}
+                <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
+                  {loading ? t.signingUpLong : t.signupFree}
+                </button>
+                <p className="text-center text-sm text-gray-400 pt-1">
+                  {t.haveAccount}{' '}
+                  <button type="button" onClick={() => switchTab('login')} className="text-spacemate-brandTeal font-medium hover:underline">
+                    {t.login}
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-gray-300 mt-6">
+          © 2026 Space Works Co., Ltd. ·{' '}
+          <Link href={localeHref('/privacy', locale)} className="hover:underline">{t.privacy}</Link>
+        </p>
+      </div>
+    </div>
+  )
+}

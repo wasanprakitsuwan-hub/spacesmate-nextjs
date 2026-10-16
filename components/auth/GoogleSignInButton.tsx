@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
+import { AUTH_T, type Locale } from '@/lib/auth-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 
 /**
  * Sign in / register with Google.
@@ -33,12 +35,15 @@ import { trackEvent } from '@/lib/analytics'
  *   user lands. Adding a /auth/callback route would do nothing here.
  */
 export default function GoogleSignInButton({
-  redirectTo = '/owner-dashboard',
-  label = 'ดำเนินการต่อด้วย Google',
+  redirectTo,
+  label,
+  locale = 'th',
 }: {
   redirectTo?: string
   label?: string
+  locale?: Locale
 }) {
+  const t = AUTH_T[locale]
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
@@ -46,7 +51,7 @@ export default function GoogleSignInButton({
     setLoading(true)
     setError('')
     try {
-      trackEvent('sign_in_google_start', { redirect_to: redirectTo })
+      trackEvent('sign_in_google_start', { redirect_to: (redirectTo ?? localeHref('/owner-dashboard', locale)) })
 
       // Marker so the landing page can tell a brand-new account from a returning
       // one. OAuth returns no "is this a signup" flag, and firing sign_up on
@@ -56,7 +61,7 @@ export default function GoogleSignInButton({
       const { error: err } = await createBrowserClient().auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${redirectTo}`,
+          redirectTo: `${window.location.origin}${(redirectTo ?? localeHref('/owner-dashboard', locale))}`,
           queryParams: { prompt: 'select_account' },
         },
       })
@@ -64,7 +69,7 @@ export default function GoogleSignInButton({
       // Success navigates away; no state to reset.
     } catch (err) {
       sessionStorage.removeItem('sm_google_auth_pending')
-      setError(err instanceof Error ? err.message : 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : t.googleFailed)
       setLoading(false)
     }
   }
@@ -92,7 +97,7 @@ export default function GoogleSignInButton({
           <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28l-6.6 5.1A20 20 0 0 0 24 44z"/>
           <path fill="#1976D2" d="M43.6 20.5H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2c-.4.4 6.6-4.8 6.6-14.3 0-1.3-.1-2.3-.4-4.5z"/>
         </svg>
-        {loading ? 'กำลังเชื่อมต่อ…' : label}
+        {loading ? t.connecting : (label ?? t.googleContinue)}
       </button>
 
       {error && (

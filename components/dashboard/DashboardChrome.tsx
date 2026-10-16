@@ -25,7 +25,7 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
     const supabase = createBrowserClient()
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace('/login'); return }
+      if (!session) { router.replace(localeHref('/login', locale)); return }
       setUserEmail(session.user.email ?? '')
 
       // If admin/super_admin → send to admin dashboard (use service-role API to bypass RLS)
@@ -42,7 +42,7 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
-        router.replace('/login')
+        router.replace(localeHref('/login', locale))
       } else if (event === 'TOKEN_REFRESHED' && session) {
         setUserEmail(session.user.email ?? '')
       }
@@ -54,7 +54,7 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
   async function handleLogout() {
     const supabase = createBrowserClient()
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push(localeHref('/login', locale))
   }
 
   if (!authReady) {
