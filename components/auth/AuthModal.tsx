@@ -18,10 +18,20 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 import GoogleSignInButton from './GoogleSignInButton'
+import { AUTH_T, type Locale } from '@/lib/auth-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 
 interface Props {
   onClose: () => void
   defaultTab?: 'login' | 'signup'
+  /**
+   * Which language the person is reading. Thai by default; Navbar passes the
+   * locale it already derives from the URL.
+   *
+   * This also decides which Terms and Privacy Policy the consent line links to.
+   * See the header of lib/auth-i18n.
+   */
+  locale?: Locale
 }
 
 const INP: React.CSSProperties = {
@@ -81,7 +91,8 @@ function TurnstileWidget({ onToken }: { onToken: (t: string) => void }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
+export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th' }: Props) {
+  const t = AUTH_T[locale]
   const router  = useRouter()
   const overlay = useRef<HTMLDivElement>(null)
 
@@ -143,26 +154,26 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
     const hasNumber  = /[0-9]/.test(pwd)
     const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
     if (pwd.length < 8 || !hasLetter || !hasNumber)
-      return { level: 1, label: 'อ่อน', color: '#ef4444' }
+      return { level: 1, label: t.pwdWeak, color: '#ef4444' }
     if (hasSpecial || pwd.length >= 12)
-      return { level: 3, label: 'แข็งแกร่ง', color: '#16a34a' }
-    return { level: 2, label: 'ปานกลาง', color: '#d97f11' }
+      return { level: 3, label: t.pwdStrong, color: '#16a34a' }
+    return { level: 2, label: t.pwdMedium, color: '#d97f11' }
   }
 
   // ── Forgot Password ────────────────────────────────────────────────────────
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault()
-    if (!forgotEmail) { setError('กรุณากรอกอีเมล'); return }
+    if (!forgotEmail) { setError(t.needEmail); return }
     setLoading(true); setError('')
     try {
       const supabase = createBrowserClient()
       const redirectTo = `${window.location.origin}/reset-password`
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo })
       if (resetErr) throw resetErr
-      setSuccess(`ส่งลิงก์รีเซ็ตรหัสผ่านไปที่ ${forgotEmail} แล้ว — กรุณาตรวจสอบอีเมลของคุณ`)
+      setSuccess(t.resetSent(forgotEmail))
       setForgotPwd(false)
     } catch (err: any) {
-      setError(err.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+      setError(err.message ?? t.genericError)
     }
     setLoading(false)
   }
@@ -180,13 +191,13 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   // ── Login ──────────────────────────────────────────────────────────────────
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (!loginEmail || !loginPwd) { setError('กรุณากรอกอีเมลและรหัสผ่าน'); return }
+    if (!loginEmail || !loginPwd) { setError(t.needEmailAndPwd); return }
     setLoading(true); setError('')
     try {
       const supabase = createBrowserClient()
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPwd })
       if (authErr) {
-        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
+        setError(t.badCredentials)
       } else if (data.user) {
         onClose()
         const url = await getDashboardUrl(data.user.id)
@@ -194,7 +205,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
         router.refresh()
       }
     } catch {
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      setError(t.genericError)
     }
     setLoading(false)
   }
@@ -202,13 +213,13 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
   // ── Sign Up ────────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
-    if (!signName.trim() || !signEmail.trim() || !signPhone || !signPwd) { setError('กรุณากรอกข้อมูลให้ครบ'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signEmail.trim())) { setError('กรุณากรอกอีเมลที่ถูกต้อง เช่น name@email.com'); return }
+    if (!signName.trim() || !signEmail.trim() || !signPhone || !signPwd) { setError(t.needAllFields); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signEmail.trim())) { setError(t.badEmail); return }
     const cleanPhone = signPhone.replace(/[\s\-]/g, '')
-    if (!/^0[6-9]\d{8}$/.test(cleanPhone)) { setError('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณากรอกเบอร์มือถือ เช่น 081-234-5678'); return }
-    if (signPwd !== signPwd2) { setError('รหัสผ่านไม่ตรงกัน'); return }
-    if (signPwd.length < 8)  { setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return }
-    if (!/[a-zA-Z]/.test(signPwd) || !/[0-9]/.test(signPwd)) { setError('รหัสผ่านต้องมีทั้งตัวอักษรและตัวเลข เช่น SpacesMate88'); return }
+    if (!/^0[6-9]\d{8}$/.test(cleanPhone)) { setError(t.badPhone); return }
+    if (signPwd !== signPwd2) { setError(t.pwdMismatch); return }
+    if (signPwd.length < 8)  { setError(t.pwdTooShort); return }
+    if (!/[a-zA-Z]/.test(signPwd) || !/[0-9]/.test(signPwd)) { setError(t.pwdNeedsBoth); return }
 
     setLoading(true); setError('')
 
@@ -226,7 +237,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
       const preData = await preRes.json() as { ok?: boolean; error?: string }
 
       if (!preRes.ok || !preData.ok) {
-        setError(preData.error ?? 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่')
+        setError(preData.error ?? t.signupFailed)
         setLoading(false)
         return
       }
@@ -243,7 +254,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
         },
       })
       if (authErr) {
-        setError(authErr.message || 'สมัครสมาชิกไม่สำเร็จ')
+        setError(authErr.message || t.signupFailedShort)
       } else if (data.user) {
         // ── Tracking: GA4 sign_up + Facebook Pixel CompleteRegistration ──
         trackEvent('sign_up', { method: 'email' })
@@ -253,7 +264,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
         setConfirmedEmail(signEmail)
       }
     } catch {
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      setError(t.genericError)
     }
     setLoading(false)
   }
@@ -278,15 +289,15 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
           </div>
           {/* Tabs */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 3, gap: 3 }}>
-            {(['login', 'signup'] as const).map(t => (
-              <button key={t} onClick={() => switchTab(t)} style={{
+            {(['login', 'signup'] as const).map(tb => (
+              <button key={tb} onClick={() => switchTab(tb)} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 fontFamily: 'inherit', fontSize: 13.5, fontWeight: 600,
-                background: tab === t ? '#fff' : 'transparent',
-                color: tab === t ? '#02402e' : 'rgba(255,255,255,0.7)',
+                background: tab === tb ? '#fff' : 'transparent',
+                color: tab === tb ? '#02402e' : 'rgba(255,255,255,0.7)',
                 transition: 'all .18s',
               }}>
-                {t === 'login' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
+                {tb === 'login' ? t.login : t.signup}
               </button>
             ))}
           </div>
@@ -300,44 +311,44 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               <div style={{ width: 68, height: 68, borderRadius: 20, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
                 <span className="msym" style={{ fontSize: 38, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>mark_email_unread</span>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>ตรวจสอบอีเมลของคุณ</p>
-              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 4px', lineHeight: 1.7 }}>เราส่งลิงก์ยืนยันไปที่</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>{t.checkEmailTitle}</p>
+              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 4px', lineHeight: 1.7 }}>{t.checkEmailSentTo}</p>
               <p style={{ fontSize: 13.5, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{confirmedEmail}</p>
               <p style={{ fontSize: 13, color: '#475569', margin: '0 0 20px', lineHeight: 1.8 }}>
-                กดลิงก์ในอีเมลเพื่อยืนยันตัวตน<br />และระบบจะพาคุณเข้า Owner Dashboard ทันที
+                {t.checkEmailBodyA}<br />{t.checkEmailBodyB}
               </p>
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 12.5, color: '#92400e', marginBottom: 20, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span className="msym" style={{ fontSize: 15, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0, marginTop: 1 }}>tips_and_updates</span>
-                <span>ไม่ได้รับอีเมล? กรุณาตรวจสอบโฟลเดอร์ <strong>Spam</strong> หรือ <strong>Junk</strong></span>
+                <span>{t.checkSpamA}<strong>Spam</strong>{t.checkSpamB}<strong>Junk</strong></span>
               </div>
               <button onClick={onClose} style={{ width: '100%', padding: '12px', borderRadius: 14, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                ปิด
+                {t.close}
               </button>
             </div>
           ) : success ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <p style={{ margin: '0 0 10px' }}><span className="msym" style={{ fontSize: 36, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span></p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>สำเร็จ!</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>{t.success}</p>
               <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{success}</p>
             </div>
           ) : forgotPwd ? (
             <form onSubmit={handleForgotPassword}>
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
                 <span className="msym" style={{ fontSize: 36, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>lock_reset</span>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '8px 0 4px' }}>รีเซ็ตรหัสผ่าน</p>
-                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>กรอกอีเมลที่ลงทะเบียนไว้ — เราจะส่งลิงก์ให้คุณ</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '8px 0 4px' }}>{t.resetTitle}</p>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>{t.resetSub}</p>
               </div>
               <div style={FG}>
-                <label style={LBL}>อีเมล</label>
+                <label style={LBL}>{t.email}</label>
                 <input style={INP} type="email" value={forgotEmail} onChange={e => { setForgotEmail(e.target.value); setError('') }} placeholder="email@example.com" autoFocus autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
               <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', borderRadius: 14, border: 'none', background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginTop: 4 }}>
-                {loading ? 'กำลังส่ง...' : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}
+                {loading ? t.sending : t.sendResetLink}
               </button>
               <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '14px 0 0' }}>
                 <button type="button" onClick={() => { setForgotPwd(false); setError('') }} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
-                  กลับไปเข้าสู่ระบบ
+                  {t.backToLogin}
                 </button>
               </p>
             </form>
@@ -345,21 +356,21 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
             <>
               {/* Google first, deliberately. The one-tap path should be the
                   one people see before they start typing a password. */}
-              <GoogleSignInButton label="เข้าสู่ระบบด้วย Google" />
+              <GoogleSignInButton label={t.googleLogin} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
                 <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>หรือ</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.or}</span>
                 <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
               </div>
             <form onSubmit={handleLogin}>
               <div style={FG}>
-                <label style={LBL}>อีเมล</label>
+                <label style={LBL}>{t.email}</label>
                 <input style={INP} type="email" value={loginEmail} onChange={e => { setLoginEmail(e.target.value); setError('') }} placeholder="email@example.com" autoFocus autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={{ ...FG, marginBottom: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <label style={{ ...LBL, marginBottom: 0 }}>รหัสผ่าน</label>
-                  <button type="button" onClick={() => { setForgotPwd(true); setError(''); setForgotEmail(loginEmail) }} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>ลืมรหัสผ่าน?</button>
+                  <label style={{ ...LBL, marginBottom: 0 }}>{t.password}</label>
+                  <button type="button" onClick={() => { setForgotPwd(true); setError(''); setForgotEmail(loginEmail) }} style={{ fontSize: 12, color: '#048c73', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>{t.forgotPwd}</button>
                 </div>
                 <div style={{ position: 'relative' }}>
                   <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={loginPwd} onChange={e => { setLoginPwd(e.target.value); setError('') }} placeholder="••••••••" autoComplete="current-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
@@ -377,13 +388,13 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit', marginTop: 8, letterSpacing: 0.2,
               }}>
-                {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+                {loading ? t.loggingIn : t.login}
               </button>
 
               <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '16px 0 0' }}>
-                ยังไม่มีบัญชี?{' '}
+                {t.noAccount}{' '}
                 <button type="button" onClick={() => switchTab('signup')} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
-                  สมัครสมาชิกฟรี
+                  {t.signupFree}
                 </button>
               </p>
             </form>
@@ -392,10 +403,10 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
             <>
               {/* Google first, deliberately. The one-tap path should be the
                   one people see before they start typing a password. */}
-              <GoogleSignInButton label="สมัครด้วย Google — ไม่ต้องยืนยันอีเมล" />
+              <GoogleSignInButton label={t.googleSignup} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
                 <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>หรือ</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.or}</span>
                 <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
               </div>
             <form onSubmit={handleSignup}>
@@ -414,21 +425,21 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
               </div>
 
               <div style={FG}>
-                <label style={LBL}>ชื่อ-นามสกุล</label>
-                <input style={INP} type="text" value={signName} onChange={e => { setSignName(e.target.value); setError('') }} placeholder="สมชาย ใจดี" autoFocus autoComplete="name" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+                <label style={LBL}>{t.fullName}</label>
+                <input style={INP} type="text" value={signName} onChange={e => { setSignName(e.target.value); setError('') }} placeholder={t.fullNamePlaceholder} autoFocus autoComplete="name" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
-                <label style={LBL}>อีเมล <span style={{ color: '#e53e3e' }}>*</span></label>
+                <label style={LBL}>{t.email} <span style={{ color: '#e53e3e' }}>*</span></label>
                 <input style={INP} type="email" value={signEmail} onChange={e => { setSignEmail(e.target.value); setError('') }} placeholder="email@example.com" autoComplete="email" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
-                <label style={LBL}>เบอร์โทรศัพท์ <span style={{ color: '#e53e3e' }}>*</span></label>
+                <label style={LBL}>{t.phone} <span style={{ color: '#e53e3e' }}>*</span></label>
                 <input style={INP} type="tel" value={signPhone} onChange={e => { setSignPhone(e.target.value); setError('') }} placeholder="08X-XXX-XXXX" autoComplete="tel" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
               </div>
               <div style={FG}>
-                <label style={LBL}>รหัสผ่าน</label>
+                <label style={LBL}>{t.password}</label>
                 <div style={{ position: 'relative' }}>
-                  <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={signPwd} onChange={e => { setSignPwd(e.target.value); setError('') }} placeholder="อย่างน้อย 8 ตัวอักษร ผสมตัวเลข" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
+                  <input style={{ ...INP, paddingRight: 44 }} type={showPwd ? 'text' : 'password'} value={signPwd} onChange={e => { setSignPwd(e.target.value); setError('') }} placeholder={t.pwdPlaceholder} autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
                     <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{showPwd ? 'visibility_off' : 'visibility'}</span>
                   </button>
@@ -449,7 +460,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 })()}
               </div>
               <div style={{ ...FG, marginBottom: 6 }}>
-                <label style={LBL}>ยืนยันรหัสผ่าน</label>
+                <label style={LBL}>{t.confirmPwd}</label>
                 <div style={{ position: 'relative' }}>
                   <input style={{ ...INP, paddingRight: 44 }} type={showPwd2 ? 'text' : 'password'} value={signPwd2} onChange={e => { setSignPwd2(e.target.value); setError('') }} placeholder="••••••••" autoComplete="new-password" onFocus={e => (e.target.style.borderColor = '#048c73')} onBlur={e => (e.target.style.borderColor = '#e2e8f0')} />
                   <button type="button" onClick={() => setShowPwd2(!showPwd2)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18 }}>
@@ -471,19 +482,19 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: Props) {
                 fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit', marginTop: 8, letterSpacing: 0.2,
               }}>
-                {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิกฟรี'}
+                {loading ? t.signingUp : t.signupFree}
               </button>
 
               <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '14px 0 0', lineHeight: 1.6 }}>
-                การสมัครสมาชิกถือว่าคุณยอมรับ{' '}
-                <a href="/terms" style={{ color: '#048c73' }}>เงื่อนไขการใช้งาน</a>{' '}
-                และ{' '}
-                <a href="/privacy" style={{ color: '#048c73' }}>นโยบายความเป็นส่วนตัว</a>
+                {t.consentLead}{' '}
+                <a href={localeHref('/terms', locale)} style={{ color: '#048c73' }}>{t.terms}</a>{' '}
+                {t.and}{' '}
+                <a href={localeHref('/privacy', locale)} style={{ color: '#048c73' }}>{t.privacy}</a>
               </p>
               <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '10px 0 0' }}>
-                มีบัญชีแล้ว?{' '}
+                {t.haveAccount}{' '}
                 <button type="button" onClick={() => switchTab('login')} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
-                  เข้าสู่ระบบ
+                  {t.login}
                 </button>
               </p>
             </form>

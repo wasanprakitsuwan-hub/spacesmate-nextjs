@@ -40,7 +40,8 @@ function displayName(info: UserInfo | null, email: string | null | undefined, fa
 
 export default function Navbar() {
   const pathname   = usePathname()
-  const t          = SITE_T[useLocale()]
+  const locale     = useLocale()
+  const t          = SITE_T[locale]
   const router     = useRouter()
   const [mobileOpen,  setMobileOpen]  = useState(false)
   const [authModal,   setAuthModal]   = useState(false)
@@ -348,7 +349,7 @@ export default function Navbar() {
       )}
 
       {/* Auth modal */}
-      {authModal && <AuthModal onClose={() => setAuthModal(false)} />}
+      {authModal && <AuthModal onClose={() => setAuthModal(false)} locale={locale} />}
 
       <style>{`
         .sm-navlinks { display: flex !important; }

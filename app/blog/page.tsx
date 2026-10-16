@@ -19,11 +19,23 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-const CATEGORIES = [
-  { label: 'ทั้งหมด', slug: '' },
-  { label: 'เจ้าของทรัพย์', slug: 'เจ้าของทรัพย์' },
-  { label: 'คู่มือผู้เช่า', slug: 'คู่มือผู้เช่า' },
-  { label: 'ทำเลน่าอยู่', slug: 'ทำเลน่าอยู่' },
+/**
+ * The category chips.
+ *
+ * `slug` is the value stored in blog_posts.category and stays Thai in both
+ * locales; only the label follows the reader. These were Thai on ?lang=en,
+ * which was the one untranslated thing left on the English blog.
+ *
+ * NOTE: these are decorative. They render as <span>, not <Link>, so nothing
+ * filters when you click one — and the hover state makes them look as though
+ * something should. Either wire them to a ?category= query or drop them; a
+ * control that looks interactive and is not is worse than no control.
+ */
+const CATEGORIES: { slug: string; th: string; en: string }[] = [
+  { slug: '',              th: 'ทั้งหมด',       en: 'All' },
+  { slug: 'เจ้าของทรัพย์', th: 'เจ้าของทรัพย์', en: 'For owners' },
+  { slug: 'คู่มือผู้เช่า',  th: 'คู่มือผู้เช่า',  en: 'Tenant guides' },
+  { slug: 'ทำเลน่าอยู่',   th: 'ทำเลน่าอยู่',   en: 'Neighbourhoods' },
 ]
 
 function formatThaiDate(iso: string): string {
@@ -108,7 +120,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   : 'bg-spacemate-bgLight text-gray-500 hover:text-spacemate-brandDark'
               }`}
             >
-              {cat.label}
+              {isEn ? cat.en : cat.th}
             </span>
           ))}
         </div>
