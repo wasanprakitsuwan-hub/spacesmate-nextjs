@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 
+/**
+ * The root layout sets `template: '%s | SpacesMate'`, so the title here must not
+ * repeat the suffix — it was rendering "รับบริหารทรัพย์สิน | SpacesMate | SpacesMate".
+ */
 export const metadata: Metadata = {
-  title: 'รับบริหารทรัพย์สิน | SpacesMate',
+  title: 'รับบริหารทรัพย์สิน',
   description:
     'ให้ SpacesMate บริหารอพาร์ทเม้นท์และคอนโดของคุณครบวงจร — หาผู้เช่า เก็บค่าเช่า ซ่อมบำรุง รายงานผลรายเดือน ค่าบริการแบบ Performance-Based ไม่มีค่าใช้จ่ายล่วงหน้า',
   keywords: [
@@ -13,8 +17,15 @@ export const metadata: Metadata = {
     description: 'ให้ SpacesMate บริหารอพาร์ทเม้นท์และคอนโดของคุณ — Performance-Based ไม่มีค่าใช้จ่ายล่วงหน้า',
     type: 'website',
     url: 'https://spacesmate.com/manage',
+    locale: 'th_TH',
   },
-  alternates: { canonical: 'https://spacesmate.com/manage' },
+  alternates: {
+    canonical: 'https://spacesmate.com/manage',
+    languages: {
+      'th-TH': 'https://spacesmate.com/manage',
+      'en-US': 'https://spacesmate.com/en/manage',
+    },
+  },
 }
 
 export default function ManageLayout({ children }: { children: React.ReactNode }) {

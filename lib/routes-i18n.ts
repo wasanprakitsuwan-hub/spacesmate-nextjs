@@ -40,6 +40,7 @@ const EN_STATIC = new Set([
   '/search',
   '/submit',
   '/submit/new',
+  '/manage',
   '/privacy',
   '/terms',
 ])
@@ -61,7 +62,6 @@ const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
 
 /**
  * Thai-only, deliberately, and worth naming so nobody wonders:
- *   /manage              the Stream 2 management pitch — next to be translated
  *   /blog, /blog/[slug]  Stage F
  *   /building/[slug]     no English version yet
  *   /area/<data slug>    Stage G
