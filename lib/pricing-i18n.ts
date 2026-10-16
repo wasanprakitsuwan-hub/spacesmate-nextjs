@@ -292,3 +292,52 @@ export function buildPlans(locale: Locale) {
     },
   ]
 }
+
+
+/**
+ * The slot checkout buttons — components/pricing/BuySlotsCta.
+ *
+ * This was missed when /en/pricing was translated: the page around it was
+ * English and the button an owner actually presses to pay was Thai. It is the
+ * last step before Stripe, so it is the worst possible place to lose someone.
+ *
+ * WHAT THE TWO BUTTONS MEAN
+ *   The choice is a BILLING MODEL, not a payment method. 'once' buys a term
+ *   that expires; 'subscription' buys one that renews on a card. The instrument
+ *   is chosen afterwards at Stripe — one-time offers PromptPay and card,
+ *   subscription can only offer card, because PromptPay cannot do recurring.
+ *   The English must not blur that, or someone picks a renewing charge thinking
+ *   they made a single payment.
+ *
+ *   PromptPay is kept as the Thai name in English too. It is a brand, it is what
+ *   the Stripe screen says, and an English reader who is paying in Thailand will
+ *   recognise it.
+ */
+export const SLOT_CTA_T = {
+  th: {
+    quantity: 'จำนวนสล็อต',
+    decrease: 'ลดจำนวน',
+    increase: 'เพิ่มจำนวน',
+    loading: 'กำลังโหลด…',
+    payOnce: (total: string) => `จ่ายครั้งเดียว · ฿${total}`,
+    payOnceNote: 'พร้อมเพย์ หรือ บัตรเครดิต/เดบิต · ไม่ต่ออายุอัตโนมัติ',
+    subscribe: (total: string) => `ต่ออายุอัตโนมัติ · ฿${total}`,
+    subscribeNote: 'บัตรเครดิต/เดบิตเท่านั้น · ตัดบัตรอัตโนมัติทุกรอบ ยกเลิกได้ทุกเมื่อ',
+    slotExplainer: '1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เปลี่ยนประกาศในสล็อตได้ตลอดอายุ',
+    checkoutFailed: 'ไม่สามารถเริ่มการชำระเงินได้',
+    genericError: 'เกิดข้อผิดพลาด',
+  },
+  en: {
+    quantity: 'Number of slots',
+    decrease: 'Decrease quantity',
+    increase: 'Increase quantity',
+    loading: 'Loading…',
+    payOnce: (total: string) => `Pay once · ฿${total}`,
+    payOnceNote: 'PromptPay or credit/debit card · does not renew',
+    subscribe: (total: string) => `Auto-renew · ฿${total}`,
+    subscribeNote: 'Credit/debit card only · charged each term, cancel any time',
+    slotExplainer: '1 slot = 1 published listing · swap which listing fills it any time during the term',
+    checkoutFailed: 'We could not start the payment',
+    genericError: 'Something went wrong',
+  },
+} as const

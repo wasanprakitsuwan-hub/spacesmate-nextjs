@@ -186,6 +186,7 @@ export default function PricingBody({ locale = 'th' }: { locale?: Locale }) {
               {/* Sells slots, not listings — see components/pricing/BuySlotsCta */}
               <BuySlotsCta
                 pkg={plan.id}
+                locale={locale}
                 className={`w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${
                   plan.highlight
                     ? 'bg-spacemate-brandDark text-white hover:bg-spacemate-brandTeal'

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 import { PACKAGE_PRICE_THB } from '@/lib/packages'
+import { SLOT_CTA_T } from '@/lib/pricing-i18n'
+import { localeHref, type Locale } from '@/lib/routes-i18n'
 
 /**
  * Buy publishing slots from the pricing page.
@@ -20,10 +22,13 @@ import { PACKAGE_PRICE_THB } from '@/lib/packages'
 export default function BuySlotsCta({
   pkg,
   className,
+  locale = 'th',
 }: {
   pkg: string
   className: string
+  locale?: Locale
 }) {
+  const t = SLOT_CTA_T[locale]
   const router = useRouter()
   const [qty,     setQty]     = useState(1)
 
@@ -65,7 +70,8 @@ export default function BuySlotsCta({
         // Not a lost sale — a detour. Tracked separately so the gap between
         // intent and purchase is not silently blamed on price.
         trackEvent('slot_checkout_needs_account', { package_id: pkg, quantity: qty, payment_method: method })
-        router.push(`/login?redirect=${encodeURIComponent('/pricing')}`)
+        // Back to the pricing page they were reading, not the Thai one.
+        router.push(`/login?redirect=${encodeURIComponent(localeHref('/pricing', locale))}`)
         return
       }
 
@@ -79,10 +85,10 @@ export default function BuySlotsCta({
         body: JSON.stringify({ package_id: pkg, quantity: qty }),
       })
       const json = await res.json()
-      if (!res.ok || !json.url) throw new Error(json.error || 'ไม่สามารถเริ่มการชำระเงินได้')
+      if (!res.ok || !json.url) throw new Error(json.error || t.checkoutFailed)
       window.location.href = json.url
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด')
+      setError(err instanceof Error ? err.message : t.genericError)
       setLoading(false)
     }
   }
@@ -90,20 +96,20 @@ export default function BuySlotsCta({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2">
-        <span className="text-xs text-gray-500">จำนวนสล็อต</span>
+        <span className="text-xs text-gray-500">{t.quantity}</span>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setQty(q => Math.max(1, q - 1))}
             disabled={qty <= 1}
-            aria-label="ลดจำนวน"
+            aria-label={t.decrease}
             className="h-7 w-7 rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40"
           >−</button>
           <span className="w-6 text-center text-sm font-semibold text-spacemate-brandDark">{qty}</span>
           <button
             type="button"
             onClick={() => setQty(q => Math.min(50, q + 1))}
-            aria-label="เพิ่มจำนวน"
+            aria-label={t.increase}
             className="h-7 w-7 rounded-lg border border-gray-200 text-gray-600"
           >+</button>
         </div>
@@ -118,10 +124,10 @@ export default function BuySlotsCta({
           owners actually pay. The previous order made them press the secondary,
           outlined button to reach it. */}
       <button type="button" onClick={() => buy('once')} disabled={loading !== false} className={className}>
-        {loading === 'once' ? 'กำลังโหลด…' : `จ่ายครั้งเดียว · ฿${total.toLocaleString()}`}
+        {loading === 'once' ? t.loading : t.payOnce(total.toLocaleString())}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
-        พร้อมเพย์ หรือ บัตรเครดิต/เดบิต · ไม่ต่ออายุอัตโนมัติ
+        {t.payOnceNote}
       </p>
 
       <button
@@ -130,14 +136,14 @@ export default function BuySlotsCta({
         disabled={loading !== false}
         className="mt-3 w-full block text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 border border-spacemate-brandTeal text-spacemate-brandTeal hover:bg-spacemate-brandTeal hover:text-white"
       >
-        {loading === 'subscription' ? 'กำลังโหลด…' : `ต่ออายุอัตโนมัติ · ฿${total.toLocaleString()}`}
+        {loading === 'subscription' ? t.loading : t.subscribe(total.toLocaleString())}
       </button>
       <p className="mt-1 text-center text-[11px] text-gray-400">
-        บัตรเครดิต/เดบิตเท่านั้น · ตัดบัตรอัตโนมัติทุกรอบ ยกเลิกได้ทุกเมื่อ
+        {t.subscribeNote}
       </p>
 
       <p className="mt-3 text-center text-xs text-gray-500">
-        1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เปลี่ยนประกาศในสล็อตได้ตลอดอายุ
+        {t.slotExplainer}
       </p>
 
       {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
