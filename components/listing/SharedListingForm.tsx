@@ -1296,13 +1296,13 @@ export function ListingFormFields({
             <div>
               <label style={SLBL}>{t.bedrooms}</label>
               <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
-                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ${t.rooms}`}</option>)}
+                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : t.roomsN(Number(n))}</option>)}
               </select>
             </div>
             <div>
               <label style={SLBL}>{t.bathrooms}</label>
               <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
-                {['1','2','3','4'].map(n => <option key={n} value={n}>{n} {t.rooms}</option>)}
+                {['1','2','3','4'].map(n => <option key={n} value={n}>{t.roomsN(Number(n))}</option>)}
               </select>
             </div>
           </div>

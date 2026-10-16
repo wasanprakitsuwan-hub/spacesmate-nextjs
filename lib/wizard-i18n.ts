@@ -51,7 +51,7 @@ export const WIZARD_T = {
 
     /** Same split, around <strong>Premium</strong>. */
     videoRuleBefore: 'วิดีโอแสดงบนเว็บไซต์เฉพาะแพ็กเกจ ',
-    videoRuleAfter: ' — เพิ่มไว้ตอนนี้ได้เลย',
+    videoRuleAfter: ' — เพิ่มไว้ตอนนี้ได้เลย ',
 
     // ── Charges and deposits ──
     commonFee: 'ค่าส่วนกลาง',
@@ -201,7 +201,8 @@ export const WIZARD_T = {
     sizeAndLayout: 'ขนาดและลักษณะ',
     floorLocated: 'ชั้นที่ตั้ง',
     bedrooms: 'ห้องนอน',
-    rooms: 'ห้อง',
+    /** Thai has no plural form, so the count is just prefixed. */
+    roomsN: (n: number) => `${n} ห้อง`,
     bathrooms: 'ห้องน้ำ',
     utilitiesNote: 'ค่าสาธารณูปโภค เงินมัดจำ และค่าใช้จ่ายอื่น ๆ ที่เรียกเก็บ',
     depositsNote: 'เงินประกัน เงินล่วงหน้า และค่ามัดจำอื่น ๆ (เช่น กุญแจ)',
@@ -239,7 +240,7 @@ export const WIZARD_T = {
     imgRuleReorder: 'Drag to reorder, or set a cover photo, to choose which ones show · upgrade and the remaining photos appear immediately, with nothing to re-upload',
 
     videoRuleBefore: 'Video shows on the website for the ',
-    videoRuleAfter: ' package only — you can add it now',
+    videoRuleAfter: ' package only — you can add it now. ',
 
     commonFee: 'Common area fee',
     parking: 'Parking',
@@ -376,7 +377,7 @@ export const WIZARD_T = {
     sizeAndLayout: 'Size and layout',
     floorLocated: 'Floor',
     bedrooms: 'Bedrooms',
-    rooms: 'rooms',
+    roomsN: (n: number) => `${n} ${n === 1 ? 'room' : 'rooms'}`,
     bathrooms: 'Bathrooms',
     utilitiesNote: 'Utilities, deposits and any other charges you make',
     depositsNote: 'Security deposit, advance rent and any other deposit (a key deposit, for example)',
