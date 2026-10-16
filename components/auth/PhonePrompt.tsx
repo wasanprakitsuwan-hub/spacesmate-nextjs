@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
+import { DASH_T, type Locale } from '@/lib/dashboard-i18n'
 
 /**
  * One-time phone capture for owners who registered with Google.
@@ -29,7 +30,8 @@ import { trackEvent } from '@/lib/analytics'
  * "is this a signup" signal, so the button sets a sessionStorage marker before
  * redirecting and we resolve it here by checking how old the account is.
  */
-export default function PhonePrompt() {
+export default function PhonePrompt({ locale = 'th' }: { locale?: Locale }) {
+  const t = DASH_T[locale]
   const [show,    setShow]    = useState(false)
   const [phone,   setPhone]   = useState('')
   const [saving,  setSaving]  = useState(false)
@@ -80,7 +82,7 @@ export default function PhonePrompt() {
   async function save() {
     const clean = phone.replace(/[^\d+]/g, '')
     if (clean.length < 9) {
-      setError('กรุณากรอกเบอร์โทรให้ครบถ้วน')
+      setError(t.phoneIncomplete)
       return
     }
     setSaving(true)
@@ -96,12 +98,12 @@ export default function PhonePrompt() {
         body: JSON.stringify({ phone: clean }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.error || 'บันทึกไม่สำเร็จ')
+      if (!res.ok) throw new Error(json?.error || t.saveFailed)
 
       trackEvent('phone_prompt_saved', { source: 'owner_dashboard' })
       setShow(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : t.saveFailed)
       setSaving(false)
     }
   }
@@ -128,10 +130,10 @@ export default function PhonePrompt() {
 
       <div style={{ flex: 1, minWidth: 220 }}>
         <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#02402e' }}>
-          เพิ่มเบอร์โทรติดต่อ
+          {t.addPhoneTitle}
         </p>
         <p style={{ margin: '3px 0 10px', fontSize: 13, color: '#64748b' }}>
-          เพื่อให้ผู้เช่าและทีมงาน SpacesMate ติดต่อคุณได้ — ใช้เวลาไม่ถึงนาที
+          {t.addPhoneBody}
         </p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -156,7 +158,7 @@ export default function PhonePrompt() {
               fontFamily: 'inherit',
             }}
           >
-            {saving ? 'กำลังบันทึก…' : 'บันทึก'}
+            {saving ? t.saving : t.save}
           </button>
           <button
             onClick={dismiss}
@@ -167,7 +169,7 @@ export default function PhonePrompt() {
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
-            ไว้ทีหลัง
+            {t.later}
           </button>
         </div>
 

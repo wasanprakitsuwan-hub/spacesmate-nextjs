@@ -155,6 +155,30 @@ export function facingOptions(t: WizardStrings) {
     { value: 'SW', label: t.facingSW },
   ]
 }
+/**
+ * Package and property-type labels for the reader.
+ *
+ * These were written, removed as unused, and are back because the owner
+ * dashboard needs them: it renders PKG_LABEL and TYPE_LABEL in its listing
+ * table, and those two consts are Thai-only by design (the admin screens use
+ * them). The `id` is what is stored; only the label follows the reader.
+ */
+export function typeLabelFor(propertyType: string, locale: Locale): string {
+  const t = WIZARD_T[locale]
+  return ({
+    condo: t.typeCondo, apartment: t.typeApartment, house: t.typeHouse,
+    office: t.typeOffice, coworking: 'Co-Working',
+  } as Record<string, string>)[propertyType] ?? propertyType
+}
+
+export function pkgLabelFor(packageId: string, locale: Locale): string {
+  if (locale !== 'en') return PKG_LABEL[packageId] ?? packageId
+  return ({
+    basic: 'Basic (30 days)', standard: 'Standard (90 days)',
+    premium: 'Premium (365 days)', admin: 'Admin',
+  } as Record<string, string>)[packageId] ?? packageId
+}
+
 export function otherChargesOptions(t: WizardStrings) {
   return [
     { value: 'common_fee', label: t.commonFee },

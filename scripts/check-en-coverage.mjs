@@ -53,6 +53,7 @@ const ALLOWED = new Map([
   ['lib/pricing-i18n.ts',     'the th half of the dictionary'],
   ['lib/legal-i18n.ts',       'the th half of the dictionary'],
   ['lib/auth-i18n.ts',        'the th half of the dictionary'],
+  ['lib/dashboard-i18n.ts',   'the th half of the dictionary'],
   ['lib/faq-data.ts',         'the th half of the dictionary'],
   ['lib/constants.ts',        'area keywords and Thai place names'],
   ['components/listing/SharedListingForm.tsx', 'FACING / OTHER_CHARGES / TYPE_LABEL values + Thai-only dashboard exports'],
@@ -80,6 +81,7 @@ const ALLOWED = new Map([
   ['lib/types.ts',                       'trailing comments on field declarations'],
   ['components/marketing/ContactBody.tsx', 'interest values submitted with the form'],
   ['components/marketing/ManageBody.tsx',  'icon map keyed by the stored channel value'],
+  ['components/dashboard/OwnerDashboardBody.tsx', 'the default province, as stored in properties.province'],
 
   // ── Correct in both languages ──
   ['components/marketing/AboutBody.tsx', 'the Thai legal entity name, shown as such'],
