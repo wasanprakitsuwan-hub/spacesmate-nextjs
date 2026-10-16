@@ -1,6 +1,8 @@
 'use client'
 
 import { roomTypeOptions, type Locale } from '@/lib/room-types'
+import { WIZARD_T, type WizardStrings } from '@/lib/wizard-i18n'
+import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
 
 import { useEffect, useRef, useState } from 'react'
 import { ADMIN_PACKAGES, computeExpiry, MAX_IMAGES_ANY_PACKAGE, visibleImageCount } from '@/lib/packages'
@@ -133,6 +135,37 @@ export const PKG_LABEL: Record<string, string> = {
   basic: 'Basic (30 วัน)', standard: 'Standard (90 วัน)', premium: 'Premium (365 วัน)', admin: 'Admin',
 }
 
+/**
+ * The three constants above stay Thai because they are imported by the Thai-only
+ * owner dashboard and admin screens. The locale-aware builders below are what the
+ * form itself uses.
+ *
+ * In every case the `value` is unchanged between locales — it is what gets stored.
+ * Only the label follows the reader. See the header of lib/wizard-i18n.
+ */
+export function facingOptions(t: WizardStrings) {
+  return [
+    { value: 'N',  label: t.facingN },
+    { value: 'S',  label: t.facingS },
+    { value: 'E',  label: t.facingE },
+    { value: 'W',  label: t.facingW },
+    { value: 'NE', label: t.facingNE },
+    { value: 'NW', label: t.facingNW },
+    { value: 'SE', label: t.facingSE },
+    { value: 'SW', label: t.facingSW },
+  ]
+}
+export function otherChargesOptions(t: WizardStrings) {
+  return [
+    { value: 'common_fee', label: t.commonFee },
+    { value: 'parking',    label: t.parking },
+    { value: 'internet',   label: t.internet },
+    { value: 'fridge',     label: t.fridge },
+    { value: 'tv',         label: t.tv },
+    { value: 'microwave',  label: t.microwave },
+  ]
+}
+
 // ── Shared styles ──────────────────────────────────────────────────────────────
 export const SINP: React.CSSProperties = {
   width: '100%', padding: '9px 13px', borderRadius: 10,
@@ -211,9 +244,11 @@ export function SectionHead({ text }: { text: string }) {
 }
 
 // ── Apartment Unit Grid ────────────────────────────────────────────────────────
-export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
-  rows: ApartmentUnitRow[]; onChange: (rows: ApartmentUnitRow[]) => void; roomTypeOptions: { value: string; label: string }[]
+export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 'th' }: {
+  rows: ApartmentUnitRow[]; onChange: (rows: ApartmentUnitRow[]) => void
+  roomTypeOptions: { value: string; label: string }[]; locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   function addRow() {
     onChange([...rows, {
       id: `au-${Date.now()}`, room_type: roomTypeOptions[0]?.value ?? 'studio',
@@ -232,7 +267,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-            {['ประเภทห้อง', 'ขนาด (ตร.ม.)', 'สัญญา 12 เดือน (บาท/เดือน)', 'ราคา/วัน', ''].map(h => (
+            {[t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
@@ -254,10 +289,10 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                 <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>สัญญาสั้นกว่า:</span>
+                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.shorterTerms}</span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_1mo} onChange={e => upd(row.id, 'available_1mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
-                  <span style={{ fontSize: 12, color: '#334155' }}>1 เดือน</span>
+                  <span style={{ fontSize: 12, color: '#334155' }}>{t.monthN(1)}</span>
                 </label>
                 {row.available_1mo && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -268,24 +303,24 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
                 )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_3mo} onChange={e => upd(row.id, 'available_3mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
-                  <span style={{ fontSize: 12, color: '#334155' }}>3 เดือน</span>
+                  <span style={{ fontSize: 12, color: '#334155' }}>{t.monthN(3)}</span>
                 </label>
                 {row.available_3mo && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 11, color: '#64748b' }}>฿</span>
                     <input type="number" value={row.price_3mo} onChange={e => upd(row.id, 'price_3mo', e.target.value)} placeholder="7,500" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>/เดือน</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{t.perMonth}</span>
                   </div>
                 )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_6mo} onChange={e => upd(row.id, 'available_6mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
-                  <span style={{ fontSize: 12, color: '#334155' }}>6 เดือน</span>
+                  <span style={{ fontSize: 12, color: '#334155' }}>{t.monthN(6)}</span>
                 </label>
                 {row.available_6mo && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 11, color: '#64748b' }}>฿</span>
                     <input type="number" value={row.price_6mo} onChange={e => upd(row.id, 'price_6mo', e.target.value)} placeholder="7,200" style={{ ...SINP, padding: '5px 8px', width: 90, fontSize: 12.5 }} />
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>/เดือน</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{t.perMonth}</span>
                   </div>
                 )}
               </div>
@@ -294,16 +329,18 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions }: {
         </div>
       )}
       <button type="button" onClick={addRow} style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
-        + เพิ่มประเภทห้อง
+        + {t.addRoomType}
       </button>
     </div>
   )
 }
 
 // ── Condo / House Rental Detail ────────────────────────────────────────────────
-export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
-  detail: CondoRentalDetail; propertyType: string; onChange: (d: CondoRentalDetail) => void
+export function CondoHouseRentalDetail({ detail, propertyType, onChange, locale = 'th' }: {
+  detail: CondoRentalDetail; propertyType: string
+  onChange: (d: CondoRentalDetail) => void; locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   function u(k: keyof CondoRentalDetail, v: string) { onChange({ ...detail, [k]: v }) }
   const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }
   const isHouse = propertyType === 'house'
@@ -311,45 +348,45 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
   return (
     <div>
       <BuildingAutocomplete
-        label={isHouse ? 'ชื่อโครงการ / หมู่บ้าน' : 'ชื่อคอนโด'}
+        label={isHouse ? t.projectName : t.condoName}
         labelStyle={SLBL}
         inputStyle={SINP}
         value={detail.property_name}
         valueId={detail.property_name_id}
-        placeholder={isHouse ? 'เช่น บ้านปลายฟ้า พระราม 9' : 'เช่น Ideo Q สยาม-ราชเทวี'}
+        placeholder={isHouse ? t.projectPlaceholder : t.condoPlaceholder}
         onChange={(name, id) => { u('property_name', name); u('property_name_id', id) }}
       />
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
-          <label style={SLBL}>{isHouse ? 'บ้านเลขที่ / House No.' : 'เลขห้อง / Unit No.'}</label>
-          <input value={detail.unit_number} onChange={e => u('unit_number', e.target.value)} placeholder={isHouse ? 'เช่น 88/10' : '101'} style={SINP} />
+          <label style={SLBL}>{isHouse ? t.houseNo : t.unitNo}</label>
+          <input value={detail.unit_number} onChange={e => u('unit_number', e.target.value)} placeholder={isHouse ? t.houseNoPlaceholder : '101'} style={SINP} />
         </div>
         <div>
-          <label style={SLBL}>{isHouse ? 'จำนวนชั้นในบ้าน' : 'ชั้นที่'}</label>
+          <label style={SLBL}>{isHouse ? t.floorsInHouse : t.floorNo}</label>
           <input type="number" value={detail.floor} onChange={e => u('floor', e.target.value)} placeholder={isHouse ? '2' : '5'} style={SINP} />
         </div>
       </div>
       <div style={{ ...g2, marginBottom: 12 }}>
         <div>
-          <label style={SLBL}>{isHouse ? 'ทิศทางบ้าน / หน้าบ้านหันไปทาง' : 'ทิศทางห้อง'}</label>
+          <label style={SLBL}>{isHouse ? t.facingHouse : t.facingRoom}</label>
           <select value={detail.facing} onChange={e => u('facing', e.target.value)} style={{ ...SINP, cursor: 'pointer' }}>
-            <option value="">-- เลือกทิศ --</option>
-            {FACING_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+            <option value="">{t.chooseFacing}</option>
+            {facingOptions(t).map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
           </select>
         </div>
         <div>
-          <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.) *</label>
+          <label style={SLBL}>{t.usableArea} *</label>
           <input type="number" value={detail.size_sqm} onChange={e => u('size_sqm', e.target.value)} placeholder={isHouse ? '120' : '35'} style={SINP} />
         </div>
       </div>
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>payments</span>ราคาเช่าตามระยะสัญญา</p>
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>payments</span>{t.rentByTerm}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
           {([
-            { key: 'price_12mo', label: '12 เดือน', ph: '15,000' },
-            { key: 'price_6mo',  label: '6 เดือน',  ph: '16,000' },
-            { key: 'price_3mo',  label: '3 เดือน',  ph: '17,000' },
-            { key: 'price_1mo',  label: '1 เดือน',  ph: '18,000' },
+            { key: 'price_12mo', label: t.monthN(12), ph: '15,000' },
+            { key: 'price_6mo',  label: t.monthN(6),  ph: '16,000' },
+            { key: 'price_3mo',  label: t.monthN(3),  ph: '17,000' },
+            { key: 'price_1mo',  label: t.monthN(1),  ph: '18,000' },
           ] as const).map(({ key, label, ph }) => (
             <div key={key}>
               <label style={{ ...SLBL, fontSize: 11.5 }}>{label}</label>
@@ -361,7 +398,7 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
             </div>
           ))}
         </div>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>ราคาที่แสดงในหน้าค้นหาจะใช้ราคา 12 เดือน (ต่ำสุด)</p>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>{t.searchUses12m}</p>
       </div>
     </div>
   )
@@ -376,41 +413,44 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange }: {
  * a landlord listing a condo could not record a deposit, and the charges table on
  * the public page came up empty. Added here so both forms behave the same.
  */
-export function DepositSection({ charges, onChange }: {
+export function DepositSection({ charges, onChange, locale = 'th' }: {
   charges: RentalCharges
   onChange: (c: RentalCharges) => void
+  locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
-          <label style={SLBL}>เงินประกัน (เดือน)</label>
+          <label style={SLBL}>{t.securityDeposit}</label>
           <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 2 เดือน</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>{t.typically2}</p>
         </div>
         <div>
-          <label style={SLBL}>เงินล่วงหน้า (เดือน)</label>
+          <label style={SLBL}>{t.advanceRent}</label>
           <input type="number" value={charges.advance_deposit} onChange={e => u('advance_deposit', e.target.value)} placeholder="1" style={SINP} />
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>โดยทั่วไป 1 เดือน</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>{t.typically1}</p>
         </div>
       </div>
       <div>
-        <label style={SLBL}>เงินมัดจำกุญแจ (บาท) — ไม่บังคับ</label>
+        <label style={SLBL}>{t.keyDepositBaht}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="number" value={charges.key_deposit} onChange={e => u('key_deposit', e.target.value)}
-            placeholder="เช่น 500" style={{ ...SINP, maxWidth: 180 }} />
-          <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท</span>
+            placeholder={t.eg500} style={{ ...SINP, maxWidth: 180 }} />
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>{t.baht}</span>
         </div>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>หากเว้นว่าง จะไม่แสดงรายการนี้บนหน้าประกาศ</p>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>{t.blankHidesRow}</p>
       </div>
     </div>
   )
 }
 
-export function RentalChargesSection({ charges, onChange }: {
-  charges: RentalCharges; onChange: (c: RentalCharges) => void
+export function RentalChargesSection({ charges, onChange, locale = 'th' }: {
+  charges: RentalCharges; onChange: (c: RentalCharges) => void; locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   function u(k: keyof RentalCharges, v: any) { onChange({ ...charges, [k]: v }) }
 
   function toggleOther(val: string) {
@@ -426,10 +466,10 @@ export function RentalChargesSection({ charges, onChange }: {
   }
 
   const rateOpts: { value: RateType; label: string }[] = [
-    { value: 'fixed',    label: 'ราคาคงที่ (บาท/หน่วย)' },
-    { value: 'min_rate', label: 'ราคาขั้นต่ำ' },
-    { value: 'gov',      label: 'ตามเรทรัฐ' },
-    { value: 'ask',      label: 'สอบถามเจ้าของ' },
+    { value: 'fixed',    label: t.rateFixed },
+    { value: 'min_rate', label: t.rateMin },
+    { value: 'gov',      label: t.rateGov },
+    { value: 'ask',      label: t.rateAsk },
   ]
 
   function RateRow({ label, type, fixed, minRate, onType, onFixed, onMinRate }: {
@@ -454,13 +494,13 @@ export function RentalChargesSection({ charges, onChange }: {
         {type === 'gov' && (
           <p style={{ fontSize: 11.5, color: '#64748b', margin: '2px 0 0' }}>
             <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 4, verticalAlign: 'middle' }}>info</span>
-            คิดตามอัตราของการไฟฟ้า/การประปานครหลวง — ไม่ต้องระบุตัวเลข ระบบจะแสดงว่า “ตามเรทรัฐ”
+            {t.govRateNote}
           </p>
         )}
         {type === 'fixed' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="text" inputMode="decimal" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="6.50" style={{ ...SINP, width: 130 }} />
-            <span style={{ fontSize: 12.5, color: '#64748b' }}>บาท / หน่วย</span>
+            <span style={{ fontSize: 12.5, color: '#64748b' }}>{t.bahtPerUnit}</span>
           </div>
         )}
         {type === 'min_rate' && (
@@ -468,19 +508,19 @@ export function RentalChargesSection({ charges, onChange }: {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div>
-                  <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาต่อหน่วย (บาท)</label>
+                  <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{t.pricePerUnit}</label>
                   <input type="text" inputMode="decimal" value={fixed} onChange={e => onFixed(e.target.value)} placeholder="3.50" style={{ ...SINP, width: 120 }} />
                 </div>
                 <span style={{ fontSize: 18, color: '#c7d2d0', paddingBottom: 4 }}>×</span>
-                <span style={{ fontSize: 12.5, color: '#64748b', paddingBottom: 4 }}>หน่วย</span>
+                <span style={{ fontSize: 12.5, color: '#64748b', paddingBottom: 4 }}>{t.unit}</span>
               </div>
               <div>
-                <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>ราคาขั้นต่ำ (บาท/เดือน)</label>
+                <label style={{ ...SLBL, fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{t.minPerMonth}</label>
                 <input type="text" inputMode="decimal" value={minRate} onChange={e => onMinRate(e.target.value)} placeholder="200" style={{ ...SINP, width: 130 }} />
               </div>
             </div>
             <p style={{ fontSize: 11, color: '#94a3b8', margin: '5px 0 0' }}>
-              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", flexShrink: 0, marginRight: 4 }}>tips_and_updates</span>เรียกเก็บ <strong>ราคาที่สูงกว่า</strong> ระหว่าง (ราคา/หน่วย × จำนวนหน่วย) กับราคาขั้นต่ำ
+              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", flexShrink: 0, marginRight: 4 }}>tips_and_updates</span>{t.whicheverHigher}
             </p>
           </div>
         )}
@@ -490,26 +530,26 @@ export function RentalChargesSection({ charges, onChange }: {
 
   return (
     <div>
-      <RateRow label="ค่าน้ำประปา (ต่อหน่วย)"
+      <RateRow label={t.water}
         type={charges.water_type} fixed={charges.water_fixed} minRate={charges.water_min_rate}
         onType={v => u('water_type', v)} onFixed={v => u('water_fixed', v)} onMinRate={v => u('water_min_rate', v)} />
-      <RateRow label="ค่าไฟฟ้า (ต่อหน่วย)"
+      <RateRow label={t.electricity}
         type={charges.electricity_type} fixed={charges.electricity_fixed} minRate={charges.electricity_min_rate}
         onType={v => u('electricity_type', v)} onFixed={v => u('electricity_fixed', v)} onMinRate={v => u('electricity_min_rate', v)} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
-          <label style={SLBL}>เงินมัดจำ (เดือน)</label>
+          <label style={SLBL}>{t.depositMonths}</label>
           <input type="number" value={charges.security_deposit} onChange={e => u('security_deposit', e.target.value)} placeholder="2" style={SINP} />
         </div>
         <div>
-          <label style={SLBL}>เงินล่วงหน้า (เดือน)</label>
+          <label style={SLBL}>{t.advanceRent}</label>
           <input type="number" value={charges.advance_deposit} onChange={e => u('advance_deposit', e.target.value)} placeholder="1" style={SINP} />
         </div>
       </div>
       <div>
-        <label style={SLBL}>ค่าใช้จ่ายอื่น ๆ (เลือกที่เรียกเก็บ)</label>
+        <label style={SLBL}>{t.otherCharges}</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {OTHER_CHARGES_OPTIONS.map(o => {
+          {otherChargesOptions(t).map(o => {
             const on = charges.other_charges.includes(o.value)
             return (
               <div key={o.value} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -526,7 +566,7 @@ export function RentalChargesSection({ charges, onChange }: {
                     <span style={{ fontSize: 12, color: '#64748b' }}>฿</span>
                     <input type="number" value={charges.other_charges_fees[o.value] ?? ''} onChange={e => setOtherFee(o.value, e.target.value)}
                       placeholder="500" style={{ ...SINP, width: 110, padding: '6px 10px', fontSize: 12.5 }} />
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>บาท/เดือน</span>
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.bahtPerMonth}</span>
                   </div>
                 )}
               </div>
@@ -539,9 +579,10 @@ export function RentalChargesSection({ charges, onChange }: {
 }
 
 // ── Map Picker ─────────────────────────────────────────────────────────────────
-export function MapPicker({ lat, lng, onLatLng }: {
-  lat: string; lng: string; onLatLng: (lat: string, lng: string) => void
+export function MapPicker({ lat, lng, onLatLng, locale = 'th' }: {
+  lat: string; lng: string; onLatLng: (lat: string, lng: string) => void; locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   const [urlInput,   setUrlInput]   = useState('')
   const [urlParsing, setUrlParsing] = useState(false)
   const [urlError,   setUrlError]   = useState('')
@@ -571,7 +612,7 @@ export function MapPicker({ lat, lng, onLatLng }: {
     })
     const marker = L.marker([defaultLat, defaultLng], { draggable: true, icon }).addTo(map)
     markerRef.current = marker
-    marker.bindPopup('<b style="color:#02402e;font-size:12px">ตำแหน่งอสังหาฯ</b><br><small style="color:#64748b">ลากหมุดหรือคลิกบนแผนที่เพื่อปรับตำแหน่ง</small>').openPopup()
+    marker.bindPopup(`<b style="color:#02402e;font-size:12px">${t.propertyLocation}</b><br><small style="color:#64748b">${t.dragPin}</small>`).openPopup()
     marker.on('dragend', () => {
       const pos = markerRef.current.getLatLng()
       onLatLngRef.current(pos.lat.toFixed(6), pos.lng.toFixed(6))
@@ -648,12 +689,12 @@ export function MapPicker({ lat, lng, onLatLng }: {
           const parsed = parseGoogleMapsUrl(d.resolved)
           if (parsed) { onLatLng(parsed.lat, parsed.lng); return }
         }
-        setUrlError('ไม่สามารถอ่านพิกัดจากลิงก์นี้ได้')
-      } catch { setUrlError('ไม่สามารถ resolve ลิงก์สั้นได้') }
+        setUrlError(t.cantReadCoords)
+      } catch { setUrlError(t.cantExpandShort) }
       finally { setUrlParsing(false) }
       return
     }
-    setUrlError('ลิงก์ไม่ถูกต้อง — ลองใช้ Google Maps แชร์ตำแหน่งแล้ววางที่นี่')
+    setUrlError(t.badLink)
   }
 
   return (
@@ -672,7 +713,7 @@ export function MapPicker({ lat, lng, onLatLng }: {
                 }
               }}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGoogleMapsUrl(urlInput) } }}
-              placeholder="วางลิงก์ Google Maps ที่นี่... (วิธีแนะนำ)"
+              placeholder={t.pasteLink}
               style={{ ...SINP, paddingLeft: 32, flex: 1, background: urlError ? '#fff5f5' : '#f0fbf8', border: `1.5px solid ${urlError ? '#fca5a5' : '#b2d8c9'}` }}
             />
           </div>
@@ -681,12 +722,12 @@ export function MapPicker({ lat, lng, onLatLng }: {
             style={{ padding: '9px 14px', borderRadius: 10, border: 'none', background: '#048c73', color: '#fff', fontWeight: 600, fontSize: 13, cursor: urlParsing || !urlInput.trim() ? 'not-allowed' : 'pointer', opacity: urlParsing || !urlInput.trim() ? 0.6 : 1, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
             {urlParsing
               ? <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
-              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>ดึงพิกัด</>}
+              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{t.getCoords}</>}
           </button>
         </div>
         {urlError
           ? <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#dc2626' }}>{urlError}</p>
-          : <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94a3b8' }}>วางลิงก์จาก Google Maps แล้วพิกัดจะดึงอัตโนมัติ • หรือค้นหาด้านล่าง / คลิกบนแผนที่</p>
+          : <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94a3b8' }}>{t.pasteHint}</p>
         }
       </div>
 
@@ -694,13 +735,13 @@ export function MapPicker({ lat, lng, onLatLng }: {
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={searchVal} onChange={e => setSearchVal(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); doSearch() } }}
-            placeholder="ค้นหาชื่อโครงการ / ที่อยู่ใกล้เคียง แล้วกด Enter"
+            placeholder={t.searchNearby}
             style={{ ...SINP, flex: 1 }} />
           <button type="button" onClick={doSearch} disabled={searching}
             style={{ padding: '9px 14px', borderRadius: 10, border: 'none', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 13, cursor: searching ? 'not-allowed' : 'pointer', opacity: searching ? 0.7 : 1, whiteSpace: 'nowrap' }}>
             {searching
-              ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>ค้นหา</>
-              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>map</span>ค้นหา</>}
+              ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>{t.search}</>
+              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>map</span>{t.search}</>}
           </button>
         </div>
         {results.length > 0 && (
@@ -711,7 +752,7 @@ export function MapPicker({ lat, lng, onLatLng }: {
                 <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73', marginRight: 6 }}>location_on</span>{r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
               </button>
             ))}
-            <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>ปิด</button>
+            <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>{t.close}</button>
           </div>
         )}
       </div>
@@ -719,18 +760,18 @@ export function MapPicker({ lat, lng, onLatLng }: {
       {lat && lng ? (
         <div style={{ marginTop: 8, padding: '7px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', fontWeight: 500, display: 'flex', gap: 12, alignItems: 'center' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}</span>
-          <span style={{ color: '#94a3b8', fontWeight: 400 }}>ลากหมุดหรือคลิกบนแผนที่เพื่อปรับ</span>
+          <span style={{ color: '#94a3b8', fontWeight: 400 }}>{t.dragToAdjust}</span>
         </div>
       ) : (
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>คลิกบนแผนที่ ลากหมุด หรือค้นหาชื่อสถานที่ด้านบน</p>
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>{t.clickMapHint}</p>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
         <div>
-          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>Lat (ละติจูด)</label>
+          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>{t.latitude}</label>
           <input value={lat} onChange={e => onLatLng(e.target.value, lng)} placeholder="13.756300" style={{ ...SINP, fontSize: 12.5, padding: '7px 10px' }} />
         </div>
         <div>
-          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>Lng (ลองจิจูด)</label>
+          <label style={{ ...SLBL, fontSize: 11.5, color: '#94a3b8' }}>{t.longitude}</label>
           <input value={lng} onChange={e => onLatLng(lat, e.target.value)} placeholder="100.501800" style={{ ...SINP, fontSize: 12.5, padding: '7px 10px' }} />
         </div>
       </div>
@@ -741,10 +782,12 @@ export function MapPicker({ lat, lng, onLatLng }: {
 // ── Thailand Cascading Address Select ─────────────────────────────────────────
 type AddrItem = { id: number; name: string; zip?: string }
 
-export function ThaiAddressSelect({ form, onChange }: {
+export function ThaiAddressSelect({ form, onChange, locale = 'th' }: {
   form: Pick<FormState, 'address_th' | 'district' | 'sub_district' | 'province' | 'postcode'>
   onChange: (k: string, v: string) => void
+  locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   const [provinces, setProvinces] = useState<AddrItem[]>([])
   const [amphures,  setAmphures]  = useState<AddrItem[]>([])
   const [tambons,   setTambons]   = useState<AddrItem[]>([])
@@ -797,9 +840,9 @@ export function ThaiAddressSelect({ form, onChange }: {
   }
 
   function selectTambon(name: string) {
-    const t = tambons.find(t => t.name === name)
-    if (!t) return
-    onChange('sub_district', t.name); onChange('postcode', t.zip ?? '')
+    const tambon = tambons.find(x => x.name === name)
+    if (!tambon) return
+    onChange('sub_district', tambon.name); onChange('postcode', tambon.zip ?? '')
   }
 
   function selStyle(disabled: boolean): React.CSSProperties {
@@ -809,34 +852,34 @@ export function ThaiAddressSelect({ form, onChange }: {
   return (
     <div>
       <div style={{ marginBottom: 12 }}>
-        <label style={SLBL}>ที่อยู่ (ชื่ออาคาร / ถนน / เลขที่)</label>
-        <input value={form.address_th} onChange={e => onChange('address_th', e.target.value)} placeholder="เช่น Metro Luxe Rama 4  ถนนพระราม 4" style={SINP} />
+        <label style={SLBL}>{t.address}</label>
+        <input value={form.address_th} onChange={e => onChange('address_th', e.target.value)} placeholder={t.addressPlaceholder} style={SINP} />
       </div>
       <div style={{ marginBottom: 12 }}>
-        <label style={SLBL}>จังหวัด *</label>
+        <label style={SLBL}>{t.province} *</label>
         <select value={provId ?? ''} onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectProvince(id) }} style={{ ...SINP, cursor: 'pointer' }}>
-          <option value="">{provinces.length === 0 ? 'กำลังโหลด…' : 'เลือกจังหวัด'}</option>
-          {provinces.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <option value="">{provinces.length === 0 ? t.loading : t.chooseProvince}</option>
+          {provinces.map(p => <option key={p.id} value={p.id}>{provinceLabel(p.name, locale)}</option>)}
         </select>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
-          <label style={SLBL}>เขต / อำเภอ {loadA && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>}</label>
+          <label style={SLBL}>{t.district} {loadA && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>}</label>
           <select value={amphId ?? ''} onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectAmphure(id) }} disabled={!provId || loadA} style={selStyle(!provId || loadA)}>
-            <option value="">{!provId ? 'เลือกจังหวัดก่อน' : loadA ? 'กำลังโหลด…' : 'เลือกเขต / อำเภอ'}</option>
-            {amphures.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            <option value="">{!provId ? t.chooseProvinceFirst : loadA ? t.loading : t.chooseDistrict}</option>
+            {amphures.map(a => <option key={a.id} value={a.id}>{districtLabel(a.name, form.province, locale)}</option>)}
           </select>
         </div>
         <div>
-          <label style={SLBL}>แขวง / ตำบล {loadT && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>}</label>
+          <label style={SLBL}>{t.subDistrict} {loadT && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>}</label>
           <select value={form.sub_district || ''} onChange={e => selectTambon(e.target.value)} disabled={!amphId || loadT} style={selStyle(!amphId || loadT)}>
-            <option value="">{!amphId ? 'เลือกเขต/อำเภอก่อน' : loadT ? 'กำลังโหลด…' : 'เลือกแขวง / ตำบล'}</option>
-            {tambons.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+            <option value="">{!amphId ? t.chooseDistrictFirst : loadT ? t.loading : t.chooseSubDistrict}</option>
+            {tambons.map(tb => <option key={tb.id} value={tb.name}>{tb.name}</option>)}
           </select>
         </div>
       </div>
       <div>
-        <label style={SLBL}>รหัสไปรษณีย์</label>
+        <label style={SLBL}>{t.postcode}</label>
         <input value={form.postcode} onChange={e => onChange('postcode', e.target.value)} placeholder="10110" style={{ ...SINP, width: 130 }} />
         {form.postcode && <span style={{ fontSize: 11.5, color: '#048c73', marginLeft: 8, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{form.postcode}</span>}
       </div>
@@ -845,13 +888,15 @@ export function ThaiAddressSelect({ form, onChange }: {
 }
 
 // ── Image Upload Zone ──────────────────────────────────────────────────────────
-export function ImageUploadZone({ images, onImagesChange, packageType = 'basic', isPublic = false }: {
+export function ImageUploadZone({ images, onImagesChange, packageType = 'basic', isPublic = false, locale = 'th' }: {
   images: string[]
   onImagesChange: (imgs: string[]) => void
   packageType?: string
   /** When true, uses /api/public-upload (no auth required — for the public landlord submit form) */
   isPublic?: boolean
+  locale?: Locale
 }) {
+  const t = WIZARD_T[locale]
   const [uploading,       setUploading]       = useState(false)
   const [uploadProgress,  setUploadProgress]  = useState(0)
   const [uploadStatus,    setUploadStatus]    = useState('')
@@ -876,7 +921,7 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
       const xhr = new XMLHttpRequest()
       xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)) }
       xhr.onload  = () => { try { resolve(JSON.parse(xhr.responseText)) } catch { resolve({ error: 'Parse error' }) } }
-      xhr.onerror = () => resolve({ error: 'เชื่อมต่อ API ไม่ได้' })
+      xhr.onerror = () => resolve({ error: t.connectFailed })
       xhr.open('POST', '/api/dashboard/upload')
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
       xhr.send(fd)
@@ -888,7 +933,7 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
     const added: string[] = []
     let currentCount = images.length
     const fileArr = Array.from(files).filter(() => currentCount < imageLimit)
-    if (Array.from(files).length > fileArr.length) setUploadError(`แพ็กเกจนี้อัปโหลดได้สูงสุด ${imageLimit} รูป`)
+    if (Array.from(files).length > fileArr.length) setUploadError(t.maxImagesForPackage(imageLimit))
     const total = fileArr.length
 
     if (isPublic) {
@@ -903,8 +948,8 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
           const r = await fetch('/api/public-upload', { method: 'POST', body: fd })
           const d = await r.json()
           if (d.url) { added.push(d.url); currentCount++ }
-          else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
-        } catch { setUploadError('เชื่อมต่อ API ไม่ได้') }
+          else setUploadError(d.error || t.uploadFailed)
+        } catch { setUploadError(t.connectFailed) }
         setUploadProgress(Math.round((i + 1) / total * 100))
       }
     } else {
@@ -922,7 +967,7 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
           setUploadProgress(Math.round((i * 100 + pct) / total))
         })
         if (d.url) { added.push(d.url); currentCount++ }
-        else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
+        else setUploadError(d.error || t.uploadFailed)
       }
     }
 
@@ -944,10 +989,10 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || atLimit}
         style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1.5px dashed ' + (atLimit ? '#eef0ef' : '#c7d2d0'), background: uploading ? '#f8fafc' : '#fafffe', color: atLimit ? '#94a3b8' : '#048c73', fontWeight: 600, fontSize: 13, cursor: (uploading || atLimit) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         {uploading
-          ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด{uploadStatus ? ` ${uploadStatus}` : ''}…</>
+          ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.uploading}{uploadStatus ? ` ${uploadStatus}` : ''}…</>
           : atLimit
-            ? <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>อัปโหลดครบ {imageLimit} รูปแล้ว (สูงสุดของแพ็กเกจนี้)</>
-            : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>เลือกรูปภาพ (JPG · PNG · WebP)</>
+            ? <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{t.uploadedMax(imageLimit)}</>
+            : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>{t.chooseImages} (JPG · PNG · WebP)</>
         }
       </button>
       {uploading && (
@@ -960,12 +1005,12 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
         <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-          {images.length} / {imageLimit} รูป
-          {!atLimit && remaining > 0 && <span style={{ color: '#048c73' }}> · เพิ่มได้อีก {remaining} รูป</span>}
+          {images.length} / {imageLimit} {t.photos}
+          {!atLimit && remaining > 0 && <span style={{ color: '#048c73' }}> · {t.canAddMoreN(remaining)}</span>}
         </p>
         {atLimit && (
           <span style={{ fontSize: 11, color: '#94a3b8' }}>
-            อัปโหลดครบจำนวนสูงสุดแล้ว
+            {t.reachedMax}
           </span>
         )}
       </div>
@@ -978,10 +1023,9 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
         <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
           <span className="msym" style={{ fontSize: 16, color: '#d97f11', flexShrink: 0, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>info</span>
           <p style={{ margin: 0, fontSize: 12, color: '#8a6234', lineHeight: 1.55 }}>
-            แพ็กเกจ <strong>{packageType}</strong> แสดงรูปได้ <strong>{shownCount} รูปแรก</strong> —
-            อีก <strong>{hiddenCount} รูป</strong> จะถูกเก็บไว้แต่ยังไม่แสดงบนเว็บไซต์
+            {t.imgRuleBefore}<strong>{packageType}</strong>{t.imgRuleAfter(shownCount, hiddenCount)}
             <br />
-            ลากสลับลำดับหรือกดตั้งหน้าปกเพื่อเลือกว่ารูปไหนจะแสดง · อัปเกรดแพ็กเกจแล้วรูปที่เหลือจะแสดงทันที โดยไม่ต้องอัปโหลดใหม่
+            {t.imgRuleReorder}
           </p>
         </div>
       )}
@@ -1000,15 +1044,15 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
                 {isHidden && hoveredIdx !== i && (
                   <span style={{ position: 'absolute', bottom: 4, left: 4, right: 4, fontSize: 8.5, background: 'rgba(217,127,17,.94)', color: '#fff', padding: '2px 4px', borderRadius: 4, fontWeight: 700, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1.2 }}>
                     <span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>visibility_off</span>
-                    ยังไม่แสดง
+                    {t.notShown}
                   </span>
                 )}
-                {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>หน้าปก</span>}
+                {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, background: '#02402e', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><span className="msym" style={{ fontSize: 9, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>{t.cover}</span>}
                 {i !== 0 && hoveredIdx === i && (
                   <button type="button" onClick={() => setAsCover(i)}
                     style={{ position: 'absolute', inset: 0, borderRadius: 8, border: 'none', background: 'rgba(2,64,46,.72)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                     <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>
-                    <span>ตั้งหน้าปก</span>
+                    <span>{t.setCover}</span>
                   </button>
                 )}
                 <button type="button" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
@@ -1018,8 +1062,8 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
             })}
           </div>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0' }}>
-            คลิกบนรูปเพื่อตั้งเป็นรูปหน้าปก • รูปแรกจะแสดงเป็น Thumbnail บนเว็บไซต์
-            {hiddenCount > 0 && <> • รูปที่จางคือรูปที่ยังไม่แสดงบนเว็บไซต์</>}
+            {t.clickToSetCover}
+            {hiddenCount > 0 && <> • {t.fadedNotShown}</>}
           </p>
         </>
       )}
@@ -1028,7 +1072,8 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
 }
 
 // ── Video Upload Zone ──────────────────────────────────────────────────────────
-export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: string; onVideoChange: (url: string) => void; packageType: string }) {
+export function VideoUploadZone({ videoUrl, onVideoChange, packageType, locale = 'th' }: { videoUrl: string; onVideoChange: (url: string) => void; packageType: string; locale?: Locale }) {
+  const t = WIZARD_T[locale]
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -1042,8 +1087,8 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
       const r = await fetch('/api/dashboard/upload', { method: 'POST', headers: { Authorization: `Bearer ${vidSess?.access_token}` }, body: fd })
       const d = await r.json()
       if (d.url) onVideoChange(d.url)
-      else setUploadError(d.error || 'อัปโหลดไม่สำเร็จ')
-    } catch { setUploadError('เชื่อมต่อ API ไม่ได้') }
+      else setUploadError(d.error || t.uploadFailed)
+    } catch { setUploadError(t.connectFailed) }
     setUploading(false)
   }
 
@@ -1057,8 +1102,8 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
         <div style={{ marginBottom: 10, padding: '10px 12px', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
           <span className="msym" style={{ fontSize: 16, color: '#d97f11', flexShrink: 0, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>visibility_off</span>
           <p style={{ margin: 0, fontSize: 12, color: '#8a6234', lineHeight: 1.55 }}>
-            วิดีโอแสดงบนเว็บไซต์เฉพาะแพ็กเกจ <strong>Premium</strong> — เพิ่มไว้ตอนนี้ได้เลย
-            ระบบจะเก็บไว้ให้ และจะแสดงทันทีเมื่ออัปเกรด โดยไม่ต้องใส่ลิงก์ใหม่
+            {t.videoRuleBefore}<strong>Premium</strong>{t.videoRuleAfter}
+            {t.videoKeptForUpgrade}
           </p>
         </div>
       )}
@@ -1066,18 +1111,18 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
         style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
         {uploading
-          ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>กำลังอัปโหลด...</>
-          : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span>อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)</>}
+          ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>{t.uploadingEllipsis}</>
+          : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span>{t.uploadVideo}</>}
       </button>
       <div>
-        <label style={{ ...SLBL, fontSize: 12 }}>หรือวางลิงก์วิดีโอ (YouTube / Vimeo)</label>
+        <label style={{ ...SLBL, fontSize: 12 }}>{t.orPasteVideoLink}</label>
         <input value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''} onChange={e => onVideoChange(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={SINP} />
       </div>
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {videoUrl && (
         <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fbf8', borderRadius: 8, fontSize: 12, color: '#048c73', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ flex: 1, wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>check_circle</span>{videoUrl.length > 60 ? videoUrl.slice(0, 60) + '…' : videoUrl}</span>
-          <button type="button" onClick={() => onVideoChange('')} style={{ color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>ลบ</button>
+          <button type="button" onClick={() => onVideoChange('')} style={{ color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>{t.remove}</button>
         </div>
       )}
     </div>
@@ -1087,7 +1132,7 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { vide
 // ── Listing Form Fields (master form component) ────────────────────────────────
 export function ListingFormFields({
   form, onChange, onAmenityToggle, onImagesChange,
-  isPublicUpload = false, isAdmin = false, isMobile = false,
+  isPublicUpload = false, isAdmin = false, isMobile = false, locale = 'th',
 }: {
   form: FormState
   onChange: (k: string, v: any) => void
@@ -1099,8 +1144,17 @@ export function ListingFormFields({
   isAdmin?: boolean
   /** Single-column grids on narrow screens */
   isMobile?: boolean
+  /**
+   * Which language the owner reads. Thai by default, so the owner dashboard and
+   * the admin screen are unaffected — only /en/submit/new passes 'en'.
+   *
+   * This changes labels only. Every value the form writes — room type key,
+   * amenity name, facing, district, charge key — is identical in both locales.
+   */
+  locale?: Locale
 }) {
-  const roomOpts = getRoomTypeOptions(form.property_type)
+  const t = WIZARD_T[locale]
+  const roomOpts = getRoomTypeOptions(form.property_type, locale)
 
   // Editable in Settings; defaults until it loads.
   const [amenityList, setAmenityList] = useState<Amenity[]>(DEFAULT_AMENITIES)
@@ -1111,14 +1165,14 @@ export function ListingFormFields({
   // Admin picks the package directly; everyone else sees what was bought.
   const PackageSelector = isAdmin ? (
     <div style={{ marginBottom: 16 }}>
-      <label style={SLBL}>แพ็กเกจประกาศ (Admin)</label>
+      <label style={SLBL}>{t.listingPackage} (Admin)</label>
       <select value={form.package_type} onChange={e => onChange('package_type', e.target.value)} style={SINP}>
         {ADMIN_PACKAGES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
       </select>
       <p style={{ fontSize: 11.5, margin: '4px 0 0', fontWeight: 500, color: form.package_type === 'admin' ? '#94a3b8' : '#048c73' }}>
         {form.package_type === 'admin'
-          ? 'ไม่มีวันหมดอายุ — อยู่บนเว็บจนกว่าจะลบ'
-          : `⏱ หมดอายุ: ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
+          ? t.neverExpires
+          : `⏱ ${t.expires} ${new Date(computeExpiry(form.package_type) ?? '').toLocaleDateString(locale === 'en' ? 'en-GB' : 'th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`}
       </p>
     </div>
   ) : null
@@ -1137,15 +1191,15 @@ export function ListingFormFields({
     <>
       {/* ── 1 · ข้อมูลหลัก ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="1 · ข้อมูลหลัก" />
+        <SectionHead text={`1 · ${t.mainInfo}`} />
         <div style={{ marginBottom: 14 }}>
-          <label style={SLBL}>ประเภทอสังหาฯ *</label>
+          <label style={SLBL}>{t.propertyType} *</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {[
-              { value: 'condo',     icon: 'apartment',      label: 'คอนโด' },
-              { value: 'apartment', icon: 'domain',         label: 'อพาร์ทเม้นท์' },
-              { value: 'house',     icon: 'home',           label: 'บ้าน' },
-              { value: 'office',    icon: 'corporate_fare', label: 'ออฟฟิศ' },
+              { value: 'condo',     icon: 'apartment',      label: t.typeCondo },
+              { value: 'apartment', icon: 'domain',         label: t.typeApartment },
+              { value: 'house',     icon: 'home',           label: t.typeHouse },
+              { value: 'office',    icon: 'corporate_fare', label: t.typeOffice },
               { value: 'coworking', icon: 'hub',            label: 'Co-Working' },
             ].map(o => (
               <button key={o.value} type="button" onClick={() => onChange('property_type', o.value)}
@@ -1161,11 +1215,11 @@ export function ListingFormFields({
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>
-          <label style={SLBL}>ชื่อประกาศ (ภาษาไทย) *</label>
-          <input value={form.title_th} onChange={e => onChange('title_th', e.target.value)} placeholder="เช่น เช่าคอนโด เอกมัย ห้องสวย วิวดี" required style={SINP} />
+          <label style={SLBL}>{t.titleTh} *</label>
+          <input value={form.title_th} onChange={e => onChange('title_th', e.target.value)} placeholder={t.titleThPlaceholder} required style={SINP} />
         </div>
         <div>
-          <label style={SLBL}>ชื่อประกาศ (ภาษาอังกฤษ)</label>
+          <label style={SLBL}>{t.titleEn}</label>
           <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={SINP} />
         </div>
       </div>
@@ -1174,12 +1228,12 @@ export function ListingFormFields({
           every existing link. Shown here for reference only. */}
       {isAdmin && form.slug && (
         <div style={{ marginBottom: 20, marginTop: -8 }}>
-          <label style={SLBL}>URL ของประกาศ</label>
+          <label style={SLBL}>URL {t.ofListing}</label>
           <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, wordBreak: 'break-all' }}>
             spacesmate.com/property/{form.slug}
           </p>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
-            สร้างอัตโนมัติจากชื่อประกาศ — ไม่สามารถแก้ไขได้ เพื่อไม่ให้ลิงก์เดิมเสีย
+            {t.slugAuto}
           </p>
         </div>
       )}
@@ -1190,11 +1244,11 @@ export function ListingFormFields({
         {isApartment && (
           <>
             {PackageSelector}
-            <SectionHead text="2 · ประเภทและราคาห้อง" />
+            <SectionHead text={`2 · ${t.roomTypesAndPrices}`} />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
-              เพิ่มแต่ละประเภทห้องพร้อมขนาดและราคา (ราคาในหน้าค้นหาจะดึงจาก ต่ำสุด–สูงสุด ของตาราง)
+              {t.addEachRoomType}
             </p>
-            <ApartmentUnitGrid rows={form.apartment_units} onChange={rows => onChange('apartment_units', rows)} roomTypeOptions={roomOpts} />
+            <ApartmentUnitGrid rows={form.apartment_units} onChange={rows => onChange('apartment_units', rows)} roomTypeOptions={roomOpts} locale={locale} />
           </>
         )}
 
@@ -1202,8 +1256,8 @@ export function ListingFormFields({
         {isCondoOrHouse && (
           <>
             {PackageSelector}
-            <SectionHead text="2 · รายละเอียดการเช่า" />
-            <CondoHouseRentalDetail detail={form.condo_rental} propertyType={form.property_type} onChange={d => onChange('condo_rental', d)} />
+            <SectionHead text={`2 · ${t.rentalDetail}`} />
+            <CondoHouseRentalDetail detail={form.condo_rental} propertyType={form.property_type} onChange={d => onChange('condo_rental', d)} locale={locale} />
           </>
         )}
 
@@ -1211,27 +1265,27 @@ export function ListingFormFields({
         {isOfficeOrCo && (
           <>
             {PackageSelector}
-            <SectionHead text="2 · ประเภทและราคาพื้นที่" />
+            <SectionHead text={`2 · ${t.spaceTypesAndPrices}`} />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
-              เพิ่มแต่ละประเภทพื้นที่พร้อมขนาดและราคา
+              {t.addEachSpaceType}
             </p>
-            <ApartmentUnitGrid rows={form.apartment_units} onChange={rows => onChange('apartment_units', rows)} roomTypeOptions={roomOpts} />
+            <ApartmentUnitGrid rows={form.apartment_units} onChange={rows => onChange('apartment_units', rows)} roomTypeOptions={roomOpts} locale={locale} />
           </>
         )}
       </div>
 
       {/* ── 3 · ขนาดและลักษณะ ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="3 · ขนาดและลักษณะ" />
+        <SectionHead text={`3 · ${t.sizeAndLayout}`} />
         {showAreaSqm && (
           <div style={{ display: 'grid', gridTemplateColumns: showFloor ? '1fr 1fr' : '1fr', gap: 12, marginBottom: showBedsBaths ? 12 : 0 }}>
             <div>
-              <label style={SLBL}>พื้นที่ใช้สอย (ตร.ม.)</label>
+              <label style={SLBL}>{t.usableArea}</label>
               <input type="number" value={form.area_sqm} onChange={e => onChange('area_sqm', e.target.value)} placeholder="28" style={SINP} />
             </div>
             {showFloor && (
               <div>
-                <label style={SLBL}>ชั้นที่ตั้ง</label>
+                <label style={SLBL}>{t.floorLocated}</label>
                 <input type="number" value={form.floor} onChange={e => onChange('floor', e.target.value)} placeholder="7" style={SINP} />
               </div>
             )}
@@ -1240,15 +1294,15 @@ export function ListingFormFields({
         {showBedsBaths && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={SLBL}>ห้องนอน</label>
+              <label style={SLBL}>{t.bedrooms}</label>
               <select value={form.bedrooms} onChange={e => onChange('bedrooms', e.target.value)} style={SINP}>
-                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ห้อง`}</option>)}
+                {['0','1','2','3','4','5'].map(n => <option key={n} value={n}>{n === '0' ? 'Studio' : `${n} ${t.rooms}`}</option>)}
               </select>
             </div>
             <div>
-              <label style={SLBL}>ห้องน้ำ</label>
+              <label style={SLBL}>{t.bathrooms}</label>
               <select value={form.bathrooms} onChange={e => onChange('bathrooms', e.target.value)} style={SINP}>
-                {['1','2','3','4'].map(n => <option key={n} value={n}>{n} ห้อง</option>)}
+                {['1','2','3','4'].map(n => <option key={n} value={n}>{n} {t.rooms}</option>)}
               </select>
             </div>
           </div>
@@ -1258,36 +1312,37 @@ export function ListingFormFields({
       {/* ── 3B · รายละเอียดการเช่า ── */}
       {isApartment ? (
         <div style={{ marginBottom: 24 }}>
-          <SectionHead text="3B · รายละเอียดการเช่า" />
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>ค่าสาธารณูปโภค เงินมัดจำ และค่าใช้จ่ายอื่น ๆ ที่เรียกเก็บ</p>
-          <RentalChargesSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} />
+          <SectionHead text={`3B · ${t.rentalDetail}`} />
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.utilitiesNote}</p>
+          <RentalChargesSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} locale={locale} />
         </div>
       ) : (
         <div style={{ marginBottom: 24 }}>
-          <SectionHead text="3B · รายละเอียดการเช่า" />
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>เงินประกัน เงินล่วงหน้า และค่ามัดจำอื่น ๆ (เช่น กุญแจ)</p>
-          <DepositSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} />
+          <SectionHead text={`3B · ${t.rentalDetail}`} />
+          <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.depositsNote}</p>
+          <DepositSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} locale={locale} />
         </div>
       )}
 
       {/* ── 4 · ที่ตั้งและที่อยู่ ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="4 · ที่ตั้งและที่อยู่" />
+        <SectionHead text={`4 · ${t.locationAndAddress}`} />
         <ThaiAddressSelect
           form={{ address_th: form.address_th, district: form.district, sub_district: form.sub_district, province: form.province, postcode: form.postcode }}
           onChange={onChange}
+          locale={locale}
         />
       </div>
 
       {/* ── 5 · พิกัดบนแผนที่ ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="5 · พิกัดบนแผนที่" />
-        <MapPicker lat={form.lat} lng={form.lng} onLatLng={(lat, lng) => { onChange('lat', lat); onChange('lng', lng) }} />
+        <SectionHead text={`5 · ${t.mapCoords}`} />
+        <MapPicker lat={form.lat} lng={form.lng} onLatLng={(lat, lng) => { onChange('lat', lat); onChange('lng', lng) }} locale={locale} />
       </div>
 
       {/* ── 6 · รายละเอียดประกาศ (TH / EN) ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="6 · รายละเอียดประกาศ" />
+        <SectionHead text={`6 · ${t.listingDetail}`} />
         <div style={{ display: 'flex', gap: 0, marginBottom: 10, borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', width: 'fit-content' }}>
           {(['th', 'en'] as const).map(lang => (
             <button
@@ -1301,7 +1356,7 @@ export function ListingFormFields({
                 transition: 'background 0.15s, color 0.15s',
               }}
             >
-              {lang === 'th' ? '🇹🇭 ภาษาไทย' : '🇬🇧 English'}
+              {lang === 'th' ? `🇹🇭 ${t.thaiLanguage}` : '🇬🇧 English'}
             </button>
           ))}
         </div>
@@ -1310,7 +1365,7 @@ export function ListingFormFields({
             key="desc-th"
             value={form.description_th}
             onChange={v => onChange('description_th', v)}
-            placeholder="อธิบายรายละเอียดห้อง ทำเล สิ่งอำนวยความสะดวก และจุดเด่น..."
+            placeholder={t.descPlaceholder}
             minHeight={220}
           />
         ) : (
@@ -1330,7 +1385,7 @@ export function ListingFormFields({
           lib/amenities defaults if that request fails, because a form showing no
           amenities looks broken and would publish listings with none selected. */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="7 · สิ่งอำนวยความสะดวก" />
+        <SectionHead text={`7 · ${t.amenities}`} />
         {AMENITY_SECTIONS.map(sec => {
           const items = bySection(amenityList, sec.key)
           if (!items.length) return null
@@ -1338,7 +1393,7 @@ export function ListingFormFields({
             <div key={sec.key} style={{ marginBottom: 18 }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: '#334155', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{sec.icon}</span>
-                {sec.label_th}
+                {locale === 'en' ? (sec.label_en || sec.label_th) : sec.label_th}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {items.map(a => {
@@ -1350,7 +1405,7 @@ export function ListingFormFields({
                         border: on ? 'none' : '1px solid #eef0ef',
                         background: on ? (sec.key === 'unit' ? '#02402e' : '#048c73') : '#f8fafc',
                         color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                      {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{a.name_th}
+                      {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{locale === 'en' ? (a.name_en || a.name_th) : a.name_th}
                     </button>
                   )
                 })}
@@ -1362,34 +1417,35 @@ export function ListingFormFields({
 
       {/* ── 8 · รูปภาพห้อง ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="8 · รูปภาพห้อง" />
+        <SectionHead text={`8 · ${t.roomImages}`} />
         <ImageUploadZone
           images={form.images}
           onImagesChange={onImagesChange}
           packageType={form.package_type}
           isPublic={isPublicUpload}
+          locale={locale}
         />
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>รูปแรกจะเป็นรูปหน้าปกของประกาศ</p>
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>{t.firstIsCover}</p>
       </div>
 
       {/* ── 9 · วิดีโอ (Premium) ── */}
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text="9 · วิดีโอประกาศ (Premium เท่านั้น)" />
-        <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} />
+        <SectionHead text={`9 · ${t.listingVideo} (${t.premiumOnly})`} />
+        <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} locale={locale} />
       </div>
 
       {/* ── 10 · ข้อมูลการติดต่อ ── */}
       <div style={{ marginBottom: 8 }}>
-        <SectionHead text="10 · ข้อมูลการติดต่อ" />
-        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>ข้อมูลนี้จะแสดงในหน้าประกาศเพื่อให้ผู้เช่าติดต่อได้</p>
+        <SectionHead text={`10 · ${t.contactInfo}`} />
+        <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.contactShownOnListing}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
-            <label style={SLBL}>ชื่อผู้ติดต่อ</label>
+            <label style={SLBL}>{t.contactName}</label>
             <input value={form.contact_name} onChange={e => onChange('contact_name', e.target.value)}
-              placeholder="ชื่อ-นามสกุล หรือชื่อนิติบุคคล" style={SINP} />
+              placeholder={t.contactNamePlaceholder} style={SINP} />
           </div>
           <div>
-            <label style={SLBL}>เบอร์โทรศัพท์</label>
+            <label style={SLBL}>{t.phone}</label>
             <input value={form.contact_phone} onChange={e => onChange('contact_phone', e.target.value)}
               placeholder="0812345678" style={SINP} />
           </div>
@@ -1398,15 +1454,15 @@ export function ListingFormFields({
           <div>
             <label style={SLBL}>LINE ID</label>
             <input value={form.contact_line} onChange={e => onChange('contact_line', e.target.value)}
-              placeholder="@yourid หรือ yourid" style={SINP} />
+              placeholder={`@yourid ${t.or} yourid`} style={SINP} />
           </div>
         </div>
         <div>
-          <label style={SLBL}>อีเมล — ไม่บังคับ</label>
+          <label style={SLBL}>{t.emailOptional}</label>
           <input type="email" value={form.contact_email} onChange={e => onChange('contact_email', e.target.value)}
             placeholder="email@example.com" style={SINP} />
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
-            เว้นว่างได้ — ระบบจะใช้อีเมลจากบัญชีของคุณ
+            {t.emailBlankNote}
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { FaqLd } from '@/components/seo/JsonLd'
 import BuySlotsCta from '@/components/pricing/BuySlotsCta'
 import TrackOnMount from '@/components/TrackOnMount'
 import { pricePerMonth, savingsVsBasic } from '@/lib/packages'
+import { localeHref } from '@/lib/site-i18n'
 import { PRICING_T, PRICING_FAQ_T, buildPlans, type Locale } from '@/lib/pricing-i18n'
 
 /**
@@ -212,7 +213,7 @@ export default function PricingBody({ locale = 'th' }: { locale?: Locale }) {
             </p>
           </div>
           <a
-            href="/contact"
+            href={localeHref('/contact', locale)}
             className="bg-white text-spacemate-brandDark font-semibold text-sm px-6 py-3 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity"
           >
             {t.helpCta}

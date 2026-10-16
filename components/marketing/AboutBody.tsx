@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { localeHref } from '@/lib/site-i18n'
 import { ABOUT_T, type Locale } from '@/lib/marketing-i18n'
 
 /**
@@ -33,7 +34,7 @@ export default function AboutBody({ locale = 'th' }: { locale?: Locale }) {
             <Link href="/manage" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, padding: '13px 28px', borderRadius: 28, textDecoration: 'none' }}>
               {t.ctaManage}
             </Link>
-            <Link href="/search" style={{ color: '#fff', fontWeight: 500, fontSize: 15, padding: '13px 24px', borderRadius: 28, textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.4)' }}>
+            <Link href={localeHref('/search', locale)} style={{ color: '#fff', fontWeight: 500, fontSize: 15, padding: '13px 24px', borderRadius: 28, textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.4)' }}>
               {t.ctaSearch}
             </Link>
           </div>
@@ -100,7 +101,7 @@ export default function AboutBody({ locale = 'th' }: { locale?: Locale }) {
             <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: '0 0 14px', fontWeight: 300 }}>
               {t.stream1Desc}
             </p>
-            <Link href="/pricing" style={{ color: '#048c73', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>{t.stream1Cta}</Link>
+            <Link href={localeHref('/pricing', locale)} style={{ color: '#048c73', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>{t.stream1Cta}</Link>
           </div>
           <div style={{ padding: '32px 28px', background: '#02402e', borderRadius: 20 }}>
             <p style={{ margin: '0 0 14px' }}><span className="msym" style={{ fontSize: 26, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>build</span></p>
@@ -120,7 +121,7 @@ export default function AboutBody({ locale = 'th' }: { locale?: Locale }) {
             <Link href="/manage" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15, padding: '13px 28px', borderRadius: 28, textDecoration: 'none' }}>
               {t.closingCta1}
             </Link>
-            <Link href="/contact" style={{ color: '#fff', fontWeight: 500, fontSize: 15, padding: '13px 24px', borderRadius: 28, textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.35)' }}>
+            <Link href={localeHref('/contact', locale)} style={{ color: '#fff', fontWeight: 500, fontSize: 15, padding: '13px 24px', borderRadius: 28, textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.35)' }}>
               {t.closingCta2}
             </Link>
           </div>

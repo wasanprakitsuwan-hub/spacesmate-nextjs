@@ -5,6 +5,7 @@ import { SEARCH_T, type Locale, type SearchStrings } from '@/lib/pages-i18n'
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { localeHref } from '@/lib/site-i18n'
 import { PRICE_RANGES, type Property } from '@/lib/property-data'
 
 // ── Haversine distance (km) between two lat/lng points ───────────────────────
@@ -213,7 +214,7 @@ function SearchContent({ locale }: { locale: Locale }) {
       <div style={{ background: 'linear-gradient(135deg,#02402e,#048c73)', padding: '32px 24px 36px' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, margin: '0 0 8px' }}>
-            <Link href="/" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{t.home}</Link> › {t.searchRentals}
+            <Link href={localeHref('/', locale)} style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{t.home}</Link> › {t.searchRentals}
           </p>
           <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 600, margin: '0 0 18px' }}>{label}{t.inBangkok}</h1>
           {/* Keyword search bar */}

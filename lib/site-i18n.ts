@@ -15,7 +15,7 @@ export type Locale = 'th' | 'en'
  * Add a path here as each English page lands, and every footer link that uses
  * localeHref starts keeping the visitor on the English side automatically.
  */
-const EN_ROUTES = new Set(['/about', '/services', '/pricing', '/faq', '/contact', '/search', '/submit', '/privacy', '/terms'])
+const EN_ROUTES = new Set(['/about', '/services', '/pricing', '/faq', '/contact', '/search', '/submit', '/submit/new', '/privacy', '/terms'])
 
 /** Map a path to its English counterpart when one exists. */
 export function localeHref(path: string, locale: Locale): string {

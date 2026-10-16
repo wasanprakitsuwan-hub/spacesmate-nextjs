@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { MAX_IMAGES_ANY_PACKAGE, PACKAGE_PRICE_THB } from '@/lib/packages'
+import { localeHref } from '@/lib/site-i18n'
 import { SUBMIT_T, type Locale, type SubmitStrings } from '@/lib/pages-i18n'
 import { buildPlans } from '@/lib/pricing-i18n'
 
@@ -82,7 +83,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
               {t.ownersBody}
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/submit/new"
+              <Link href={localeHref('/submit/new', locale)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 28px', textDecoration: 'none' }}>
                 {t.ownersCta1}<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </Link>
@@ -227,7 +228,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
                     clicked a price ended up filling in a property instead —
                     the confusion that started this. Writing a listing is the
                     single call to action below the grid. */}
-                <Link href="/pricing"
+                <Link href={localeHref('/pricing', locale)}
                   style={{
                     display: 'block', textAlign: 'center', fontWeight: 600, fontSize: 15,
                     borderRadius: 28, padding: '13px 0', textDecoration: 'none', transition: 'all .2s',
@@ -250,7 +251,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
           {/* Writing a listing is free and needs no package, so it gets its own
               call to action rather than hiding behind a price. */}
           <div style={{ maxWidth: 860, margin: '30px auto 0', textAlign: 'center' }}>
-            <Link href="/submit/new"
+            <Link href={localeHref('/submit/new', locale)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, background: '#02402e', color: '#fff',
                 fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 28, textDecoration: 'none',
@@ -275,7 +276,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', margin: '0 0 32px', fontWeight: 300 }}>
               {t.closingBody}
             </p>
-            <Link href="/submit/new"
+            <Link href={localeHref('/submit/new', locale)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 16, borderRadius: 30, padding: '15px 36px', textDecoration: 'none' }}>
               {t.ownersCta1} →
             </Link>
