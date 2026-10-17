@@ -45,6 +45,14 @@ export const AUTH_T = {
     badEmail: 'กรุณากรอกอีเมลที่ถูกต้อง เช่น name@email.com',
     badPhone: 'เบอร์โทรศัพท์ไม่ถูกต้อง กรุณากรอกเบอร์มือถือ เช่น 081-234-5678',
     pwdMismatch: 'รหัสผ่านไม่ตรงกัน',
+    /**
+     * 8 — the NIST SP 800-63B floor and the common default across the web.
+     * Both front doors (this modal and /login) enforce it as of 17 Oct 2026.
+     *
+     * This is a client-side check only. The minimum that actually binds is the
+     * one configured in Supabase Auth, whose default is 6 — so anything posting
+     * straight to the API is governed by that, not by this.
+     */
     pwdTooShort: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
     pwdNeedsBoth: 'รหัสผ่านต้องมีทั้งตัวอักษรและตัวเลข เช่น SpacesMate88',
     signupFailed: 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่',
@@ -83,6 +91,7 @@ export const AUTH_T = {
     fullNamePlaceholder: 'สมชาย ใจดี',
     phone: 'เบอร์โทรศัพท์',
     pwdPlaceholder: 'อย่างน้อย 8 ตัวอักษร ผสมตัวเลข',
+    min8: 'อย่างน้อย 8 ตัวอักษร',
     confirmPwd: 'ยืนยันรหัสผ่าน',
     signingUp: 'กำลังสมัคร...',
     haveAccount: 'มีบัญชีแล้ว?',
@@ -95,13 +104,6 @@ export const AUTH_T = {
     checkEmailSent: 'เราได้ส่งลิงก์ยืนยันบัญชีไปที่',
     checkEmailAction: 'กรุณาคลิกลิงก์ในอีเมลเพื่อยืนยันบัญชีก่อนเข้าสู่ระบบ',
     checkEmailSpam: 'หากไม่พบอีเมล ให้ตรวจสอบในโฟลเดอร์ Spam',
-    /**
-     * NOTE: this page enforces 6 characters while the modal enforces 8, against
-     * the same Supabase account. Flagged on 16 Oct 2026 — the copy matches the
-     * code as it stands rather than papering over the difference.
-     */
-    pwdTooShort6: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
-    min6: 'อย่างน้อย 6 ตัวอักษร',
     fullNameLogin: 'ชื่อ-นามสกุล',
     googleContinue: 'ดำเนินการต่อด้วย Google',
     googleFailed: 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ',
@@ -165,6 +167,7 @@ export const AUTH_T = {
     fullNamePlaceholder: 'Alex Morgan',
     phone: 'Phone number',
     pwdPlaceholder: 'At least 8 characters, with a number',
+    min8: 'At least 8 characters',
     confirmPwd: 'Confirm password',
     signingUp: 'Creating your account…',
     haveAccount: 'Already have an account?',
@@ -176,8 +179,6 @@ export const AUTH_T = {
     checkEmailSent: 'We have sent a confirmation link to',
     checkEmailAction: 'Click the link in that email to confirm your account before signing in',
     checkEmailSpam: 'If it has not arrived, check your Spam folder',
-    pwdTooShort6: 'Your password needs at least 6 characters',
-    min6: 'At least 6 characters',
     fullNameLogin: 'Full name',
     googleContinue: 'Continue with Google',
     googleFailed: 'Could not sign in with Google',

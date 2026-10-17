@@ -67,7 +67,10 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     if (signPwd !== signPwd2) { setError(t.pwdMismatch); return }
-    if (signPwd.length < 6)  { setError(t.pwdTooShort6); return }
+    // 8, matching AuthModal. These are two front doors to the same Supabase
+    // account; until 17 Oct 2026 this one asked for 6 and the modal for 8, so
+    // the rule an owner met depended on which they happened to open.
+    if (signPwd.length < 8)  { setError(t.pwdTooShort); return }
     setLoading(true); setError('')
     try {
       const supabase = createBrowserClient()
@@ -226,7 +229,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                   <input
                     type="password" value={signPwd}
                     onChange={e => { setSignPwd(e.target.value); setError('') }}
-                    required placeholder={t.min6}
+                    required placeholder={t.min8}
                     className="input-field w-full"
                   />
                 </div>
