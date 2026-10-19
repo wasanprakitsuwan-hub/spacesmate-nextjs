@@ -58,22 +58,42 @@ for (const file of files) {
       continue
     }
     /**
-     * Three shapes, all of which end up as the page title:
+     * Enumerating shapes did not work. Four attempts, four misses:
      *
-     *   title:      '…'    on a page or layout
-     *   metaTitle:  '…'    in a dictionary — where most page titles live
-     *   const title = `…`  built into a variable, then returned
+     *   title: '…'                          caught on pass 1
+     *   metaTitle: '…'                      missed — key was not exactly "title"
+     *   const title = `…`                   missed — not a property at all
+     *   privacyMetaTitle: '…'               missed — prefixed key
+     *   title: isEn ? '…' : '…'             missed — value is not the next token
      *
-     * The first pass caught only the first shape and reported clean while four
-     * routes were still broken. The second missed the area pages, which build
-     * theirs into a variable. A detector that is narrower than the thing it
-     * detects is worse than none, because it is believed.
+     * Each pass reported clean while production was still full of them. So stop
+     * matching shapes: if a line mentions an identifier ending in "title" and
+     * is not inside openGraph/twitter, check EVERY quoted string on it. Broad
+     * and occasionally noisy beats narrow and trusted.
      */
-    const m =
-      line.match(/(?:^|[\s{])(?:meta)?[Tt]itle:\s*['"`]([^'"`]*)['"`]/) ??
-      line.match(/\b(?:const|let)\s+\w*[Tt]itle\w*\s*=\s*[^'"`]*['"`]([^'"`]*)['"`]/)
-    if (m && m[1].includes(SUFFIX)) {
-      hits.push({ file, line: i + 1, title: m[1] })
+    const key = line.match(/(\w*title\w*)\s*[:=]/i)
+    if (!key) continue
+
+    /**
+     * Keys that SHOULD carry the brand, so not a finding:
+     *
+     *   ogTitle / twitterTitle   a dictionary entry fed to openGraph.title,
+     *                            which Next does not template. It appears
+     *                            alone in a social card and needs the brand.
+     *   *template*               the admin SEO settings form stores the
+     *                            template itself, which is literally
+     *                            "%s | SpacesMate".
+     *
+     * These are matched on the KEY rather than by position, because the
+     * openGraph-block depth tracking above cannot see a dictionary where the
+     * key is og-ish but the object is not an openGraph block.
+     */
+    if (/^(og|twitter)/i.test(key[1]) || /template/i.test(key[1])) continue
+
+    for (const q of line.matchAll(/['"`]([^'"`]*)['"`]/g)) {
+      if (q[1].includes(SUFFIX)) {
+        hits.push({ file, line: i + 1, title: q[1] })
+      }
     }
   }
 }

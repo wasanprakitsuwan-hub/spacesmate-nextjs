@@ -32,9 +32,9 @@ export interface LegalSection {
 
 export const LEGAL_T = {
   th: {
-    privacyMetaTitle: 'นโยบายความเป็นส่วนตัว | SpacesMate',
+    privacyMetaTitle: 'นโยบายความเป็นส่วนตัว',
     privacyHeading: 'นโยบายความเป็นส่วนตัว',
-    termsMetaTitle: 'เงื่อนไขการใช้งาน | SpacesMate',
+    termsMetaTitle: 'เงื่อนไขการใช้งาน',
     termsHeading: 'เงื่อนไขการใช้งาน',
     home: 'หน้าแรก',
     privacyEffective: 'มีผลบังคับใช้ตั้งแต่ 10 สิงหาคม 2569 | ปรับปรุงล่าสุด 10 สิงหาคม 2569',
@@ -50,9 +50,9 @@ export const LEGAL_T = {
     cookiePrompt: 'ต้องการเปลี่ยนหรือถอนความยินยอมเรื่องคุกกี้?',
   },
   en: {
-    privacyMetaTitle: 'Privacy policy | SpacesMate',
+    privacyMetaTitle: 'Privacy policy',
     privacyHeading: 'Privacy policy',
-    termsMetaTitle: 'Terms of use | SpacesMate',
+    termsMetaTitle: 'Terms of use',
     termsHeading: 'Terms of use',
     home: 'Home',
     privacyEffective: 'In effect from 10 August 2026 | last updated 10 August 2026',

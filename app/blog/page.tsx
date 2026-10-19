@@ -12,7 +12,7 @@ interface Props {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const isEn = searchParams.lang === 'en'
   return {
-    title: isEn ? 'Blog | SpacesMate' : 'บทความ | SpacesMate',
+    title: isEn ? 'Blog' : 'บทความ',
     description: isEn
       ? 'Tips, guides, and Bangkok property market insights for owners and tenants.'
       : 'เคล็ดลับ คู่มือ และข้อมูลตลาดเช่า-ขายอสังหาริมทรัพย์ในกรุงเทพฯ',

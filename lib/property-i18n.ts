@@ -16,7 +16,7 @@ export type Locale = 'th' | 'en'
 
 export const PROPERTY_T = {
   th: {
-    notFoundTitle: 'ไม่พบประกาศ | SpacesMate',
+    notFoundTitle: 'ไม่พบประกาศ',
     fallbackListingName: 'ประกาศ',
     untitled: 'ไม่ระบุชื่อ',
     askForPrice: 'สอบถามราคา',
@@ -80,7 +80,7 @@ export const PROPERTY_T = {
     perMonthAmount: (v: string) => `฿${v}/เดือน`,
   },
   en: {
-    notFoundTitle: 'Listing not found | SpacesMate',
+    notFoundTitle: 'Listing not found',
     fallbackListingName: 'Listing',
     untitled: 'Untitled listing',
     askForPrice: 'Ask for price',
