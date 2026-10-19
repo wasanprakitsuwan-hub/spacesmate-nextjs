@@ -29,7 +29,7 @@ import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
 const SITE = 'https://spacesmate.com'
 
 export const metadata: Metadata = {
-  title: 'Rent an Apartment, Condo or Office in Bangkok | SpacesMate',
+  title: 'Rent an Apartment, Condo or Office in Bangkok',
   description:
     'Find apartments, condos, houses, offices and co-working space to rent across Bangkok. Verified listings, contact the owner directly, no agent fee for tenants.',
   openGraph: {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'ค้นหาที่พัก | SpacesMate',
+  title: 'ค้นหาที่พัก',
   description:
     'ค้นหาห้องเช่า คอนโด อพาร์ทเม้นท์ บ้านเช่า โคเวิร์กกิ้งสเปซ และออฟฟิศในกรุงเทพและทั่วไทย กรองตามราคา ทำเล BTS/MRT ประเภทที่พัก และสิ่งอำนวยความสะดวก',
   keywords: [

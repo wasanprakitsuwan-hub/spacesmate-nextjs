@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('status', 'published')
     .single()
 
-  if (!post) return { title: 'ไม่พบบทความ | SpacesMate' }
+  if (!post) return { title: 'ไม่พบบทความ' }
 
   const pageTitle  = post.meta_title ?? post.title
   const pageDesc   = post.meta_desc
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : [{ url: 'https://spacesmate.com/og-image.jpg' }]
 
   return {
-    title: `${pageTitle} | SpacesMate`,
+    title: pageTitle,
     description: pageDesc,
     alternates: { canonical: canonicalUrl },
     openGraph: {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'ติดต่อเรา | SpacesMate',
+  title: 'ติดต่อเรา',
   description:
     'ติดต่อ SpacesMate — สำหรับนักลงทุน พันธมิตรธุรกิจ หรือสอบถามการบริหารทรัพย์สิน ทีมงานตอบกลับภายใน 24 ชั่วโมง',
   openGraph: {

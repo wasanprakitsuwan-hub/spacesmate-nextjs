@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'ยกเลิกการชำระเงิน | SpacesMate',
+  title: 'ยกเลิกการชำระเงิน',
   description: 'ยกเลิกการชำระเงิน — คุณสามารถกลับไปเลือกแพ็กเกจและลองอีกครั้งได้ทุกเมื่อ',
   robots: { index: false, follow: false },
 }

@@ -22,7 +22,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = await getBuilding(params.slug)
-  if (!found) return { title: 'ไม่พบอาคาร | SpacesMate' }
+  if (!found) return { title: 'ไม่พบอาคาร' }
 
   const { building, listings } = found
   const cheapest = listings.reduce((min, l) => (l.price_from && l.price_from < min ? l.price_from : min), Infinity)
