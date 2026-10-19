@@ -29,7 +29,14 @@ import { readFileSync } from 'node:fs'
 import { globSync } from 'node:fs'
 
 const SUFFIX = '| SpacesMate'
-const files = globSync('app/**/*.tsx')
+/**
+ * app/ AND lib/ — the first version scanned only app/, and missed all 14
+ * metaTitle entries in the dictionaries, which is where most page titles
+ * actually come from. Four routes stayed broken after a fix that reported
+ * clean, because page metadata overrides layout metadata and the page was
+ * reading lib/.
+ */
+const files = [...globSync('app/**/*.tsx'), ...globSync('lib/*.ts')]
 const hits = []
 
 for (const file of files) {
@@ -50,7 +57,21 @@ for (const file of files) {
       if (depth <= 0) depth = 0
       continue
     }
-    const m = line.match(/title:\s*['"`]([^'"`]*)['"`]/)
+    /**
+     * Three shapes, all of which end up as the page title:
+     *
+     *   title:      '…'    on a page or layout
+     *   metaTitle:  '…'    in a dictionary — where most page titles live
+     *   const title = `…`  built into a variable, then returned
+     *
+     * The first pass caught only the first shape and reported clean while four
+     * routes were still broken. The second missed the area pages, which build
+     * theirs into a variable. A detector that is narrower than the thing it
+     * detects is worse than none, because it is believed.
+     */
+    const m =
+      line.match(/(?:^|[\s{])(?:meta)?[Tt]itle:\s*['"`]([^'"`]*)['"`]/) ??
+      line.match(/\b(?:const|let)\s+\w*[Tt]itle\w*\s*=\s*[^'"`]*['"`]([^'"`]*)['"`]/)
     if (m && m[1].includes(SUFFIX)) {
       hits.push({ file, line: i + 1, title: m[1] })
     }

@@ -171,7 +171,7 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
     const staticP = getPropertyBySlug(slug)
     if (staticP) {
       return {
-        title: `${staticP.title} | SpacesMate`,
+        title: staticP.title,
         description: staticP.excerpt,
         openGraph: {
           title: staticP.title,
@@ -193,7 +193,7 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
   const body = locale === 'en' ? (raw.description_en || raw.description_th) : raw.description_th
   const description = plainText(body, 160)
   return {
-    title: `${title} | SpacesMate`,
+    title,
     description,
     openGraph: { title, description, type: 'website' },
     alternates,

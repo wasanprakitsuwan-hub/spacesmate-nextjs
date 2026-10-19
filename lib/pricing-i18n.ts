@@ -19,7 +19,7 @@ export type Locale = 'th' | 'en'
 
 export const PRICING_T = {
   th: {
-    metaTitle: 'ราคาและแพ็กเกจ | SpacesMate',
+    metaTitle: 'ราคาและแพ็กเกจ',
     metaDesc: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/สล็อต/เดือน — 1 สล็อต = ประกาศออนไลน์ 1 รายการ ซื้อหลายสล็อตพร้อมกันได้ ยกเลิกได้ทุกเมื่อ ไม่มีค่าคอมมิชชัน',
     ogTitle: 'ราคาลงประกาศ | SpacesMate — เริ่มต้น ฿299/เดือน',
     ogDesc: 'เลือก Basic, Standard หรือ Premium — 1 สล็อต = ประกาศออนไลน์ 1 รายการ เผยแพร่ทันที ไม่มีค่าคอมมิชชันซ่อน',
@@ -77,7 +77,7 @@ export const PRICING_T = {
   },
 
   en: {
-    metaTitle: 'Pricing and packages | SpacesMate',
+    metaTitle: 'Pricing and packages',
     metaDesc: 'List a rental property from ฿299 per slot per month — one slot = one live listing. Buy several slots at once, cancel any time, no commission.',
     ogTitle: 'Listing prices | SpacesMate — from ฿299/month',
     ogDesc: 'Basic, Standard or Premium — one slot = one live listing, published immediately, with no hidden commission.',

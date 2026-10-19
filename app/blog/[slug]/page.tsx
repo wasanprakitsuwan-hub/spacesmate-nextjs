@@ -50,7 +50,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) return { title: 'ไม่พบบทความ' }
 
-  const pageTitle  = post.meta_title ?? post.title
+  /**
+   * Strip a brand suffix the author typed in.
+   *
+   * meta_title is written by hand in the blog admin, and SEO habit says to end
+   * a title with the brand — so rows in blog_posts carry "| SpacesMate" and the
+   * root layout's template adds a second one. Every post has been rendering
+   *
+   *     <post title> | SpacesMate | SpacesMate
+   *
+   * Stripping here rather than cleaning the rows, because the admin editor will
+   * keep accepting it and the next author will type it again.
+   */
+  const rawTitle   = post.meta_title ?? post.title
+  const pageTitle  = rawTitle.replace(/\s*\|\s*SpacesMate\s*$/i, '').trim() || post.title
   const pageDesc   = post.meta_desc
     || (post.content ? stripHtml(post.content) : '')
     || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'

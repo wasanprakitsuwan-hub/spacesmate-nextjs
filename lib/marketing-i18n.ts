@@ -16,7 +16,7 @@ export type Locale = 'th' | 'en'
 
 export const ABOUT_T = {
   th: {
-    metaTitle: 'เกี่ยวกับเรา | SpacesMate',
+    metaTitle: 'เกี่ยวกับเรา',
     metaDesc: 'SpacesMate (Space Works Co., Ltd.) — แพลตฟอร์มบริหารจัดการอสังหาริมทรัพย์ Asset-Light ในกรุงเทพฯ ดูแลแบบ Performance-Based ยิ่งเจ้าของได้มาก SpacesMate ได้มากด้วย',
     ogTitle: 'เกี่ยวกับ SpacesMate',
     ogDesc: 'แพลตฟอร์มบริหารจัดการอสังหาริมทรัพย์ Asset-Light ในกรุงเทพฯ — Performance-Based, AI-Powered',
@@ -62,7 +62,7 @@ export const ABOUT_T = {
   },
 
   en: {
-    metaTitle: 'About us | SpacesMate',
+    metaTitle: 'About us',
     metaDesc: 'SpacesMate (Space Works Co., Ltd.) — an asset-light property management platform in Bangkok. Performance-based: the more the owner earns, the more SpacesMate earns.',
     ogTitle: 'About SpacesMate',
     ogDesc: 'An asset-light property management platform in Bangkok — performance-based, AI-powered.',
@@ -111,7 +111,7 @@ export const ABOUT_T = {
 
 export const SERVICES_T = {
   th: {
-    metaTitle: 'บริการของเรา | SpacesMate',
+    metaTitle: 'บริการของเรา',
     metaDesc: 'บริการบริหารจัดการอสังหาริมทรัพย์ให้เช่าครบวงจร ทั้งอพาร์ทเม้นท์และคอนโด พร้อมแพลตฟอร์มลงประกาศเช่าออนไลน์ เริ่มต้น ฿299/เดือน',
     ogTitle: 'บริการ SpacesMate — บริหารอพาร์ทเม้นท์ คอนโด และลงประกาศเช่า',
     ogDesc: 'บริหารทรัพย์สินครบวงจรแบบ Performance-Based และแพลตฟอร์มลงประกาศเช่าเริ่มต้น ฿299/เดือน',
@@ -140,7 +140,7 @@ export const SERVICES_T = {
   },
 
   en: {
-    metaTitle: 'Our services | SpacesMate',
+    metaTitle: 'Our services',
     metaDesc: 'End-to-end rental property management for apartments and condominiums, plus an online listing platform from ฿299/month.',
     ogTitle: 'SpacesMate services — apartment and condo management, and rental listings',
     ogDesc: 'Full-service, performance-based property management, and a rental listing platform from ฿299/month.',

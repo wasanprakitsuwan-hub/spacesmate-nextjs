@@ -14,7 +14,7 @@ export type Locale = 'th' | 'en'
 
 export const CONTACT_T = {
   th: {
-    metaTitle: 'ติดต่อเรา | SpacesMate',
+    metaTitle: 'ติดต่อเรา',
     metaDesc: 'ติดต่อ SpacesMate — สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจร่วมเติบโตไปด้วยกัน',
 
     interestInvestor: 'นักลงทุน',
@@ -54,7 +54,7 @@ export const CONTACT_T = {
     privacyNote: 'ข้อมูลของคุณปลอดภัยและเป็นความลับ ไม่มีการแชร์กับบุคคลที่สาม',
   },
   en: {
-    metaTitle: 'Contact us | SpacesMate',
+    metaTitle: 'Contact us',
     metaDesc: 'Contact SpacesMate — for investors and business partners interested in growing with us.',
 
     interestInvestor: 'Investor',
@@ -97,7 +97,7 @@ export const CONTACT_T = {
 
 export const SEARCH_T = {
   th: {
-    metaTitle: 'ค้นหาที่พัก | SpacesMate',
+    metaTitle: 'ค้นหาที่พัก',
     metaDesc: 'ค้นหาคอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ และโคเวิร์กกิ้งให้เช่าทั่วกรุงเทพฯ กรองตามทำเล ราคา และประเภท',
 
     within1: 'ภายใน 1 กม.',
@@ -159,7 +159,7 @@ export const SEARCH_T = {
     loading: 'กำลังโหลด...',
   },
   en: {
-    metaTitle: 'Search rentals | SpacesMate',
+    metaTitle: 'Search rentals',
     metaDesc: 'Search condos, apartments, houses, offices and co-working to rent across Bangkok. Filter by area, price and property type.',
 
     within1: 'Within 1 km',
@@ -224,7 +224,7 @@ export const SEARCH_T = {
 
 export const SUBMIT_T = {
   th: {
-    metaTitle: 'ลงประกาศเช่า | SpacesMate',
+    metaTitle: 'ลงประกาศเช่า',
     metaDesc: 'ลงประกาศเช่าอพาร์ทเม้นท์ คอนโด บ้าน ออฟฟิศ หรือโคเวิร์กกิ้งสเปซ เริ่มต้นเพียง ฿299/เดือน เผยแพร่ทันทีหลังชำระ เข้าถึงผู้เช่าที่กำลังมองหาจริงๆ',
 
     heroTitleA: 'ลงประกาศเช่ากับ',
@@ -295,7 +295,7 @@ export const SUBMIT_T = {
     closingBody: 'เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299',
   },
   en: {
-    metaTitle: 'List a rental | SpacesMate',
+    metaTitle: 'List a rental',
     metaDesc: 'List an apartment, condo, house, office or co-working space from ฿299/month. Live as soon as you pay, in front of renters who are actively looking.',
 
     heroTitleA: 'List your rental with',

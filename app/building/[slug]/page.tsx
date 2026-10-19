@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cheapest = listings.reduce((min, l) => (l.price_from && l.price_from < min ? l.price_from : min), Infinity)
   const priceText = Number.isFinite(cheapest) ? ` เริ่มต้น ฿${cheapest.toLocaleString()}/เดือน` : ''
 
-  const title = `${building.nameTh} ให้เช่า — ${building.count} ห้องว่าง | SpacesMate`
+  const title = `${building.nameTh} ให้เช่า — ${building.count} ห้องว่าง`
   const description =
     `ห้องเช่าใน ${building.nameTh}${building.nameEn ? ` (${building.nameEn})` : ''} ` +
     `รวม ${building.count} ประกาศ${priceText} ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate`

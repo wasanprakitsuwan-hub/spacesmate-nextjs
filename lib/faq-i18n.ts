@@ -5,7 +5,7 @@ export type Locale = 'th' | 'en'
 
 export const FAQ_T = {
   th: {
-    metaTitle: 'คำถามที่พบบ่อย (FAQ) | SpacesMate',
+    metaTitle: 'คำถามที่พบบ่อย (FAQ)',
     metaDesc:
       'คำถามที่พบบ่อยเกี่ยวกับ SpacesMate — แพลตฟอร์มลงประกาศเช่าทั่วไทย ฿299/เดือน รองรับคอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ โคเวิร์กกิ้ง บริการบริหารทรัพย์สินรูปแบบ Profit Sharing',
     ogTitle: 'คำถามที่พบบ่อย | SpacesMate',
@@ -23,7 +23,7 @@ export const FAQ_T = {
     moreCta2: 'ฝากบริหารทรัพย์สิน',
   },
   en: {
-    metaTitle: 'Frequently asked questions | SpacesMate',
+    metaTitle: 'Frequently asked questions',
     metaDesc:
       'Common questions about SpacesMate — a rental listing platform covering all of Thailand from ฿299/month, for condos, apartments, houses, offices and co-working, plus profit-sharing property management.',
     ogTitle: 'Frequently asked questions | SpacesMate',

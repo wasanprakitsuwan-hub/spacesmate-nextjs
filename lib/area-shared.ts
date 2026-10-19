@@ -226,10 +226,10 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
   const area = AREA_KEYWORDS.find(a => a.slug === slug)
 
   if (!area) {
-    if (locale === 'en') return { title: 'Page not found | SpacesMate' }
+    if (locale === 'en') return { title: 'Page not found' }
     const gen = await getGeneratedArea(slug)
-    if (!gen) return { title: 'ไม่พบหน้า | SpacesMate' }
-    const title = `${gen.labelTh} — ${gen.count} ประกาศ | SpacesMate`
+    if (!gen) return { title: 'ไม่พบหน้า' }
+    const title = `${gen.labelTh} — ${gen.count} ประกาศ`
     const description =
       `${gen.labelTh} ในกรุงเทพฯ รวม ${gen.count} ประกาศให้เช่า ` +
       `ดูราคา รูปภาพ และติดต่อเจ้าของโดยตรงที่ SpacesMate`
@@ -244,7 +244,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
   const content = AREA_CONTENT[slug]
 
   if (locale === 'en') {
-    const title = content ? `${content.headline_en} | SpacesMate` : `${area.label_en} | SpacesMate`
+    const title = content ? content.headline_en : area.label_en
     const description = content
       ? content.body_en[0].slice(0, 155)
       : `${area.label_en} in Bangkok — browse verified rentals and pricing on SpacesMate`
@@ -259,7 +259,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
   const description = content
     ? content.body_th[0].slice(0, 155)
     : `${area.label_th} ในกรุงเทพมหานคร — ดูรายการที่พักและราคาที่ SpacesMate`
-  const title = content ? `${content.headline_th} | SpacesMate` : `${area.label_en} | SpacesMate`
+  const title = content ? content.headline_th : area.label_en
   return {
     title,
     description,
