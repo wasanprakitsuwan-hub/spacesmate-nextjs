@@ -20,6 +20,13 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPwd,   setLoginPwd]   = useState('')
 
+  // Forgot password. The link used to be <a href="#"> — a dead control on the
+  // page every logged-out redirect lands on, from the dashboard, from checkout
+  // and from the listing wizard. The working flow existed only in the navbar
+  // modal, which someone who cannot sign in is not necessarily looking at.
+  const [forgotPwd,   setForgotPwd]   = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+
   // Signup fields
   const [signName,  setSignName]  = useState('')
   const [signEmail, setSignEmail] = useState('')
@@ -27,7 +34,25 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   const [signPwd2,  setSignPwd2]  = useState('')
 
   function switchTab(t: 'login' | 'signup') {
-    setTab(t); setError(''); setSuccess('')
+    setTab(t); setError(''); setSuccess(''); setForgotPwd(false)
+  }
+
+  // ── Forgot password ──────────────────────────────────────────────────────
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (!forgotEmail) { setError(t.needEmail); return }
+    setLoading(true); setError('')
+    try {
+      const supabase = createBrowserClient()
+      const redirectTo = `${window.location.origin}/reset-password`
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo })
+      if (resetErr) throw resetErr
+      setSuccess(t.resetSent(forgotEmail))
+      setForgotPwd(false)
+    } catch (err: any) {
+      setError(err?.message ?? t.genericError)
+    }
+    setLoading(false)
   }
 
   // ── Login ────────────────────────────────────────────────────────────────
@@ -156,7 +181,34 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
             </div>
 
             {/* ── LOGIN FORM ── */}
-            {tab === 'login' && (
+            {tab === 'login' && forgotPwd && (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <p className="text-base font-bold text-spacemate-brandDark mb-1">{t.resetTitle}</p>
+                  <p className="text-sm text-gray-500 mb-3">{t.resetSub}</p>
+                  <label className="label block mb-1.5">{t.email}</label>
+                  <input
+                    type="email" value={forgotEmail}
+                    onChange={e => { setForgotEmail(e.target.value); setError('') }}
+                    required placeholder="email@example.com"
+                    className="w-full rounded-lg border border-spacemate-borderLight px-3 py-2.5 text-sm outline-none focus:border-spacemate-brandTeal"
+                  />
+                </div>
+                <button
+                  type="submit" disabled={loading}
+                  className="w-full rounded-lg bg-spacemate-brandDark py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {loading ? t.sending : t.sendResetLink}
+                </button>
+                <p className="text-center text-sm text-gray-400 pt-1">
+                  <button type="button" onClick={() => { setForgotPwd(false); setError('') }} className="text-spacemate-brandTeal font-medium hover:underline">
+                    {t.backToLogin}
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {tab === 'login' && !forgotPwd && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="label block mb-1.5">{t.email}</label>
@@ -170,7 +222,11 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="label">{t.password}</label>
-                    <a href="#" className="text-xs text-spacemate-brandTeal hover:underline">{t.forgotPwd}</a>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotPwd(true); setError(''); setSuccess(''); setForgotEmail(loginEmail) }}
+                      className="text-xs text-spacemate-brandTeal hover:underline"
+                    >{t.forgotPwd}</button>
                   </div>
                   <input
                     type="password" value={loginPwd}
