@@ -87,12 +87,12 @@ export const AMENITY_SECTIONS: { key: AmenitySection; label_th: string; label_en
 export const DEFAULT_AMENITIES: Amenity[] = [
   // ── in the unit ──
   { id: '1',             name_th: 'เครื่องปรับอากาศ',  name_en: 'Air Conditioning', section: 'unit' },
-  { id: '2',             name_th: 'เฟอร์นิเจอร์ครบ',    name_en: 'Fully Furnished',  section: 'unit' },
+  { id: '2',             name_th: 'เฟอร์นิเจอร์พร้อมอยู่', name_en: 'Fully Furnished',  section: 'unit' },
   { id: 'partly-furn',   name_th: 'เฟอร์นิเจอร์บางส่วน', name_en: 'Partly Furnished', section: 'unit' },
-  { id: '3',             name_th: 'อินเทอร์เน็ต',       name_en: 'Internet',         section: 'unit' },
+  { id: '3',             name_th: 'WiFi',                name_en: 'WiFi',         section: 'unit' },
   { id: '1783608191258', name_th: 'เครื่องซักผ้า',      name_en: 'Washing Machine',  section: 'unit' },
   { id: '1783608202476', name_th: 'เครื่องทำน้ำอุ่น',    name_en: 'Water Heater',     section: 'unit' },
-  { id: '1785131409261', name_th: 'เตาไฟฟ้า',          name_en: 'Electric Stove',   section: 'unit' },
+  { id: '1785131409261', name_th: 'เตาแม่เหล็กไฟฟ้า',    name_en: 'Induction Hob',   section: 'unit' },
   { id: 'microwave',     name_th: 'ไมโครเวฟ',          name_en: 'Microwave',        section: 'unit' },
   { id: 'fridge',        name_th: 'ตู้เย็น',             name_en: 'Refrigerator',     section: 'unit' },
   { id: 'tv',            name_th: 'โทรทัศน์',           name_en: 'Television',       section: 'unit' },
@@ -105,10 +105,10 @@ export const DEFAULT_AMENITIES: Amenity[] = [
   // ── in the building ──
   { id: '6',             name_th: 'ที่จอดรถ',            name_en: 'Parking',            section: 'building' },
   { id: '4',             name_th: 'สระว่ายน้ำ',          name_en: 'Swimming Pool',      section: 'building' },
-  { id: '5',             name_th: 'ฟิตเนส',             name_en: 'Fitness',            section: 'building' },
-  { id: '7',             name_th: 'รักษาความปลอดภัย 24 ชม.', name_en: '24hr Security',  section: 'building' },
-  { id: '8',             name_th: 'กล้องวงจรปิด',        name_en: 'CCTV',               section: 'building' },
-  { id: '12',            name_th: 'ลิฟต์',              name_en: 'Elevator',           section: 'building' },
+  { id: '5',             name_th: 'ห้องออกกำลังกาย (GYM)', name_en: 'Fitness',            section: 'building' },
+  { id: '7',             name_th: 'รปภ 24 ชม',           name_en: '24hr Security',  section: 'building' },
+  { id: '8',             name_th: 'กล้องวงจรปิด (CCTV)',  name_en: 'CCTV',               section: 'building' },
+  { id: '12',            name_th: 'ลิฟท์',               name_en: 'Elevator',           section: 'building' },
   { id: 'keycard',       name_th: 'ระบบ Keycard',       name_en: 'Keycard Access',     section: 'building' },
   { id: '10',            name_th: 'ใกล้ห้างสรรพสินค้า',   name_en: 'Near Shopping',      section: 'building' },
   { id: 'laundry-room',  name_th: 'ห้องซักรีด',          name_en: 'Laundry Room',       section: 'building' },
@@ -129,16 +129,24 @@ export const DEFAULT_AMENITIES: Amenity[] = [
  * still renders — it just will not match the picker or a filter.
  */
 export const LEGACY_AMENITY_RENAMES: Record<string, string> = {
-  'เลี้ยงสัตว์ได้':            'รับสัตว์เลี้ยง',
-  'แอร์':                     'เครื่องปรับอากาศ',
-  'เแอร์':                    'เครื่องปรับอากาศ',   // typed on a live listing
-  'เฟอร์นิเจอร์พร้อมอยู่':      'เฟอร์นิเจอร์ครบ',
-  'ลิฟท์':                    'ลิฟต์',
-  'รปภ 24 ชม':               'รักษาความปลอดภัย 24 ชม.',
-  'กล้องวงจรปิด (CCTV)':      'กล้องวงจรปิด',
-  'ห้องออกกำลังกาย (GYM)':    'ฟิตเนส',
-  'WiFi':                     'อินเทอร์เน็ต',
-  'เตาแม่เหล็กไฟฟ้า':          'เตาไฟฟ้า',
+  // ── Decided per-amenity by the Founder on 20 Oct 2026, after the inspect
+  //    queries showed the stored data and the Settings picker barely overlapped.
+  //    Where they disagreed, the name LISTINGS already use wins — except these
+  //    two, which the Founder chose to change:
+  'แอร์':                      'เครื่องปรับอากาศ',
+  'เแอร์':                     'เครื่องปรับอากาศ',   // typed on a live listing
+  'เลี้ยงสัตว์ได้':             'รับสัตว์เลี้ยง',      // orphan, 0 listings
+
+  // ── The Settings picker's names, now the legacy side. Nothing stores these
+  //    (0 listings each), but the list offered them, so a listing saved before
+  //    this migration could.
+  'เฟอร์นิเจอร์ครบ':           'เฟอร์นิเจอร์พร้อมอยู่',
+  'อินเทอร์เน็ต':              'WiFi',
+  'เตาไฟฟ้า':                  'เตาแม่เหล็กไฟฟ้า',
+  'ฟิตเนส':                    'ห้องออกกำลังกาย (GYM)',
+  'รักษาความปลอดภัย 24 ชม.':   'รปภ 24 ชม',
+  'กล้องวงจรปิด':              'กล้องวงจรปิด (CCTV)',
+  'ลิฟต์':                     'ลิฟท์',
 }
 
 /**

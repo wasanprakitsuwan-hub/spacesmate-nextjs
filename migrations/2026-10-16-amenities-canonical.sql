@@ -47,7 +47,7 @@ select count(*) as rows_to_change
 from properties p
 where exists (
   select 1 from unnest(p.amenities) as a(name)
-  where a.name in ('เลี้ยงสัตว์ได้', 'แอร์', 'เแอร์', 'เฟอร์นิเจอร์พร้อมอยู่', 'ลิฟท์', 'รปภ 24 ชม', 'กล้องวงจรปิด (CCTV)', 'ห้องออกกำลังกาย (GYM)', 'WiFi', 'เตาแม่เหล็กไฟฟ้า')
+  where a.name in ('แอร์', 'เแอร์', 'เลี้ยงสัตว์ได้', 'เฟอร์นิเจอร์ครบ', 'อินเทอร์เน็ต', 'เตาไฟฟ้า', 'ฟิตเนส', 'รักษาความปลอดภัย 24 ชม.', 'กล้องวงจรปิด', 'ลิฟต์')
 )
 or array_length(p.amenities, 1) <> (select count(distinct x) from unnest(p.amenities) as x);
 
@@ -91,7 +91,7 @@ values ('amenities', '[
   {
     "id": "2",
     "name_en": "Fully Furnished",
-    "name_th": "เฟอร์นิเจอร์ครบ",
+    "name_th": "เฟอร์นิเจอร์พร้อมอยู่",
     "section": "unit"
   },
   {
@@ -102,8 +102,8 @@ values ('amenities', '[
   },
   {
     "id": "3",
-    "name_en": "Internet",
-    "name_th": "อินเทอร์เน็ต",
+    "name_en": "WiFi",
+    "name_th": "WiFi",
     "section": "unit"
   },
   {
@@ -120,8 +120,8 @@ values ('amenities', '[
   },
   {
     "id": "1785131409261",
-    "name_en": "Electric Stove",
-    "name_th": "เตาไฟฟ้า",
+    "name_en": "Induction Hob",
+    "name_th": "เตาแม่เหล็กไฟฟ้า",
     "section": "unit"
   },
   {
@@ -187,25 +187,25 @@ values ('amenities', '[
   {
     "id": "5",
     "name_en": "Fitness",
-    "name_th": "ฟิตเนส",
+    "name_th": "ห้องออกกำลังกาย (GYM)",
     "section": "building"
   },
   {
     "id": "7",
     "name_en": "24hr Security",
-    "name_th": "รักษาความปลอดภัย 24 ชม.",
+    "name_th": "รปภ 24 ชม",
     "section": "building"
   },
   {
     "id": "8",
     "name_en": "CCTV",
-    "name_th": "กล้องวงจรปิด",
+    "name_th": "กล้องวงจรปิด (CCTV)",
     "section": "building"
   },
   {
     "id": "12",
     "name_en": "Elevator",
-    "name_th": "ลิฟต์",
+    "name_th": "ลิฟท์",
     "section": "building"
   },
   {
@@ -286,16 +286,16 @@ from site_settings where key = 'amenities';
 
 with renames(from_name, to_name) as (
   values
-    ('เลี้ยงสัตว์ได้', 'รับสัตว์เลี้ยง'),
     ('แอร์', 'เครื่องปรับอากาศ'),
     ('เแอร์', 'เครื่องปรับอากาศ'),
-    ('เฟอร์นิเจอร์พร้อมอยู่', 'เฟอร์นิเจอร์ครบ'),
-    ('ลิฟท์', 'ลิฟต์'),
-    ('รปภ 24 ชม', 'รักษาความปลอดภัย 24 ชม.'),
-    ('กล้องวงจรปิด (CCTV)', 'กล้องวงจรปิด'),
-    ('ห้องออกกำลังกาย (GYM)', 'ฟิตเนส'),
-    ('WiFi', 'อินเทอร์เน็ต'),
-    ('เตาแม่เหล็กไฟฟ้า', 'เตาไฟฟ้า')
+    ('เลี้ยงสัตว์ได้', 'รับสัตว์เลี้ยง'),
+    ('เฟอร์นิเจอร์ครบ', 'เฟอร์นิเจอร์พร้อมอยู่'),
+    ('อินเทอร์เน็ต', 'WiFi'),
+    ('เตาไฟฟ้า', 'เตาแม่เหล็กไฟฟ้า'),
+    ('ฟิตเนส', 'ห้องออกกำลังกาย (GYM)'),
+    ('รักษาความปลอดภัย 24 ชม.', 'รปภ 24 ชม'),
+    ('กล้องวงจรปิด', 'กล้องวงจรปิด (CCTV)'),
+    ('ลิฟต์', 'ลิฟท์')
 ),
 fixed as (
   select p.id,
@@ -322,7 +322,7 @@ where p.id = f.id
 -- 5a. No legacy name survives. Expect zero rows.
 select a.name, count(*) as listings
 from properties p, unnest(p.amenities) as a(name)
-where a.name in ('เลี้ยงสัตว์ได้', 'แอร์', 'เแอร์', 'เฟอร์นิเจอร์พร้อมอยู่', 'ลิฟท์', 'รปภ 24 ชม', 'กล้องวงจรปิด (CCTV)', 'ห้องออกกำลังกาย (GYM)', 'WiFi', 'เตาแม่เหล็กไฟฟ้า')
+where a.name in ('แอร์', 'เแอร์', 'เลี้ยงสัตว์ได้', 'เฟอร์นิเจอร์ครบ', 'อินเทอร์เน็ต', 'เตาไฟฟ้า', 'ฟิตเนส', 'รักษาความปลอดภัย 24 ชม.', 'กล้องวงจรปิด', 'ลิฟต์')
 group by a.name;
 
 -- 5b. No listing holds the same amenity twice. Expect zero rows.
@@ -337,12 +337,12 @@ having count(*) > 1;
 select a.name, count(*) as listings
 from properties p, unnest(p.amenities) as a(name)
 where a.name not in ('เครื่องปรับอากาศ',
-                     'เฟอร์นิเจอร์ครบ',
+                     'เฟอร์นิเจอร์พร้อมอยู่',
                      'เฟอร์นิเจอร์บางส่วน',
-                     'อินเทอร์เน็ต',
+                     'WiFi',
                      'เครื่องซักผ้า',
                      'เครื่องทำน้ำอุ่น',
-                     'เตาไฟฟ้า',
+                     'เตาแม่เหล็กไฟฟ้า',
                      'ไมโครเวฟ',
                      'ตู้เย็น',
                      'โทรทัศน์',
@@ -353,10 +353,10 @@ where a.name not in ('เครื่องปรับอากาศ',
                      'รับสัตว์เลี้ยง',
                      'ที่จอดรถ',
                      'สระว่ายน้ำ',
-                     'ฟิตเนส',
-                     'รักษาความปลอดภัย 24 ชม.',
-                     'กล้องวงจรปิด',
-                     'ลิฟต์',
+                     'ห้องออกกำลังกาย (GYM)',
+                     'รปภ 24 ชม',
+                     'กล้องวงจรปิด (CCTV)',
+                     'ลิฟท์',
                      'ระบบ Keycard',
                      'ใกล้ห้างสรรพสินค้า',
                      'ห้องซักรีด',
