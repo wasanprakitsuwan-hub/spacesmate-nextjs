@@ -195,8 +195,24 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
     setLoading(true); setError('')
     try {
       const supabase = createBrowserClient()
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPwd })
-      if (authErr) {
+      const { data } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPwd })
+      /**
+       * A password that no longer meets the project's minimum returns BOTH a
+       * session and an AuthWeakPasswordError: the credentials were correct,
+       * the password merely falls short of a rule tightened after they signed
+       * up. Supabase is explicit that such users can still sign in.
+       *
+       * So the test is whether a session came back, not whether an error did.
+       * Treating any error as a failed login would tell an owner with an older
+       * 6-character password that their password is wrong — every time, with
+       * no way to understand why — the moment the minimum is raised. Locked
+       * out by our error handling rather than by Supabase.
+       *
+       * Keying on the session also means a future tightening of the rules
+       * cannot lock anyone out of an account they can still legitimately
+       * access.
+       */
+      if (!data?.session) {
         setError(t.badCredentials)
       } else if (data.user) {
         onClose()
