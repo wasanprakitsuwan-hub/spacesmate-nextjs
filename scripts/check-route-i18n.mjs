@@ -16,6 +16,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { findFiles } from './lib/walk.mjs'
+import { EN_ROOT } from './lib/paths.mjs'
 
 // ── what the table claims ─────────────────────────────────────────────────────
 const src = readFileSync('lib/routes-i18n.ts', 'utf8')
@@ -27,8 +28,14 @@ const prefixes = [...src.slice(src.indexOf('const EN_DYNAMIC_PREFIXES'), src.ind
 if (claimed.size === 0) throw new Error('parsed no routes out of EN_STATIC — the regex is wrong')
 
 // ── what exists ───────────────────────────────────────────────────────────────
-const enPages = findFiles('app/en', ['page.tsx'])
-  .map(f => '/' + f.replace(/^app\/en\/?/, '').replace(/\/?page\.tsx$/, ''))
+const enFiles = findFiles(EN_ROOT, ['page.tsx'])
+if (enFiles.length === 0) {
+  // See scripts/lib/paths.mjs: an empty set would otherwise report success.
+  console.error(`No page.tsx found under ${EN_ROOT}. Refusing to report green over nothing.`)
+  process.exit(1)
+}
+const enPages = enFiles
+  .map(f => '/' + f.slice(EN_ROOT.length).replace(/^\//, '').replace(/\/?page\.tsx$/, ''))
   .map(p => (p === '/' ? '/' : p.replace(/\/$/, '')))
 
 const dynamic = enPages.filter(p => p.includes('['))
@@ -39,10 +46,10 @@ const say = (sym, msg) => console.log(`${sym} ${msg}`)
 
 for (const p of statics) {
   if (claimed.has(p)) say('ok  ', `${p} — page exists, table lists it`)
-  else { say('MISS', `app/en${p}/page.tsx exists but EN_STATIC does not list it — live but unreachable by link`); bad++ }
+  else { say('MISS', `${EN_ROOT}${p}/page.tsx exists but EN_STATIC does not list it — live but unreachable by link`); bad++ }
 }
 for (const p of claimed) {
-  if (!statics.includes(p)) { say('DEAD', `EN_STATIC lists ${p} but app/en${p}/page.tsx does not exist — links to it 404`); bad++ }
+  if (!statics.includes(p)) { say('DEAD', `EN_STATIC lists ${p} but ${EN_ROOT}${p}/page.tsx does not exist — links to it 404`); bad++ }
 }
 for (const d of dynamic) {
   const base = d.replace(/\/\[.*$/, '/')
@@ -68,8 +75,8 @@ for (const d of dynamic) {
  * both times only loading the page in a browser caught it.
  */
 for (const page of enPages) {
-  if (page === '/') continue          // app/en/page.tsx, checked by hand
-  const dir = `app/en${page}`
+  if (page === '/') continue          // the English home page, checked by hand
+  const dir = `${EN_ROOT}${page}`
   const hasOwn = ['page.tsx', 'layout.tsx'].some(f => {
     try { return /(?:^|\s)(?:title:|generateMetadata)/.test(readFileSync(`${dir}/${f}`, 'utf8')) }
     catch { return false }

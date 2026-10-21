@@ -1,7 +1,32 @@
-import type { Metadata } from 'next'
-import { Prompt } from 'next/font/google'
+/**
+ * The one root layout body, rendered by both locale root layouts.
+ *
+ * WHY THERE ARE TWO ROOT LAYOUTS
+ *   `<html lang>` can only be set by a root layout, and a Next.js app has one
+ *   root layout unless you use multiple route groups at the top level. So with
+ *   a single app/layout.tsx, every page on the site shipped `lang="th"` —
+ *   including all 19 English routes. A screen reader read the English copy
+ *   with a Thai voice, and Chrome offered to translate English *from* Thai.
+ *
+ *   The alternative was reading the path via `headers()` in the root layout,
+ *   which opts every route out of static rendering. 46 routes are prerendered
+ *   here, so that was not worth it.
+ *
+ * WHY THE BODY LIVES HERE AND NOT IN THE LAYOUTS
+ *   Two root layouts means two files that must stay identical in everything
+ *   except `lang`. This codebase has already paid for that pattern twice — the
+ *   Thai and English area pages drifted until a schema fix had to be applied
+ *   by hand in both copies, and the same happened to the blog. So the layouts
+ *   are three lines each and everything real is here, where there is one copy.
+ *
+ * KNOWN COST
+ *   Navigating between a Thai route and an English one now crosses a root
+ *   layout boundary, which Next.js serves as a full page load rather than a
+ *   client-side transition. That happens only on the language toggle, which is
+ *   a deliberate, infrequent action.
+ */
 import Script from 'next/script'
-import './globals.css'
+import { Prompt } from 'next/font/google'
 import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
 import { OrganizationLd, WebSiteLd } from '@/components/seo/JsonLd'
 import Analytics from '@/components/consent/Analytics'
@@ -16,39 +41,15 @@ const prompt = Prompt({
   preload: true,
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'SpacesMate — ค้นหาที่พักในกรุงเทพ อพาร์ทเม้นท์ คอนโด บ้านเช่า',
-    template: '%s | SpacesMate',
-  },
-  description: 'SpacesMate — แพลตฟอร์มค้นหาที่พักในกรุงเทพ อพาร์ทเม้นท์ คอนโด บ้านเช่า โคเวิร์กกิ้งสเปซ และออฟฟิศ ประกาศที่ผ่านการยืนยัน ไม่มีค่าใช้จ่ายซ่อน',
-  keywords: ['เช่าคอนโด', 'เช่าอพาร์ทเม้นท์', 'บ้านเช่า', 'Bangkok rental', 'SpacesMate', 'ที่พักกรุงเทพ'],
-  openGraph: {
-    type: 'website',
-    locale: 'th_TH',
-    url: 'https://spacesmate.com',
-    siteName: 'SpacesMate',
-    images: [{ url: 'https://spacesmate.com/og-image.jpg', width: 1200, height: 630 }],
-  },
-  twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
-
-  // Google Search Console ownership, rendered server-side on every page.
-  //
-  // Deliberately NOT verified via the Google Analytics or Tag Manager methods:
-  // GTM here loads only after cookie consent (components/consent/Analytics.tsx),
-  // and Google's verifier does not accept cookies — it would see a page with no
-  // container and fail. A static token in <head> is independent of consent and
-  // carries no tracking, so it is unconditional.
-  //
-  // Do not remove. Google re-checks periodically and silently unverifies the
-  // property if the tag disappears, taking the Search Console history with it.
-  verification: { google: 'KCDukdwBq8l045pDIYzH4VxLAvUzL7RwvAfBDnifJdw' },
-}
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootShell({
+  lang,
+  children,
+}: {
+  lang: 'th' | 'en'
+  children: React.ReactNode
+}) {
   return (
-    <html lang="th" className={prompt.variable}>
+    <html lang={lang} className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
         <OrganizationLd />
         <WebSiteLd />

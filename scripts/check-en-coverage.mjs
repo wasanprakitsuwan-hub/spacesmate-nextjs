@@ -12,7 +12,7 @@
  *   down. Grepping a page tells you nothing about what it renders.
  *
  * WHAT IT DOES
- *   Starts at every app/en/**\/page.tsx, follows local imports (@/… and ./…)
+ *   Starts at every English page.tsx (see lib/paths.mjs), follows local imports (@/… and ./…)
  *   transitively, and reports Thai string literals and JSX text in anything
  *   reachable. Comments are stripped first, so the long Thai explanations in
  *   code comments do not drown the signal.
@@ -29,6 +29,7 @@
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { findFiles } from './lib/walk.mjs'
+import { EN_ROOT, ROOT_LAYOUTS } from './lib/paths.mjs'
 import path from 'node:path'
 
 const THAI = /[฀-๿]/
@@ -94,8 +95,11 @@ const ALLOWED = new Map([
   // ── Flagged, not fixed. See the note under WHAT IT DOES. ──
   ['components/seo/JsonLd.tsx',
    'FLAG: the Organization description and address stay Thai on English pages'],
-  ['app/layout.tsx',
-   'FLAG: default title/description/keywords are Thai; /en pages override title and description but not keywords'],
+  // app/(en)/layout.tsx carries the English defaults now; app/(th)/layout.tsx
+  // is the Thai half of the same pair. The old FLAG here — English pages
+  // inheriting Thai keywords and og:locale — was fixed by the route-group split.
+  ['app/(th)/layout.tsx', 'the th half of the root metadata pair'],
+  ['lib/root-metadata.ts', 'the th half of the root metadata pair'],
   ['lib/property-data.ts',
    'FLAG: legacy hardcoded seed listings. Listings come from Supabase now; this is only still imported for PRICE_RANGES and a getPropertyBySlug fallback'],
 ])
@@ -152,10 +156,14 @@ function walk(file) {
   })
 }
 
-const entries = findFiles('app/en', ['page.tsx'])
+const entries = findFiles(EN_ROOT, ['page.tsx'])
+if (entries.length === 0) {
+  console.error(`No page.tsx found under ${EN_ROOT}. Refusing to report green over nothing.`)
+  process.exit(1)
+}
 entries.forEach(e => walk(path.normalize(e)))
 // The chrome every page renders, which no page imports directly.
-;['app/layout.tsx', 'components/layout/Navbar.tsx', 'components/layout/Footer.tsx']
+;[...ROOT_LAYOUTS, 'components/layout/Navbar.tsx', 'components/layout/Footer.tsx']
   .forEach(f => existsSync(f) && walk(path.normalize(f)))
 
 console.log(`Walked ${seen.size} modules reachable from ${entries.length} English routes.\n`)
