@@ -15,7 +15,7 @@
  * Exits non-zero on a mismatch, so it can go in CI.
  */
 import { readFileSync } from 'node:fs'
-import { globSync } from 'node:fs'
+import { findFiles } from './lib/walk.mjs'
 
 // ── what the table claims ─────────────────────────────────────────────────────
 const src = readFileSync('lib/routes-i18n.ts', 'utf8')
@@ -27,7 +27,7 @@ const prefixes = [...src.slice(src.indexOf('const EN_DYNAMIC_PREFIXES'), src.ind
 if (claimed.size === 0) throw new Error('parsed no routes out of EN_STATIC — the regex is wrong')
 
 // ── what exists ───────────────────────────────────────────────────────────────
-const enPages = globSync('app/en/**/page.tsx')
+const enPages = findFiles('app/en', ['page.tsx'])
   .map(f => '/' + f.replace(/^app\/en\/?/, '').replace(/\/?page\.tsx$/, ''))
   .map(p => (p === '/' ? '/' : p.replace(/\/$/, '')))
 

@@ -28,7 +28,7 @@
  *   Exits non-zero when it finds something unaccounted for, so it can go in CI.
  */
 import { readFileSync, existsSync } from 'node:fs'
-import { globSync } from 'node:fs'
+import { findFiles } from './lib/walk.mjs'
 import path from 'node:path'
 
 const THAI = /[฀-๿]/
@@ -150,7 +150,7 @@ function walk(file) {
   })
 }
 
-const entries = globSync('app/en/**/page.tsx')
+const entries = findFiles('app/en', ['page.tsx'])
 entries.forEach(e => walk(path.normalize(e)))
 // The chrome every page renders, which no page imports directly.
 ;['app/layout.tsx', 'components/layout/Navbar.tsx', 'components/layout/Footer.tsx']

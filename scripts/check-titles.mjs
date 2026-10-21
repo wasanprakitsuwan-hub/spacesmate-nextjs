@@ -26,7 +26,7 @@
  * Exits non-zero on a repeat, so it can go in CI.
  */
 import { readFileSync } from 'node:fs'
-import { globSync } from 'node:fs'
+import { findFiles } from './lib/walk.mjs'
 
 const SUFFIX = '| SpacesMate'
 /**
@@ -36,7 +36,7 @@ const SUFFIX = '| SpacesMate'
  * clean, because page metadata overrides layout metadata and the page was
  * reading lib/.
  */
-const files = [...globSync('app/**/*.tsx'), ...globSync('lib/*.ts')]
+const files = [...findFiles('app', ['.tsx']), ...findFiles('lib', ['.ts'])]
 const hits = []
 
 for (const file of files) {
