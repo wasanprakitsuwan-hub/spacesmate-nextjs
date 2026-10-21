@@ -51,7 +51,30 @@ for (const d of dynamic) {
   else { say('MISS', `${d} exists but no EN_DYNAMIC_PREFIXES entry covers it`); bad++ }
 }
 
+/**
+ * Every English route needs a title of its own.
+ *
+ * The root layout's metadata defaults to Thai, so an /en route that sets no
+ * title inherits "SpacesMate — ค้นหาที่พักในกรุงเทพ…". The page renders in
+ * English and the browser tab, the bookmark and any shared link read Thai.
+ *
+ * This is invisible to the other checks: check-titles looks for a DOUBLED
+ * suffix, check-en-coverage reads page content and knows nothing about
+ * <title>. It happened on /en/login, and again on /en/reset-password, and
+ * both times only loading the page in a browser caught it.
+ */
+for (const page of enPages) {
+  if (page === '/') continue          // app/en/page.tsx, checked by hand
+  const dir = `app/en${page}`
+  const hasOwn = ['page.tsx', 'layout.tsx'].some(f => {
+    try { return /(?:^|\s)(?:title:|generateMetadata)/.test(readFileSync(`${dir}/${f}`, 'utf8')) }
+    catch { return false }
+  })
+  if (hasOwn) say('ok  ', `/en${page} — has its own title`)
+  else { say('THAI', `/en${page} sets no title — inherits the root layout's Thai default`); bad++ }
+}
+
 console.log(bad === 0
-  ? `\n${statics.length + dynamic.length} English routes, table agrees with the filesystem.`
+  ? `\n${statics.length + dynamic.length} English routes, table agrees with the filesystem, every one titled.`
   : `\n${bad} mismatch(es).`)
 process.exit(bad === 0 ? 0 : 1)
