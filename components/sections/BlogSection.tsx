@@ -1,7 +1,9 @@
 // Link here is LocaleLink: it keeps the reader in the language they are already
 // reading, so an href written as a Thai path resolves to its English
-// counterpart on /en/* pages. Hrefs with no English page — /manage, /blog,
-// /building, the account surfaces — pass through unchanged. See
+// counterpart on /en/* pages. An href with no English page passes through
+// unchanged. The list of which is in lib/routes-i18n, deliberately not
+// repeated here — it was copied into 16 files and went stale in all of them
+// the moment /manage and /blog got English pages. See
 // components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
 import { createServerClient } from '@/lib/supabase'
@@ -25,10 +27,31 @@ export default async function BlogSection({ locale = 'th' }: { locale?: Locale }
     .from('blog_posts')
     .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, published_at')
     .eq('status', 'published')
+    /**
+     * Filter by language. Without this the English home page rendered three
+     * Thai article cards — Thai headline, Thai excerpt, Thai category chip —
+     * under an English "Latest articles" heading, linking to Thai pages. The
+     * dates were formatted in English, which made it look deliberate.
+     *
+     * Only the heading and the dates were ever locale-aware here; the posts
+     * themselves never were, because this component predates the blog having a
+     * `language` column at all.
+     */
+    .eq('language', locale)
     .order('published_at', { ascending: false })
     .limit(3)
 
   const posts = data ?? []
+
+  /**
+   * Nothing to show, so show nothing.
+   *
+   * blog_posts holds zero English rows, so /en would otherwise get a heading, a
+   * subheading, a "View all" link and then an empty grid — which reads as a
+   * page that failed to load rather than a blog that has not been written yet.
+   * /en/blog says so in words; the home page just stays quiet.
+   */
+  if (posts.length === 0) return null
 
   return (
     <section style={{ maxWidth: 1240, margin: '0 auto', padding: '8px 24px 56px' }}>

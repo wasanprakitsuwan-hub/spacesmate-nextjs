@@ -31,12 +31,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/`,         changeFrequency: 'daily',   priority: 1.0,  lastModified: now },
     { url: `${SITE}/search`,   changeFrequency: 'daily',   priority: 0.9,  lastModified: now },
     { url: `${SITE}/en`,       changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/`, en: `${SITE}/en` } } },
-    { url: `${SITE}/manage`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now },
+    { url: `${SITE}/manage`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
+    { url: `${SITE}/en/manage`, changeFrequency: 'monthly', priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
     { url: `${SITE}/submit`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now },
     { url: `${SITE}/pricing`,  changeFrequency: 'monthly', priority: 0.8,  lastModified: now, alternates: { languages: { th: `${SITE}/pricing`, en: `${SITE}/en/pricing` } } },
     { url: `${SITE}/services`, changeFrequency: 'monthly', priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
     { url: `${SITE}/en/services`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
-    { url: `${SITE}/blog`,     changeFrequency: 'weekly',  priority: 0.7,  lastModified: now },
+    { url: `${SITE}/blog`,     changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
+    /**
+     * /en/blog is listed even though blog_posts holds no English articles yet.
+     * The index itself is a real page with real copy, and it is the hreflang
+     * counterpart /blog now declares — a declared alternate that 404s is worse
+     * than an empty one. Article URLs (blogPages, below) stay Thai-only until
+     * there are English articles to point at.
+     */
+    { url: `${SITE}/en/blog`,  changeFrequency: 'weekly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
     { url: `${SITE}/about`,    changeFrequency: 'yearly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
     { url: `${SITE}/en/about`, changeFrequency: 'yearly',  priority: 0.4,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
     { url: `${SITE}/en/pricing`, changeFrequency: 'monthly', priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/pricing`, en: `${SITE}/en/pricing` } } },

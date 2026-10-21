@@ -6,8 +6,10 @@ import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 // Link here is LocaleLink: it keeps the reader in the language they are already
 // reading, so an href written as a Thai path resolves to its English
-// counterpart on /en/* pages. Hrefs with no English page — /manage, /blog,
-// /building, the account surfaces — pass through unchanged. See
+// counterpart on /en/* pages. An href with no English page passes through
+// unchanged. The list of which is in lib/routes-i18n, deliberately not
+// repeated here — it was copied into 16 files and went stale in all of them
+// the moment /manage and /blog got English pages. See
 // components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
 import { localeHref } from '@/lib/routes-i18n'

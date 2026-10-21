@@ -58,10 +58,12 @@ const ALLOWED = new Map([
   ['lib/constants.ts',        'area keywords and Thai place names'],
   ['components/listing/SharedListingForm.tsx', 'FACING / OTHER_CHARGES / TYPE_LABEL values + Thai-only dashboard exports'],
   ['components/layout/LanguageToggle.tsx', 'the Thai label on the toggle itself'],
+  ['components/blog/BlogIndexBody.tsx', 'the Thai label on the blog TH/EN tab, same as the toggle'],
 
   // ── Bilingual dictionaries: the script sees the th half ──
   ['lib/marketing-i18n.ts',   'th half of the about/services/submit dictionary'],
   ['lib/faq-i18n.ts',         'th half of the FAQ dictionary'],
+  ['lib/blog-i18n.ts',        'CATEGORY_VALUES are stored in blog_posts.category + the th half of the dictionary'],
   ['lib/area-content.ts',     'th half of the hand-written area guides'],
   ['components/RichEditor.tsx', 'both halves of the toolbar tooltip map'],
 

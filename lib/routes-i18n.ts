@@ -33,6 +33,7 @@ export type Locale = 'th' | 'en'
  */
 const EN_STATIC = new Set([
   '/about',
+  '/blog',
   '/services',
   '/pricing',
   '/faq',
@@ -66,12 +67,29 @@ const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
 
 /**
  * Thai-only, deliberately, and worth naming so nobody wonders:
- *   /blog, /blog/[slug]  Stage F
+ *   /blog/[slug]         see below — NOT a missing page
  *   /building/[slug]     no English version yet
- *   /area/<data slug>    Stage G
  *   /submit/success      post-checkout, reached from Stripe
  *   /submit/cancel       likewise
  *   /dashboard/*         admin surfaces, Thai-only by design
+ *
+ * WHY /blog/[slug] IS ABSENT WHILE /blog IS LISTED
+ *   Every article lives at /blog/<slug> whatever language it is written in, and
+ *   there is no /en/blog/<slug>. That is on purpose, not an oversight.
+ *
+ *   Adding '/blog/' to EN_DYNAMIC_PREFIXES would claim that every Thai article
+ *   has an English counterpart at the same slug. It does not — blog_posts holds
+ *   zero English rows today — so every article link rendered on an /en page
+ *   (BlogSection on the English home page, for one) would resolve to
+ *   /en/blog/<thai-slug> and 404. The drop-back to Thai is the correct
+ *   behaviour here: a Thai article is merely a Thai article, a 404 is a dead
+ *   end.
+ *
+ *   When English articles exist, /blog/[slug] becomes slug-conditional in
+ *   exactly the way /area already is — the slug decides, because a given
+ *   article may be written in one language and not the other. Build
+ *   app/en/blog/[slug] and gate it on the post's `language`, the way
+ *   EN_AREA_SLUGS gates /area. Do not add a blanket prefix.
  */
 
 /** Split a href into its path and whatever follows (?query, #hash). */
