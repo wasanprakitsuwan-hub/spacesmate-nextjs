@@ -44,7 +44,9 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
     setLoading(true); setError('')
     try {
       const supabase = createBrowserClient()
-      const redirectTo = `${window.location.origin}/reset-password`
+      // The emailed link has to land in the language they asked from, or an
+      // English owner resetting a password meets a Thai form.
+      const redirectTo = `${window.location.origin}${localeHref('/reset-password', locale)}`
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo })
       if (resetErr) throw resetErr
       setSuccess(t.resetSent(forgotEmail))

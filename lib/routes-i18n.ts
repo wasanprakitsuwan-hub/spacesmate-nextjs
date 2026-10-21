@@ -42,6 +42,7 @@ const EN_STATIC = new Set([
   '/submit/new',
   '/manage',
   '/login',
+  '/reset-password',
   '/owner-dashboard',
   '/owner-dashboard/profile',
   '/privacy',
@@ -70,8 +71,7 @@ const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
  *   /area/<data slug>    Stage G
  *   /submit/success      post-checkout, reached from Stripe
  *   /submit/cancel       likewise
- *   /reset-password, /dashboard/*
- *                        password reset and admin surfaces, Thai-only by design
+ *   /dashboard/*         admin surfaces, Thai-only by design
  */
 
 /** Split a href into its path and whatever follows (?query, #hash). */
