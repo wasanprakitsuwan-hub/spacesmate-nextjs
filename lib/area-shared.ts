@@ -6,10 +6,11 @@
  * on 10 October had to be applied twice by hand — once in each copy. This module
  * plus `components/area/AreaPageBody` is the single implementation they now share.
  *
- * One genuine difference is preserved: only the Thai side serves the
- * data-driven area pages (one per district × property type with live
- * inventory). The English side renders the hand-written areas only, and 404s
- * for anything else — exactly as it did before.
+ * Both locales now serve both kinds of area page: the 16 hand-written ones and
+ * the data-driven ones (one per district × property type with live inventory).
+ * The English side used to serve the hand-written 16 only and 404 for the rest,
+ * which left the larger half of the SEO surface — the pages that actually
+ * compete for area queries — reachable in Thai alone.
  */
 import { AREA_KEYWORDS } from '@/lib/constants'
 import type { AreaKeyword } from '@/lib/types'
@@ -74,6 +75,7 @@ export const AREA_T = {
     homeUrl: `${SITE}/`,
     search: 'ค้นหาที่พัก',
     searchNav: 'ค้นหาที่พัก',
+    searchUrl: `${SITE}/search`,
     areaPath: '/area',
     subtitleSuffix: 'กรุงเทพมหานคร ประเทศไทย',
     popularArea: 'ทำเลยอดนิยม',
@@ -97,14 +99,22 @@ export const AREA_T = {
   },
   en: {
     home: 'Home',
-    // `/en` does not exist and returns 404; there is no English home page yet.
+    /**
+     * The visible link goes through LocaleLink, which turns '/' into '/en' on
+     * an English page — so it has always been right. `homeUrl` does not: it is
+     * a raw string in the BreadcrumbList JSON-LD, and it said `${SITE}/`, so
+     * the structured data on every English area page claimed its parent was
+     * the Thai home page. The comment here said "/en does not exist", which
+     * stopped being true when /en shipped.
+     */
     homeHref: '/',
-    homeUrl: `${SITE}/`,
+    homeUrl: `${SITE}/en`,
     // The visible link and the breadcrumb schema deliberately differ here, as
     // they always have: the nav reads 'Search Rentals', the structured data
     // says 'Search'. Collapsing them changes the rendered page.
     search: 'Search',
     searchNav: 'Search Rentals',
+    searchUrl: `${SITE}/en/search`,
     areaPath: '/en/area',
     subtitleSuffix: 'Bangkok, Thailand',
     popularArea: 'Popular Area',
@@ -128,9 +138,16 @@ export const AREA_T = {
   },
 } as const
 
-/** The breadcrumb's Search link points at the Thai search page in both locales — unchanged. */
+/**
+ * The visible Search link. It goes through LocaleLink, so '/search' resolves to
+ * '/en/search' for an English reader — one constant is correct for both.
+ *
+ * The breadcrumb *schema* URL is not a link and gets no such treatment, so it
+ * lives in AREA_T per locale as `searchUrl`. It used to be a shared constant
+ * pointing at the Thai page, which meant the structured data and the visible
+ * breadcrumb on every English area page disagreed about where "Search" goes.
+ */
 export const SEARCH_HREF = '/search'
-export const SEARCH_URL = `${SITE}/search`
 
 export type AreaProp = {
   slug: string
@@ -159,11 +176,15 @@ const LISTING_COLUMNS = 'slug, property_type, title_th, district, address_th, im
  * Resolve everything an area page renders. Returns null when the slug is
  * unknown, which the route turns into notFound().
  *
- * Only Thai resolves data-driven areas. English never did and still doesn't.
+ * Both locales resolve data-driven areas. The `locale` parameter no longer
+ * gates which slugs exist — it only selects labels — so a slug 404s in both
+ * languages or in neither. lib/routes-i18n depends on that symmetry: it
+ * prefixes /area/* unconditionally, which is only safe while the two sides
+ * agree on which slugs are real.
  */
 export async function loadArea(slug: string, locale: Locale): Promise<AreaView | null> {
   const hardcoded = AREA_KEYWORDS.find(a => a.slug === slug)
-  const generated = hardcoded || locale !== 'th' ? null : await getGeneratedArea(slug)
+  const generated = hardcoded ? null : await getGeneratedArea(slug)
   if (!hardcoded && !generated) return null
 
   const area = hardcoded ?? {
@@ -171,6 +192,18 @@ export async function loadArea(slug: string, locale: Locale): Promise<AreaView |
     label_th: generated!.labelTh,
     label_en: generated!.labelEn,
     property_type: generated!.propertyType as AreaKeyword['property_type'],
+    /**
+     * `district` is rendered straight into prose in BOTH locales —
+     * "ย่าน{district} มีสิ่งอำนวยความสะดวก" and "the {district} district has
+     * everything you need" — so it has to follow the reader. Hence the switch.
+     *
+     * Note the trap: `district` on an AreaKeyword is already romanised
+     * ('Sukhumvit'), while GeneratedArea.district is the exact Thai DB value
+     * ('เขตบางนา') kept for matching. Same field name, opposite contents.
+     * Neither raw value is right here — Thai wants districtLabel, English
+     * wants districtLabelEn.
+     */
+    district: locale === 'en' ? generated!.districtLabelEn : generated!.districtLabel,
   }
 
   const content = AREA_CONTENT[slug]
@@ -226,9 +259,40 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
   const area = AREA_KEYWORDS.find(a => a.slug === slug)
 
   if (!area) {
-    if (locale === 'en') return { title: 'Page not found' }
     const gen = await getGeneratedArea(slug)
-    if (!gen) return { title: 'ไม่พบหน้า' }
+    if (!gen) return { title: locale === 'en' ? 'Page not found' : 'ไม่พบหน้า' }
+
+    /**
+     * Data-driven area pages, both locales.
+     *
+     * The English half of this used to be a single line returning
+     * { title: 'Page not found' } for any slug not in AREA_KEYWORDS — which was
+     * honest while /en/area 404'd for those slugs, and became a lie the moment
+     * it stopped. A metadata function that says "Page not found" about a page
+     * that renders fine is the worst of both: the page is indexed, with that
+     * as its title.
+     *
+     * Both now declare each other as hreflang alternates. encodeURI matters on
+     * the Thai side — these slugs are Thai text, so the raw string is not a
+     * valid URL.
+     */
+    const thUrl = `/area/${encodeURI(gen.slug)}`
+    const enUrl = `/en/area/${encodeURI(gen.slug)}`
+    const languages = { th: thUrl, en: enUrl }
+
+    if (locale === 'en') {
+      const title = `${gen.labelEn} — ${gen.count} listing${gen.count === 1 ? '' : 's'}`
+      const description =
+        `${gen.labelEn} — ${gen.count} rental listing${gen.count === 1 ? '' : 's'} in Bangkok. ` +
+        `Compare prices and photos, and contact owners directly on SpacesMate.`
+      return {
+        title,
+        description,
+        openGraph: { title, description, type: 'website' as const },
+        alternates: { canonical: enUrl, languages },
+      }
+    }
+
     const title = `${gen.labelTh} — ${gen.count} ประกาศ`
     const description =
       `${gen.labelTh} ในกรุงเทพฯ รวม ${gen.count} ประกาศให้เช่า ` +
@@ -237,7 +301,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
       title,
       description,
       openGraph: { title, description, type: 'website' as const },
-      alternates: { canonical: `/area/${encodeURI(gen.slug)}` },
+      alternates: { canonical: thUrl, languages },
     }
   }
 

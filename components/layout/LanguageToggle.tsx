@@ -37,8 +37,11 @@ export function counterpartFor(pathname: string): Counterpart {
   // Every English page has a Thai original, so this direction always keeps place.
   if (isEnglishPath(path)) return TO_THAI(thPath(path))
 
-  // The other way round can fail: /manage, /blog and the data-driven area pages
-  // have no English version. Those land on the English home page instead.
+  // The other way round can fail: /building, individual blog articles and the
+  // admin surfaces have no English version. Those land on the English home
+  // page instead. (/manage, /blog and the data-driven area pages were on this
+  // list and are not any more — lib/routes-i18n is the live answer, this
+  // comment is only an illustration of the failure mode.)
   return TO_ENGLISH(enPath(path) ?? '/en')
 }
 

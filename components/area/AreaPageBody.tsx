@@ -18,7 +18,7 @@
 import Link from '@/components/ui/LocaleLink'
 import { ItemListLd, BreadcrumbLd, FaqLd } from '@/components/seo/JsonLd'
 import {
-  AREA_T, GRADS, TYPE_LABELS, SEARCH_HREF, SEARCH_URL, SITE,
+  AREA_T, GRADS, TYPE_LABELS, SEARCH_HREF, SITE,
   type AreaView, type Locale,
 } from '@/lib/area-shared'
 
@@ -43,7 +43,9 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
   const priceSelf = locale === 'th' ? content?.price_from_th : content?.price_from_en
   const priceOther = locale === 'th' ? content?.price_from_en : content?.price_from_th
 
-  const areaUrl = `${SITE}${t.areaPath}/${slug}`
+  // encodeURI because data-driven slugs are Thai text — 'เช่าคอนโด-บางนา' is
+  // not a valid URL, and an invalid @id makes a crawler drop the breadcrumb.
+  const areaUrl = `${SITE}${t.areaPath}/${encodeURI(slug)}`
 
   return (
     <div className="bg-white min-h-screen">
@@ -58,7 +60,7 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
       <BreadcrumbLd
         trail={[
           { name: t.home, url: t.homeUrl },
-          { name: t.search, url: SEARCH_URL },
+          { name: t.search, url: t.searchUrl },
           { name: labelSelf, url: areaUrl },
         ]}
       />

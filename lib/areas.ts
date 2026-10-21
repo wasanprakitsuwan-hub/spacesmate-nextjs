@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase'
 import { slugify } from '@/lib/slug'
+import { districtEn } from '@/lib/geo-i18n'
 
 /**
  * Data-driven area pages.
@@ -48,6 +49,14 @@ export type GeneratedArea = {
   slug: string
   district: string        // exact DB value, e.g. 'เขตบางนา' — used for matching
   districtLabel: string   // display, e.g. 'บางนา'
+  /**
+   * Romanised district for English display, e.g. 'Bang Na'.
+   *
+   * Falls back to the Thai label when the district is not in the national list
+   * — which means a typo or a neighbourhood name typed into a free-text field,
+   * where showing what the owner wrote beats showing nothing.
+   */
+  districtLabelEn: string
   propertyType: string
   labelTh: string
   labelEn: string
@@ -73,7 +82,10 @@ export async function getGeneratedAreas(): Promise<GeneratedArea[]> {
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('properties')
-      .select('district, property_type')
+      // province is read only to disambiguate the English district name: a few
+      // district names exist in more than one province, and guessing between
+      // them would romanise a listing into the wrong place.
+      .select('district, province, property_type')
       .eq('listing_status', 'active')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .not('district', 'is', null)
@@ -101,13 +113,22 @@ export async function getGeneratedAreas(): Promise<GeneratedArea[]> {
       }
 
       const label = stripDistrictPrefix(district)
+      /**
+       * labelEn used to read "Condo for Rent in บางนา" — English frame, Thai
+       * place name. It was never rendered, because these pages were Thai-only,
+       * so nobody saw it. The moment /en/area served them it became the title,
+       * the h1, the meta description and the breadcrumb on every data-driven
+       * English page.
+       */
+      const labelEn = districtEn(district, String(row.province ?? '').trim() || undefined) ?? label
       tally.set(slug, {
         slug,
         district,
         districtLabel: label,
+        districtLabelEn: labelEn,
         propertyType: type,
         labelTh: `เช่า${TYPE_TH[type] ?? type} ${label}`,
-        labelEn: `${TYPE_EN[type] ?? type} for Rent in ${label}`,
+        labelEn: `${TYPE_EN[type] ?? type} for Rent in ${labelEn}`,
         count: 1,
       })
     }

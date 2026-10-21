@@ -80,13 +80,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Data-driven area pages ─────────────────────────────────────────────────
   // One per (district, property type) with live inventory. These are the pages
   // that actually compete for "เช่าคอนโด บางนา" style queries.
+  // Both locales, since Stage G. These were Thai-only here because the English
+  // route 404'd for them; it no longer does, and an English page absent from
+  // the sitemap is discoverable only by following a link.
   const generated = await getGeneratedAreas()
-  const generatedAreaPages: MetadataRoute.Sitemap = generated.map(a => ({
-    url: encodeURI(`${SITE}/area/${a.slug}`),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-    lastModified: now,
-  }))
+  const generatedAlternates = (slug: string) => ({
+    languages: {
+      th: encodeURI(`${SITE}/area/${slug}`),
+      en: encodeURI(`${SITE}/en/area/${slug}`),
+    },
+  })
+  const generatedAreaPages: MetadataRoute.Sitemap = generated.flatMap(a => ([
+    {
+      url: encodeURI(`${SITE}/area/${a.slug}`),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+      lastModified: now,
+      alternates: generatedAlternates(a.slug),
+    },
+    {
+      url: encodeURI(`${SITE}/en/area/${a.slug}`),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+      lastModified: now,
+      alternates: generatedAlternates(a.slug),
+    },
+  ]))
 
   // ── Building pages ─────────────────────────────────────────────────────────
   // One per building with live inventory. Renters search by building name, so

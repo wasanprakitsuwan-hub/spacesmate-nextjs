@@ -46,7 +46,11 @@ for (const p of claimed) {
 }
 for (const d of dynamic) {
   const base = d.replace(/\/\[.*$/, '/')
-  const covered = prefixes.includes(base) || base === '/area/'   // /area is slug-conditional, handled in the table
+  // No special cases. /area used to be exempted here, because it was
+  // slug-conditional and the table could not express that — which meant this
+  // check could not tell a correctly-gated /area from a forgotten one. Stage G
+  // made /area an ordinary prefix, so the exemption went with it.
+  const covered = prefixes.includes(base)
   if (covered) say('ok  ', `${d} — dynamic family covered`)
   else { say('MISS', `${d} exists but no EN_DYNAMIC_PREFIXES entry covers it`); bad++ }
 }

@@ -23,8 +23,6 @@
  *   to it start working. There is nowhere else to change. The test at the bottom
  *   of this file's companion script checks the table against the filesystem.
  */
-import { AREA_KEYWORDS } from '@/lib/constants'
-
 export type Locale = 'th' | 'en'
 
 /**
@@ -57,13 +55,22 @@ const EN_STATIC = new Set([
  * Thai text where no English description was written, so it always exists —
  * it is never a 404, at worst it is partly Thai content under an English frame.
  */
-const EN_DYNAMIC_PREFIXES = ['/property/']
-
 /**
- * /area is the awkward one: the 16 hand-written area pages have English
- * versions, the data-driven ones do not. So the slug decides.
+ * Dynamic families where every Thai page has an English one at the same slug.
+ *
+ * /property — the English listing page falls back to the owner's Thai text
+ * where no English description was written, so it always exists. At worst it is
+ * partly Thai content under an English frame, never a 404.
+ *
+ * /area — both routes now resolve the same slug set: the 16 hand-written areas
+ * plus every data-driven (district × type) pair. This used to be slug-gated on
+ * EN_AREA_SLUGS, because English served the hand-written 16 only; Stage G made
+ * the two sides symmetric, so a slug 404s in both languages or in neither, and
+ * an unconditional prefix is safe. The guarantee lives in loadArea — if a
+ * `locale` gate is ever reintroduced there, this entry becomes a lie and every
+ * data-driven area link on an /en page becomes a 404.
  */
-const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
+const EN_DYNAMIC_PREFIXES = ['/property/', '/area/']
 
 /**
  * Thai-only, deliberately, and worth naming so nobody wonders:
@@ -85,11 +92,13 @@ const EN_AREA_SLUGS = new Set(AREA_KEYWORDS.map(a => a.slug))
  *   behaviour here: a Thai article is merely a Thai article, a 404 is a dead
  *   end.
  *
- *   When English articles exist, /blog/[slug] becomes slug-conditional in
- *   exactly the way /area already is — the slug decides, because a given
- *   article may be written in one language and not the other. Build
- *   app/en/blog/[slug] and gate it on the post's `language`, the way
- *   EN_AREA_SLUGS gates /area. Do not add a blanket prefix.
+ *   When English articles exist, this becomes slug-conditional: the slug
+ *   decides, because a given article may be written in one language and not
+ *   the other. /area was that shape until Stage G made both sides resolve the
+ *   same slugs; blog posts will not converge like that, since an article is
+ *   written in one language or translated deliberately. So build
+ *   app/en/blog/[slug], gate it on the post's `language`, and make hasEnglish
+ *   consult the set of English slugs — do not add a blanket prefix.
  */
 
 /** Split a href into its path and whatever follows (?query, #hash). */
@@ -109,15 +118,6 @@ export function hasEnglish(thaiPath: string): boolean {
   if (path === '/') return true                       // → /en
   if (EN_STATIC.has(path)) return true
   if (EN_DYNAMIC_PREFIXES.some(p => path.startsWith(p))) return true
-
-  const area = path.match(/^\/area\/(.+)$/)
-  if (area) {
-    const raw = area[1]
-    let decoded = raw
-    try { decoded = decodeURIComponent(raw) } catch { /* malformed escape — compare raw */ }
-    return EN_AREA_SLUGS.has(decoded) || EN_AREA_SLUGS.has(raw)
-  }
-
   return false
 }
 
