@@ -114,7 +114,22 @@ export interface AreaKeyword {
   slug: string
   label_th: string
   label_en: string
+  /**
+   * The bare place name, for prose.
+   *
+   * label_* is the full SEO phrase — "Condo for Rent in Bang Na" — which is
+   * right for the h1 and the title tag and wrong everywhere it gets dropped
+   * into a sentence: "Listings in Condo for Rent in Bang Na", "Condo for Rent
+   * in Bang Na is growing". These are the same place in two words.
+   *
+   * Required, not optional, so a new area cannot be added without one. The
+   * transit prefix is deliberately left off — "Asok", not "BTS Asok" — because
+   * these read as prose, and the station is already in label_*.
+   */
+  place_th: string
+  place_en: string
   property_type: PropertyType
   station?: string
+  /** Romanised, e.g. 'Sukhumvit'. NOT the Thai DB value — see loadArea. */
   district?: string
 }

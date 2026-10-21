@@ -30,22 +30,22 @@ export const AMENITY_LABELS: Record<string, { th: string; icon: string }> = {
 // ─── Bangkok Area SEO Keywords ────────────────────────────────────────────────
 
 export const AREA_KEYWORDS: AreaKeyword[] = [
-  { slug: 'condo-rent-bts-asok',        label_th: 'เช่าคอนโด BTS อโศก',         label_en: 'Condo for Rent BTS Asok',         property_type: 'condo',     station: 'BTS Asok' },
-  { slug: 'apartment-rent-sukhumvit',   label_th: 'เช่าอพาร์ทเม้นท์ สุขุมวิท', label_en: 'Apartment for Rent Sukhumvit',     property_type: 'apartment', district: 'Sukhumvit' },
-  { slug: 'condo-rent-bts-ekkamai',     label_th: 'เช่าคอนโด BTS เอกมัย',       label_en: 'Condo for Rent BTS Ekkamai',       property_type: 'condo',     station: 'BTS Ekkamai' },
-  { slug: 'house-rent-lat-phrao',       label_th: 'เช่าบ้าน ลาดพร้าว',          label_en: 'House for Rent Lat Phrao',         property_type: 'house',     district: 'Lat Phrao' },
-  { slug: 'condo-rent-bts-thonglor',   label_th: 'เช่าคอนโด BTS ทองหล่อ',      label_en: 'Condo for Rent BTS Thonglor',      property_type: 'condo',     station: 'BTS Thonglor' },
-  { slug: 'office-rent-silom',         label_th: 'เช่าออฟฟิศ สีลม',            label_en: 'Office for Rent Silom',            property_type: 'office',    district: 'Silom' },
-  { slug: 'condo-rent-bts-on-nut',     label_th: 'เช่าคอนโด BTS อ่อนนุช',      label_en: 'Condo for Rent BTS On Nut',        property_type: 'condo',     station: 'BTS On Nut' },
-  { slug: 'apartment-rent-ratchada',   label_th: 'เช่าอพาร์ทเม้นท์ รัชดา',     label_en: 'Apartment for Rent Ratchada',      property_type: 'apartment', district: 'Ratchada' },
-  { slug: 'house-rent-rama-9',         label_th: 'เช่าบ้าน พระราม 9',           label_en: 'House for Rent Rama 9',            property_type: 'house',     district: 'Rama 9' },
-  { slug: 'condo-rent-mrt-lat-phrao',  label_th: 'เช่าคอนโด MRT ลาดพร้าว',     label_en: 'Condo for Rent MRT Lat Phrao',     property_type: 'condo',     station: 'MRT Lat Phrao' },
-  { slug: 'coworking-rent-sukhumvit',  label_th: 'เช่าโคเวิร์กกิ้ง สุขุมวิท',  label_en: 'Co-working Space Sukhumvit',       property_type: 'coworking', district: 'Sukhumvit' },
-  { slug: 'condo-rent-bts-saphan-kwai',label_th: 'เช่าคอนโด BTS สะพานควาย',    label_en: 'Condo for Rent BTS Saphan Kwai',   property_type: 'condo',     station: 'BTS Saphan Kwai' },
-  { slug: 'condo-rent-bts-ari',        label_th: 'เช่าคอนโด BTS อารีย์',        label_en: 'Condo for Rent BTS Ari',           property_type: 'condo',     station: 'BTS Ari' },
-  { slug: 'apartment-rent-bang-na',    label_th: 'เช่าอพาร์ทเม้นท์ บางนา',     label_en: 'Apartment for Rent Bang Na',       property_type: 'apartment', district: 'Bang Na' },
-  { slug: 'condo-rent-mrt-phahon-yothin', label_th: 'เช่าคอนโด MRT พหลโยธิน', label_en: 'Condo for Rent MRT Phahon Yothin', property_type: 'condo',     station: 'MRT Phahon Yothin' },
-  { slug: 'office-rent-sathorn',       label_th: 'เช่าออฟฟิศ สาทร',            label_en: 'Office for Rent Sathorn',          property_type: 'office',    district: 'Sathorn' },
+  { slug: 'condo-rent-bts-asok',        label_th: 'เช่าคอนโด BTS อโศก',         label_en: 'Condo for Rent BTS Asok',         place_th: 'อโศก', place_en: 'Asok', property_type: 'condo',     station: 'BTS Asok' },
+  { slug: 'apartment-rent-sukhumvit',   label_th: 'เช่าอพาร์ทเม้นท์ สุขุมวิท', label_en: 'Apartment for Rent Sukhumvit',     place_th: 'สุขุมวิท', place_en: 'Sukhumvit', property_type: 'apartment', district: 'Sukhumvit' },
+  { slug: 'condo-rent-bts-ekkamai',     label_th: 'เช่าคอนโด BTS เอกมัย',       label_en: 'Condo for Rent BTS Ekkamai',       place_th: 'เอกมัย', place_en: 'Ekkamai', property_type: 'condo',     station: 'BTS Ekkamai' },
+  { slug: 'house-rent-lat-phrao',       label_th: 'เช่าบ้าน ลาดพร้าว',          label_en: 'House for Rent Lat Phrao',         place_th: 'ลาดพร้าว', place_en: 'Lat Phrao', property_type: 'house',     district: 'Lat Phrao' },
+  { slug: 'condo-rent-bts-thonglor',   label_th: 'เช่าคอนโด BTS ทองหล่อ',      label_en: 'Condo for Rent BTS Thonglor',      place_th: 'ทองหล่อ', place_en: 'Thonglor', property_type: 'condo',     station: 'BTS Thonglor' },
+  { slug: 'office-rent-silom',         label_th: 'เช่าออฟฟิศ สีลม',            label_en: 'Office for Rent Silom',            place_th: 'สีลม', place_en: 'Silom', property_type: 'office',    district: 'Silom' },
+  { slug: 'condo-rent-bts-on-nut',     label_th: 'เช่าคอนโด BTS อ่อนนุช',      label_en: 'Condo for Rent BTS On Nut',        place_th: 'อ่อนนุช', place_en: 'On Nut', property_type: 'condo',     station: 'BTS On Nut' },
+  { slug: 'apartment-rent-ratchada',   label_th: 'เช่าอพาร์ทเม้นท์ รัชดา',     label_en: 'Apartment for Rent Ratchada',      place_th: 'รัชดา', place_en: 'Ratchada', property_type: 'apartment', district: 'Ratchada' },
+  { slug: 'house-rent-rama-9',         label_th: 'เช่าบ้าน พระราม 9',           label_en: 'House for Rent Rama 9',            place_th: 'พระราม 9', place_en: 'Rama 9', property_type: 'house',     district: 'Rama 9' },
+  { slug: 'condo-rent-mrt-lat-phrao',  label_th: 'เช่าคอนโด MRT ลาดพร้าว',     label_en: 'Condo for Rent MRT Lat Phrao',     place_th: 'ลาดพร้าว', place_en: 'Lat Phrao', property_type: 'condo',     station: 'MRT Lat Phrao' },
+  { slug: 'coworking-rent-sukhumvit',  label_th: 'เช่าโคเวิร์กกิ้ง สุขุมวิท',  label_en: 'Co-working Space Sukhumvit',       place_th: 'สุขุมวิท', place_en: 'Sukhumvit', property_type: 'coworking', district: 'Sukhumvit' },
+  { slug: 'condo-rent-bts-saphan-kwai',label_th: 'เช่าคอนโด BTS สะพานควาย',    label_en: 'Condo for Rent BTS Saphan Kwai',   place_th: 'สะพานควาย', place_en: 'Saphan Kwai', property_type: 'condo',     station: 'BTS Saphan Kwai' },
+  { slug: 'condo-rent-bts-ari',        label_th: 'เช่าคอนโด BTS อารีย์',        label_en: 'Condo for Rent BTS Ari',           place_th: 'อารีย์', place_en: 'Ari', property_type: 'condo',     station: 'BTS Ari' },
+  { slug: 'apartment-rent-bang-na',    label_th: 'เช่าอพาร์ทเม้นท์ บางนา',     label_en: 'Apartment for Rent Bang Na',       place_th: 'บางนา', place_en: 'Bang Na', property_type: 'apartment', district: 'Bang Na' },
+  { slug: 'condo-rent-mrt-phahon-yothin', label_th: 'เช่าคอนโด MRT พหลโยธิน', label_en: 'Condo for Rent MRT Phahon Yothin', place_th: 'พหลโยธิน', place_en: 'Phahon Yothin', property_type: 'condo',     station: 'MRT Phahon Yothin' },
+  { slug: 'office-rent-sathorn',       label_th: 'เช่าออฟฟิศ สาทร',            label_en: 'Office for Rent Sathorn',          place_th: 'สาทร', place_en: 'Sathorn', property_type: 'office',    district: 'Sathorn' },
 ]
 
 // ─── Price Range Options ──────────────────────────────────────────────────────

@@ -163,6 +163,16 @@ export type RelatedArea = { slug: string; label_th: string; label_en: string }
 
 export type AreaView = {
   area: Pick<AreaKeyword, 'slug' | 'label_th' | 'label_en' | 'property_type' | 'station' | 'district'>
+  /**
+   * The bare place name in the reader's language — 'Bang Na', 'บางนา'.
+   *
+   * Headings used to interpolate the full label, which produced "Listings in
+   * Condo for Rent in Bang Na" and "Condo for Rent in Bang Na is growing".
+   * The label is an SEO phrase and belongs in the h1 and the <title>; a
+   * sentence needs the place. Resolved here rather than in the component so
+   * there is one rule, not one per heading.
+   */
+  placeLabel: string
   content: AreaContent | undefined
   areaProps: AreaProp[]
   related: RelatedArea[]
@@ -205,6 +215,15 @@ export async function loadArea(slug: string, locale: Locale): Promise<AreaView |
      */
     district: locale === 'en' ? generated!.districtLabelEn : generated!.districtLabel,
   }
+
+  /**
+   * The bare place name for prose. Hand-written areas carry it explicitly;
+   * data-driven ones already have it as the district label, which is what the
+   * place IS for those pages.
+   */
+  const placeLabel = hardcoded
+    ? (locale === 'en' ? hardcoded.place_en : hardcoded.place_th)
+    : (locale === 'en' ? generated!.districtLabelEn : generated!.districtLabel)
 
   const content = AREA_CONTENT[slug]
   const match = AREA_MATCH[slug]
@@ -251,7 +270,7 @@ export async function loadArea(slug: string, locale: Locale): Promise<AreaView |
       .map(a => ({ slug: a.slug, label_th: a.labelTh, label_en: a.labelEn }))
   }
 
-  return { area, content, areaProps, related, isGenerated: Boolean(generated) }
+  return { area, placeLabel, content, areaProps, related, isGenerated: Boolean(generated) }
 }
 
 /** Metadata for both locales. Mirrors exactly what each page produced before. */

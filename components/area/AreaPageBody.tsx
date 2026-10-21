@@ -29,10 +29,16 @@ import {
  * from the param. Using `area.slug` here silently changes those URLs.
  */
 export default function AreaPageBody({ view, locale, slug }: { view: AreaView; locale: Locale; slug: string }) {
-  const { area, content, areaProps, related } = view
+  const { area, placeLabel, content, areaProps, related } = view
   const t = AREA_T[locale]
   const types = TYPE_LABELS[locale]
 
+  /**
+   * labelSelf is the full SEO phrase and belongs in the h1, the breadcrumb and
+   * the structured data. placeLabel is the bare place name and belongs in any
+   * heading that reads as a sentence — otherwise you get "Listings in Condo
+   * for Rent in Bang Na", which is what shipped on 21 Oct.
+   */
   // The page shows its own language prominently and the other as a subtitle.
   const labelSelf = locale === 'th' ? area.label_th : area.label_en
   const labelOther = locale === 'th' ? area.label_en : area.label_th
@@ -102,7 +108,7 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
         {areaProps.length > 0 ? (
           <>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#02402e', margin: '0 0 24px' }}>
-              {t.listingsHeading(labelSelf)}
+              {t.listingsHeading(placeLabel)}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 48 }} className="sm-area-grid">
               {areaProps.map(p => {
@@ -136,7 +142,7 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
             <p style={{ margin: '0 0 12px' }}><span className="msym" style={{ fontSize: 32, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span></p>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>{t.noListingsTitle}</h2>
             <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 24px', fontWeight: 300 }}>
-              {t.noListingsBody(labelSelf)}
+              {t.noListingsBody(placeLabel)}
             </p>
             <Link href={SEARCH_HREF} style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '12px 28px', borderRadius: 24, textDecoration: 'none', display: 'inline-block' }}>
               {t.browseAll}
@@ -195,7 +201,7 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
               /* Fallback generic content */
               <div style={{ background: '#f7f9f8', borderRadius: 20, padding: '28px' }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>
-                  {t.whyRentFallback(labelSelf)}
+                  {t.whyRentFallback(placeLabel)}
                 </h2>
                 {locale === 'th' ? (
                   <>
