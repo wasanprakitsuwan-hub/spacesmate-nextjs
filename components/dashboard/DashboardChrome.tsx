@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase'
 import { DASH_T } from '@/lib/dashboard-i18n'
-import { localeHref } from '@/lib/routes-i18n'
+import { localeHref, enPath, thPath } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
 
 /**
@@ -16,6 +16,7 @@ import { useLocale } from '@/lib/use-locale'
  */
 export default function DashboardChrome({ children }: { children: React.ReactNode }) {
   const locale = useLocale()
+  const pathname = usePathname() ?? '/owner-dashboard'
   const t = DASH_T[locale]
   const router = useRouter()
   const [authReady, setAuthReady] = useState(false)
@@ -107,7 +108,7 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
           <Link href={localeHref('/owner-dashboard', locale)} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.1)' }}>
             {t.myListings}
           </Link>
-          <Link href="/submit" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
+          <Link href={localeHref('/submit', locale)} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
             + {t.newListing}
           </Link>
           <Link href={localeHref('/', locale)} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
@@ -123,6 +124,31 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
             fontWeight: 600, fontSize: 14,
           }}>{initial}</span>
           <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+          {/*
+            The portal's own language switch.
+
+            The owner dashboard suppresses the public navbar, so until now it
+            had no way to change language at all — the toggle the Founder saw
+            on the English dashboard was the public navbar leaking through a
+            layout bug, which is why the Thai one did not have it.
+
+            Links to the same page in the other language rather than to a home
+            page, so an owner mid-task stays where they are.
+          */}
+          <Link
+            href={locale === 'en' ? thPath(pathname) : (enPath(pathname) ?? '/en/owner-dashboard')}
+            hrefLang={locale === 'en' ? 'th' : 'en'}
+            title={locale === 'en' ? 'ดูเป็นภาษาไทย' : 'View in English'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)',
+              fontSize: 13, fontWeight: 500, padding: '7px 12px', borderRadius: 9,
+              textDecoration: 'none', whiteSpace: 'nowrap',
+            }}
+          >
+            <span aria-hidden="true">{locale === 'en' ? '🇹🇭' : '🇬🇧'}</span>
+            {locale === 'en' ? 'ไทย' : 'EN'}
+          </Link>
           <button onClick={handleLogout} style={{
             background: 'rgba(255,255,255,0.1)', border: 'none', color: 'rgba(255,255,255,0.6)',
             cursor: 'pointer', fontSize: 13, padding: '7px 14px', borderRadius: 9, fontFamily: 'inherit', fontWeight: 500,
