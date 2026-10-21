@@ -12,7 +12,8 @@
     "check:titles": "node scripts/check-titles.mjs",
     "check:routes": "node scripts/check-route-i18n.mjs",
     "check:coverage": "node scripts/check-en-coverage.mjs",
-    "check": "npm run typecheck && npm run check:titles && npm run check:routes && npm run check:coverage"
+    "check": "npm run check:rootlayout && npm run typecheck && npm run check:titles && npm run check:routes && npm run check:coverage",
+    "check:rootlayout": "node scripts/check-root-layout.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.3.0",
