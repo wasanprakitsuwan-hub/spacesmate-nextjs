@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { AREA_KEYWORDS } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase'
 import { getGeneratedAreas } from '@/lib/areas'
+import { areaIsEmpty } from '@/lib/area-shared'
 import { getBuildingsWithListings } from '@/lib/buildings'
 
 const SITE = 'https://spacesmate.com'
@@ -72,7 +73,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   })
 
-  const areaPages: MetadataRoute.Sitemap = AREA_KEYWORDS.flatMap(a => ([
+  /**
+   * Only the hand-written areas that currently have listings.
+   *
+   * 15 of the 16 have none, and submitting 30 empty near-identical pages to
+   * Google is asking it to judge the domain on them. They stay live and keep
+   * their URLs — the point of /area/condo-rent-bts-asok is to hold the search
+   * term until there is inventory for it — and their metadata carries
+   * robots:noindex while empty, so this is the same decision stated in the
+   * second place a crawler looks.
+   *
+   * Self-healing: nothing here names which areas are empty, so a page rejoins
+   * the sitemap on the next hourly regeneration after its first listing
+   * appears. The data-driven areas below need no such filter, since they only
+   * exist when they have inventory.
+   */
+  const handwrittenWithListings = (
+    await Promise.all(
+      AREA_KEYWORDS.map(async a => (await areaIsEmpty(a.slug, 'th')) ? null : a),
+    )
+  ).filter((a): a is typeof AREA_KEYWORDS[number] => a !== null)
+
+  const areaPages: MetadataRoute.Sitemap = handwrittenWithListings.flatMap(a => ([
     { url: `${SITE}/area/${a.slug}`,    changeFrequency: 'weekly' as const, priority: 0.8, lastModified: now, alternates: areaAlternates(a.slug) },
     { url: `${SITE}/en/area/${a.slug}`, changeFrequency: 'weekly' as const, priority: 0.6, lastModified: now, alternates: areaAlternates(a.slug) },
   ]))

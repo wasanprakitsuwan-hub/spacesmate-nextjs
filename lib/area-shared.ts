@@ -12,6 +12,7 @@
  * which left the larger half of the SEO surface — the pages that actually
  * compete for area queries — reachable in Thai alone.
  */
+import { cache } from 'react'
 import { AREA_KEYWORDS } from '@/lib/constants'
 import type { AreaKeyword } from '@/lib/types'
 import { getGeneratedArea, getGeneratedAreas } from '@/lib/areas'
@@ -186,13 +187,21 @@ const LISTING_COLUMNS = 'slug, property_type, title_th, district, address_th, im
  * Resolve everything an area page renders. Returns null when the slug is
  * unknown, which the route turns into notFound().
  *
+ * WRAPPED IN cache()
+ *   generateMetadata and the page body both need this — metadata to decide
+ *   whether the page is empty and therefore noindex, the body to render the
+ *   listings. Without React's cache() that is two identical Supabase round
+ *   trips per request, because createServerClient passes cache:'no-store' to
+ *   every fetch and so nothing upstream dedupes them. cache() memoises for the
+ *   duration of a single render pass, which is exactly the scope wanted.
+ *
  * Both locales resolve data-driven areas. The `locale` parameter no longer
  * gates which slugs exist — it only selects labels — so a slug 404s in both
  * languages or in neither. lib/routes-i18n depends on that symmetry: it
  * prefixes /area/* unconditionally, which is only safe while the two sides
  * agree on which slugs are real.
  */
-export async function loadArea(slug: string, locale: Locale): Promise<AreaView | null> {
+export const loadArea = cache(async (slug: string, locale: Locale): Promise<AreaView | null> => {
   const hardcoded = AREA_KEYWORDS.find(a => a.slug === slug)
   const generated = hardcoded ? null : await getGeneratedArea(slug)
   if (!hardcoded && !generated) return null
@@ -271,11 +280,38 @@ export async function loadArea(slug: string, locale: Locale): Promise<AreaView |
   }
 
   return { area, placeLabel, content, areaProps, related, isGenerated: Boolean(generated) }
-}
+})
 
 /** Metadata for both locales. Mirrors exactly what each page produced before. */
+/**
+ * Whether an area page currently has anything on it.
+ *
+ * 15 of the 16 hand-written areas have zero listings — 30 near-identical empty
+ * pages once both locales are counted. Google reads a cluster like that as
+ * thin content, and the cost is not confined to those pages: it feeds
+ * site-wide quality signals.
+ *
+ * They are not deleted, because the whole point of /area/condo-rent-bts-asok
+ * is to hold a high-value search term until there is inventory to put on it.
+ * So they stay live and stay out of the index until they have something to
+ * show, and come back automatically the moment they do. No list to maintain,
+ * nothing to remember.
+ */
+export async function areaIsEmpty(slug: string, locale: Locale): Promise<boolean> {
+  const view = await loadArea(slug, locale)
+  return !view || view.areaProps.length === 0
+}
+
+/** robots directives for an area page. follow stays true: the links out are still worth crawling. */
+function areaRobots(isEmpty: boolean) {
+  return isEmpty ? { index: false, follow: true } : { index: true, follow: true }
+}
+
 export async function buildAreaMetadata(slug: string, locale: Locale) {
   const area = AREA_KEYWORDS.find(a => a.slug === slug)
+  // Shares loadArea's cache() entry with the page body — no extra query.
+  const isEmpty = await areaIsEmpty(slug, locale)
+  const robots = areaRobots(isEmpty)
 
   if (!area) {
     const gen = await getGeneratedArea(slug)
@@ -309,6 +345,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
         description,
         openGraph: { title, description, type: 'website' as const },
         alternates: { canonical: enUrl, languages },
+      robots,
       }
     }
 
@@ -321,6 +358,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
       description,
       openGraph: { title, description, type: 'website' as const },
       alternates: { canonical: thUrl, languages },
+      robots,
     }
   }
 
@@ -336,6 +374,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
       description,
       openGraph: { title, description, type: 'website' as const },
       alternates: { canonical: `/en/area/${slug}`, languages: { th: `/area/${slug}` } },
+      robots,
     }
   }
 
@@ -348,5 +387,6 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
     description,
     openGraph: { title, description, type: 'website' as const },
     alternates: { canonical: `/area/${slug}`, languages: { en: `/en/area/${slug}` } },
+    robots,
   }
 }
