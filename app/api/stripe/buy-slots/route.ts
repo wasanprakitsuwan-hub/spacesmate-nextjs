@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       // sid lets the client-side purchase event carry a transaction_id, so a
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&sid={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${siteUrl}/pricing`,
+      cancel_url:  `${siteUrl}/checkout`,
       allow_promotion_codes: true,
       locale: 'auto',
       custom_text: {
