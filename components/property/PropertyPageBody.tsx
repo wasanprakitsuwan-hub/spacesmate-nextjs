@@ -28,6 +28,7 @@ import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
 import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
 import { mergePlaces } from '@/lib/search-places'
+import ListingStatBeacon from '@/components/property/ListingStatBeacon'
 import { loadPlaceOverrides } from '@/lib/search-places-server'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
@@ -143,6 +144,8 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
 
   return (
     <div className="bg-white min-h-screen">
+      {/* Owner statistics — database listings only; static ones have no owner. */}
+      {raw?.id && <ListingStatBeacon propertyId={String(raw.id)} />}
 
       <ListingLd
         name={p.title}
@@ -436,24 +439,24 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {/* LINE button — listing-specific or SpacesMate default */}
                 {dbContact?.line ? (
-                  <a href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
+                  <a data-stat="line" href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
                     style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
                   </a>
                 ) : (
-                  <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                  <a data-stat="line" href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
                     style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
                   </a>
                 )}
                 {/* Phone button — listing-specific or SpacesMate default */}
                 {dbContact?.phone ? (
-                  <a href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
+                  <a data-stat="phone" href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
                     style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call(dbContact.phone)}
                   </a>
                 ) : (
-                  <a href="tel:+66621524526"
+                  <a data-stat="phone" href="tel:+66621524526"
                     style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call('062-152-4526')}
                   </a>

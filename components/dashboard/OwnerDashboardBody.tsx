@@ -12,6 +12,7 @@ import {
 } from '@/components/listing/SharedListingForm'
 import { DASH_T, type DashStrings, type Locale } from '@/lib/dashboard-i18n'
 import { localeHref } from '@/lib/routes-i18n'
+import ListingStatsModal from '@/components/dashboard/ListingStatsModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SubscriptionItem {
@@ -391,6 +392,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
   const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
+  const [statsTarget, setStatsTarget] = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
   const [freeSlots,          setFreeSlots]          = useState(0)
   const [publishing,         setPublishing]         = useState<string | null>(null)
@@ -620,6 +622,9 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
     <div style={{ minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
       {showCreate && userId && (
         <CreateDrawer locale={locale} userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load()} />
+      )}
+      {statsTarget && (
+        <ListingStatsModal listingId={statsTarget.id} title={statsTarget.title_th} t={t} onClose={() => setStatsTarget(null)} />
       )}
       {editTarget && userId && (
         <EditDrawer locale={locale} listing={editTarget} userId={userId} onClose={() => setEditTarget(null)} onSaved={() => load()} />
@@ -1143,6 +1148,12 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                             </button>
                           ) : (
                             <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                          )}
+                          {l.listing_status !== 'draft' && (
+                            <button onClick={() => setStatsTarget(l)} title={t.stats}
+                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                              <span className="msym" style={{ fontSize: 14 }}>bar_chart</span>
+                            </button>
                           )}
                           <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
                           {l.listing_status === 'active' && l.expires_at && (
