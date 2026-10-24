@@ -32,8 +32,7 @@ export default function Footer() {
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
-              Smarter spaces. Better returns.<br />
-              {t.footerTagline}
+              Smarter spaces. Better returns.
             </p>
           </div>
 

@@ -105,7 +105,6 @@ export const SITE_T = {
     navMyAccount: 'บัญชีของฉัน',
 
     // ── Footer ──
-    footerTagline: 'แพลตฟอร์มเช่าอสังหาฯ ที่โปร่งใสและเป็นธรรม',
     footerExplore: 'สำรวจ',
     footerPopularAreas: 'ทำเลยอดนิยม',
     footerForOwners: 'สำหรับเจ้าของ',
@@ -196,7 +195,6 @@ export const SITE_T = {
     navListCta: 'List a rental',
     navMyAccount: 'My account',
 
-    footerTagline: 'A transparent, fair rental platform',
     footerExplore: 'Explore',
     footerPopularAreas: 'Popular areas',
     footerForOwners: 'For owners',
