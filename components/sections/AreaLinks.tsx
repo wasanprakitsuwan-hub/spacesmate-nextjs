@@ -51,10 +51,12 @@ export default function AreaLinks({ locale = 'th' }: { locale?: Locale }) {
       .catch(() => {})
   }, [])
 
+  // Most listings first. Before the counts arrive every area is 0 and the sort
+  // is stable, so the first paint (and what a crawler sees) is the list order.
   const areas = AREA_KEYWORDS.map(area => ({
     ...area,
     count: countForArea(listings, area.slug),
-  }))
+  })).sort((a, b) => b.count - a.count)
 
   return (
     <section className="py-12 bg-spacemate-bgLight border-t border-spacemate-borderLight">

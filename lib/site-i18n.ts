@@ -87,6 +87,8 @@ export const SITE_T = {
     areaSub: 'สถานี BTS · MRT · ย่านยอดนิยมในกรุงเทพ',
     genAreaHeading: 'ห้องเช่าตามเขต',
     genAreaSub: 'รวมประกาศให้เช่าแยกตามเขตและประเภทที่พักในกรุงเทพฯ',
+    uniAreaHeading: 'ห้องเช่าใกล้มหาวิทยาลัย',
+    uniAreaSub: 'ที่พักในระยะ 2 กม. จากมหาวิทยาลัยในกรุงเทพฯ และปริมณฑล',
 
     // ── Navbar ──
     navSearch: 'ค้นหาที่พัก',
@@ -179,6 +181,8 @@ export const SITE_T = {
     areaSub: 'BTS · MRT stations and Bangkok’s best-known neighbourhoods',
     genAreaHeading: 'Rentals by district',
     genAreaSub: 'Listings grouped by Bangkok district and property type',
+    uniAreaHeading: 'Rentals near universities',
+    uniAreaSub: 'Places within 2 km of universities in and around Bangkok',
 
     navSearch: 'Search rentals',
     navForOwners: 'For owners',
