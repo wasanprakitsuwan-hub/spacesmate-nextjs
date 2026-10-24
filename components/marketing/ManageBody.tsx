@@ -25,6 +25,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
   const [sent, setSent]       = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [sendFailed, setSendFailed] = useState(false)
 
   const [name,     setName]     = useState('')
   const [phone,    setPhone]    = useState('')
@@ -42,6 +43,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
     if (!/^0[2-9]/.test(digits))   { setError(t.phoneFormat); return }
 
     setError('')
+    setSendFailed(false)
     setLoading(true)
     try {
       const res = await fetch('/api/manage-lead', {
@@ -51,6 +53,10 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
+        if (j.error === 'email_failed') {
+          setSendFailed(true)
+          throw new Error(t.sendFailed)
+        }
         throw new Error(j.error || t.genericError)
       }
       trackEvent('management_form_submit', { property_type: type, preferred_channel: channel })
@@ -244,7 +250,13 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
                 {/* Error message */}
                 {error && (
                   <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13.5, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontWeight: 400 }}>
-                    {error}
+                    {error}{sendFailed && (
+                    <>
+                      {' '}
+                      <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                        style={{ color: '#06C755', fontWeight: 700, textDecoration: 'underline' }}>@spacesmate</a>
+                    </>
+                  )}
                   </p>
                 )}
 

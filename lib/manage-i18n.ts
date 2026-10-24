@@ -110,6 +110,7 @@ export const MANAGE_T = {
     phoneLength: 'เบอร์โทรศัพท์ต้องมี 10 หลัก',
     phoneFormat: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0)',
     genericError: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    sendFailed: 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือทักเราทาง LINE',
 
     // ── Thank you ──
     sentTitle: 'ได้รับข้อมูลแล้ว!',
@@ -173,6 +174,7 @@ export const MANAGE_T = {
     phoneLength: 'A Thai phone number is 10 digits',
     phoneFormat: 'That number does not look right — a Thai number starts with 0',
     genericError: 'Something went wrong. Please try again.',
+    sendFailed: 'We could not send your details. Please try again, or message us on LINE',
 
     sentTitle: 'Got it — thank you',
     sentBodyA: 'A member of the SpacesMate team will call you',
