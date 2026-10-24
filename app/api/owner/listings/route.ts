@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
-import { claimSlot, countFreeSlots, releaseSlot, syncListingFromSlot } from '@/lib/slots'
+import { claimSlot, countFreeSlots, ensureWelcomeSlot, releaseSlot, syncListingFromSlot } from '@/lib/slots'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error
     // The dashboard used to derive this from subscription counts. It is a real
     // number now, counted where the slots actually live.
+    await ensureWelcomeSlot(supabase, userId)
     const freeSlots = await countFreeSlots(supabase, userId)
     return NextResponse.json({ listings: data ?? [], free_slots: freeSlots })
   } catch (err: any) {
@@ -284,7 +285,7 @@ export async function PATCH(req: NextRequest) {
         // Expected, not exceptional: they have written a listing and not yet
         // bought anywhere to put it.
         return NextResponse.json(
-          { error: 'no_slot', message: 'ต้องมีสล็อตว่างก่อนเผยแพร่ประกาศ — ซื้อแพ็กเกจเพื่อเพิ่มสล็อต' },
+          { error: 'no_slot', message: 'ต้องมีแพ็กเกจว่างก่อนเผยแพร่ประกาศ — ซื้อแพ็กเกจ' },
           { status: 402 },
         )
       }

@@ -1,4 +1,8 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import HeroSection from '@/components/sections/HeroSection'
 import CategorySection from '@/components/sections/CategorySection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
@@ -6,7 +10,7 @@ import WhySpacesMate from '@/components/sections/WhySpacesMate'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
-import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
+import UniversityLinks from '@/components/sections/UniversityLinks'
 
 /**
  * English home page — the same sections as the Thai home, with locale="en".
@@ -19,7 +23,6 @@ import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
  *
  * Still Thai on this page, by design rather than oversight:
  *   - blog post titles and bodies (Stage F)
- *   - the data-driven district links in GeneratedAreaLinks (Stage G)
  *   - owner-supplied listing titles where no English was given
  *
  * The 16 hand-written area guides do have English pages, so AreaLinks points at
@@ -28,7 +31,7 @@ import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
 
 const SITE = 'https://spacesmate.com'
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'Rent an Apartment, Condo or Office in Bangkok',
   description:
     'Find apartments, condos, houses, offices and co-working space to rent across Bangkok. Verified listings, contact the owner directly, no agent fee for tenants.',
@@ -52,7 +55,12 @@ export default function EnglishHome() {
       <ManagementCTA locale="en" />
       <BlogSection locale="en" />
       <AreaLinks locale="en" />
-      <GeneratedAreaLinks locale="en" />
+      <UniversityLinks locale="en" />
     </>
   )
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/', 'en', baseMetadata)
 }

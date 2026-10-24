@@ -108,7 +108,7 @@ export default function AboutBody({ locale = 'th' }: { locale?: Locale }) {
             <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: '0 0 14px', fontWeight: 300 }}>
               {t.stream1Desc}
             </p>
-            <Link href={localeHref('/pricing', locale)} style={{ color: '#048c73', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>{t.stream1Cta}</Link>
+            <Link href={localeHref('/list-your-property', locale)} style={{ color: '#048c73', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>{t.stream1Cta}</Link>
           </div>
           <div style={{ padding: '32px 28px', background: '#02402e', borderRadius: 20 }}>
             <p style={{ margin: '0 0 14px' }}><span className="msym" style={{ fontSize: 26, color: '#fff', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>build</span></p>

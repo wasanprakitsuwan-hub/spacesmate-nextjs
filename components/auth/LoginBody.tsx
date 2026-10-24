@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import TermsTick from '@/components/auth/TermsTick'
+import { termsMetadata, savePendingTerms } from '@/lib/terms-consent'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -32,6 +34,21 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   const [signEmail, setSignEmail] = useState('')
   const [signPwd,   setSignPwd]   = useState('')
   const [signPwd2,  setSignPwd2]  = useState('')
+
+  // Sign-up acceptance (lib/terms-consent): terms + privacy required, marketing optional.
+  const [accepted,  setAccepted]  = useState(false)
+  const [marketing, setMarketing] = useState(false)
+
+  // ?tab=signup opens on sign-up (the "list a property" buttons send logged-out
+  // owners here); ?redirect= is where to go afterwards. Same-site paths only —
+  // an open redirect is a phishing primitive.
+  const [redirect, setRedirect] = useState<string | null>(null)
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search)
+    if (qs.get('tab') === 'signup') setTab('signup')
+    const wanted = qs.get('redirect')
+    if (wanted && wanted.startsWith('/') && !wanted.startsWith('//')) setRedirect(wanted)
+  }, [])
 
   function switchTab(t: 'login' | 'signup') {
     setTab(t); setError(''); setSuccess(''); setForgotPwd(false)
@@ -109,6 +126,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   // ── Sign Up ───────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    if (!accepted) { setError(t.acceptRequired); return }
     if (signPwd !== signPwd2) { setError(t.pwdMismatch); return }
     // 8, matching AuthModal. These are two front doors to the same Supabase
     // account; until 17 Oct 2026 this one asked for 6 and the modal for 8, so
@@ -119,7 +137,10 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
       const supabase = createBrowserClient()
       const { data, error: authErr } = await supabase.auth.signUp({
         email: signEmail, password: signPwd,
-        options: { data: { full_name: signName } },
+        options: {
+          data: { full_name: signName, ...termsMetadata(marketing) },
+          emailRedirectTo: `${window.location.origin}${redirect ?? localeHref('/owner-dashboard', locale)}`,
+        },
       })
       if (authErr) {
         setError(authErr.message || t.signupFailedShort)
@@ -170,17 +191,19 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
           </div>
 
           <div className="p-7">
-            {/* Google above the fold on both tabs — the one-tap path should be
-                visible before anyone starts typing a password. */}
-            <GoogleSignInButton
-              locale={locale}
-              label={tab === 'login' ? t.googleLogin : t.googleSignup}
-            />
-            <div className="flex items-center gap-3 my-5">
-              <span className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">{t.or}</span>
-              <span className="flex-1 h-px bg-gray-200" />
-            </div>
+            {/* Login: Google first, the one-tap path. Sign-up: the form first,
+                then the ticks and the button, with Google as the alternative
+                below (Founder, 24 Oct 2026). */}
+            {tab === 'login' && (
+              <>
+                <GoogleSignInButton locale={locale} label={t.googleLogin} redirectTo={redirect ?? undefined} />
+                <div className="flex items-center gap-3 my-5">
+                  <span className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">{t.or}</span>
+                  <span className="flex-1 h-px bg-gray-200" />
+                </div>
+              </>
+            )}
 
             {/* ── LOGIN FORM ── */}
             {tab === 'login' && forgotPwd && (
@@ -202,7 +225,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 >
                   {loading ? t.sending : t.sendResetLink}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+                <p className="text-center text-sm text-gray-400 mt-4">
                   <button type="button" onClick={() => { setForgotPwd(false); setError('') }} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.backToLogin}
                   </button>
@@ -245,7 +268,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? t.loggingIn : t.login}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+                <p className="text-center text-sm text-gray-400 mt-4">
                   {t.noAccount}{' '}
                   <button type="button" onClick={() => switchTab('signup')} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.signupFree}
@@ -316,6 +339,8 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                     className="input-field w-full"
                   />
                 </div>
+                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
+                  marketing={marketing} onMarketing={setMarketing} />
                 {error && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                     <p className="text-amber-700 text-xs">{error}</p>
@@ -329,13 +354,32 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? t.signingUpLong : t.signupFree}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+              </form>
+            )}
+            {tab === 'signup' && !success && (
+              <>
+                <div className="flex items-center gap-3 my-5">
+                  <span className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">{t.or}</span>
+                  <span className="flex-1 h-px bg-gray-200" />
+                </div>
+                <GoogleSignInButton
+                  locale={locale}
+                  label={t.googleSignup}
+                  redirectTo={redirect ?? undefined}
+                  beforeSignIn={() => {
+                    if (!accepted) { setError(t.acceptRequired); return false }
+                    savePendingTerms(marketing)
+                    return true
+                  }}
+                />
+                <p className="text-center text-sm text-gray-400 mt-4">
                   {t.haveAccount}{' '}
                   <button type="button" onClick={() => switchTab('login')} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.login}
                   </button>
                 </p>
-              </form>
+              </>
             )}
           </div>
         </div>

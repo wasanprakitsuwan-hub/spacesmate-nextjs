@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import { DASH_T, type Locale } from '@/lib/dashboard-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 import { pkgLabelFor } from '@/components/listing/SharedListingForm'
 
 interface ProfileData {
@@ -228,7 +229,7 @@ export default function ProfileBody({ locale = 'th' }: { locale?: Locale }) {
         ) : (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 14px' }}>{t.noActivePackageProfile}</p>
-            <a href="/pricing"
+            <a href={localeHref('/checkout', locale)}
               style={{ background: '#d97f11', color: '#fff', borderRadius: 22, padding: '11px 24px', fontSize: 14, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, boxShadow: '0 4px 12px -4px rgba(217,127,17,0.45)' }}>
               <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>{t.viewAllPackages}
             </a>

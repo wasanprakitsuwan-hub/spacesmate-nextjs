@@ -12,9 +12,10 @@
 export const revalidate = 60
 
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
 import HeroSection from '@/components/sections/HeroSection'
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'SpacesMate — ห้องเช่า คอนโด อพาร์ทเม้นท์ ในกรุงเทพ',
   description:
     'ค้นหาห้องเช่า คอนโด อพาร์ทเม้นท์ บ้านเช่า โคเวิร์กกิ้ง และออฟฟิศในกรุงเทพ ประกาศที่ยืนยันแล้ว ไม่มีค่านายหน้า ลงประกาศเริ่มต้นเพียง ฿299/เดือน',
@@ -39,7 +40,7 @@ import WhySpacesMate from '@/components/sections/WhySpacesMate'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
-import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
+import UniversityLinks from '@/components/sections/UniversityLinks'
 
 export default function HomePage() {
   return (
@@ -51,7 +52,12 @@ export default function HomePage() {
       <ManagementCTA />
       <BlogSection />
       <AreaLinks />
-      <GeneratedAreaLinks />
+      <UniversityLinks />
     </>
   )
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/', 'th', baseMetadata)
 }

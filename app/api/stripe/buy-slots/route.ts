@@ -83,14 +83,14 @@ export async function POST(req: NextRequest) {
       // sid lets the client-side purchase event carry a transaction_id, so a
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&sid={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${siteUrl}/pricing`,
+      cancel_url:  `${siteUrl}/checkout`,
       allow_promotion_codes: true,
       locale: 'auto',
       custom_text: {
         submit: {
           message: qty > 1
-            ? `ซื้อ ${qty} สล็อต — เผยแพร่ประกาศได้ ${qty} รายการ นาน ${days} วัน`
-            : `ซื้อ 1 สล็อต — เผยแพร่ประกาศได้ 1 รายการ นาน ${days} วัน`,
+            ? `ซื้อ ${qty} แพ็กเกจ — เผยแพร่ประกาศได้ ${qty} รายการ นาน ${days} วัน`
+            : `ซื้อ 1 แพ็กเกจ — เผยแพร่ประกาศได้ 1 รายการ นาน ${days} วัน`,
         },
       },
     })

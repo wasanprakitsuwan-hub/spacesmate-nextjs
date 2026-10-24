@@ -87,11 +87,13 @@ export const SITE_T = {
     areaSub: 'สถานี BTS · MRT · ย่านยอดนิยมในกรุงเทพ',
     genAreaHeading: 'ห้องเช่าตามเขต',
     genAreaSub: 'รวมประกาศให้เช่าแยกตามเขตและประเภทที่พักในกรุงเทพฯ',
+    uniAreaHeading: 'ห้องเช่าใกล้มหาวิทยาลัย',
+    uniAreaSub: 'ที่พักในระยะ 2 กม. จากมหาวิทยาลัยในกรุงเทพฯ และปริมณฑล',
 
     // ── Navbar ──
     navSearch: 'ค้นหาที่พัก',
     navForOwners: 'สำหรับเจ้าของ',
-    navSubmit: 'ลงประกาศปล่อยเช่า',
+    navSubmit: 'ลงประกาศให้เช่า',
     navSubmitDesc: 'สร้างประกาศเอง ฟรี + แพ็กเกจ',
     navManage: 'รับฝากบริหาร',
     navManageDesc: 'ให้เราดูแลให้ครบวงจร',
@@ -105,7 +107,6 @@ export const SITE_T = {
     navMyAccount: 'บัญชีของฉัน',
 
     // ── Footer ──
-    footerTagline: 'แพลตฟอร์มเช่าอสังหาฯ ที่โปร่งใสและเป็นธรรม',
     footerExplore: 'สำรวจ',
     footerPopularAreas: 'ทำเลยอดนิยม',
     footerForOwners: 'สำหรับเจ้าของ',
@@ -180,6 +181,8 @@ export const SITE_T = {
     areaSub: 'BTS · MRT stations and Bangkok’s best-known neighbourhoods',
     genAreaHeading: 'Rentals by district',
     genAreaSub: 'Listings grouped by Bangkok district and property type',
+    uniAreaHeading: 'Rentals near universities',
+    uniAreaSub: 'Places within 2 km of universities in and around Bangkok',
 
     navSearch: 'Search rentals',
     navForOwners: 'For owners',
@@ -196,7 +199,6 @@ export const SITE_T = {
     navListCta: 'List a rental',
     navMyAccount: 'My account',
 
-    footerTagline: 'A transparent, fair rental platform',
     footerExplore: 'Explore',
     footerPopularAreas: 'Popular areas',
     footerForOwners: 'For owners',
