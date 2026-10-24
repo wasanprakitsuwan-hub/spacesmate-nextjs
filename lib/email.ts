@@ -18,11 +18,16 @@ function fromAddress() {
   return process.env.RESEND_FROM ?? 'SpacesMate <onboarding@resend.dev>'
 }
 
-async function sendEmail(to: string[], subject: string, html: string) {
+/**
+ * Returns whether the email was accepted by Resend. Most callers ignore it, but
+ * the lead forms must not tell a visitor "sent" when nothing went anywhere —
+ * email is the only record of a lead.
+ */
+async function sendEmail(to: string[], subject: string, html: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY
   if (!key) {
     console.warn('[email] RESEND_API_KEY not set — skipping notification')
-    return
+    return false
   }
   try {
     const res = await fetch(RESEND_URL, {
@@ -36,9 +41,12 @@ async function sendEmail(to: string[], subject: string, html: string) {
     if (!res.ok) {
       const detail = await res.text()
       console.error('[email] Resend error:', res.status, detail)
+      return false
     }
+    return true
   } catch (err) {
     console.error('[email] fetch error:', err)
+    return false
   }
 }
 
@@ -485,7 +493,7 @@ export interface ManagementEnquiryData {
   channel:  string
 }
 
-export async function sendManagementEnquiry(data: ManagementEnquiryData): Promise<void> {
+export async function sendManagementEnquiry(data: ManagementEnquiryData): Promise<boolean> {
   const html = layout(`
   <!-- Header -->
   <div style="background:#02402e;padding:28px 32px 22px">
@@ -521,7 +529,7 @@ export async function sendManagementEnquiry(data: ManagementEnquiryData): Promis
   </div>`,
   `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Management Lead · spacesmate.com/manage</p>`)
 
-  await sendEmail(
+  return sendEmail(
     [FOUNDER_EMAIL],
     `Lead ใหม่: ${data.name} (${data.type} · ${data.location || 'ไม่ระบุทำเล'})`,
     html
@@ -538,7 +546,7 @@ export interface ContactEnquiryData {
   message: string
 }
 
-export async function sendContactEnquiry(data: ContactEnquiryData): Promise<void> {
+export async function sendContactEnquiry(data: ContactEnquiryData): Promise<boolean> {
   const html = layout(`
   <!-- Header -->
   <div style="background:#02402e;padding:28px 32px 22px">
@@ -573,7 +581,7 @@ export async function sendContactEnquiry(data: ContactEnquiryData): Promise<void
   </div>`,
   `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Contact · spacesmate.com/contact</p>`)
 
-  await sendEmail(
+  return sendEmail(
     [FOUNDER_EMAIL],
     `Contact: ${data.name}${data.intent ? ` · ${data.intent}` : ''}`,
     html

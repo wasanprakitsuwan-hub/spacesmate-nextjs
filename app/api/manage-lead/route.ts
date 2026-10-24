@@ -74,14 +74,20 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 2. Email notification to founder ──────────────────────────────────────
+  // Email is the only record of a lead, so if it did not go the visitor has
+  // to hear about it — otherwise they wait for a call that never comes.
+  let emailed = false
   try {
-    await sendManagementEnquiry({ name, phone, type, location, channel })
-    console.log('[manage-lead] Founder email sent')
+    emailed = await sendManagementEnquiry({ name, phone, type, location, channel })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     errors.push(`email: ${msg}`)
-    console.error('[manage-lead] Email error:', msg)
   }
+  if (!emailed) {
+    console.error('[manage-lead] Founder email NOT sent — lead returned to the visitor', errors)
+    return NextResponse.json({ error: 'email_failed' }, { status: 502 })
+  }
+  console.log('[manage-lead] Founder email sent')
 
   return NextResponse.json({ ok: true, errors: errors.length ? errors : undefined })
 }

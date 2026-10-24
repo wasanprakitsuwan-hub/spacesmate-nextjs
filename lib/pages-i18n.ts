@@ -24,6 +24,7 @@ export const CONTACT_T = {
     errPhoneLength: 'เบอร์โทรศัพท์ต้องมี 10 หลัก',
     errPhoneFormat: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0)',
     errGeneric: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    errSendFailed: 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือทักเราทาง LINE',
 
     heroTitle: 'ร่วมเติบโตกับ',
     heroSub: 'สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจ — ทีมงานติดต่อกลับโดยเร็วที่สุด',
@@ -64,6 +65,7 @@ export const CONTACT_T = {
     errPhoneLength: 'A phone number must be 10 digits',
     errPhoneFormat: 'That phone number format is not valid (it must start with 0)',
     errGeneric: 'Something went wrong. Please try again.',
+    errSendFailed: 'We could not send your details. Please try again, or message us on LINE',
 
     heroTitle: 'Grow with',
     heroSub: 'For investors and business partners — our team will come back to you as soon as possible.',
