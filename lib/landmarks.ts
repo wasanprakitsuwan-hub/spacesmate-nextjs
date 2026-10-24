@@ -3,7 +3,7 @@
  * hospitals, airports and parks — with coordinates.
  *
  * Coordinates and Thai names come from each place's English Wikipedia article
- * (fetched 24 Oct 2026). Places whose article gave no coordinates were left
+ * (fetched 24 Oct 2026); Gateway Ekkamai from OpenStreetMap (way 176298722). Places whose article gave no coordinates were left
  * out rather than estimated. Anything not listed here can still be found:
  * /search falls back to a map lookup (/api/geocode) for what people type.
  *
@@ -46,6 +46,7 @@ export const LANDMARKS: Landmark[] = [
   { id: 'central-rama3', th: 'เซ็นทรัล พระราม 3', en: 'Central Rama 3', kind: 'mall', lat: 13.6976, lng: 100.5378, aliases: ['เซ็นทรัลพระราม3'] },
   { id: 'central-rama2', th: 'เซ็นทรัล พระราม 2', en: 'Central Rama 2', kind: 'mall', lat: 13.663395, lng: 100.438031, aliases: ['เซ็นทรัลพระราม2'] },
   { id: 'central-pinklao', th: 'เซ็นทรัล ปิ่นเกล้า', en: 'Central Pinklao', kind: 'mall', lat: 13.7785, lng: 100.4766, aliases: ['เซ็นทรัลปิ่นเกล้า'] },
+  { id: 'gateway-ekkamai', th: 'เกทเวย์ เอกมัย', en: 'Gateway Ekkamai', kind: 'mall', lat: 13.7184098, lng: 100.585363, aliases: ['เกตเวย์เอกมัย', 'gateway ekamai'] },
   { id: 'iconsiam', th: 'ไอคอนสยาม', en: 'ICONSIAM', kind: 'mall', lat: 13.72669444, lng: 100.5105 },
   { id: 'seacon-square', th: 'ซีคอนสแควร์ ศรีนครินทร์', en: 'Seacon Square Srinakarin', kind: 'mall', lat: 13.69416667, lng: 100.64805556, aliases: ['ซีคอน', 'seacon'] },
   { id: 'seacon-bangkae', th: 'ซีคอนบางแค', en: 'Seacon Bangkae', kind: 'mall', lat: 13.7127, lng: 100.4352 },

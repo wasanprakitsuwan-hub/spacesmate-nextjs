@@ -320,6 +320,14 @@ function SearchContent({ locale }: { locale: Locale }) {
 
   const nearestBySlug = useMemo(() => new Map(rows.map(r => [r.p.slug, r.nearest])), [rows])
 
+  // Each card says how far it is from the place searched around.
+  function fromPlace(p: Property) {
+    const pt = place ? placePoint(place) : null
+    const lat = parseFloat(p.lat || ''), lng = parseFloat(p.lng || '')
+    if (!place || !pt || isNaN(lat) || isNaN(lng)) return null
+    return { label: placeLabel(place, locale), icon: placeIcon(place), km: haversineKm(pt.lat, pt.lng, lat, lng) }
+  }
+
   function resetFilters() {
     setActiveType('')
     setPriceRangeIdx(0)
@@ -588,7 +596,7 @@ function SearchContent({ locale }: { locale: Locale }) {
             {results.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }} className="sm-grid2">
                 {results.map(p => (
-                  <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} />
+                  <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} from={fromPlace(p)} />
                 ))}
               </div>
             )}
@@ -600,7 +608,7 @@ function SearchContent({ locale }: { locale: Locale }) {
                 <h2 style={{ fontSize: 17, fontWeight: 600, margin: '0 0 16px', color: '#02402e' }}>{t.closestTo} {placeLabel(place, locale)}</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }} className="sm-grid2">
                   {closest.map(p => (
-                    <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} />
+                    <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} from={fromPlace(p)} />
                   ))}
                 </div>
               </div>
@@ -639,10 +647,12 @@ function SearchContent({ locale }: { locale: Locale }) {
   )
 }
 
-function PropertyCard({ property: p, locale, nearest }: {
+function PropertyCard({ property: p, locale, nearest, from }: {
   property: Property
   locale: Locale
   nearest: { station: Station; km: number } | null
+  /** Distance from the place the visitor searched around, when there is one. */
+  from?: { label: string; icon: string; km: number } | null
 }) {
   const t = SEARCH_T[locale]
   const TYPE_LABELS = typeLabels(t)
@@ -670,7 +680,13 @@ function PropertyCard({ property: p, locale, nearest }: {
       <div style={{ padding: 17 }}>
         <p style={{ color: '#048c73', fontSize: 12.5, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}</p>
         <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 10px', lineHeight: 1.35, color: '#231f20' }}>{p.title}</h3>
-        {nearest && (
+        {from && (
+          <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#02402e', fontWeight: 600, margin: '-4px 0 6px' }}>
+            <span className="msym" style={{ fontSize: 14, color: '#048c73' }}>{from.icon}</span>
+            {t.fromPlace.replace('{d}', distanceLabel(from.km, locale)).replace('{p}', from.label)}
+          </p>
+        )}
+        {nearest && !(from && from.icon === 'train') && (
           <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#475569', margin: '-4px 0 10px' }}>
             <span className="msym" style={{ fontSize: 14, color: '#048c73' }}>train</span>
             {stationLabel(nearest.station, locale)} · {distanceLabel(nearest.km, locale)}
