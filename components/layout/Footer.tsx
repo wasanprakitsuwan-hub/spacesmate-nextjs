@@ -32,8 +32,7 @@ export default function Footer() {
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
-              Smarter spaces. Better returns.<br />
-              {t.footerTagline}
+              Smarter spaces. Better returns.
             </p>
           </div>
 
@@ -60,9 +59,9 @@ export default function Footer() {
             <h4 className="font-semibold text-sm mb-4 text-white">{t.footerForOwners}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: t.navSubmit, href: href('/submit') },
+                { label: t.navSubmit, href: href('/list-your-property') },
                 { label: t.navManage, href: '/manage' },
-                { label: t.footerPricing, href: href('/pricing') },
+                { label: t.footerPricing, href: href('/list-your-property') + '#packages' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-white/60 hover:text-white text-sm transition-colors">

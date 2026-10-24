@@ -10,7 +10,7 @@ import WhySpacesMate from '@/components/sections/WhySpacesMate'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
-import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
+import UniversityLinks from '@/components/sections/UniversityLinks'
 
 /**
  * English home page — the same sections as the Thai home, with locale="en".
@@ -23,7 +23,6 @@ import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
  *
  * Still Thai on this page, by design rather than oversight:
  *   - blog post titles and bodies (Stage F)
- *   - the data-driven district links in GeneratedAreaLinks (Stage G)
  *   - owner-supplied listing titles where no English was given
  *
  * The 16 hand-written area guides do have English pages, so AreaLinks points at
@@ -56,7 +55,7 @@ export default function EnglishHome() {
       <ManagementCTA locale="en" />
       <BlogSection locale="en" />
       <AreaLinks locale="en" />
-      <GeneratedAreaLinks locale="en" />
+      <UniversityLinks locale="en" />
     </>
   )
 }

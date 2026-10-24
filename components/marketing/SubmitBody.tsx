@@ -9,7 +9,8 @@ import Link from '@/components/ui/LocaleLink'
 import { MAX_IMAGES_ANY_PACKAGE, PACKAGE_PRICE_THB } from '@/lib/packages'
 import { localeHref } from '@/lib/routes-i18n'
 import { SUBMIT_T, type Locale, type SubmitStrings } from '@/lib/pages-i18n'
-import { buildPlans } from '@/lib/pricing-i18n'
+import { buildPlans, PRICING_T, PRICING_FAQ_T } from '@/lib/pricing-i18n'
+import { FaqLd } from '@/components/seo/JsonLd'
 
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -52,6 +53,8 @@ function packagesFor(locale: Locale) {
     sub: `${t.oneListing} · ${p.durationLabel}`,
     badge: p.id === 'standard' ? t.recommendedBadge : null,
     savings: p.savingsPct > 0 ? `${p.savingsPct}%` : null,
+    // Only worth saying for the multi-month packages; Basic is already per month.
+    perMonth: p.savingsPct > 0 ? p.perMonth.toLocaleString('en-US') : null,
     highlight: p.id === 'standard',
     features: p.features,
   }))
@@ -90,7 +93,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
               {t.ownersBody}
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href={localeHref('/submit/new', locale)}
+              <Link href={localeHref('/list-your-property/new', locale)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 15.5, borderRadius: 28, padding: '14px 28px', textDecoration: 'none' }}>
                 {t.ownersCta1}<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 5 }}>arrow_forward</span>
               </Link>
@@ -158,7 +161,8 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
       </section>
 
       {/* ── PRICING ──────────────────────────────────────────────────────── */}
-      <section style={{ background: '#e8f4ef', padding: '64px 24px 72px' }}>
+      {/* id: /pricing redirects here (next.config.js). */}
+      <section id="packages" style={{ background: '#e8f4ef', padding: '64px 24px 72px', scrollMarginTop: 80 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 600, margin: '0 0 8px', textAlign: 'center', color: '#111827' }}>
             {t.packagesHeading}
@@ -217,6 +221,11 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
                     </span>
                   )}
                 </div>
+                {pkg.perMonth && (
+                  <p style={{ fontSize: 13.5, color: '#d97f11', margin: '0 0 2px', fontWeight: 600 }}>
+                    {PRICING_T[locale].avgPrefix} {pkg.perMonth} {PRICING_T[locale].avgSuffix}
+                  </p>
+                )}
                 <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 22px', fontWeight: 300 }}>{pkg.sub}</p>
 
                 {/* Features */}
@@ -233,11 +242,26 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
             ))}
           </div>
 
+          {/* What every package gets. The cards above carry only what differs
+              (duration, price, photos, video), so this list is not repeated
+              three times. */}
+          <div style={{ maxWidth: 860, margin: '24px auto 0', background: '#fff', border: '1px solid #e5eae8', borderRadius: 18, padding: '22px 24px' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 14px', color: '#02402e' }}>{PRICING_T[locale].includesTitle}</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px 24px' }} className="sm-inc2">
+              {PRICING_T[locale].includes.map((f, j) => (
+                <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, color: '#374151', lineHeight: 1.45, fontWeight: 300 }}>
+                  <span className="msym" style={{ fontSize: 14, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0, marginTop: 2 }}>check</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* The cards show prices only. Slots are bought from the owner
               dashboard (/checkout), so this page has one call to action:
               write the listing. */}
           <div style={{ maxWidth: 860, margin: '30px auto 0', textAlign: 'center' }}>
-            <Link href={localeHref('/submit/new', locale)}
+            <Link href={localeHref('/list-your-property/new', locale)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, background: '#02402e', color: '#fff',
                 fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 28, textDecoration: 'none',
@@ -252,6 +276,26 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
         </div>
       </section>
 
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      {/* Moved from /pricing with the page, structured data included, so the
+          FAQ result in search follows it here. */}
+      <FaqLd qa={PRICING_FAQ_T[locale]} />
+      <section style={{ background: '#fff', padding: '64px 24px 0' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 600, margin: '0 0 24px', textAlign: 'center', color: '#111827' }}>
+            {PRICING_T[locale].faqHeading}
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {PRICING_FAQ_T[locale].map(f => (
+              <div key={f.q} style={{ border: '1px solid #e5eae8', borderRadius: 14, padding: '16px 20px' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#231f20', margin: '0 0 6px' }}>{f.q}</h3>
+                <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.65, fontWeight: 300 }}>{f.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ─────────────────────────────────────────────────────── */}
       <section style={{ background: '#fff', padding: '48px 24px 72px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -262,7 +306,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', margin: '0 0 32px', fontWeight: 300 }}>
               {t.closingBody}
             </p>
-            <Link href={localeHref('/submit/new', locale)}
+            <Link href={localeHref('/list-your-property/new', locale)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 16, borderRadius: 30, padding: '15px 36px', textDecoration: 'none' }}>
               {t.ownersCta1} →
             </Link>
@@ -275,6 +319,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
           .sm-hero-grid { grid-template-columns: 1fr !important; }
           .sm-why4 { grid-template-columns: repeat(2,1fr) !important; }
           .sm-pkg3 { grid-template-columns: 1fr !important; }
+          .sm-inc2 { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 600px) {
           .sm-hero-grid { gap: 32px !important; }

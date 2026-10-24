@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase'
  *
  * WHY IT LIVES HERE AND NOT UNDER /api/dashboard
  *   BuildingAutocomplete renders inside SharedListingForm, which is used by the
- *   public /submit page and the owner dashboard as well as by admins. It needs
+ *   public /list-your-property page and the owner dashboard as well as by admins. It needs
  *   this list, so the list has to be readable without an admin token.
  *
  *   It used to read /api/dashboard/property-names, which meant one handler under
