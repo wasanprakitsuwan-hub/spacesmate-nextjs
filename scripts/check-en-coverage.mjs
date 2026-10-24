@@ -84,6 +84,7 @@ const ALLOWED = new Map([
   ['lib/slug.ts',                        'the Thai unicode range in a regex'],
   ['lib/search-match.ts',                'Thai synonyms matched against queries; unit labels gated on locale'],
   ['lib/stations.ts',                    'the th half of each station name (en beside it)'],
+  ['lib/landmarks.ts',                   'the th half of each landmark name and Thai aliases (en beside it)'],
   ['lib/types.ts',                       'trailing comments on field declarations'],
   ['components/marketing/ContactBody.tsx', 'interest values submitted with the form'],
   ['components/marketing/ManageBody.tsx',  'icon map keyed by the stored channel value'],

@@ -11,6 +11,7 @@
  */
 
 import { STATIONS, STATION_BY_ID, type Station } from '@/lib/stations'
+import { LANDMARKS, LANDMARK_BY_ID, LANDMARK_ICON, type Landmark } from '@/lib/landmarks'
 import { DISTRICT_EN_BY_PAIR } from '@/lib/thai-districts.generated'
 import { stripDistrictPrefix } from '@/lib/geo-i18n'
 import { DEFAULT_AMENITIES } from '@/lib/amenities'
@@ -151,11 +152,36 @@ const AMENITY_EN_TO_TH: Record<string, string> = Object.fromEntries(
   DEFAULT_AMENITIES.map(a => [norm(a.name_en), a.name_th]),
 )
 
-// ── Places: stations and districts ───────────────────────────────────────────
+// ── Places: stations, landmarks, districts and map points ───────────────────
 
 export type Place =
   | { kind: 'station'; station: Station }
+  | { kind: 'landmark'; landmark: Landmark }
   | { kind: 'district'; th: string; en: string }
+  /** Found by the map lookup for something we have no list entry for. */
+  | { kind: 'point'; name: string; lat: number; lng: number }
+
+/** The point a place's distance is measured from, or null for a district (an area, not a point). */
+export function placePoint(p: Place): { lat: number; lng: number } | null {
+  if (p.kind === 'station') return { lat: p.station.lat, lng: p.station.lng }
+  if (p.kind === 'landmark') return { lat: p.landmark.lat, lng: p.landmark.lng }
+  if (p.kind === 'point') return { lat: p.lat, lng: p.lng }
+  return null
+}
+
+export function placeIcon(p: Place): string {
+  if (p.kind === 'station') return 'train'
+  if (p.kind === 'landmark') return LANDMARK_ICON[p.landmark.kind]
+  return 'location_on'
+}
+
+/**
+ * Roughly Bangkok and its suburbs. A map-lookup result outside it is a
+ * same-named place elsewhere in Thailand, not what a renter here meant.
+ */
+export function inGreaterBangkok(lat: number, lng: number): boolean {
+  return lat >= 13.45 && lat <= 14.15 && lng >= 100.25 && lng <= 100.95
+}
 
 const BKK_DISTRICTS: { th: string; en: string }[] = Object.entries(DISTRICT_EN_BY_PAIR)
   .filter(([pair]) => pair.startsWith('กรุงเทพมหานคร|'))
@@ -168,17 +194,30 @@ function aliasesFor(enNorm: string): string[] {
 }
 
 export function placeKey(p: Place): string {
-  return p.kind === 'station' ? `station:${p.station.id}` : `district:${p.th}`
+  if (p.kind === 'station') return `station:${p.station.id}`
+  if (p.kind === 'landmark') return `landmark:${p.landmark.id}`
+  if (p.kind === 'point') return `point:${p.lat},${p.lng}`
+  return `district:${p.th}`
 }
 
 export function placeLabel(p: Place, locale: Locale): string {
   if (p.kind === 'station') return stationLabel(p.station, locale)
+  if (p.kind === 'landmark') return locale === 'en' ? p.landmark.en : p.landmark.th
+  if (p.kind === 'point') return p.name
   return locale === 'en' ? p.en : `เขต${p.th}`
 }
 
-/** URL form: ?station=E4 or ?district=บางนา. */
-export function placeFromParams(station: string | null, district: string | null): Place | null {
+/** URL form: ?station=E4, ?landmark=chula, ?district=บางนา or ?at=13.74,100.53&name=… */
+export function placeFromParams(
+  station: string | null, district: string | null,
+  landmark: string | null = null, at: string | null = null, name: string | null = null,
+): Place | null {
   if (station && STATION_BY_ID[station]) return { kind: 'station', station: STATION_BY_ID[station] }
+  if (landmark && LANDMARK_BY_ID[landmark]) return { kind: 'landmark', landmark: LANDMARK_BY_ID[landmark] }
+  if (at) {
+    const [lat, lng] = at.split(',').map(Number)
+    if (isFinite(lat) && isFinite(lng) && inGreaterBangkok(lat, lng)) return { kind: 'point', name: name || at, lat, lng }
+  }
   if (district) {
     const bare = stripDistrictPrefix(district)
     const d = BKK_DISTRICTS.find(x => x.th === bare)
@@ -189,10 +228,11 @@ export function placeFromParams(station: string | null, district: string | null)
 
 /**
  * Places matching what has been typed so far, best first: names that start
- * with the text before names that merely contain it, stations before districts.
+ * with the text before names that merely contain it; stations, then landmarks,
+ * then districts.
  */
 export function suggestPlaces(q: string, limit = 8): Place[] {
-  const n = norm(q).replace(/^(bts|mrt|arl|เขต)/, '')
+  const n = norm(q).replace(/^(bts|mrt|arl|srt|เขต)/, '')
   if (!n) return []
   // One- and two-letter input matches the start of a name only; anything
   // looser lists half the network.
@@ -200,6 +240,7 @@ export function suggestPlaces(q: string, limit = 8): Place[] {
   const scored: { place: Place; score: number }[] = []
   const candidates: { place: Place; names: string[]; base: number }[] = [
     ...STATIONS.map(s => ({ place: { kind: 'station' as const, station: s }, names: [norm(s.th), norm(s.en), ...aliasesFor(norm(s.en))], base: 0 })),
+    ...LANDMARKS.map(l => ({ place: { kind: 'landmark' as const, landmark: l }, names: [norm(l.th), norm(l.en), ...(l.aliases ?? []).map(norm)], base: 0.5 })),
     ...BKK_DISTRICTS.map(d => ({ place: { kind: 'district' as const, ...d }, names: [norm(d.th), norm(d.en)], base: 1 })),
   ]
   for (const c of candidates) {

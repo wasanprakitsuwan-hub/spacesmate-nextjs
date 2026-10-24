@@ -17,7 +17,7 @@ import { PRICE_RANGES, priceRangeLabel, type Property } from '@/lib/property-dat
 import {
   haversineKm, nearestStation, stationLabel, distanceLabel,
   parseQuery, haystack, matchesTerms,
-  suggestPlaces, placeFromParams, placeKey, placeLabel, type Place,
+  suggestPlaces, placeFromParams, placeKey, placeLabel, placePoint, placeIcon, inGreaterBangkok, type Place,
 } from '@/lib/search-match'
 import { STATION_BY_ID, type Station } from '@/lib/stations'
 import { districtEn, stripDistrictPrefix } from '@/lib/geo-i18n'
@@ -121,13 +121,18 @@ function SearchContent({ locale }: { locale: Locale }) {
   const dbListings = useMemo(() => rows.map(r => r.p), [rows])
 
   // A chosen place — a station or a district — from a suggestion, a chip or the URL.
-  const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district')))
+  const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district'), sp.get('landmark'), sp.get('at'), sp.get('name')))
   const [placeRadiusKm, setPlaceRadiusKm] = useState(() => {
     const r = Number(sp.get('r'))
     return STATION_RADII.includes(r) ? r : 1
   })
   const [suggestOpen, setSuggestOpen] = useState(false)
   const suggestions = useMemo(() => (place ? [] : suggestPlaces(keyword)), [keyword, place])
+  // Map lookup for a place we have no list entry for. Run on request only
+  // (Enter or the "find on map" row), never per keystroke: the free map
+  // service does not allow autocomplete traffic.
+  const [mapLookup, setMapLookup] = useState<'idle' | 'loading' | 'notfound'>('idle')
+  const canMapLookup = !place && keyword.trim().length >= 2
 
   // ── Geolocation state ─────────────────────────────────────────────────────
   const [userLatLng, setUserLatLng]     = useState<{ lat: number; lng: number } | null>(null)
@@ -213,9 +218,9 @@ function SearchContent({ locale }: { locale: Locale }) {
     if (range.min > 0 || range.max !== Infinity) {
       list = list.filter(p => p.priceMin >= range.min && p.priceMin <= range.max)
     }
-    // ── Station filter: within walking distance of the chosen station ───────
-    if (place?.kind === 'station') {
-      const st = place.station
+    // ── Place filter: within the chosen distance of a station, landmark or map point
+    const st = place ? placePoint(place) : null
+    if (st) {
       list = list
         .filter(p => {
           const pLat = parseFloat(p.lat || ''), pLng = parseFloat(p.lng || '')
@@ -264,10 +269,31 @@ function SearchContent({ locale }: { locale: Locale }) {
     setSuggestOpen(false)
     if (next) setKeyword('')
     const p = new URLSearchParams(sp.toString())
-    p.delete('station'); p.delete('district'); p.delete('q'); p.delete('r')
+    for (const k of ['station', 'district', 'landmark', 'at', 'name', 'q']) p.delete(k)
     if (next?.kind === 'station') p.set('station', next.station.id)
+    if (next?.kind === 'landmark') p.set('landmark', next.landmark.id)
     if (next?.kind === 'district') p.set('district', next.th)
+    if (next?.kind === 'point') { p.set('at', `${next.lat.toFixed(5)},${next.lng.toFixed(5)}`); p.set('name', next.name) }
     router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
+  }
+
+  async function findOnMap() {
+    const q = keyword.trim()
+    if (q.length < 2) return
+    setSuggestOpen(false)
+    setMapLookup('loading')
+    try {
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)
+      const data = r.ok ? await r.json() : { results: [] }
+      const hit = (data.results ?? [])
+        .map((x: { lat: string; lon: string }) => ({ lat: Number(x.lat), lng: Number(x.lon) }))
+        .find((x: { lat: number; lng: number }) => isFinite(x.lat) && isFinite(x.lng) && inGreaterBangkok(x.lat, x.lng))
+      if (!hit) { setMapLookup('notfound'); return }
+      setMapLookup('idle')
+      choosePlace({ kind: 'point', name: q, lat: hit.lat, lng: hit.lng })
+    } catch {
+      setMapLookup('notfound')
+    }
   }
 
   // Chips: stations that actually have listings within a kilometre come first,
@@ -282,8 +308,8 @@ function SearchContent({ locale }: { locale: Locale }) {
 
   // Nothing within the chosen distance: show the closest few instead of a dead end.
   const closest = useMemo(() => {
-    if (place?.kind !== 'station' || results.length) return []
-    const st = place.station
+    const st = place ? placePoint(place) : null
+    if (!st || results.length) return []
     return dbListings
       .filter(p => p.lat && p.lng)
       .map(p => ({ p, km: haversineKm(st.lat, st.lng, +p.lat, +p.lng) }))
@@ -320,10 +346,14 @@ function SearchContent({ locale }: { locale: Locale }) {
             <input
               type="text"
               value={keyword}
-              onChange={e => { setKeyword(e.target.value); setSuggestOpen(true); if (place) choosePlace(null) }}
+              onChange={e => { setKeyword(e.target.value); setSuggestOpen(true); setMapLookup('idle'); if (place) choosePlace(null) }}
               onFocus={() => setSuggestOpen(true)}
               onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
-              onKeyDown={e => { if (e.key === 'Enter' && suggestions.length && suggestOpen) { e.preventDefault(); choosePlace(suggestions[0]) } }}
+              onKeyDown={e => {
+                if (e.key !== 'Enter') return
+                if (suggestions.length && suggestOpen) { e.preventDefault(); choosePlace(suggestions[0]) }
+                else if (canMapLookup) { e.preventDefault(); findOnMap() }
+              }}
               placeholder={place ? placeLabel(place, locale) : t.searchPlaceholder}
               aria-autocomplete="list" 
               style={{ width: '100%', paddingLeft: 48, paddingRight: keyword ? 44 : 16, paddingTop: 14, paddingBottom: 14, fontSize: 15, borderRadius: 28, border: 'none', outline: 'none', background: '#fff', color: '#231f20', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', boxSizing: 'border-box' }}
@@ -334,28 +364,43 @@ function SearchContent({ locale }: { locale: Locale }) {
                 <span className="msym">close</span>
               </button>
             )}
-            {suggestOpen && suggestions.length > 0 && (
+            {suggestOpen && (suggestions.length > 0 || canMapLookup) && (
               <ul role="listbox" style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 6px)', left: 0, right: 0, margin: 0, padding: 6, listStyle: 'none', background: '#fff', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.18)' }}>
                 {suggestions.map(sg => (
                   <li key={placeKey(sg)} role="option" aria-selected={false}>
                     <button type="button" onMouseDown={e => { e.preventDefault(); choosePlace(sg) }}
                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: 'none', background: 'none', borderRadius: 10, cursor: 'pointer', textAlign: 'left', fontSize: 14, color: '#231f20' }}>
-                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>{sg.kind === 'station' ? 'train' : 'location_on'}</span>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>{placeIcon(sg)}</span>
                       <span style={{ flex: 1 }}>{placeLabel(sg, locale)}</span>
-                      <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{sg.kind === 'station' ? t.suggestStations : t.suggestDistricts}</span>
+                      <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{sg.kind === 'station' ? t.suggestStations : sg.kind === 'landmark' ? t.suggestLandmarks : t.suggestDistricts}</span>
                     </button>
                   </li>
                 ))}
+                {canMapLookup && (
+                  <li role="option" aria-selected={false}>
+                    <button type="button" onMouseDown={e => { e.preventDefault(); findOnMap() }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: 'none', borderTop: suggestions.length ? '1px solid #eef0ef' : 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 14, color: '#02402e' }}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>map</span>
+                      <span style={{ flex: 1 }}>{t.findOnMap.replace('{q}', keyword.trim())}</span>
+                    </button>
+                  </li>
+                )}
               </ul>
             )}
           </div>
+
+          {mapLookup !== 'idle' && (
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: '10px 0 0' }}>
+              {mapLookup === 'loading' ? t.mapLoading : t.mapNotFound}
+            </p>
+          )}
 
           {/* Chosen place, or the presets to choose one from */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14, maxWidth: 820 }}>
             {place ? (
               <>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', color: '#02402e', borderRadius: 20, padding: '6px 8px 6px 12px', fontSize: 13.5, fontWeight: 600 }}>
-                  <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>{place.kind === 'station' ? 'train' : 'location_on'}</span>
+                  <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>{placeIcon(place)}</span>
                   {t.nearPrefix} {placeLabel(place, locale)}
                   <button onClick={() => choosePlace(null)} aria-label={t.clearFilters}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex' }}>
@@ -398,10 +443,10 @@ function SearchContent({ locale }: { locale: Locale }) {
             {/* Distance from the chosen station */}
             <div style={{ marginBottom: 22 }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.distanceFromStation}</p>
-              {place?.kind === 'station' ? (
+              {place && placePoint(place) ? (
                 <>
                   <p style={{ fontSize: 13, color: '#02402e', fontWeight: 600, margin: '0 0 9px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>train</span>{placeLabel(place, locale)}
+                    <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>{placeIcon(place)}</span>{placeLabel(place, locale)}
                   </p>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {RADIUS_OPTIONS.filter(opt => STATION_RADII.includes(opt.km)).map(opt => {
@@ -549,7 +594,7 @@ function SearchContent({ locale }: { locale: Locale }) {
             )}
 
             {/* Nothing near the chosen station: the closest few rather than a dead end */}
-            {results.length === 0 && closest.length > 0 && place?.kind === 'station' && (
+            {results.length === 0 && closest.length > 0 && place && (
               <div>
                 <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 6px' }}>{t.noneNearPlace}</p>
                 <h2 style={{ fontSize: 17, fontWeight: 600, margin: '0 0 16px', color: '#02402e' }}>{t.closestTo} {placeLabel(place, locale)}</h2>
