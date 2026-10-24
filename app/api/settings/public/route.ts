@@ -8,7 +8,7 @@ import { createServerClient } from '@/lib/supabase'
  *   /api/dashboard/settings reads any key out of site_settings with the
  *   service-role client. It needs to be admin-only. But one setting — the
  *   amenity list — is legitimately needed by people who are not admins: the
- *   public /submit form and the owner dashboard both render it in the listing
+ *   public /list-your-property form and the owner dashboard both render it in the listing
  *   form. Simply locking the dashboard route would make fetchAmenities() fall
  *   back to DEFAULT_AMENITIES for those users, which is the quiet kind of
  *   breakage: the form still renders, so nobody notices that the list an admin

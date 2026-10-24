@@ -3,7 +3,7 @@ import NewListingBody from '@/components/submit/NewListingBody'
 
 /**
  * noindex, like its Thai counterpart: this is a logged-in authoring tool, not a
- * page anyone should arrive at from search. It is linked from /en/submit and
+ * page anyone should arrive at from search. It is linked from /en/list-your-property and
  * /en/pricing.
  *
  * No "| SpacesMate" in the title — the root layout's template appends it.

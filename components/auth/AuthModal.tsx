@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 import GoogleSignInButton from './GoogleSignInButton'
+import TermsTick from './TermsTick'
+import { termsMetadata, savePendingTerms } from '@/lib/terms-consent'
 import { AUTH_T, type Locale } from '@/lib/auth-i18n'
 import { localeHref } from '@/lib/routes-i18n'
 
@@ -100,6 +102,10 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
   const [success,  setSuccess]  = useState('')
+
+  // Sign-up acceptance (lib/terms-consent): terms + privacy required, marketing optional.
+  const [accepted,  setAccepted]  = useState(false)
+  const [marketing, setMarketing] = useState(false)
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('')
@@ -231,6 +237,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
   // ── Sign Up ────────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    if (!accepted) { setError(t.acceptRequired); return }
     if (!signName.trim() || !signEmail.trim() || !signPhone || !signPwd) { setError(t.needAllFields); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signEmail.trim())) { setError(t.badEmail); return }
     const cleanPhone = signPhone.replace(/[\s\-]/g, '')
@@ -267,7 +274,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
         password: signPwd,
         options:  {
           // Pass all fields in metadata — the DB trigger reads these to populate user_profiles
-          data: { full_name: signName, phone: cleanPhone },
+          data: { full_name: signName, phone: cleanPhone, ...termsMetadata(marketing) },
           emailRedirectTo: `${window.location.origin}/owner-dashboard`,
         },
       })
@@ -419,14 +426,8 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
             </>
           ) : (
             <>
-              {/* Google first, deliberately. The one-tap path should be the
-                  one people see before they start typing a password. */}
-              <GoogleSignInButton locale={locale} label={t.googleSignup} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
-                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.or}</span>
-                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-              </div>
+              {/* Sign-up: the form first, then the ticks and the button, with
+                  Google as the alternative below (Founder, 24 Oct 2026). */}
             <form onSubmit={handleSignup}>
               {/* ── Honeypot: hidden from humans, but bots fill it ── */}
               <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
@@ -492,6 +493,11 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
                 <TurnstileWidget onToken={setTurnstileToken} />
               )}
 
+              <div style={{ margin: '4px 0 14px' }}>
+                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
+                  marketing={marketing} onMarketing={setMarketing} />
+              </div>
+
               {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0 }}>warning</span>{error}</div>}
 
               <button type="submit" disabled={loading} style={{
@@ -503,19 +509,23 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
                 {loading ? t.signingUp : t.signupFree}
               </button>
 
-              <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '14px 0 0', lineHeight: 1.6 }}>
-                {t.consentLead}{' '}
-                <a href={localeHref('/terms', locale)} style={{ color: '#048c73' }}>{t.terms}</a>{' '}
-                {t.and}{' '}
-                <a href={localeHref('/privacy', locale)} style={{ color: '#048c73' }}>{t.privacy}</a>
-              </p>
+            </form>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.or}</span>
+                <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
+              <GoogleSignInButton locale={locale} label={t.googleSignup} beforeSignIn={() => {
+                if (!accepted) { setError(t.acceptRequired); return false }
+                savePendingTerms(marketing)
+                return true
+              }} />
               <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '10px 0 0' }}>
                 {t.haveAccount}{' '}
                 <button type="button" onClick={() => switchTab('login')} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
                   {t.login}
                 </button>
               </p>
-            </form>
             </>
           )}
         </div>

@@ -10,7 +10,7 @@
  *
  *     เข้าสู่ระบบ | SpacesMate | SpacesMate
  *
- * This kept coming back — /submit/new, /manage, /login, /en and five others,
+ * This kept coming back — /list-your-property/new, /manage, /login, /en and five others,
  * each found by eye on a different day, because nothing fails when it happens.
  * It is not a type error, it does not break the build, and the page renders
  * perfectly. It only looks sloppy in a browser tab, a bookmark, a shared link

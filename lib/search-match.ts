@@ -86,6 +86,17 @@ export function nearbyStations(
     .slice(0, limit)
 }
 
+/** Landmarks within `maxKm`, closest first — the listing page's "What's nearby". */
+export function nearbyLandmarks(
+  lat: number, lng: number, maxKm = 3, landmarks: Landmark[] = LANDMARK_LIST,
+): { landmark: Landmark; km: number }[] {
+  if (!isFinite(lat) || !isFinite(lng)) return []
+  return landmarks
+    .map(l => ({ landmark: l, km: haversineKm(lat, lng, l.lat, l.lng) }))
+    .filter(x => x.km <= maxKm)
+    .sort((a, b) => a.km - b.km)
+}
+
 export function stationLabel(s: Station, locale: Locale): string {
   return `${s.systems.join('/')} ${locale === 'en' ? s.en : s.th}`
 }

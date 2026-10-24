@@ -17,6 +17,7 @@ import { createBrowserClient } from '@/lib/supabase'
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false })
 import LanguageToggle, { MobileLanguageToggle } from '@/components/layout/LanguageToggle'
 import { SITE_T } from '@/lib/site-i18n'
+import { localeHref } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
 
 interface UserInfo {
@@ -25,13 +26,6 @@ interface UserInfo {
   active_package:     string | null
   package_expires_at: string | null
   dashUrl:            string
-}
-
-function userHasActivePackage(info: UserInfo | null): boolean {
-  if (!info) return false
-  if (!info.active_package) return false
-  if (!info.package_expires_at) return true   // null expiry = admin/unlimited
-  return new Date(info.package_expires_at) > new Date()
 }
 
 function displayName(info: UserInfo | null, email: string | null | undefined, fallback: string): string {
@@ -112,7 +106,7 @@ export default function Navbar() {
     textDecoration: 'none',
   })
 
-  const ownerActive = isActive('/submit') || isActive('/manage')
+  const ownerActive = isActive('/list-your-property') || isActive('/manage')
 
   async function handleSignOut() {
     const supabase = createBrowserClient()
@@ -123,22 +117,19 @@ export default function Navbar() {
     router.push('/')
   }
 
+  // Every "list a property" button goes to the listing form. A logged-out
+  // owner registers first and is sent back to the form; after saving, the form
+  // itself decides between publishing (free slot) and checkout.
   function handleListingClick(e: React.MouseEvent) {
-    if (!session) {
-      e.preventDefault()
-      setAuthModal(true)
-      return
-    }
-    if (!userHasActivePackage(userInfo)) {
-      e.preventDefault()
-      router.push('/pricing')
-    }
-    // Has active package → /submit link proceeds normally
+    if (session) return
+    e.preventDefault()
+    const form = localeHref('/list-your-property/new', locale)
+    router.push(`${localeHref('/login', locale)}?tab=signup&redirect=${encodeURIComponent(form)}`)
   }
 
   const mobileLinks = [
     { label: t.navSearch,  icon: 'search',    href: '/search' },
-    { label: t.navSubmit,  icon: 'sell',       href: '/submit' },
+    { label: t.navSubmit,  icon: 'sell',       href: '/list-your-property' },
     { label: t.navManage,  icon: 'handshake',  href: '/manage' },
     { label: t.navBlog,    icon: 'article',    href: '/blog' },
     ...(session ? [{ label: t.navDashboard, icon: 'dashboard', href: userInfo?.dashUrl ?? '/owner-dashboard' }] : []),
@@ -175,7 +166,7 @@ export default function Navbar() {
               {t.navForOwners} <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
             </a>
             <div className="sm-owner-pop">
-              <Link href="/submit" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
+              <Link href="/list-your-property" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>sell</span>
@@ -288,8 +279,8 @@ export default function Navbar() {
           {/* Language switch — renders only when this page has a counterpart */}
           <LanguageToggle className="sm-hide-mobile" />
 
-          {/* ลงประกาศ CTA — checks package status before routing */}
-          <Link href="/submit" onClick={handleListingClick}
+          {/* ลงประกาศ CTA — straight to the listing form */}
+          <Link href="/list-your-property/new" onClick={handleListingClick}
             style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none', display: 'inline-block' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
