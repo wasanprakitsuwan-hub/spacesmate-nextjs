@@ -38,16 +38,20 @@ export default function GoogleSignInButton({
   redirectTo,
   label,
   locale = 'th',
+  beforeSignIn,
 }: {
   redirectTo?: string
   label?: string
   locale?: Locale
+  /** Runs first; return false to stop (the sign-up tab's terms tick). */
+  beforeSignIn?: () => boolean
 }) {
   const t = AUTH_T[locale]
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
   async function signIn() {
+    if (beforeSignIn && !beforeSignIn()) return
     setLoading(true)
     setError('')
     try {

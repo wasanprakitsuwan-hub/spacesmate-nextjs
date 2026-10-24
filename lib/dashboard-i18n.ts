@@ -48,7 +48,7 @@ export const DASH_T = {
     days: 'วัน',
     months: 'เดือน',
     year: 'ปี',
-    slots: 'สล็อต',
+    slots: 'แพ็กเกจ',
     unlimited: 'ไม่จำกัด',
 
     // ── Listing list ──
@@ -77,24 +77,24 @@ export const DASH_T = {
     publishListing: 'เผยแพร่ประกาศ',
     publishNow: 'ประกาศจะเผยแพร่บนเว็บไซต์ทันที',
     publishFailed: 'เผยแพร่ไม่สำเร็จ',
-    unpublish: 'นำประกาศลง — สล็อตจะว่างและใช้กับประกาศอื่นได้ตามวันที่เหลือ',
+    unpublish: 'นำประกาศลง — แพ็กเกจจะว่างและใช้กับประกาศอื่นได้ตามวันที่เหลือ',
     /** confirm(). States the consequence and what happens to the slot. */
-    unpublishConfirm: 'นำประกาศนี้ลงจากเว็บไซต์?\n\nประกาศจะกลับไปเป็นฉบับร่าง และสล็อตจะว่างพร้อมวันที่เหลือ — ใช้กับประกาศอื่นได้ทันที',
+    unpublishConfirm: 'นำประกาศนี้ลงจากเว็บไซต์?\n\nประกาศจะกลับไปเป็นฉบับร่าง และแพ็กเกจจะว่างพร้อมวันที่เหลือ — ใช้กับประกาศอื่นได้ทันที',
     deleteConfirm: 'ลบประกาศนี้?',
     delete: 'ลบ',
 
     // ── Slots ──
-    noFreeSlot: 'ไม่มีสล็อตว่าง — ซื้อสล็อตเพื่อเผยแพร่',
-    noFreeSlotDraft: 'ยังไม่มีสล็อตว่าง — ประกาศจะถูกบันทึกเป็นฉบับร่าง',
-    slotsFull: 'สล็อตใช้งานครบแล้ว — เขียนประกาศเก็บเป็นฉบับร่างได้',
-    freeSlots: 'สล็อตว่าง',
-    unusedSlot: 'ยังไม่ได้ใช้สล็อต',
-    buySlots: 'ซื้อสล็อต',
-    buyMoreSlots: 'ซื้อสล็อตเพิ่ม',
-    buyToRepublish: 'ซื้อสล็อตเพื่อเผยแพร่อีกครั้ง',
+    noFreeSlot: 'ไม่มีแพ็กเกจว่าง — ซื้อแพ็กเกจเพื่อเผยแพร่',
+    noFreeSlotDraft: 'ยังไม่มีแพ็กเกจว่าง — ประกาศจะถูกบันทึกเป็นฉบับร่าง',
+    slotsFull: 'แพ็กเกจใช้งานครบแล้ว — เขียนประกาศเก็บเป็นฉบับร่างได้',
+    freeSlots: 'แพ็กเกจว่าง',
+    unusedSlot: 'ยังไม่ได้ใช้แพ็กเกจ',
+    buySlots: 'ซื้อแพ็กเกจ',
+    buyMoreSlots: 'ซื้อแพ็กเกจเพิ่ม',
+    buyToRepublish: 'ซื้อแพ็กเกจเพื่อเผยแพร่อีกครั้ง',
     republishNote: 'ประกาศเดิมจะกลับมาเผยแพร่ทันทีหลังชำระเงิน — ข้อมูลทรัพย์สินทั้งหมดยังอยู่ครบ',
     /** alert() after saving with no free slot. Explains why it is not live. */
-    savedAsDraft: 'บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศถูกเก็บไว้ครบถ้วน แต่ยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีสล็อตว่าง\n1 สล็อต = เผยแพร่ได้ 1 ประกาศ — ซื้อสล็อตแล้วกด "เผยแพร่" ได้ทันที ไม่ต้องกรอกใหม่',
+    savedAsDraft: 'บันทึกเป็นฉบับร่างแล้ว ✓\n\nประกาศถูกเก็บไว้ครบถ้วน แต่ยังไม่แสดงบนเว็บไซต์ เนื่องจากยังไม่มีแพ็กเกจว่าง\n1 แพ็กเกจ = เผยแพร่ได้ 1 ประกาศ — ซื้อแพ็กเกจแล้วกด "เผยแพร่" ได้ทันที ไม่ต้องกรอกใหม่',
 
     // ── Packages ──
     myPackages: 'แพ็กเกจของฉัน',
@@ -107,6 +107,19 @@ export const DASH_T = {
     neverExpires: 'ไม่หมดอายุ',
     expiringSoon: 'ใกล้หมดอายุ (7 วัน)',
     renew: 'ต่ออายุ',
+    extend: 'ต่ออายุประกาศ',
+    stats: 'สถิติ',
+    statsTitle: 'สถิติประกาศ',
+    statViews: 'ผู้เข้าชม',
+    statLine: 'กด LINE',
+    statPhone: 'กดโทร',
+    last7: '7 วัน',
+    last30: '30 วัน',
+    allTime: 'ทั้งหมด',
+    viewsPerDay: 'ผู้เข้าชมรายวัน (30 วันล่าสุด)',
+    statsNote: 'นับผู้เข้าชม 1 ครั้งต่อการเปิดดู ไม่นับบอตของเครื่องมือค้นหา เริ่มนับตั้งแต่เปิดใช้ระบบสถิติ',
+    statsFailed: 'โหลดสถิติไม่สำเร็จ',
+    close: 'ปิด',
     goToPayment: 'ไปชำระเงิน',
 
     // ── Upgrade. Money. ──
@@ -142,8 +155,8 @@ export const DASH_T = {
 
     // ── Composed ──
     packageNamed: (label: string) => `แพ็กเกจ ${label}`,
-    unusedN: (n: number) => `ยังไม่ได้ใช้ ${n} สล็อต`,
-    usedOfTotal: (used: number, total: number) => `— ใช้ ${used} จาก ${total} สล็อต`,
+    unusedN: (n: number) => `ยังไม่ได้ใช้ ${n} แพ็กเกจ`,
+    usedOfTotal: (used: number, total: number) => `— ใช้ ${used} จาก ${total} แพ็กเกจ`,
     daysLeft: (n: number) => `เหลือ ${n} วัน`,
     expiresWithDays: (date: string, days: number | null) =>
       `หมดอายุ: ${date}${days !== null ? ` (เหลือ ${days} วัน)` : ''}`,
@@ -229,25 +242,25 @@ export const DASH_T = {
     publishListing: 'Publish listing',
     publishNow: 'The listing goes live on the website immediately',
     publishFailed: 'Could not publish',
-    unpublish: 'Take it down — the slot frees up, keeping its remaining days, for another listing',
+    unpublish: 'Take it down — the package frees up, keeping its remaining days, for another listing',
     /**
      * confirm(). Says what happens and what becomes of the slot, because the
      * owner is about to remove a live listing and cannot undo the click.
      */
-    unpublishConfirm: 'Take this listing off the website?\n\nIt goes back to being a draft, and the slot frees up with its remaining days — you can use it for another listing straight away.',
+    unpublishConfirm: 'Take this listing off the website?\n\nIt goes back to being a draft, and the package frees up with its remaining days — you can use it for another listing straight away.',
     deleteConfirm: 'Delete this listing?',
     delete: 'Delete',
 
-    noFreeSlot: 'No free slot — buy one to publish',
-    noFreeSlotDraft: 'No free slot yet — the listing will be saved as a draft',
-    slotsFull: 'All slots in use — you can still write listings and keep them as drafts',
-    freeSlots: 'Free slots',
-    unusedSlot: 'Slot not in use',
-    buySlots: 'Buy a slot',
-    buyMoreSlots: 'Buy more slots',
-    buyToRepublish: 'Buy a slot to publish it again',
+    noFreeSlot: 'No unused package — buy one to publish',
+    noFreeSlotDraft: 'No unused package yet — the listing will be saved as a draft',
+    slotsFull: 'All packages in use — you can still write listings and keep them as drafts',
+    freeSlots: 'Unused packages',
+    unusedSlot: 'Package not in use',
+    buySlots: 'Buy a package',
+    buyMoreSlots: 'Buy more packages',
+    buyToRepublish: 'Buy a package to publish it again',
     republishNote: 'The listing goes live again as soon as you pay — everything you entered is still there',
-    savedAsDraft: 'Saved as a draft ✓\n\nEverything you entered is kept, but it is not on the website yet because no slot is free.\n1 slot = 1 published listing. Buy a slot and press "Publish" — there is nothing to fill in again.',
+    savedAsDraft: 'Saved as a draft ✓\n\nEverything you entered is kept, but it is not on the website yet because there is no unused package.\n1 package = 1 published listing. Buy a package and press "Publish" — there is nothing to fill in again.',
 
     myPackages: 'My packages',
     noActivePackage: 'No active package',
@@ -259,6 +272,19 @@ export const DASH_T = {
     neverExpires: 'Never expires',
     expiringSoon: 'Expiring soon (7 days)',
     renew: 'Renew',
+    extend: 'Extend',
+    stats: 'Stats',
+    statsTitle: 'Listing statistics',
+    statViews: 'Views',
+    statLine: 'LINE taps',
+    statPhone: 'Call taps',
+    last7: '7 days',
+    last30: '30 days',
+    allTime: 'All time',
+    viewsPerDay: 'Views per day (last 30 days)',
+    statsNote: 'A view counts once per visit and search-engine bots are excluded. Counting started when statistics were switched on.',
+    statsFailed: 'Could not load statistics',
+    close: 'Close',
     goToPayment: 'Go to payment',
 
     upgrade: 'Upgrade',
@@ -295,8 +321,8 @@ export const DASH_T = {
 
 
     packageNamed: (label: string) => `${label} package`,
-    unusedN: (n: number) => `${n} slots not in use`,
-    usedOfTotal: (used: number, total: number) => `— ${used} of ${total} slots in use`,
+    unusedN: (n: number) => `${n} packages not in use`,
+    usedOfTotal: (used: number, total: number) => `— ${used} of ${total} packages in use`,
     daysLeft: (n: number) => `${n} days left`,
     expiresWithDays: (date: string, days: number | null) =>
       `Expires: ${date}${days !== null ? ` (${days} days left)` : ''}`,
