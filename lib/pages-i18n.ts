@@ -285,10 +285,10 @@ export const SUBMIT_T = {
     step1Free: 'ฟรี',
     step1BodyA: 'กรอกข้อมูลห้องและอัปโหลดรูปได้ถึง',
     step1BodyB: 'รูป พร้อมวิดีโอ บันทึกเป็นฉบับร่างไว้ได้ ยังไม่ต้องจ่าย',
-    step2Title: 'ซื้อสล็อตเมื่อพร้อม',
-    step2Body: 'เลือกแพ็กเกจตามระยะเวลาที่ต้องการแสดงผล 1 สล็อต = ประกาศออนไลน์ 1 รายการ ซื้อหลายสล็อตพร้อมกันได้',
+    step2Title: 'ซื้อแพ็กเกจเมื่อพร้อม',
+    step2Body: 'เลือกแพ็กเกจตามระยะเวลาที่ต้องการแสดงผล 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ซื้อหลายแพ็กเกจพร้อมกันได้',
     step3Title: 'เผยแพร่ทันที',
-    step3Body: 'ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ สลับประกาศในสล็อตได้ตลอดอายุ',
+    step3Body: 'ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ สลับประกาศในแพ็กเกจได้ตลอดอายุ',
 
     ownersEyebrow: 'สำหรับเจ้าของทรัพย์สิน',
     ownersTitle: 'ลงประกาศปล่อยเช่า',
@@ -302,7 +302,7 @@ export const SUBMIT_T = {
     stepsHeading: 'ลงประกาศง่ายๆ 3 ขั้นตอน',
     packagesHeading: 'แพ็กเกจราคา',
 
-    note1: '1 สล็อต = ประกาศออนไลน์ 1 รายการ · เผยแพร่ทันที ไม่ต้องรอ',
+    note1: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · เผยแพร่ทันที ไม่ต้องรอ',
     note2A: 'กรอกประกาศได้เต็มที่ทุกแพ็กเกจ',
     note2B: 'แพ็กเกจกำหนดแค่ว่าแสดงบนเว็บไซต์กี่รูป อัปเกรดแล้วส่วนที่เหลือแสดงทันที',
     note3: 'แพ็กเกจสูงสุด 12 เดือน เพื่อให้ประกาศได้รับการอัปเดตเสมอ — ข้อมูลแม่นกว่าเว็บอื่น',
@@ -316,7 +316,7 @@ export const SUBMIT_T = {
     save: 'ประหยัด',
 
     draftTitle: 'สร้างประกาศก่อน — ฟรี ยังไม่ต้องจ่าย',
-    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด พร้อมเผยแพร่เมื่อไหร่ค่อยซื้อสล็อตในแดชบอร์ด',
+    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด พร้อมเผยแพร่เมื่อไหร่ค่อยซื้อแพ็กเกจในแดชบอร์ด',
 
     closingTitle: 'พร้อมปล่อยเช่าแล้วหรือยัง?',
     closingBody: 'เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299',
@@ -355,10 +355,10 @@ export const SUBMIT_T = {
     step1Free: 'free',
     step1BodyA: 'Fill in the room details and upload up to',
     step1BodyB: 'photos, plus video. Save it as a draft — nothing to pay yet.',
-    step2Title: 'Buy a slot when you are ready',
-    step2Body: 'Choose a package for how long you want it live. One slot = one live listing, and you can buy several at once.',
+    step2Title: 'Buy a package when you are ready',
+    step2Body: 'Choose a package for how long you want it live. One package = one live listing, and you can buy several at once.',
     step3Title: 'Publish immediately',
-    step3Body: 'The listing goes live the moment payment succeeds, and you can swap listings within the slot for the rest of its term.',
+    step3Body: 'The listing goes live the moment payment succeeds, and you can swap listings within the package for the rest of its term.',
 
     ownersEyebrow: 'For property owners',
     ownersTitle: 'List your property to let',
@@ -372,7 +372,7 @@ export const SUBMIT_T = {
     stepsHeading: 'Three simple steps',
     packagesHeading: 'Packages',
 
-    note1: 'One slot = one live listing · published immediately, with nothing to wait for',
+    note1: 'One package = one live listing · published immediately, with nothing to wait for',
     note2A: 'Every package lets you fill in the whole listing.',
     note2B: 'The package only decides how many photos show on the website; upgrade and the rest appear immediately.',
     note3: 'Packages run to 12 months at most, so listings stay updated — which is why the data here is more accurate than elsewhere.',
@@ -386,7 +386,7 @@ export const SUBMIT_T = {
     save: 'Saves',
 
     draftTitle: 'Create the listing first — free, nothing to pay',
-    draftBody: 'Keep it as a draft for as long as you like, then buy a slot from your dashboard when you are ready to publish.',
+    draftBody: 'Keep it as a draft for as long as you like, then buy a package from your dashboard when you are ready to publish.',
 
     closingTitle: 'Ready to let it?',
     closingBody: 'Put your listing in front of thousands of renters, from ฿299.',

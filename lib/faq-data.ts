@@ -86,7 +86,7 @@ const TH: Category[] = [
     faqs: [
       {
         q: 'วิธีเริ่มต้นลงประกาศทรัพย์สินบน SpacesMate?',
-        a: 'กดปุ่ม "ลงประกาศ" แล้วสมัครบัญชีฟรี (ยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว) → กรอกรายละเอียดและอัปโหลดรูปภาพ → บันทึก บัญชีใหม่ได้สล็อต Basic ฟรี 1 สล็อต ประกาศแรกจึงเผยแพร่ทันที 30 วัน ส่วนประกาศถัดไปหรือเมื่อครบกำหนด เลือกแพ็กเกจและชำระเงินในหน้าชำระเงิน (พร้อมเพย์หรือบัตร) ประกาศเผยแพร่ทันทีหลังชำระสำเร็จ ไม่ต้องรออนุมัติ',
+        a: 'กดปุ่ม "ลงประกาศ" แล้วสมัครบัญชีฟรี (ยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว) → กรอกรายละเอียดและอัปโหลดรูปภาพ → บันทึก บัญชีใหม่ได้แพ็กเกจ Basic ฟรี 1 แพ็กเกจ ประกาศแรกจึงเผยแพร่ทันที 30 วัน ส่วนประกาศถัดไปหรือเมื่อครบกำหนด เลือกแพ็กเกจและชำระเงินในหน้าชำระเงิน (พร้อมเพย์หรือบัตร) ประกาศเผยแพร่ทันทีหลังชำระสำเร็จ ไม่ต้องรออนุมัติ',
       },
       {
         q: 'ค่าบริการลงประกาศบน SpacesMate เป็นเท่าไร?',
@@ -109,8 +109,8 @@ const TH: Category[] = [
         a: 'มี เจ้าของหรือเอเจนซี่ที่มีทรัพย์สินหลายรายการสามารถติดต่อทีมงาน SpacesMate โดยตรงที่ support@spacesmate.com หรือผ่านหน้าติดต่อเรา เพื่อรับข้อเสนอแพ็กเกจพิเศษ ทีมงานจะติดต่อกลับโดยเร็วที่สุด',
       },
       {
-        q: 'ถ้าต้องการลงประกาศหลายรายการต้องซื้อสล็อตแยกสำหรับแต่ละประกาศหรือไม่?',
-        a: 'ใช่ แต่ละประกาศที่แสดงอยู่บนเว็บไซต์ต้องมีสล็อตของตัวเอง — 1 สล็อต = ประกาศออนไลน์ 1 รายการ ตัวอย่างเช่น ถ้าคุณมีคอนโด 3 ห้องที่ต้องการลงประกาศพร้อมกัน ก็ต้องซื้อ 3 สล็อต แต่สล็อตไม่ได้ผูกกับประกาศใดประกาศหนึ่งถาวร — ถ้าห้องหนึ่งปล่อยเช่าได้แล้ว คุณสลับประกาศอื่นเข้ามาในสล็อตเดิมได้ตลอดอายุสล็อต เจ้าของจัดการประกาศและสล็อตทั้งหมดได้ในหน้า Owner Dashboard เดียว ซึ่งจะแสดงทุก subscription พร้อมสถานะและวันหมดอายุแยกตามแต่ละรายการ',
+        q: 'ถ้าต้องการลงประกาศหลายรายการต้องซื้อแพ็กเกจแยกสำหรับแต่ละประกาศหรือไม่?',
+        a: 'ใช่ แต่ละประกาศที่แสดงอยู่บนเว็บไซต์ต้องมีแพ็กเกจของตัวเอง — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ตัวอย่างเช่น ถ้าคุณมีคอนโด 3 ห้องที่ต้องการลงประกาศพร้อมกัน ก็ต้องซื้อ 3 แพ็กเกจ แต่แพ็กเกจไม่ได้ผูกกับประกาศใดประกาศหนึ่งถาวร — ถ้าห้องหนึ่งปล่อยเช่าได้แล้ว คุณสลับประกาศอื่นเข้ามาในแพ็กเกจเดิมได้ตลอดอายุแพ็กเกจ เจ้าของจัดการประกาศและแพ็กเกจทั้งหมดได้ในหน้า Owner Dashboard เดียว ซึ่งจะแสดงทุก subscription พร้อมสถานะและวันหมดอายุแยกตามแต่ละรายการ',
       },
       {
         q: 'สามารถอัปเกรดแพ็กเกจได้หรือไม่ และจะถูกเรียกเก็บเงินอย่างไร?',
@@ -189,7 +189,7 @@ const EN: Category[] = [
     faqs: [
       {
         q: 'How do I start listing a property on SpacesMate?',
-        a: 'Press "List your property" and create a free account (accepting the Terms of Use and Privacy Policy) → enter the details and upload photos → save. A new account gets one free Basic slot, so the first listing goes live straight away for 30 days. For further listings, or when that period ends, choose a package and pay at checkout (PromptPay or card); the listing goes live as soon as payment succeeds, with no approval to wait for.',
+        a: 'Press "List your property" and create a free account (accepting the Terms of Use and Privacy Policy) → enter the details and upload photos → save. A new account gets one free Basic package, so the first listing goes live straight away for 30 days. For further listings, or when that period ends, choose a package and pay at checkout (PromptPay or card); the listing goes live as soon as payment succeeds, with no approval to wait for.',
       },
       {
         q: 'What does listing on SpacesMate cost?',
@@ -212,8 +212,8 @@ const EN: Category[] = [
         a: 'Yes. Owners and agencies with several properties can contact the SpacesMate team directly at support@spacesmate.com or through the contact page for a tailored offer. The team will come back to you as soon as possible.',
       },
       {
-        q: 'If I want several listings, do I need a separate slot for each?',
-        a: 'Yes — each listing showing on the website needs its own slot: one slot = one live listing. If you have 3 condo units to list at the same time, for example, you buy 3 slots. But a slot is not tied permanently to one listing — once a room is let, you can swap another listing into the same slot for the rest of its term. Owners manage every listing and slot from a single Owner Dashboard, which shows each subscription with its own status and expiry date.',
+        q: 'If I want several listings, do I need a separate package for each?',
+        a: 'Yes — each listing showing on the website needs its own package: one package = one live listing. If you have 3 condo units to list at the same time, for example, you buy 3 packages. But a package is not tied permanently to one listing — once a room is let, you can swap another listing into the same package for the rest of its term. Owners manage every listing and package from a single Owner Dashboard, which shows each subscription with its own status and expiry date.',
       },
       {
         q: 'Can I upgrade a package, and how is it charged?',
