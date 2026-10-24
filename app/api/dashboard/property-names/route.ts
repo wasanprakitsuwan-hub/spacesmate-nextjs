@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { inThailand } from '@/lib/search-places'
+
+/**
+ * The optional search fields: coordinates (both or neither, inside Thailand),
+ * aliases and the show-in-search switch. Only keys present in the body are
+ * returned, so a rename from an older client leaves them untouched.
+ */
+function placeFields(b: Record<string, unknown>): { fields: Record<string, unknown> } | { error: string } {
+  const fields: Record<string, unknown> = {}
+  if ('lat' in b || 'lng' in b) {
+    const empty = (v: unknown) => v === null || v === undefined || v === ''
+    if (empty(b.lat) && empty(b.lng)) { fields.lat = null; fields.lng = null }
+    else {
+      const lat = Number(b.lat), lng = Number(b.lng)
+      if (!isFinite(lat) || !isFinite(lng) || !inThailand(lat, lng)) return { error: 'พิกัดไม่ถูกต้อง' }
+      fields.lat = lat; fields.lng = lng
+    }
+  }
+  if (Array.isArray(b.aliases)) {
+    const a = b.aliases.map(x => String(x).trim()).filter(Boolean).slice(0, 20)
+    fields.aliases = a.length ? a : null
+  }
+  if ('hidden' in b) fields.hidden = !!b.hidden
+  return { fields }
+}
 
 // GET /api/dashboard/property-names — list all property names (public for autocomplete)
 // POST /api/dashboard/property-names — add new name (admin+)
@@ -21,7 +46,7 @@ export async function GET(req: NextRequest) {
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('property_names')
-      .select('id, name_th, name_en, slug, created_at, updated_at')
+      .select('id, name_th, name_en, slug, lat, lng, aliases, hidden, created_at, updated_at')
       .order('name_th', { ascending: true })
 
     if (error) throw error
@@ -36,13 +61,16 @@ export async function POST(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { name_th, name_en } = await req.json()
+    const body = await req.json()
+    const { name_th, name_en } = body
     if (!name_th?.trim()) return NextResponse.json({ error: 'name_th required' }, { status: 400 })
+    const pf = placeFields(body)
+    if ('error' in pf) return NextResponse.json({ error: pf.error }, { status: 400 })
 
     const supabase = createServerClient()
     const { data, error } = await supabase
       .from('property_names')
-      .insert({ name_th: name_th.trim(), name_en: name_en?.trim() || null })
+      .insert({ name_th: name_th.trim(), name_en: name_en?.trim() || null, ...pf.fields })
       .select()
       .single()
 
@@ -61,14 +89,17 @@ export async function PATCH(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { id, name_th, name_en } = await req.json()
+    const body = await req.json()
+    const { id, name_th, name_en } = body
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
     if (!name_th?.trim()) return NextResponse.json({ error: 'name_th required' }, { status: 400 })
+    const pf = placeFields(body)
+    if ('error' in pf) return NextResponse.json({ error: pf.error }, { status: 400 })
 
     const supabase = createServerClient()
     const { error } = await supabase
       .from('property_names')
-      .update({ name_th: name_th.trim(), name_en: name_en?.trim() || null, updated_at: new Date().toISOString() })
+      .update({ name_th: name_th.trim(), name_en: name_en?.trim() || null, ...pf.fields, updated_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) throw error

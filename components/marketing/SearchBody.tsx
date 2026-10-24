@@ -17,9 +17,10 @@ import { PRICE_RANGES, priceRangeLabel, type Property } from '@/lib/property-dat
 import {
   haversineKm, nearestStation, stationLabel, distanceLabel,
   parseQuery, haystack, matchesTerms,
-  suggestPlaces, placeFromParams, placeKey, placeLabel, placePoint, placeIcon, inGreaterBangkok, type Place,
+  suggestPlaces, placeFromParams, setPlaceList, stationById, placeKey, placeLabel, placePoint, placeIcon, inGreaterBangkok, type Place,
 } from '@/lib/search-match'
-import { STATION_BY_ID, type Station } from '@/lib/stations'
+import type { Station } from '@/lib/stations'
+import { mergePlaces, type Building, type PlaceOverride } from '@/lib/search-places'
 import { districtEn, stripDistrictPrefix } from '@/lib/geo-i18n'
 
 /** A listing as the search page needs it: the card's view plus what it is matched on. */
@@ -121,13 +122,15 @@ function SearchContent({ locale }: { locale: Locale }) {
   const dbListings = useMemo(() => rows.map(r => r.p), [rows])
 
   // A chosen place — a station or a district — from a suggestion, a chip or the URL.
-  const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district'), sp.get('landmark'), sp.get('at'), sp.get('name')))
+  const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district'), sp.get('landmark'), sp.get('at'), sp.get('name'), sp.get('building')))
   const [placeRadiusKm, setPlaceRadiusKm] = useState(() => {
     const r = Number(sp.get('r'))
     return STATION_RADII.includes(r) ? r : 1
   })
   const [suggestOpen, setSuggestOpen] = useState(false)
-  const suggestions = useMemo(() => (place ? [] : suggestPlaces(keyword)), [keyword, place])
+  // Bumped when the admin-edited place list arrives, so suggestions use it.
+  const [placesVersion, setPlacesVersion] = useState(0)
+  const suggestions = useMemo(() => (place ? [] : suggestPlaces(keyword)), [keyword, place, placesVersion])
   // Map lookup for a place we have no list entry for. Run on request only
   // (Enter or the "find on map" row), never per keystroke: the free map
   // service does not allow autocomplete traffic.
@@ -139,6 +142,22 @@ function SearchContent({ locale }: { locale: Locale }) {
   const [radiusKm, setRadiusKm]         = useState<number | null>(null)
   const [geoLoading, setGeoLoading]     = useState(false)
   const [geoError, setGeoError]         = useState<string | null>(null)
+
+  // The place list as the admin left it. Until it answers (or if it fails),
+  // search runs on the built-in stations and landmarks.
+  useEffect(() => {
+    fetch('/api/search-places')
+      .then(r => r.json())
+      .then((d: { overrides?: PlaceOverride[]; buildings?: Building[] }) => {
+        setPlaceList(mergePlaces(d.overrides ?? [], d.buildings ?? []))
+        setPlacesVersion(v => v + 1)
+        // A link to a place only the admin list knows (a property name, a new
+        // station) could not be resolved on first render.
+        setPlace(cur => cur ?? placeFromParams(sp.get('station'), null, sp.get('landmark'), null, null, sp.get('building')))
+      })
+      .catch(() => { /* built-in lists stay in use */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Fetch DB listings and merge with static on mount
   useEffect(() => {
@@ -269,9 +288,10 @@ function SearchContent({ locale }: { locale: Locale }) {
     setSuggestOpen(false)
     if (next) setKeyword('')
     const p = new URLSearchParams(sp.toString())
-    for (const k of ['station', 'district', 'landmark', 'at', 'name', 'q']) p.delete(k)
+    for (const k of ['station', 'district', 'landmark', 'building', 'at', 'name', 'q']) p.delete(k)
     if (next?.kind === 'station') p.set('station', next.station.id)
     if (next?.kind === 'landmark') p.set('landmark', next.landmark.id)
+    if (next?.kind === 'building') p.set('building', next.building.id)
     if (next?.kind === 'district') p.set('district', next.th)
     if (next?.kind === 'point') { p.set('at', `${next.lat.toFixed(5)},${next.lng.toFixed(5)}`); p.set('name', next.name) }
     router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
@@ -303,8 +323,8 @@ function SearchContent({ locale }: { locale: Locale }) {
     for (const r of rows) if (r.nearest && r.nearest.km <= 1) counts.set(r.nearest.station.id, (counts.get(r.nearest.station.id) ?? 0) + 1)
     const ids = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([id]) => id)
     for (const id of POPULAR_STATION_IDS) if (!ids.includes(id)) ids.push(id)
-    return ids.slice(0, 8).filter(id => STATION_BY_ID[id]).map(id => ({ kind: 'station' as const, station: STATION_BY_ID[id] }))
-  }, [rows])
+    return ids.slice(0, 8).flatMap(id => { const st = stationById(id); return st ? [{ kind: 'station' as const, station: st }] : [] })
+  }, [rows, placesVersion])
 
   // Nothing within the chosen distance: show the closest few instead of a dead end.
   const closest = useMemo(() => {
