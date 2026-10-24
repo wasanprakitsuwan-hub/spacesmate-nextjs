@@ -389,10 +389,6 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
   const [confirmCancelListingPkgId, setConfirmCancelListingPkgId] = useState<string | null>(null)
   const [cancellingListingPkgId,    setCancellingListingPkgId]    = useState<string | null>(null)
   const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
-  const [renewTarget,        setRenewTarget]        = useState<OwnerListing | null>(null)
-  const [renewPkg,           setRenewPkg]           = useState<string>('')
-  const [renewing,           setRenewing]           = useState(false)
-  const [renewError,         setRenewError]         = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
@@ -538,33 +534,9 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
     }
   }
 
-  /**
-   * "Renew" is not a separate concept any more — it is buying a slot and putting
-   * this listing back into it. Same purchase, same entitlement, same reusable
-   * term as any other slot.
-   *
-   * publish_property_id tells the webhook to publish this listing automatically
-   * once the slot exists, so the owner does not come back from Stripe to a
-   * listing that is still down.
-   */
-  async function renewListing(listingId: string, packageId: string) {
-    setRenewing(true)
-    setRenewError('')
-    try {
-      const { data: { session } } = await createBrowserClient().auth.getSession()
-      const r = await fetch('/api/stripe/buy-slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ package_id: packageId, quantity: 1, publish_property_id: listingId }),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error ?? t.error)
-      // Redirect to Stripe checkout
-      window.location.href = d.url
-    } catch (err: any) {
-      setRenewError(err.message ?? t.error)
-      setRenewing(false)
-    }
+  /** Every purchase goes through /checkout; this builds its link for one listing. */
+  function checkoutFor(mode: 'listing' | 'extend', id: string) {
+    return `${localeHref('/checkout', locale)}?${mode}=${encodeURIComponent(id)}`
   }
 
   async function cancelListingPackage(listingId: string) {
@@ -853,6 +825,9 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                    <a href={checkoutFor('extend', l.id)} style={{ background: '#d97f11', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
+                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>more_time</span>{t.extend}
+                    </a>
                     <a href={localeHref('/pricing', locale)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
                       <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>{t.upgrade}
                     </a>
@@ -942,64 +917,6 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
           </div>
         )
       })()}
-
-      {/* Renewal modal — package picker for expired listings */}
-      {renewTarget && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 440, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-              <div style={{ background: '#fdf3e3', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="msym" style={{ fontSize: 20, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>
-              </div>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t.buyToRepublish}</h3>
-                <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>{renewTarget.title_th}</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              {[
-                // Image counts come from PACKAGE_IMAGE_LIMITS. These were hardcoded
-                // as 5/10/20 and were simply wrong — the system allowed 20 on every
-                // tier — so this screen under-sold the product at the moment of purchase.
-                { id: 'basic',    label: 'Basic',    price: '฿299',   period: t.perDays(30), desc: t.planDesc(1, PACKAGE_IMAGE_LIMITS.basic) },
-                { id: 'standard', label: 'Standard', price: '฿699',   period: t.perMonths(3), desc: `${t.planDesc(3, PACKAGE_IMAGE_LIMITS.standard)} · 22%` },
-                { id: 'premium',  label: 'Premium',  price: '฿2,499', period: t.perYear, desc: `${t.planDesc(12, PACKAGE_IMAGE_LIMITS.premium)} + video · 30%` },
-              ].map(opt => (
-                <button key={opt.id} onClick={() => setRenewPkg(opt.id)}
-                  style={{ textAlign: 'left', background: renewPkg === opt.id ? '#eaf6f1' : '#f8fafc', border: renewPkg === opt.id ? '2px solid #048c73' : '2px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.label}</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#02402e' }}>{opt.price}<span style={{ fontSize: 11, fontWeight: 400, color: '#64748b', marginLeft: 2 }}>{opt.period}</span></span>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{opt.desc}</div>
-                </button>
-              ))}
-            </div>
-
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#92400e', lineHeight: 1.5 }}>
-              {t.republishNote}
-            </div>
-
-            {renewError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 14 }}>{renewError}</div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setRenewTarget(null); setRenewPkg(''); setRenewError('') }} disabled={renewing}
-                style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t.back}
-              </button>
-              <button onClick={() => renewTarget && renewPkg && renewListing(renewTarget.id, renewPkg)} disabled={!renewPkg || renewing}
-                style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: !renewPkg || renewing ? '#94a3b8' : '#d97f11', color: '#fff', fontSize: 14, fontWeight: 700, cursor: !renewPkg || renewing ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {renewing
-                  ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.loading}</>
-                  : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>credit_card</span>{t.goToPayment}</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Listing package cancel confirm modal (State 2 — non-Stripe packages) */}
       {confirmCancelListingPkgId && (() => {
@@ -1203,7 +1120,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                                 // listing is written and the only thing left is
                                 // to pay.
                                 trackEvent('listing_publish_blocked', { reason: 'no_slot', source: 'draft_row' })
-                                window.location.href = '/pricing'
+                                window.location.href = checkoutFor('listing', l.id)
                               }}
                               disabled={publishing === l.id}
                               style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canPublishMore ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
@@ -1213,9 +1130,14 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                               {publishing === l.id ? '…' : canPublishMore ? t.publish : t.buySlots}
                             </button>
                           ) : l.listing_status === 'expired' ? (
-                            // Expired: show Renew button prominently
+                            // Expired: a free slot republishes it at once;
+                            // otherwise checkout buys one and auto-publishes.
                             <button
-                              onClick={() => { setRenewError(''); setRenewPkg('basic'); setRenewTarget(l) }}
+                              onClick={() => {
+                                if (canPublishMore) { publishListing(l.id); return }
+                                window.location.href = checkoutFor('listing', l.id)
+                              }}
+                              disabled={publishing === l.id}
                               style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                               <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>{t.renew}
                             </button>
@@ -1223,6 +1145,12 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                             <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
                           )}
                           <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
+                          {l.listing_status === 'active' && l.expires_at && (
+                            <a href={checkoutFor('extend', l.id)} title={t.extend}
+                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #f3d3a8', background: '#fff', color: '#d97f11', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                              <span className="msym" style={{ fontSize: 14 }}>more_time</span>
+                            </a>
+                          )}
                           {l.listing_status === 'active' && (
                             <button onClick={() => unpublishListing(l.id)} disabled={publishing === l.id}
                               title={t.unpublish}

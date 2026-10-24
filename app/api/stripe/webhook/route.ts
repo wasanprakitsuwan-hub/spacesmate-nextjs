@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { resolveBuildingId } from '@/lib/resolve-building'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
-import { grantSlots, extendSlotsForSubscription, claimSlot, syncListingFromSlot } from '@/lib/slots'
+import { grantSlots, extendSlotsForSubscription, claimSlot, syncListingFromSlot, extendListingSlot } from '@/lib/slots'
 import Stripe from 'stripe'
 import { sendNewListingAlert, sendListingConfirmation, sendPaymentConfirmation } from '@/lib/email'
 
@@ -191,7 +191,35 @@ async function grantSlotsForSession(
       // slot it just paid for. Ownership was verified in buy-slots, where there
       // was a session to verify it against — re-check the owner here anyway,
       // because webhook metadata should never be trusted on its own.
-      const publishId = session.metadata?.publish_property_id
+      // Extend: move this term onto the slot the listing already holds. A
+      // listing whose slot has lapsed has nothing to extend, so it falls
+      // through to the publish path below and goes into the new slot.
+      const extendId = session.metadata?.extend_property_id
+      let extended = false
+      if (granted > 0 && extendId) {
+        try {
+          const { data: target } = await supabase
+            .from('properties')
+            .select('id, landlord_id')
+            .eq('id', extendId)
+            .maybeSingle()
+          if (target?.landlord_id === userId) {
+            const slot = await extendListingSlot(supabase, extendId, PACKAGE_DAYS[packageId] ?? 30, session.id)
+            if (slot) {
+              await syncListingFromSlot(supabase, slot)
+              extended = true
+              console.log(`[slots] extended ${extendId} to ${slot.expires_at}`)
+            }
+          } else {
+            console.error('[slots] extend_property_id does not belong to buyer — ignored')
+          }
+        } catch (extErr) {
+          // The new slot is still granted; nothing is lost.
+          console.error('[slots] extend (non-fatal):', extErr)
+        }
+      }
+
+      const publishId = session.metadata?.publish_property_id || (extended ? '' : extendId)
       if (granted > 0 && publishId) {
         try {
           const { data: target } = await supabase

@@ -137,6 +137,58 @@ export async function releaseSlot(
   if (error) console.error('[slots] releaseSlot failed —', error.message)
 }
 
+/**
+ * Add a paid term to the slot a listing already holds — the dashboard's Extend.
+ *
+ * The purchase still inserts its own slot row first (grantSlots), because that
+ * row, keyed on the checkout session, is what the webhook's duplicate guard
+ * looks for. This then moves the term onto the listing's slot and retires the
+ * new row, so a retried webhook neither extends twice nor leaves a stray free
+ * slot behind.
+ *
+ * Extends from the later of now and the current expiry, so extending early
+ * adds to the term rather than resetting it. Returns the extended slot, or
+ * null when the listing holds no live slot — the caller then publishes it into
+ * the new slot instead, which is what a lapsed listing needs.
+ */
+export async function extendListingSlot(
+  supabase: SupabaseClient,
+  propertyId: string,
+  days: number,
+  newSlotSessionId: string,
+): Promise<Slot | null> {
+  const { data: held } = await supabase
+    .from('listing_slots')
+    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .eq('property_id', propertyId)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!held || !isLive(held as Slot) || held.expires_at === null) return null
+
+  const from = new Date(held.expires_at) > new Date() ? new Date(held.expires_at) : new Date()
+  from.setDate(from.getDate() + days)
+
+  const { data: extended, error } = await supabase
+    .from('listing_slots')
+    .update({ expires_at: from.toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', held.id)
+    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .maybeSingle()
+  if (error || !extended) {
+    console.error('[slots] extendListingSlot failed —', error?.message)
+    return null
+  }
+
+  // The purchase's own row has done its job as the idempotency record.
+  await supabase
+    .from('listing_slots')
+    .update({ status: 'expired', expires_at: new Date().toISOString(), source: 'extend', updated_at: new Date().toISOString() })
+    .eq('stripe_checkout_session_id', newSlotSessionId)
+    .is('property_id', null)
+
+  return extended as Slot
+}
+
 /** Create slots for a completed purchase. Returns how many were made. */
 export async function grantSlots(
   supabase: SupabaseClient,

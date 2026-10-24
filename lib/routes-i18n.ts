@@ -34,6 +34,7 @@ const EN_STATIC = new Set([
   '/blog',
   '/services',
   '/pricing',
+  '/checkout',
   '/faq',
   '/contact',
   '/search',

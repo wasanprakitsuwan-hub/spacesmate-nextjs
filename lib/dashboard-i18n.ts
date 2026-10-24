@@ -107,6 +107,7 @@ export const DASH_T = {
     neverExpires: 'ไม่หมดอายุ',
     expiringSoon: 'ใกล้หมดอายุ (7 วัน)',
     renew: 'ต่ออายุ',
+    extend: 'ต่ออายุประกาศ',
     goToPayment: 'ไปชำระเงิน',
 
     // ── Upgrade. Money. ──
@@ -259,6 +260,7 @@ export const DASH_T = {
     neverExpires: 'Never expires',
     expiringSoon: 'Expiring soon (7 days)',
     renew: 'Renew',
+    extend: 'Extend',
     goToPayment: 'Go to payment',
 
     upgrade: 'Upgrade',
