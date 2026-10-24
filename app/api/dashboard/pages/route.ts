@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { revalidateTag } from 'next/cache'
+import { SITE_PAGES_TAG } from '@/lib/page-seo'
 
 // GET /api/dashboard/pages — all pages (exclude deleted)
 /**
@@ -45,6 +47,8 @@ export async function PATCH(req: NextRequest) {
       .eq('id', id)
 
     if (error) throw error
+    // Live pages read titles and descriptions from here; show the edit now.
+    revalidateTag(SITE_PAGES_TAG)
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

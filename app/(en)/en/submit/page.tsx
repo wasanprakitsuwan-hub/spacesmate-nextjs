@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import SubmitBody from '@/components/marketing/SubmitBody'
 import { SUBMIT_T } from '@/lib/pages-i18n'
 
 const t = SUBMIT_T.en
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDesc,
   alternates: {
@@ -15,4 +19,9 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return <SubmitBody locale="en" />
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/submit', 'en', baseMetadata)
 }

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
 
 /**
  * The root layout sets `template: '%s | SpacesMate'`, so the title here must not
  * repeat the suffix — it was rendering "รับบริหารทรัพย์สิน | SpacesMate | SpacesMate".
  */
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'รับบริหารทรัพย์สิน',
   description:
     'ให้ SpacesMate บริหารอพาร์ทเม้นท์และคอนโดของคุณครบวงจร — หาผู้เช่า เก็บค่าเช่า ซ่อมบำรุง รายงานผลรายเดือน ค่าบริการแบบ Performance-Based ไม่มีค่าใช้จ่ายล่วงหน้า',
@@ -30,4 +31,9 @@ export const metadata: Metadata = {
 
 export default function ManageLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/manage', 'th', baseMetadata)
 }
