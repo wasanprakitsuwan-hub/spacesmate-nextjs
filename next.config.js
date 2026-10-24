@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    formats: ['image/avif', 'image/webp'],   // serve AVIF → WebP → JPEG fallback
+    // Vercel's free plan includes 5,000 transformations, and every
+    // photo × width × format counts as one. WebP only (not AVIF as well)
+    // halves that, four widths instead of eight covers phones to desktop,
+    // and a 31-day cache stops the same photo being remade.
+    formats: ['image/webp'],
+    deviceSizes: [640, 828, 1200, 1920],
+    imageSizes: [384],
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       {
         protocol: 'https',
