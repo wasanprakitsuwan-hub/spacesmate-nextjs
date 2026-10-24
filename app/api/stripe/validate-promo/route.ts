@@ -1,6 +1,6 @@
 // /api/stripe/validate-promo
 // Validates a Stripe promotion code and returns discount info.
-// Used by /submit/new to show live discounted price before checkout.
+// Used by /list-your-property/new to show live discounted price before checkout.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRate } from '@/lib/rate-limit'

@@ -23,8 +23,8 @@ export default function robots(): MetadataRoute.Robots {
           '/owner-dashboard',   // landlord area
           '/login',
           '/reset-password',
-          '/submit/success',    // post-payment, per-session, no value indexed
-          '/submit/cancel',
+          '/list-your-property/success',    // post-payment, per-session, no value indexed
+          '/list-your-property/cancel',
           '/not-found',
         ],
       },

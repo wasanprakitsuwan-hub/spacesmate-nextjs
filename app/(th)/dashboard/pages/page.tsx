@@ -33,6 +33,8 @@ interface SitePage {
   is_indexable: boolean
   meta_title:  string | null
   meta_desc:   string | null
+  meta_title_en: string | null
+  meta_desc_en:  string | null
   notes:       string | null
   sort_order:  number
 }
@@ -61,6 +63,8 @@ function EditDrawer({
   const [labelEn,   setLabelEn]   = useState(page.label_en)
   const [metaTitle, setMetaTitle] = useState(page.meta_title ?? '')
   const [metaDesc,  setMetaDesc]  = useState(page.meta_desc ?? '')
+  const [metaTitleEn, setMetaTitleEn] = useState(page.meta_title_en ?? '')
+  const [metaDescEn,  setMetaDescEn]  = useState(page.meta_desc_en ?? '')
   const [notes,     setNotes]     = useState(page.notes ?? '')
   const [saving,    setSaving]    = useState(false)
   const [err,       setErr]       = useState('')
@@ -77,12 +81,14 @@ function EditDrawer({
           label_en:   labelEn.trim(),
           meta_title: metaTitle.trim() || null,
           meta_desc:  metaDesc.trim() || null,
+          meta_title_en: metaTitleEn.trim() || null,
+          meta_desc_en:  metaDescEn.trim() || null,
           notes:      notes.trim() || null,
         }),
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || 'Save failed')
-      onSaved({ label_th: labelTh.trim(), label_en: labelEn.trim(), meta_title: metaTitle.trim() || null, meta_desc: metaDesc.trim() || null, notes: notes.trim() || null })
+      onSaved({ label_th: labelTh.trim(), label_en: labelEn.trim(), meta_title: metaTitle.trim() || null, meta_desc: metaDesc.trim() || null, meta_title_en: metaTitleEn.trim() || null, meta_desc_en: metaDescEn.trim() || null, notes: notes.trim() || null })
       onClose()
     } catch (e: any) {
       setErr(e.message)
@@ -146,17 +152,17 @@ function EditDrawer({
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={lbl}>Meta Title <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 60 chars)</span></label>
+                <label style={lbl}>Meta Title (ไทย) <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 60 chars · ว่างไว้ = ใช้ค่าเดิมของหน้า)</span></label>
                 <input
                   style={{ ...inp, borderColor: metaTitle.length > 60 ? '#ef4444' : '#e2e8f0' }}
                   value={metaTitle}
                   onChange={e => setMetaTitle(e.target.value)}
-                  placeholder="SpacesMate | Page Title"
+                  placeholder="แบรนด์ SpacesMate ต่อท้ายให้อัตโนมัติ"
                 />
                 <div style={{ fontSize: 11, color: metaTitle.length > 60 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>{metaTitle.length}/60</div>
               </div>
               <div>
-                <label style={lbl}>Meta Description <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 155 chars)</span></label>
+                <label style={lbl}>Meta Description (ไทย) <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 155 chars)</span></label>
                 <textarea
                   style={{ ...inp, resize: 'vertical', minHeight: 72, borderColor: metaDesc.length > 155 ? '#ef4444' : '#e2e8f0' } as React.CSSProperties}
                   value={metaDesc}
@@ -164,6 +170,25 @@ function EditDrawer({
                   placeholder="Short description for Google search results..."
                 />
                 <div style={{ fontSize: 11, color: metaDesc.length > 155 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>{metaDesc.length}/155</div>
+              </div>
+              <div>
+                <label style={lbl}>Meta Title (English) <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 60 chars · for the /en page)</span></label>
+                <input
+                  style={{ ...inp, borderColor: metaTitleEn.length > 60 ? '#ef4444' : '#e2e8f0' }}
+                  value={metaTitleEn}
+                  onChange={e => setMetaTitleEn(e.target.value)}
+                  placeholder="The SpacesMate brand is added automatically"
+                />
+                <div style={{ fontSize: 11, color: metaTitleEn.length > 60 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>{metaTitleEn.length}/60</div>
+              </div>
+              <div>
+                <label style={lbl}>Meta Description (English) <span style={{ color: '#94a3b8', fontWeight: 400 }}>(max 155 chars)</span></label>
+                <textarea
+                  style={{ ...inp, resize: 'vertical', minHeight: 72, borderColor: metaDescEn.length > 155 ? '#ef4444' : '#e2e8f0' } as React.CSSProperties}
+                  value={metaDescEn}
+                  onChange={e => setMetaDescEn(e.target.value)}
+                />
+                <div style={{ fontSize: 11, color: metaDescEn.length > 155 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>{metaDescEn.length}/155</div>
               </div>
             </div>
           </div>

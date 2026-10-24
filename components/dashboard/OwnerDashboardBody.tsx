@@ -12,6 +12,7 @@ import {
 } from '@/components/listing/SharedListingForm'
 import { DASH_T, type DashStrings, type Locale } from '@/lib/dashboard-i18n'
 import { localeHref } from '@/lib/routes-i18n'
+import ListingStatsModal from '@/components/dashboard/ListingStatsModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SubscriptionItem {
@@ -391,6 +392,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
   const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
+  const [statsTarget, setStatsTarget] = useState<OwnerListing | null>(null)
   const [deleting,           setDeleting]           = useState<string | null>(null)
   const [freeSlots,          setFreeSlots]          = useState(0)
   const [publishing,         setPublishing]         = useState<string | null>(null)
@@ -621,6 +623,9 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
       {showCreate && userId && (
         <CreateDrawer locale={locale} userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load()} />
       )}
+      {statsTarget && (
+        <ListingStatsModal listingId={statsTarget.id} title={statsTarget.title_th} t={t} onClose={() => setStatsTarget(null)} />
+      )}
       {editTarget && userId && (
         <EditDrawer locale={locale} listing={editTarget} userId={userId} onClose={() => setEditTarget(null)} onSaved={() => load()} />
       )}
@@ -655,7 +660,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
               {/* Slots, not packages: the wall is capacity, and the listing is
                   never lost — it waits as a draft until one is free. */}
               <>{t.slotsFull}{' '}
-              <a href={localeHref('/pricing', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buyMoreSlots}</a>{' '}{t.toPublish}</>
+              <a href={localeHref('/checkout', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buyMoreSlots}</a>{' '}{t.toPublish}</>
             </p>
           )}
         </div>
@@ -668,7 +673,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
         <div style={{ background: '#fdf3e3', border: '1px solid #f3d9ae', color: '#8a5a10', borderRadius: 12, padding: '12px 16px', marginBottom: 18, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="msym" style={{ fontSize: 18, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>info</span>
           <span style={{ flex: 1, minWidth: 0 }}>{publishError}</span>
-          <a href={localeHref('/pricing', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>{t.viewPackages}</a>
+          <a href={localeHref('/checkout', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>{t.viewPackages}</a>
           <button onClick={() => setPublishError('')} style={{ border: 'none', background: 'transparent', color: '#8a5a10', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
         </div>
       )}
@@ -828,7 +833,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                     <a href={checkoutFor('extend', l.id)} style={{ background: '#d97f11', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
                       <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>more_time</span>{t.extend}
                     </a>
-                    <a href={localeHref('/pricing', locale)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
+                    <a href={localeHref('/checkout', locale)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
                       <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>{t.upgrade}
                     </a>
                     <button
@@ -847,7 +852,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
             <span className="msym" style={{ fontSize: 40, color: '#c7d2d0', display: 'block', marginBottom: 10, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>workspace_premium</span>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>{t.noActivePackage}</p>
             <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 18px' }}>{t.buyToStart}</p>
-            <a href={localeHref('/pricing', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 20, padding: '10px 22px', fontSize: 13.5, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <a href={localeHref('/checkout', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 20, padding: '10px 22px', fontSize: 13.5, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>{t.viewPackages}
             </a>
           </div>
@@ -1050,7 +1055,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
             {!canPublishMore && (
               <p style={{ fontSize: 13, color: '#64748b', margin: '14px 0 0' }}>
                 {t.noFreeSlotDraft}{' '}
-                <a href={localeHref('/pricing', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buySlots}</a>{' '}{t.whenReady}
+                <a href={localeHref('/checkout', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buySlots}</a>{' '}{t.whenReady}
               </p>
             )}
           </div>
@@ -1143,6 +1148,12 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                             </button>
                           ) : (
                             <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
+                          )}
+                          {l.listing_status !== 'draft' && (
+                            <button onClick={() => setStatsTarget(l)} title={t.stats}
+                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                              <span className="msym" style={{ fontSize: 14 }}>bar_chart</span>
+                            </button>
                           )}
                           <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
                           {l.listing_status === 'active' && l.expires_at && (
