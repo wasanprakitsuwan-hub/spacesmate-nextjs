@@ -50,6 +50,8 @@ export const PROPERTY_T = {
     chargesHeading: 'ค่าใช้จ่ายและเงื่อนไข',
     amenitiesHeading: 'สิ่งอำนวยความสะดวก',
     locationHeading: 'ทำเลที่ตั้ง',
+    nearbyStations: 'รถไฟฟ้าใกล้เคียง',
+    searchNearStation: (name: string) => `ดูที่พักอื่นใกล้ ${name}`,
     mapTitle: 'แผนที่ที่ตั้ง',
     openInMaps: 'เปิดใน Google Maps',
 
@@ -114,6 +116,8 @@ export const PROPERTY_T = {
     chargesHeading: 'Costs and conditions',
     amenitiesHeading: 'Amenities',
     locationHeading: 'Location',
+    nearbyStations: 'Nearby stations',
+    searchNearStation: (name: string) => `More rentals near ${name}`,
     mapTitle: 'Location map',
     openInMaps: 'Open in Google Maps',
 

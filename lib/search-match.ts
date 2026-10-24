@@ -46,6 +46,16 @@ export function nearestStation(lat: number, lng: number, maxKm = 3): { station: 
   return best && best.km <= maxKm ? best : null
 }
 
+/** Stations within `maxKm`, closest first — what a listing page lists as "nearby". */
+export function nearbyStations(lat: number, lng: number, maxKm = 2, limit = 3): { station: Station; km: number }[] {
+  if (!isFinite(lat) || !isFinite(lng)) return []
+  return STATIONS
+    .map(s => ({ station: s, km: haversineKm(lat, lng, s.lat, s.lng) }))
+    .filter(x => x.km <= maxKm)
+    .sort((a, b) => a.km - b.km)
+    .slice(0, limit)
+}
+
 export function stationLabel(s: Station, locale: Locale): string {
   return `${s.systems.join('/')} ${locale === 'en' ? s.en : s.th}`
 }

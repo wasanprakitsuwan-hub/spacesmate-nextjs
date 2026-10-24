@@ -112,6 +112,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     if (['condo', 'house'].includes(form.property_type) && !form.condo_rental.price_12mo && !form.condo_rental.price_1mo)
       return t.needPrice
     if (!form.province) return t.needProvince
+    if (!form.lat || !form.lng) return t.needPin
     if (form.images.length === 0) return t.needImage
     return null
   }

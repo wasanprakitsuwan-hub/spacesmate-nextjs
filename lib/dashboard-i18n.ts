@@ -135,6 +135,7 @@ export const DASH_T = {
     needTitle: 'กรุณากรอกชื่อประกาศ',
     needPrice: 'กรุณากรอกราคาเช่า',
     needStartPrice: 'กรุณากรอกราคาเริ่มต้น',
+    needPin: 'กรุณาปักหมุดตำแหน่งบนแผนที่ เพื่อให้ผู้เช่าเห็นรถไฟฟ้าใกล้เคียง',
     needRoomType: 'กรุณาเพิ่มอย่างน้อย 1 ประเภท',
     failed: 'ไม่สำเร็จ',
 
@@ -288,6 +289,7 @@ export const DASH_T = {
     needTitle: 'Please enter a listing title',
     needPrice: 'Please enter a rent',
     needStartPrice: 'Please enter a starting price',
+    needPin: 'Please drop a pin on the map so renters can see the nearest stations',
     needRoomType: 'Please add at least one type',
     failed: 'failed',
 
