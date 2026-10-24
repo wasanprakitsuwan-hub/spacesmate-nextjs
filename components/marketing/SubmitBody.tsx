@@ -53,6 +53,8 @@ function packagesFor(locale: Locale) {
     sub: `${t.oneListing} · ${p.durationLabel}`,
     badge: p.id === 'standard' ? t.recommendedBadge : null,
     savings: p.savingsPct > 0 ? `${p.savingsPct}%` : null,
+    // Only worth saying for the multi-month packages; Basic is already per month.
+    perMonth: p.savingsPct > 0 ? p.perMonth.toLocaleString('en-US') : null,
     highlight: p.id === 'standard',
     features: p.features,
   }))
@@ -219,6 +221,11 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
                     </span>
                   )}
                 </div>
+                {pkg.perMonth && (
+                  <p style={{ fontSize: 13.5, color: '#d97f11', margin: '0 0 2px', fontWeight: 600 }}>
+                    {PRICING_T[locale].avgPrefix} {pkg.perMonth} {PRICING_T[locale].avgSuffix}
+                  </p>
+                )}
                 <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 22px', fontWeight: 300 }}>{pkg.sub}</p>
 
                 {/* Features */}
@@ -233,6 +240,21 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
 
               </div>
             ))}
+          </div>
+
+          {/* What every package gets. The cards above carry only what differs
+              (duration, price, photos, video), so this list is not repeated
+              three times. */}
+          <div style={{ maxWidth: 860, margin: '24px auto 0', background: '#fff', border: '1px solid #e5eae8', borderRadius: 18, padding: '22px 24px' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 14px', color: '#02402e' }}>{PRICING_T[locale].includesTitle}</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px 24px' }} className="sm-inc2">
+              {PRICING_T[locale].includes.map((f, j) => (
+                <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, color: '#374151', lineHeight: 1.45, fontWeight: 300 }}>
+                  <span className="msym" style={{ fontSize: 14, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", flexShrink: 0, marginTop: 2 }}>check</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* The cards show prices only. Slots are bought from the owner
@@ -297,6 +319,7 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
           .sm-hero-grid { grid-template-columns: 1fr !important; }
           .sm-why4 { grid-template-columns: repeat(2,1fr) !important; }
           .sm-pkg3 { grid-template-columns: 1fr !important; }
+          .sm-inc2 { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 600px) {
           .sm-hero-grid { gap: 32px !important; }

@@ -17,7 +17,7 @@
  * (/api/stripe/buy-slots). Promo codes are entered on Stripe's page; both
  * routes set allow_promotion_codes.
  */
-import { buildPlans } from '@/lib/pricing-i18n'
+import { buildPlans, PRICING_T } from '@/lib/pricing-i18n'
 import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -212,6 +212,15 @@ function Checkout({ locale }: { locale: Locale }) {
             </div>
           )}
           <p style={{ fontSize: 12.5, color: '#64748b', margin: '12px 0 0', lineHeight: 1.5 }}>{t.slotExplainer}</p>
+          {/* Shared by all three packages, so it sits outside the choices. */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>{PRICING_T[locale].includesTitle}</p>
+            {PRICING_T[locale].includes.map(f => (
+              <span key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12.5, color: '#475569', lineHeight: 1.5 }}>
+                <span className="msym" style={{ fontSize: 14, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", marginTop: 1 }}>check</span>{f}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div style={card}>

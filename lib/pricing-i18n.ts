@@ -10,7 +10,7 @@
  * Package names (Basic / Standard / Premium) and prices are not translated.
  * Neither is the promo code.
  */
-import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, PACKAGE_PRICE_THB, savingsVsBasic } from '@/lib/packages'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, PACKAGE_PRICE_THB, pricePerMonth, savingsVsBasic } from '@/lib/packages'
 
 /** Display price, derived from the one constant rather than written out again. */
 const price = (id: string) => (PACKAGE_PRICE_THB[id] ?? 0).toLocaleString('en-US')
@@ -31,13 +31,21 @@ export const PRICING_T = {
     promoUseCode: 'ใช้โค้ด',
     promoDetail: 'ขั้นตอนสุดท้าย — ลด ฿299 สำหรับการซื้อครั้งแรก (แพ็กเกจ Basic แรกจึงฟรี)',
 
-    includesTitle: 'ทุกแพ็กเกจได้ครบเท่ากัน — ไม่มีการกั๊กฟีเจอร์',
-    inc1Title: 'แสดงช่องทางติดต่อครบทุกช่อง',
-    inc1Body: 'เบอร์โทร LINE WhatsApp อีเมล — ไม่จำกัดจำนวน ผู้เช่าติดต่อคุณได้โดยตรง',
-    inc2Title: 'ไม่จำกัดจำนวนผู้เข้าชม',
-    inc2Body: 'ไม่มีเพดานรายเดือน ประกาศไม่ถูกปิดกลางคันเพราะมีคนสนใจมากเกินไป',
-    inc3Title: 'Fair Rotation — ไม่มีการซื้อลำดับ',
-    inc3Body: 'ทุกประกาศสุ่มขึ้นหน้าแรกเท่าเทียมกัน จ่ายเพิ่มก็ซื้อตำแหน่งไม่ได้',
+    includesTitle: 'ทุกแพ็กเกจได้',
+    // What every package gets. Only what is true today (24 Oct 2026); the
+    // cards above carry the differences: duration, price, photos, video.
+    includes: [
+      'ไม่จำกัดจำนวนผู้เข้าชม',
+      'แสดงเบอร์โทรและ LINE ให้ผู้เช่าติดต่อคุณได้โดยตรง',
+      'ดูสถิติผู้เข้าชมและการกดติดต่อในแดชบอร์ด',
+      'แสดงสถานีรถไฟฟ้าและสถานที่สำคัญใกล้เคียงให้อัตโนมัติ',
+      'มีหน้าประกาศภาษาอังกฤษสำหรับผู้เช่าชาวต่างชาติ',
+      'ข้อมูลประกาศพร้อมให้ Google และ AI ค้นเจอ (SEO/AEO)',
+      'Fair Rotation — ไม่มีการจ่ายเงินเพื่อขึ้นอันดับ',
+      'สลับประกาศในแพ็กเกจได้ตลอดอายุ เมื่อห้องปล่อยเช่าได้แล้ว',
+      'ไม่มีค่าคอมมิชชัน',
+    ],
+    featNoVideo: 'ไม่รวมวิดีโอ (มีใน Premium)',
 
     avgPrefix: 'เฉลี่ย',
     avgSuffix: 'บาท/เดือน',
@@ -62,11 +70,7 @@ export const PRICING_T = {
     premiumDurationSub: '365 วันนับจากวันที่เผยแพร่',
     premiumBadge: 'คุ้มที่สุดต่อเดือน',
 
-    featSlot: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ',
     featImages: (n: number) => `รูปภาพสูงสุด ${n} รูป`,
-    featDays: (n: number) => `แสดงผล ${n} วัน`,
-    featSwap: 'สลับประกาศในแพ็กเกจได้ตลอดอายุ',
-    featCancel: 'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
     featVideo: 'เพิ่มวิดีโอได้ — อัปโหลด หรือลิงก์ YouTube/Vimeo',
 
     helpTitle: 'ไม่สะดวกกรอกเอง? ให้ทีมงานช่วยลงประกาศให้',
@@ -89,13 +93,19 @@ export const PRICING_T = {
     promoUseCode: 'Use code',
     promoDetail: 'at checkout — ฿299 off your first purchase (which makes the first Basic package free)',
 
-    includesTitle: 'Every package includes the same things — nothing is held back for a higher tier',
-    inc1Title: 'Every contact method shown',
-    inc1Body: 'Phone, LINE, WhatsApp, email — no limit. Renters contact you directly.',
-    inc2Title: 'Unlimited views',
-    inc2Body: 'No monthly cap. Your listing is never cut off for being too popular.',
-    inc3Title: 'Fair Rotation — position is not for sale',
-    inc3Body: 'Every listing is shuffled onto the front page on equal terms. Paying more cannot buy you a place.',
+    includesTitle: 'Every package includes',
+    includes: [
+      'Unlimited views',
+      'Your phone number and LINE shown, so renters contact you directly',
+      'Views and contact clicks in your dashboard',
+      'Nearby train stations and landmarks added automatically',
+      'An English listing page for international renters',
+      'Listing data ready for Google and AI search (SEO/AEO)',
+      'Fair Rotation — no paying to rank higher',
+      'Swap another listing into the package any time during its term, once a room is let',
+      'No commission',
+    ],
+    featNoVideo: 'No video (Premium only)',
 
     avgPrefix: 'Averages',
     avgSuffix: 'baht/month',
@@ -120,11 +130,7 @@ export const PRICING_T = {
     premiumDurationSub: '365 days from the day it is published',
     premiumBadge: 'Best value per month',
 
-    featSlot: 'One package = one live listing',
     featImages: (n: number) => `Up to ${n} photos`,
-    featDays: (n: number) => `Live for ${n} days`,
-    featSwap: 'Swap which listing occupies the package, any time during its term',
-    featCancel: 'Cancel any time — runs to the end of the period you paid for',
     featVideo: 'Video — upload a file, or link YouTube/Vimeo',
 
     helpTitle: 'Would rather not fill it in yourself? Our team can list it for you',
@@ -242,14 +248,13 @@ export function buildPlans(locale: Locale) {
       highlight: false,
       badge: null as string | null,
       savingsPct: savingsVsBasic('basic'),
+      perMonth: pricePerMonth('basic'),
       maxImages: PACKAGE_IMAGE_LIMITS.basic,
       allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
       features: [
-        t.featSlot,
+        t.basicDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.basic),
-        t.featDays(30),
-        t.featSwap,
-        t.featCancel,
+        t.featNoVideo,
       ],
     },
     {
@@ -263,14 +268,13 @@ export function buildPlans(locale: Locale) {
       highlight: false,
       badge: t.standardBadge as string | null,
       savingsPct: savingsVsBasic('standard'),
+      perMonth: pricePerMonth('standard'),
       maxImages: PACKAGE_IMAGE_LIMITS.standard,
       allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
       features: [
-        t.featSlot,
+        t.standardDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.standard),
-        t.featDays(90),
-        t.featSwap,
-        t.featCancel,
+        t.featNoVideo,
       ],
     },
     {
@@ -284,18 +288,16 @@ export function buildPlans(locale: Locale) {
       highlight: true,
       badge: t.premiumBadge as string | null,
       savingsPct: savingsVsBasic('premium'),
+      perMonth: pricePerMonth('premium'),
       maxImages: PACKAGE_IMAGE_LIMITS.premium,
       // Premium-only, and genuinely enforced — VideoUploadZone gates on
       // packageType === 'premium'. This flag read false until 3 Sep 2026, which
       // hid the only feature difference between Premium and the cheaper tiers.
       allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
       features: [
-        t.featSlot,
+        t.premiumDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.premium),
         t.featVideo,
-        t.featDays(365),
-        t.featSwap,
-        t.featCancel,
       ],
     },
   ]
