@@ -26,7 +26,9 @@ import DescriptionBody from '@/components/property/DescriptionBody'
 import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
 import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
-import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
+import { nearbyStations, nearbyLandmarks, stationLabel, distanceLabel } from '@/lib/search-match'
+import { LANDMARK_ICON, type LandmarkKind } from '@/lib/landmarks'
+import { localeHref } from '@/lib/routes-i18n'
 import { mergePlaces } from '@/lib/search-places'
 import ListingStatBeacon from '@/components/property/ListingStatBeacon'
 import { loadPlaceOverrides } from '@/lib/search-places-server'
@@ -137,10 +139,30 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     } catch { /* a missing building link must not break the listing page */ }
   }
 
-  // Station list as the admin left it (renames, new stations, hidden ones).
-  const stations = p.lat && p.lng
-    ? nearbyStations(parseFloat(p.lat), parseFloat(p.lng), 2, 3, mergePlaces((await loadPlaceOverrides()).overrides).stations)
-    : []
+  // Place lists as the admin left them (renames, new places, hidden ones).
+  const hasPin = !!(p.lat && p.lng)
+  const places = hasPin ? mergePlaces((await loadPlaceOverrides()).overrides) : null
+  const pinLat = parseFloat(p.lat), pinLng = parseFloat(p.lng)
+  const stations = places ? nearbyStations(pinLat, pinLng, 2, 3, places.stations) : []
+
+  // "What's nearby": up to three of each kind within 3 km, transport first
+  // (stations, then airports and the like), the order renters ask about.
+  type NearbyItem = { key: string; name: string; km: number; icon: string; href: string }
+  const nearbyGroups: { kind: LandmarkKind; items: NearbyItem[] }[] = []
+  if (places) {
+    const landmarks = nearbyLandmarks(pinLat, pinLng, 3, places.landmarks)
+    const searchHref = localeHref('/search', locale)
+    for (const kind of ['transport', 'university', 'hospital', 'mall', 'place'] as LandmarkKind[]) {
+      const items: NearbyItem[] = kind === 'transport'
+        ? stations.map(({ station, km }) => ({ key: `s:${station.id}`, name: stationLabel(station, locale), km, icon: 'train', href: `${searchHref}?station=${station.id}` }))
+        : []
+      for (const { landmark, km } of landmarks.filter(x => x.landmark.kind === kind)) {
+        items.push({ key: `l:${landmark.id}`, name: locale === 'en' ? landmark.en : landmark.th, km, icon: LANDMARK_ICON[kind], href: `${searchHref}?landmark=${encodeURIComponent(landmark.id)}` })
+      }
+      items.sort((a, b) => a.km - b.km)
+      if (items.length) nearbyGroups.push({ kind, items: items.slice(0, 3) })
+    }
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -420,6 +442,34 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                 </a>
               </div>
             )}
+
+            {/* What's nearby — from the same place list the search box uses, so
+                every name here is one a renter can search by. */}
+            {nearbyGroups.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.nearbyHeading}</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px 28px' }}>
+                  {nearbyGroups.map(g => (
+                    <div key={g.kind}>
+                      <p style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.nearbyGroups[g.kind]}</p>
+                      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                        {g.items.map(item => (
+                          <li key={item.key} style={{ borderTop: '1px solid #f1f5f4' }}>
+                            <Link href={item.href} title={t.searchNearPlace(item.name)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', color: '#231f20', textDecoration: 'none', fontSize: 14 }}>
+                              <span className="msym" style={{ fontSize: 18, color: '#048c73', flexShrink: 0 }}>{item.icon}</span>
+                              <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
+                              <span style={{ color: '#64748b', fontSize: 13, whiteSpace: 'nowrap' }}>{distanceLabel(item.km, locale)}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '12px 0 0' }}>{t.nearbyNote}</p>
+              </div>
+            )}
           </div>
 
           {/* Sticky sidebar */}
@@ -515,7 +565,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                   style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block' }}>
                   {t.ownerServicesCta}
                 </Link>
-                <Link href="/submit"
+                <Link href="/list-your-property"
                   style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block', border: '1px solid rgba(255,255,255,0.2)' }}>
                   {t.ownerListCta}
                 </Link>

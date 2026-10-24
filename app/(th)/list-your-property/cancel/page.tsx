@@ -27,7 +27,7 @@ export default function SubmitCancelPage() {
 
         <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
           <Link
-            href="/submit/new"
+            href="/list-your-property/new"
             style={{ display: 'block', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14.5, borderRadius: 12, padding: '13px 24px', textDecoration: 'none' }}
           >
             กลับไปลงประกาศ

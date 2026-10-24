@@ -1,4 +1,8 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import ManageBody from '@/components/marketing/ManageBody'
 
 /**
@@ -10,7 +14,7 @@ import ManageBody from '@/components/marketing/ManageBody'
  * "Nothing upfront" is accurate — the fee is a share of rent collected, so an
  * empty building earns no fee.
  */
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'Property management in Bangkok',
   description:
     'Let SpacesMate manage your Bangkok apartment building or condominium end to end — finding tenants, rent collection, maintenance and monthly reporting. Performance-based fee, nothing upfront.',
@@ -36,4 +40,9 @@ export const metadata: Metadata = {
 
 export default function EnManagePage() {
   return <ManageBody locale="en" />
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/manage', 'en', baseMetadata)
 }

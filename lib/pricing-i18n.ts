@@ -10,7 +10,7 @@
  * Package names (Basic / Standard / Premium) and prices are not translated.
  * Neither is the promo code.
  */
-import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, PACKAGE_PRICE_THB, savingsVsBasic } from '@/lib/packages'
+import { PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, PACKAGE_PRICE_THB, pricePerMonth, savingsVsBasic } from '@/lib/packages'
 
 /** Display price, derived from the one constant rather than written out again. */
 const price = (id: string) => (PACKAGE_PRICE_THB[id] ?? 0).toLocaleString('en-US')
@@ -20,24 +20,32 @@ export type Locale = 'th' | 'en'
 export const PRICING_T = {
   th: {
     metaTitle: 'ราคาและแพ็กเกจ',
-    metaDesc: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/สล็อต/เดือน — 1 สล็อต = ประกาศออนไลน์ 1 รายการ ซื้อหลายสล็อตพร้อมกันได้ ยกเลิกได้ทุกเมื่อ ไม่มีค่าคอมมิชชัน',
+    metaDesc: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/ประกาศ/เดือน — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ซื้อหลายแพ็กเกจพร้อมกันได้ ยกเลิกได้ทุกเมื่อ ไม่มีค่าคอมมิชชัน',
     ogTitle: 'ราคาลงประกาศ | SpacesMate — เริ่มต้น ฿299/เดือน',
-    ogDesc: 'เลือก Basic, Standard หรือ Premium — 1 สล็อต = ประกาศออนไลน์ 1 รายการ เผยแพร่ทันที ไม่มีค่าคอมมิชชันซ่อน',
+    ogDesc: 'เลือก Basic, Standard หรือ Premium — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ เผยแพร่ทันที ไม่มีค่าคอมมิชชันซ่อน',
 
     heading: 'ราคาและแพ็กเกจ',
-    subhead: '1 สล็อต = ประกาศออนไลน์ 1 รายการ · สลับประกาศได้ตลอดอายุ · ยกเลิกได้ทุกเมื่อ',
+    subhead: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · สลับประกาศได้ตลอดอายุ · ยกเลิกได้ทุกเมื่อ',
 
     promoTitle: 'ลงประกาศฟรีเดือนแรก!',
     promoUseCode: 'ใช้โค้ด',
-    promoDetail: 'ขั้นตอนสุดท้าย — ลด ฿299 สำหรับการซื้อครั้งแรก (สล็อตแรกฟรีสำหรับ Basic)',
+    promoDetail: 'ขั้นตอนสุดท้าย — ลด ฿299 สำหรับการซื้อครั้งแรก (แพ็กเกจ Basic แรกจึงฟรี)',
 
-    includesTitle: 'ทุกแพ็กเกจได้ครบเท่ากัน — ไม่มีการกั๊กฟีเจอร์',
-    inc1Title: 'แสดงช่องทางติดต่อครบทุกช่อง',
-    inc1Body: 'เบอร์โทร LINE WhatsApp อีเมล — ไม่จำกัดจำนวน ผู้เช่าติดต่อคุณได้โดยตรง',
-    inc2Title: 'ไม่จำกัดจำนวนผู้เข้าชม',
-    inc2Body: 'ไม่มีเพดานรายเดือน ประกาศไม่ถูกปิดกลางคันเพราะมีคนสนใจมากเกินไป',
-    inc3Title: 'Fair Rotation — ไม่มีการซื้อลำดับ',
-    inc3Body: 'ทุกประกาศสุ่มขึ้นหน้าแรกเท่าเทียมกัน จ่ายเพิ่มก็ซื้อตำแหน่งไม่ได้',
+    includesTitle: 'ทุกแพ็กเกจได้',
+    // What every package gets. Only what is true today (24 Oct 2026); the
+    // cards above carry the differences: duration, price, photos, video.
+    includes: [
+      'ไม่จำกัดจำนวนผู้เข้าชม',
+      'แสดงเบอร์โทรและ LINE ให้ผู้เช่าติดต่อคุณได้โดยตรง',
+      'ดูสถิติผู้เข้าชมและการกดติดต่อในแดชบอร์ด',
+      'แสดงสถานีรถไฟฟ้าและสถานที่สำคัญใกล้เคียงให้อัตโนมัติ',
+      'มีหน้าประกาศภาษาอังกฤษสำหรับผู้เช่าชาวต่างชาติ',
+      'ข้อมูลประกาศพร้อมให้ Google และ AI ค้นเจอ (SEO/AEO)',
+      'Fair Rotation — ไม่มีการจ่ายเงินเพื่อขึ้นอันดับ',
+      'สลับประกาศในแพ็กเกจได้ตลอดอายุ เมื่อห้องปล่อยเช่าได้แล้ว',
+      'ไม่มีค่าคอมมิชชัน',
+    ],
+    featNoVideo: 'ไม่รวมวิดีโอ (มีใน Premium)',
 
     avgPrefix: 'เฉลี่ย',
     avgSuffix: 'บาท/เดือน',
@@ -45,28 +53,24 @@ export const PRICING_T = {
     saveSuffix: 'เทียบกับ Basic',
     video: 'วิดีโอ',
 
-    basicPeriod: '/สล็อต/เดือน',
+    basicPeriod: '/ประกาศ/เดือน',
     basicDesc: 'สำหรับห้องที่ปล่อยเช่าง่าย หรือทดลองใช้งานก่อน',
     basicDuration: 'แสดงผล 1 เดือน',
     basicDurationSub: '30 วันนับจากวันที่เผยแพร่',
 
-    standardPeriod: '/สล็อต/3 เดือน',
+    standardPeriod: '/ประกาศ/3 เดือน',
     standardDesc: 'ระยะเวลาที่ห้องเช่าในกรุงเทพฯ ส่วนใหญ่หาผู้เช่าได้',
     standardDuration: 'แสดงผล 3 เดือน',
     standardDurationSub: '90 วันนับจากวันที่เผยแพร่',
     standardBadge: 'ยอดนิยม',
 
-    premiumPeriod: '/สล็อต/12 เดือน',
+    premiumPeriod: '/ประกาศ/12 เดือน',
     premiumDesc: 'สำหรับเจ้าของที่ปล่อยเช่าต่อเนื่อง หรือห้องราคาสูง',
     premiumDuration: 'แสดงผล 12 เดือน',
     premiumDurationSub: '365 วันนับจากวันที่เผยแพร่',
     premiumBadge: 'คุ้มที่สุดต่อเดือน',
 
-    featSlot: '1 สล็อต = ประกาศออนไลน์ 1 รายการ',
     featImages: (n: number) => `รูปภาพสูงสุด ${n} รูป`,
-    featDays: (n: number) => `แสดงผล ${n} วัน`,
-    featSwap: 'สลับประกาศในสล็อตได้ตลอดอายุ',
-    featCancel: 'ยกเลิกได้ทุกเมื่อ — ใช้ได้จนครบรอบ',
     featVideo: 'เพิ่มวิดีโอได้ — อัปโหลด หรือลิงก์ YouTube/Vimeo',
 
     helpTitle: 'ไม่สะดวกกรอกเอง? ให้ทีมงานช่วยลงประกาศให้',
@@ -78,24 +82,30 @@ export const PRICING_T = {
 
   en: {
     metaTitle: 'Pricing and packages',
-    metaDesc: 'List a rental property from ฿299 per slot per month — one slot = one live listing. Buy several slots at once, cancel any time, no commission.',
+    metaDesc: 'List a rental property from ฿299 per listing per month — one package = one live listing. Buy several packages at once, cancel any time, no commission.',
     ogTitle: 'Listing prices | SpacesMate — from ฿299/month',
-    ogDesc: 'Basic, Standard or Premium — one slot = one live listing, published immediately, with no hidden commission.',
+    ogDesc: 'Basic, Standard or Premium — one package = one live listing, published immediately, with no hidden commission.',
 
     heading: 'Pricing and packages',
-    subhead: 'One slot = one live listing · swap listings any time during the term · cancel whenever you like',
+    subhead: 'One package = one live listing · swap listings any time during the term · cancel whenever you like',
 
     promoTitle: 'First month free',
     promoUseCode: 'Use code',
-    promoDetail: 'at checkout — ฿299 off your first purchase (which makes the first Basic slot free)',
+    promoDetail: 'at checkout — ฿299 off your first purchase (which makes the first Basic package free)',
 
-    includesTitle: 'Every package includes the same things — nothing is held back for a higher tier',
-    inc1Title: 'Every contact method shown',
-    inc1Body: 'Phone, LINE, WhatsApp, email — no limit. Renters contact you directly.',
-    inc2Title: 'Unlimited views',
-    inc2Body: 'No monthly cap. Your listing is never cut off for being too popular.',
-    inc3Title: 'Fair Rotation — position is not for sale',
-    inc3Body: 'Every listing is shuffled onto the front page on equal terms. Paying more cannot buy you a place.',
+    includesTitle: 'Every package includes',
+    includes: [
+      'Unlimited views',
+      'Your phone number and LINE shown, so renters contact you directly',
+      'Views and contact clicks in your dashboard',
+      'Nearby train stations and landmarks added automatically',
+      'An English listing page for international renters',
+      'Listing data ready for Google and AI search (SEO/AEO)',
+      'Fair Rotation — no paying to rank higher',
+      'Swap another listing into the package any time during its term, once a room is let',
+      'No commission',
+    ],
+    featNoVideo: 'No video (Premium only)',
 
     avgPrefix: 'Averages',
     avgSuffix: 'baht/month',
@@ -103,28 +113,24 @@ export const PRICING_T = {
     saveSuffix: 'vs Basic',
     video: 'Video',
 
-    basicPeriod: '/slot/month',
+    basicPeriod: '/listing/month',
     basicDesc: 'For rooms that let easily, or to try the platform first',
     basicDuration: 'Live for 1 month',
     basicDurationSub: '30 days from the day it is published',
 
-    standardPeriod: '/slot/3 months',
+    standardPeriod: '/listing/3 months',
     standardDesc: 'About how long most Bangkok rentals take to find a tenant',
     standardDuration: 'Live for 3 months',
     standardDurationSub: '90 days from the day it is published',
     standardBadge: 'Most popular',
 
-    premiumPeriod: '/slot/12 months',
+    premiumPeriod: '/listing/12 months',
     premiumDesc: 'For owners letting continuously, or higher-value rooms',
     premiumDuration: 'Live for 12 months',
     premiumDurationSub: '365 days from the day it is published',
     premiumBadge: 'Best value per month',
 
-    featSlot: 'One slot = one live listing',
     featImages: (n: number) => `Up to ${n} photos`,
-    featDays: (n: number) => `Live for ${n} days`,
-    featSwap: 'Swap which listing occupies the slot, any time during its term',
-    featCancel: 'Cancel any time — runs to the end of the period you paid for',
     featVideo: 'Video — upload a file, or link YouTube/Vimeo',
 
     helpTitle: 'Would rather not fill it in yourself? Our team can list it for you',
@@ -139,32 +145,36 @@ export const PRICING_T = {
 export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   th: [
     {
-      q: 'สล็อตคืออะไร? ต่างจากประกาศอย่างไร?',
-      a: 'ประกาศคือข้อมูลห้องที่คุณกรอกไว้ — เก็บอยู่ในบัญชีของคุณตลอด ไม่มีวันหาย ส่วนสล็อตคือสิทธิ์ในการนำประกาศขึ้นแสดงบนเว็บไซต์ 1 รายการ ตามระยะเวลาที่ซื้อ พูดง่าย ๆ คือ 1 สล็อต = ประกาศออนไลน์ 1 รายการ',
+      q: 'สมัครใหม่ลงประกาศฟรีไหม?',
+      a: 'ฟรี บัญชีใหม่ได้แพ็กเกจ Basic ฟรี 1 แพ็กเกจ ประกาศแรกที่บันทึกจะเผยแพร่ทันทีและแสดงได้ 30 วัน นับจากวันที่เผยแพร่ ประกาศถัดไปหรือเมื่อครบ 30 วัน เลือกแพ็กเกจและชำระเงินได้จากแดชบอร์ด',
+    },
+    {
+      q: 'แพ็กเกจคืออะไร? ต่างจากประกาศอย่างไร?',
+      a: 'ประกาศคือข้อมูลห้องที่คุณกรอกไว้ — เก็บอยู่ในบัญชีของคุณตลอด ไม่มีวันหาย ส่วนแพ็กเกจคือสิทธิ์ในการนำประกาศขึ้นแสดงบนเว็บไซต์ 1 รายการ ตามระยะเวลาที่ซื้อ พูดง่าย ๆ คือ 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ',
     },
     {
       q: 'ต้องเลือกประกาศตอนซื้อไหม?',
-      a: 'ไม่ต้อง ซื้อสล็อตได้เลยโดยยังไม่ต้องมีประกาศ แล้วค่อยเลือกทีหลังในแดชบอร์ดว่าจะเผยแพร่ประกาศไหน หรือจะกรอกประกาศเก็บเป็นฉบับร่างไว้ก่อนแล้วค่อยซื้อสล็อตก็ได้เช่นกัน',
+      a: 'ไม่ต้อง ซื้อแพ็กเกจได้เลยโดยยังไม่ต้องมีประกาศ แล้วค่อยเลือกทีหลังในแดชบอร์ดว่าจะเผยแพร่ประกาศไหน หรือจะกรอกประกาศเก็บเป็นฉบับร่างไว้ก่อนแล้วค่อยซื้อแพ็กเกจก็ได้เช่นกัน',
     },
     {
       q: 'มีหลายห้อง ต้องซื้อทีละครั้งไหม?',
-      a: 'ไม่ต้อง เลือกจำนวนสล็อตที่ต้องการในหน้าชำระเงินได้เลย เช่น อพาร์ตเมนต์ 8 ห้อง ซื้อ 8 สล็อตในครั้งเดียว จ่ายรอบเดียว จัดการรวมกันในแดชบอร์ด',
+      a: 'ไม่ต้อง เลือกจำนวนประกาศที่ต้องการในหน้าชำระเงินได้เลย เช่น อพาร์ตเมนต์ 8 ห้อง ซื้อ 8 แพ็กเกจในครั้งเดียว จ่ายรอบเดียว จัดการรวมกันในแดชบอร์ด',
     },
     {
-      q: 'ห้องปล่อยเช่าได้แล้ว ทำอย่างไรกับสล็อต?',
-      a: 'นำประกาศลงจากแดชบอร์ด สล็อตจะว่างทันทีพร้อมจำนวนวันที่เหลือ แล้วนำประกาศห้องอื่นขึ้นแทนได้เลย ไม่เสียวันที่ชำระไปแล้ว',
+      q: 'ห้องปล่อยเช่าได้แล้ว ทำอย่างไรกับแพ็กเกจ?',
+      a: 'นำประกาศลงจากแดชบอร์ด แพ็กเกจจะว่างทันทีพร้อมจำนวนวันที่เหลือ แล้วนำประกาศห้องอื่นขึ้นแทนได้เลย ไม่เสียวันที่ชำระไปแล้ว',
     },
     {
-      q: 'สล็อตหมดอายุแล้วประกาศหายไหม?',
-      a: 'ไม่หาย ประกาศยังอยู่ครบทุกรายละเอียด รูปภาพ และราคาในแดชบอร์ดของคุณ เพียงแต่ไม่แสดงบนเว็บไซต์ เมื่อซื้อสล็อตใหม่ กดเผยแพร่ได้ทันที ไม่ต้องกรอกใหม่',
+      q: 'แพ็กเกจหมดอายุแล้วประกาศหายไหม?',
+      a: 'ไม่หาย ประกาศยังอยู่ครบทุกรายละเอียด รูปภาพ และราคาในแดชบอร์ดของคุณ เพียงแต่ไม่แสดงบนเว็บไซต์ เมื่อซื้อแพ็กเกจใหม่ กดเผยแพร่ได้ทันที ไม่ต้องกรอกใหม่',
     },
     {
       q: 'ยกเลิกได้ไหม?',
-      a: 'ยกเลิกได้ทุกเมื่อจากแดชบอร์ด ไม่มีสัญญาผูกมัด เมื่อยกเลิกแล้วสล็อตยังใช้งานได้จนครบรอบที่ชำระเงินไว้ และจะไม่มีการเรียกเก็บเงินรอบถัดไป',
+      a: 'ยกเลิกได้ทุกเมื่อจากแดชบอร์ด ไม่มีสัญญาผูกมัด เมื่อยกเลิกแล้วแพ็กเกจยังใช้งานได้จนครบรอบที่ชำระเงินไว้ และจะไม่มีการเรียกเก็บเงินรอบถัดไป',
     },
     {
       q: 'ชำระเงินอย่างไร?',
-      a: 'ชำระผ่าน Stripe ได้ 2 แบบ — บัตรเครดิต/เดบิตทุกธนาคาร หรือพร้อมเพย์ (สแกน QR) · บัตร: ต่ออายุอัตโนมัติทุกรอบจนกว่าจะยกเลิก ประกาศไม่หลุดกลางคัน · พร้อมเพย์: จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ เมื่อครบกำหนดประกาศจะหยุดแสดงจนกว่าจะซื้อสล็อตใหม่ · สล็อตเข้าบัญชีอัตโนมัติหลังชำระสำเร็จ กรณีพร้อมเพย์ระบบจะรอธนาคารยืนยันก่อนจึงเพิ่มสล็อตให้ ปกติไม่กี่วินาที',
+      a: 'ชำระผ่าน Stripe เลือกได้ 2 แบบในหน้าชำระเงิน · จ่ายครั้งเดียว: พร้อมเพย์ (สแกน QR) หรือบัตรเครดิต/เดบิต ไม่ต่ออายุอัตโนมัติ เมื่อครบกำหนดประกาศจะหยุดแสดงจนกว่าจะต่ออายุ · ต่ออายุอัตโนมัติ: บัตรเครดิต/เดบิตเท่านั้น ตัดบัตรทุกรอบจนกว่าจะยกเลิก ประกาศไม่หลุดกลางคัน · แพ็กเกจเข้าบัญชีอัตโนมัติหลังชำระสำเร็จ กรณีพร้อมเพย์ระบบจะรอธนาคารยืนยันก่อน ปกติไม่กี่วินาที',
     },
     {
       q: 'SpacesMate ต่างจากเว็บประกาศอสังหาทั่วไปอย่างไร?',
@@ -174,32 +184,36 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
 
   en: [
     {
-      q: 'What is a slot? How is it different from a listing?',
-      a: 'A listing is the room details you fill in — it stays on your account permanently and is never lost. A slot is the right to show one listing on the website, for the period you bought. Put simply: one slot = one live listing.',
+      q: 'Is my first listing free?',
+      a: 'Yes. A new account gets one free Basic package: the first listing you save is published straight away and shows for 30 days from that day. For further listings, or after the 30 days, choose a package and pay from your dashboard.',
+    },
+    {
+      q: 'What is a package? How is it different from a listing?',
+      a: 'A listing is the room details you fill in — it stays on your account permanently and is never lost. A package is the right to show one listing on the website, for the period you bought. Put simply: one package = one live listing.',
     },
     {
       q: 'Do I have to choose a listing when I buy?',
-      a: 'No. You can buy a slot before you have a listing and choose later, from the dashboard, which listing to publish. Equally, you can write a listing as a draft first and buy the slot afterwards.',
+      a: 'No. You can buy a package before you have a listing and choose later, from the dashboard, which listing to publish. Equally, you can write a listing as a draft first and buy the package afterwards.',
     },
     {
       q: 'I have several rooms — do I have to buy one at a time?',
-      a: 'No. Choose how many slots you want at checkout. An 8-room apartment building, for example, buys 8 slots in one go, pays once, and manages them together in the dashboard.',
+      a: 'No. Choose how many packages you want at checkout. An 8-room apartment building, for example, buys 8 packages in one go, pays once, and manages them together in the dashboard.',
     },
     {
-      q: 'The room is let — what do I do with the slot?',
-      a: 'Take the listing down from the dashboard. The slot frees up immediately with its remaining days intact, and you can put another room’s listing in it straight away. You do not lose the days you have paid for.',
+      q: 'The room is let — what do I do with the package?',
+      a: 'Take the listing down from the dashboard. The package frees up immediately with its remaining days intact, and you can put another room’s listing in it straight away. You do not lose the days you have paid for.',
     },
     {
-      q: 'When the slot expires, do I lose the listing?',
-      a: 'No. The listing stays in your dashboard with every detail, photo and price — it simply stops showing on the website. Buy a new slot and you can publish it again immediately, with nothing to re-enter.',
+      q: 'When the package expires, do I lose the listing?',
+      a: 'No. The listing stays in your dashboard with every detail, photo and price — it simply stops showing on the website. Buy a new package and you can publish it again immediately, with nothing to re-enter.',
     },
     {
       q: 'Can I cancel?',
-      a: 'Any time, from the dashboard. There is no lock-in. After you cancel, the slot keeps working until the end of the period you have already paid for, and you will not be charged for the next one.',
+      a: 'Any time, from the dashboard. There is no lock-in. After you cancel, the package keeps working until the end of the period you have already paid for, and you will not be charged for the next one.',
     },
     {
       q: 'How do I pay?',
-      a: 'Through Stripe, two ways — credit or debit card from any bank, or PromptPay (scan the QR). · Card: renews automatically each period until you cancel, so the listing never drops off mid-way. · PromptPay: a single payment with no auto-renewal; when the period ends the listing stops showing until you buy a new slot. · Slots are added to your account automatically once payment succeeds. With PromptPay the system waits for the bank to confirm before adding them, which is usually a few seconds.',
+      a: 'Through Stripe, with two options at checkout. · One-time: PromptPay (scan the QR) or credit/debit card, with no auto-renewal; when the period ends the listing stops showing until you renew. · Auto-renew: credit/debit card only, charged each period until you cancel, so the listing never drops off mid-way. · Packages are added to your account automatically once payment succeeds. With PromptPay the system waits for the bank to confirm first, which is usually a few seconds.',
     },
     {
       q: 'How is SpacesMate different from other property listing sites?',
@@ -217,7 +231,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
  *
  * The price and the saving are derived from PACKAGE_PRICE_THB rather than
  * written out, so changing a price in one place changes every page that shows
- * it. /submit used to carry its own copy with savings: '22%' as a literal; it
+ * it. /list-your-property used to carry its own copy with savings: '22%' as a literal; it
  * happened to be right, but only until the next price change.
  */
 export function buildPlans(locale: Locale) {
@@ -234,14 +248,13 @@ export function buildPlans(locale: Locale) {
       highlight: false,
       badge: null as string | null,
       savingsPct: savingsVsBasic('basic'),
+      perMonth: pricePerMonth('basic'),
       maxImages: PACKAGE_IMAGE_LIMITS.basic,
       allowVideo: PACKAGE_ALLOWS_VIDEO.basic,
       features: [
-        t.featSlot,
+        t.basicDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.basic),
-        t.featDays(30),
-        t.featSwap,
-        t.featCancel,
+        t.featNoVideo,
       ],
     },
     {
@@ -255,14 +268,13 @@ export function buildPlans(locale: Locale) {
       highlight: false,
       badge: t.standardBadge as string | null,
       savingsPct: savingsVsBasic('standard'),
+      perMonth: pricePerMonth('standard'),
       maxImages: PACKAGE_IMAGE_LIMITS.standard,
       allowVideo: PACKAGE_ALLOWS_VIDEO.standard,
       features: [
-        t.featSlot,
+        t.standardDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.standard),
-        t.featDays(90),
-        t.featSwap,
-        t.featCancel,
+        t.featNoVideo,
       ],
     },
     {
@@ -276,72 +288,19 @@ export function buildPlans(locale: Locale) {
       highlight: true,
       badge: t.premiumBadge as string | null,
       savingsPct: savingsVsBasic('premium'),
+      perMonth: pricePerMonth('premium'),
       maxImages: PACKAGE_IMAGE_LIMITS.premium,
       // Premium-only, and genuinely enforced — VideoUploadZone gates on
       // packageType === 'premium'. This flag read false until 3 Sep 2026, which
       // hid the only feature difference between Premium and the cheaper tiers.
       allowVideo: PACKAGE_ALLOWS_VIDEO.premium,
       features: [
-        t.featSlot,
+        t.premiumDuration,
         t.featImages(PACKAGE_IMAGE_LIMITS.premium),
         t.featVideo,
-        t.featDays(365),
-        t.featSwap,
-        t.featCancel,
       ],
     },
   ]
 }
 
 
-/**
- * The slot checkout buttons — components/pricing/BuySlotsCta.
- *
- * This was missed when /en/pricing was translated: the page around it was
- * English and the button an owner actually presses to pay was Thai. It is the
- * last step before Stripe, so it is the worst possible place to lose someone.
- *
- * WHAT THE TWO BUTTONS MEAN
- *   The choice is a BILLING MODEL, not a payment method. 'once' buys a term
- *   that expires; 'subscription' buys one that renews on a card. The instrument
- *   is chosen afterwards at Stripe — one-time offers PromptPay and card,
- *   subscription can only offer card, because PromptPay cannot do recurring.
- *   The English must not blur that, or someone picks a renewing charge thinking
- *   they made a single payment.
- *
- *   PromptPay is kept as the Thai name in English too. It is a brand, it is what
- *   the Stripe screen says, and an English reader who is paying in Thailand will
- *   recognise it.
- */
-export const SLOT_CTA_T = {
-  th: {
-    quantity: 'จำนวนสล็อต',
-    decrease: 'ลดจำนวน',
-    increase: 'เพิ่มจำนวน',
-    loading: 'กำลังโหลด…',
-    payOnce: (total: string) => `จ่ายครั้งเดียว · ฿${total}`,
-    payOnceNote: 'พร้อมเพย์ หรือ บัตรเครดิต/เดบิต · ไม่ต่ออายุอัตโนมัติ',
-    subscribe: (total: string) => `ต่ออายุอัตโนมัติ · ฿${total}`,
-    subscribeNote: 'บัตรเครดิต/เดบิตเท่านั้น · ตัดบัตรอัตโนมัติทุกรอบ ยกเลิกได้ทุกเมื่อ',
-    choose: (total: string) => `เลือกแพ็กเกจนี้ · ฿${total}`,
-    payOptions: 'จ่ายครั้งเดียวด้วยพร้อมเพย์/บัตร หรือต่ออายุอัตโนมัติด้วยบัตร',
-    slotExplainer: '1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เปลี่ยนประกาศในสล็อตได้ตลอดอายุ',
-    checkoutFailed: 'ไม่สามารถเริ่มการชำระเงินได้',
-    genericError: 'เกิดข้อผิดพลาด',
-  },
-  en: {
-    quantity: 'Number of slots',
-    decrease: 'Decrease quantity',
-    increase: 'Increase quantity',
-    loading: 'Loading…',
-    payOnce: (total: string) => `Pay once · ฿${total}`,
-    payOnceNote: 'PromptPay or credit/debit card · does not renew',
-    subscribe: (total: string) => `Auto-renew · ฿${total}`,
-    subscribeNote: 'Credit/debit card only · charged each term, cancel any time',
-    choose: (total: string) => `Choose this package · ฿${total}`,
-    payOptions: 'Pay once by PromptPay/card, or auto-renew by card',
-    slotExplainer: '1 slot = 1 published listing · swap which listing fills it any time during the term',
-    checkoutFailed: 'We could not start the payment',
-    genericError: 'Something went wrong',
-  },
-} as const

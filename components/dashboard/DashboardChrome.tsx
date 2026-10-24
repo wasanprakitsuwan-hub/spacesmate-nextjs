@@ -108,7 +108,7 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
           <Link href={localeHref('/owner-dashboard', locale)} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.1)' }}>
             {t.myListings}
           </Link>
-          <Link href={localeHref('/submit', locale)} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
+          <Link href={localeHref('/list-your-property/new', locale)} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
             + {t.newListing}
           </Link>
           <Link href={localeHref('/', locale)} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
