@@ -14,18 +14,25 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from '@/components/ui/LocaleLink'
 import { localeHref } from '@/lib/routes-i18n'
 import { PRICE_RANGES, priceRangeLabel, type Property } from '@/lib/property-data'
+import {
+  haversineKm, nearestStation, stationLabel, distanceLabel,
+  parseQuery, haystack, matchesTerms,
+  suggestPlaces, placeFromParams, placeKey, placeLabel, placePoint, placeIcon, inGreaterBangkok, type Place,
+} from '@/lib/search-match'
+import { STATION_BY_ID, type Station } from '@/lib/stations'
+import { districtEn, stripDistrictPrefix } from '@/lib/geo-i18n'
 
-// ── Haversine distance (km) between two lat/lng points ───────────────────────
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+/** A listing as the search page needs it: the card's view plus what it is matched on. */
+type Row = {
+  p: Property
+  hay: string
+  district: string
+  nearest: { station: Station; km: number } | null
 }
+
+// Shown as chips when there are not yet enough listings to rank stations by.
+// Station codes, not names, so the list cannot drift from lib/stations.
+const POPULAR_STATION_IDS = ['E4', 'E6', 'E5', 'N5', 'E9', 'BL20', 'S2', 'BL15']
 
 // Built per locale. The `key` values are the filter's own identifiers and are
 // never translated — they are compared against Property['propertyType'].
@@ -35,6 +42,9 @@ const radiusOptions = (t: SearchStrings) => [
   { km: 5,  label: t.within5 },
   { km: 10, label: t.within10 },
 ]
+
+// Distances offered around a chosen station; 1 km is the default walk.
+const STATION_RADII = [1, 2, 5]
 
 const typeFilters = (t: SearchStrings) => [
   { key: '',          label: t.allTypes },
@@ -107,7 +117,22 @@ function SearchContent({ locale }: { locale: Locale }) {
   const [priceRangeIdx, setPriceRangeIdx] = useState(0)
   const [sortBy, setSortBy] = useState('recent')
   const [filterOpen, setFilterOpen] = useState(false)
-  const [dbListings, setDbListings] = useState<Property[]>([])
+  const [rows, setRows] = useState<Row[]>([])
+  const dbListings = useMemo(() => rows.map(r => r.p), [rows])
+
+  // A chosen place — a station or a district — from a suggestion, a chip or the URL.
+  const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district'), sp.get('landmark'), sp.get('at'), sp.get('name')))
+  const [placeRadiusKm, setPlaceRadiusKm] = useState(() => {
+    const r = Number(sp.get('r'))
+    return STATION_RADII.includes(r) ? r : 1
+  })
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const suggestions = useMemo(() => (place ? [] : suggestPlaces(keyword)), [keyword, place])
+  // Map lookup for a place we have no list entry for. Run on request only
+  // (Enter or the "find on map" row), never per keystroke: the free map
+  // service does not allow autocomplete traffic.
+  const [mapLookup, setMapLookup] = useState<'idle' | 'loading' | 'notfound'>('idle')
+  const canMapLookup = !place && keyword.trim().length >= 2
 
   // ── Geolocation state ─────────────────────────────────────────────────────
   const [userLatLng, setUserLatLng]     = useState<{ lat: number; lng: number } | null>(null)
@@ -120,7 +145,20 @@ function SearchContent({ locale }: { locale: Locale }) {
     fetch('/api/listings/public')
       .then(r => r.json())
       .then((d: { listings?: unknown[] }) => {
-        setDbListings((d.listings ?? []).map((l: any) => adaptDbListing(l, locale)))
+        setRows((d.listings ?? []).map((l: any): Row => {
+          const p = adaptDbListing(l, locale)
+          const nearest = nearestStation(parseFloat(l.lat), parseFloat(l.lng))
+          return {
+            p,
+            nearest,
+            district: stripDistrictPrefix(l.district || ''),
+            hay: haystack({
+              title: l.title_th || '', titleEn: l.title_en || '', excerpt: l.description_th || '',
+              address: l.address_th || '', district: l.district || '',
+              districtEn: districtEn(l.district, l.province), amenities: l.amenities || [], nearest,
+            }),
+          }
+        }))
       })
       .catch(() => {})
   }, [])
@@ -164,20 +202,32 @@ function SearchContent({ locale }: { locale: Locale }) {
   }, [dbListings])
 
   const results = useMemo(() => {
-    let list = [...dbListings]
+    // What was typed: a type word, a price, a bedroom count, and whatever is
+    // left over, which has to appear in the listing (see lib/search-match).
+    const q = parseQuery(place ? '' : keyword)
+    let matched = rows
+    if (q.terms.length) matched = matched.filter(r => matchesTerms(r.hay, q.terms))
+    if (place?.kind === 'district') matched = matched.filter(r => r.district === place.th)
+    let list = matched.map(r => r.p)
     if (activeType) list = list.filter(p => p.propertyType === activeType)
-    if (keyword.trim()) {
-      const kw = keyword.trim().toLowerCase()
-      list = list.filter(p =>
-        p.title.toLowerCase().includes(kw) ||
-        p.neighborhood.toLowerCase().includes(kw) ||
-        p.address.toLowerCase().includes(kw) ||
-        (p.excerpt && p.excerpt.toLowerCase().includes(kw))
-      )
-    }
+    else if (q.types.length) list = list.filter(p => q.types.includes(p.propertyType))
+    if (q.beds !== undefined) list = list.filter(p => p.bedrooms === q.beds)
+    if (q.priceMin !== undefined) list = list.filter(p => p.priceMin >= q.priceMin!)
+    if (q.priceMax !== undefined) list = list.filter(p => p.priceMin > 0 && p.priceMin <= q.priceMax!)
     const range = PRICE_RANGES[priceRangeIdx]
     if (range.min > 0 || range.max !== Infinity) {
       list = list.filter(p => p.priceMin >= range.min && p.priceMin <= range.max)
+    }
+    // ── Place filter: within the chosen distance of a station, landmark or map point
+    const st = place ? placePoint(place) : null
+    if (st) {
+      list = list
+        .filter(p => {
+          const pLat = parseFloat(p.lat || ''), pLng = parseFloat(p.lng || '')
+          return !isNaN(pLat) && !isNaN(pLng) && haversineKm(st.lat, st.lng, pLat, pLng) <= placeRadiusKm
+        })
+        .sort((a, b) => haversineKm(st.lat, st.lng, +a.lat, +a.lng) - haversineKm(st.lat, st.lng, +b.lat, +b.lng))
+      return list
     }
     // ── Radius filter ───────────────────────────────────────────────────────
     if (userLatLng && radiusKm) {
@@ -198,13 +248,84 @@ function SearchContent({ locale }: { locale: Locale }) {
       })
     } else list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     return list
-  }, [activeType, keyword, priceRangeIdx, sortBy, dbListings, userLatLng, radiusKm])
+  }, [activeType, keyword, priceRangeIdx, sortBy, rows, userLatLng, radiusKm, place, placeRadiusKm])
 
   function selectType(t: string) {
     setActiveType(t)
     const p = new URLSearchParams(sp.toString())
     if (t) { p.set('type', t) } else { p.delete('type') }
-    router.replace(`/search?${p.toString()}`)
+    router.replace(`${localeHref('/search', locale)}?${p.toString()}`)
+  }
+
+  function chooseStationRadius(km: number) {
+    setPlaceRadiusKm(km)
+    const p = new URLSearchParams(sp.toString())
+    if (km === 1) p.delete('r'); else p.set('r', String(km))
+    router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
+  }
+
+  function choosePlace(next: Place | null) {
+    setPlace(next)
+    setSuggestOpen(false)
+    if (next) setKeyword('')
+    const p = new URLSearchParams(sp.toString())
+    for (const k of ['station', 'district', 'landmark', 'at', 'name', 'q']) p.delete(k)
+    if (next?.kind === 'station') p.set('station', next.station.id)
+    if (next?.kind === 'landmark') p.set('landmark', next.landmark.id)
+    if (next?.kind === 'district') p.set('district', next.th)
+    if (next?.kind === 'point') { p.set('at', `${next.lat.toFixed(5)},${next.lng.toFixed(5)}`); p.set('name', next.name) }
+    router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
+  }
+
+  async function findOnMap() {
+    const q = keyword.trim()
+    if (q.length < 2) return
+    setSuggestOpen(false)
+    setMapLookup('loading')
+    try {
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)
+      const data = r.ok ? await r.json() : { results: [] }
+      const hit = (data.results ?? [])
+        .map((x: { lat: string; lon: string }) => ({ lat: Number(x.lat), lng: Number(x.lon) }))
+        .find((x: { lat: number; lng: number }) => isFinite(x.lat) && isFinite(x.lng) && inGreaterBangkok(x.lat, x.lng))
+      if (!hit) { setMapLookup('notfound'); return }
+      setMapLookup('idle')
+      choosePlace({ kind: 'point', name: q, lat: hit.lat, lng: hit.lng })
+    } catch {
+      setMapLookup('notfound')
+    }
+  }
+
+  // Chips: stations that actually have listings within a kilometre come first,
+  // so the presets point somewhere useful; the fixed list fills the rest.
+  const popularPlaces = useMemo<Place[]>(() => {
+    const counts = new Map<string, number>()
+    for (const r of rows) if (r.nearest && r.nearest.km <= 1) counts.set(r.nearest.station.id, (counts.get(r.nearest.station.id) ?? 0) + 1)
+    const ids = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([id]) => id)
+    for (const id of POPULAR_STATION_IDS) if (!ids.includes(id)) ids.push(id)
+    return ids.slice(0, 8).filter(id => STATION_BY_ID[id]).map(id => ({ kind: 'station' as const, station: STATION_BY_ID[id] }))
+  }, [rows])
+
+  // Nothing within the chosen distance: show the closest few instead of a dead end.
+  const closest = useMemo(() => {
+    const st = place ? placePoint(place) : null
+    if (!st || results.length) return []
+    return dbListings
+      .filter(p => p.lat && p.lng)
+      .map(p => ({ p, km: haversineKm(st.lat, st.lng, +p.lat, +p.lng) }))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, 4)
+      .map(x => x.p)
+  }, [place, results, dbListings])
+
+  const nearestBySlug = useMemo(() => new Map(rows.map(r => [r.p.slug, r.nearest])), [rows])
+
+  // Each card says how far it is from the place searched around.
+  function fromPlace(p: Property) {
+    const pt = place ? placePoint(place) : null
+    const lat = parseFloat(p.lat || ''), lng = parseFloat(p.lng || '')
+    if (!place || !pt || isNaN(lat) || isNaN(lng)) return null
+    return { label: placeLabel(place, locale), icon: placeIcon(place), km: haversineKm(pt.lat, pt.lng, lat, lng) }
   }
 
   function resetFilters() {
@@ -212,7 +333,10 @@ function SearchContent({ locale }: { locale: Locale }) {
     setPriceRangeIdx(0)
     setSortBy('recent')
     clearGeo()
-    router.replace('/search')
+    setPlace(null)
+    setPlaceRadiusKm(1)
+    setKeyword('')
+    router.replace(localeHref('/search', locale))
   }
 
   return (
@@ -230,8 +354,16 @@ function SearchContent({ locale }: { locale: Locale }) {
             <input
               type="text"
               value={keyword}
-              onChange={e => setKeyword(e.target.value)}
-              placeholder={t.searchPlaceholder}
+              onChange={e => { setKeyword(e.target.value); setSuggestOpen(true); setMapLookup('idle'); if (place) choosePlace(null) }}
+              onFocus={() => setSuggestOpen(true)}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+              onKeyDown={e => {
+                if (e.key !== 'Enter') return
+                if (suggestions.length && suggestOpen) { e.preventDefault(); choosePlace(suggestions[0]) }
+                else if (canMapLookup) { e.preventDefault(); findOnMap() }
+              }}
+              placeholder={place ? placeLabel(place, locale) : t.searchPlaceholder}
+              aria-autocomplete="list" 
               style={{ width: '100%', paddingLeft: 48, paddingRight: keyword ? 44 : 16, paddingTop: 14, paddingBottom: 14, fontSize: 15, borderRadius: 28, border: 'none', outline: 'none', background: '#fff', color: '#231f20', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', boxSizing: 'border-box' }}
             />
             {keyword && (
@@ -239,6 +371,61 @@ function SearchContent({ locale }: { locale: Locale }) {
                 style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#94a3b8', padding: 4, display: 'flex', alignItems: 'center' }}>
                 <span className="msym">close</span>
               </button>
+            )}
+            {suggestOpen && (suggestions.length > 0 || canMapLookup) && (
+              <ul role="listbox" style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 6px)', left: 0, right: 0, margin: 0, padding: 6, listStyle: 'none', background: '#fff', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.18)' }}>
+                {suggestions.map(sg => (
+                  <li key={placeKey(sg)} role="option" aria-selected={false}>
+                    <button type="button" onMouseDown={e => { e.preventDefault(); choosePlace(sg) }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: 'none', background: 'none', borderRadius: 10, cursor: 'pointer', textAlign: 'left', fontSize: 14, color: '#231f20' }}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>{placeIcon(sg)}</span>
+                      <span style={{ flex: 1 }}>{placeLabel(sg, locale)}</span>
+                      <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{sg.kind === 'station' ? t.suggestStations : sg.kind === 'landmark' ? t.suggestLandmarks : t.suggestDistricts}</span>
+                    </button>
+                  </li>
+                ))}
+                {canMapLookup && (
+                  <li role="option" aria-selected={false}>
+                    <button type="button" onMouseDown={e => { e.preventDefault(); findOnMap() }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: 'none', borderTop: suggestions.length ? '1px solid #eef0ef' : 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 14, color: '#02402e' }}>
+                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>map</span>
+                      <span style={{ flex: 1 }}>{t.findOnMap.replace('{q}', keyword.trim())}</span>
+                    </button>
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+
+          {mapLookup !== 'idle' && (
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: '10px 0 0' }}>
+              {mapLookup === 'loading' ? t.mapLoading : t.mapNotFound}
+            </p>
+          )}
+
+          {/* Chosen place, or the presets to choose one from */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14, maxWidth: 820 }}>
+            {place ? (
+              <>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', color: '#02402e', borderRadius: 20, padding: '6px 8px 6px 12px', fontSize: 13.5, fontWeight: 600 }}>
+                  <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>{placeIcon(place)}</span>
+                  {t.nearPrefix} {placeLabel(place, locale)}
+                  <button onClick={() => choosePlace(null)} aria-label={t.clearFilters}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex' }}>
+                    <span className="msym" style={{ fontSize: 16 }}>close</span>
+                  </button>
+                </span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5 }}>{t.popularPlaces}:</span>
+                {popularPlaces.map(pl => (
+                  <button key={placeKey(pl)} onClick={() => choosePlace(pl)}
+                    style={{ borderRadius: 20, padding: '6px 12px', fontSize: 12.5, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)', color: '#fff' }}>
+                    {placeLabel(pl, locale)}
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </div>
@@ -260,6 +447,33 @@ function SearchContent({ locale }: { locale: Locale }) {
           <aside className={`sm-filter-aside${filterOpen ? ' filter-open' : ''}`}
             style={{ alignSelf: 'start', position: 'sticky', top: 86, background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 18px' }}>{t.filters}</h3>
+
+            {/* Distance from the chosen station */}
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.distanceFromStation}</p>
+              {place && placePoint(place) ? (
+                <>
+                  <p style={{ fontSize: 13, color: '#02402e', fontWeight: 600, margin: '0 0 9px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>{placeIcon(place)}</span>{placeLabel(place, locale)}
+                  </p>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {RADIUS_OPTIONS.filter(opt => STATION_RADII.includes(opt.km)).map(opt => {
+                      const on = placeRadiusKm === opt.km
+                      return (
+                        <button key={opt.km} onClick={() => chooseStationRadius(opt.km)}
+                          style={{ flex: 1, padding: '8px 4px', borderRadius: 9, fontSize: 13, cursor: 'pointer', transition: 'all .2s', border: `1px solid ${on ? '#048c73' : '#eef0ef'}`, background: on ? '#eaf6f1' : '#fff', color: on ? '#02402e' : '#475569', fontWeight: on ? 600 : 400 }}>
+                          {opt.km} {locale === 'en' ? 'km' : 'กม.'}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>{t.pickStationFirst}</p>
+              )}
+            </div>
+
+            <div style={{ height: 1, background: '#eef0ef', margin: '0 0 20px' }} />
 
             {/* Type filter */}
             <div style={{ marginBottom: 22 }}>
@@ -382,13 +596,26 @@ function SearchContent({ locale }: { locale: Locale }) {
             {results.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }} className="sm-grid2">
                 {results.map(p => (
-                  <PropertyCard key={p.slug} property={p} locale={locale} />
+                  <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} from={fromPlace(p)} />
                 ))}
               </div>
             )}
 
+            {/* Nothing near the chosen station: the closest few rather than a dead end */}
+            {results.length === 0 && closest.length > 0 && place && (
+              <div>
+                <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 6px' }}>{t.noneNearPlace}</p>
+                <h2 style={{ fontSize: 17, fontWeight: 600, margin: '0 0 16px', color: '#02402e' }}>{t.closestTo} {placeLabel(place, locale)}</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }} className="sm-grid2">
+                  {closest.map(p => (
+                    <PropertyCard key={p.slug} property={p} locale={locale} nearest={nearestBySlug.get(p.slug) ?? null} from={fromPlace(p)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Empty state */}
-            {results.length === 0 && (
+            {results.length === 0 && closest.length === 0 && (
               <div style={{ background: '#fff', border: '1px dashed #d5ddd9', borderRadius: 18, padding: '60px 24px', textAlign: 'center' }}>
                 <div style={{ marginBottom: 12 }}><span className="msym" style={{ fontSize: 36, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span></div>
                 <p style={{ fontSize: 16, fontWeight: 600, margin: '0 0 6px' }}>{t.noResults}</p>
@@ -420,7 +647,13 @@ function SearchContent({ locale }: { locale: Locale }) {
   )
 }
 
-function PropertyCard({ property: p, locale }: { property: Property; locale: Locale }) {
+function PropertyCard({ property: p, locale, nearest, from }: {
+  property: Property
+  locale: Locale
+  nearest: { station: Station; km: number } | null
+  /** Distance from the place the visitor searched around, when there is one. */
+  from?: { label: string; icon: string; km: number } | null
+}) {
   const t = SEARCH_T[locale]
   const TYPE_LABELS = typeLabels(t)
   const bedroomLabel = p.bedrooms === 0 ? t.studio : `${p.bedrooms} ${t.bedrooms}`
@@ -447,6 +680,18 @@ function PropertyCard({ property: p, locale }: { property: Property; locale: Loc
       <div style={{ padding: 17 }}>
         <p style={{ color: '#048c73', fontSize: 12.5, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}><span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}</p>
         <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 10px', lineHeight: 1.35, color: '#231f20' }}>{p.title}</h3>
+        {from && (
+          <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#02402e', fontWeight: 600, margin: '-4px 0 6px' }}>
+            <span className="msym" style={{ fontSize: 14, color: '#048c73' }}>{from.icon}</span>
+            {t.fromPlace.replace('{d}', distanceLabel(from.km, locale)).replace('{p}', from.label)}
+          </p>
+        )}
+        {nearest && !(from && from.icon === 'train') && (
+          <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#475569', margin: '-4px 0 10px' }}>
+            <span className="msym" style={{ fontSize: 14, color: '#048c73' }}>train</span>
+            {stationLabel(nearest.station, locale)} · {distanceLabel(nearest.km, locale)}
+          </p>
+        )}
         <div className="mono" style={{ display: 'flex', gap: 12, padding: '10px 0', borderTop: '1px solid #f3f5f4', borderBottom: '1px solid #f3f5f4', marginBottom: 12, fontSize: 11, color: '#7a8a85' }}>
           <span>{bedroomLabel}</span>
           {p.bathrooms > 0 && <span>{p.bathrooms} {t.bathrooms}</span>}
