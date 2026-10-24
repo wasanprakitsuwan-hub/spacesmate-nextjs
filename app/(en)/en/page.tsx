@@ -1,4 +1,8 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import HeroSection from '@/components/sections/HeroSection'
 import CategorySection from '@/components/sections/CategorySection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
@@ -28,7 +32,7 @@ import GeneratedAreaLinks from '@/components/sections/GeneratedAreaLinks'
 
 const SITE = 'https://spacesmate.com'
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: 'Rent an Apartment, Condo or Office in Bangkok',
   description:
     'Find apartments, condos, houses, offices and co-working space to rent across Bangkok. Verified listings, contact the owner directly, no agent fee for tenants.',
@@ -55,4 +59,9 @@ export default function EnglishHome() {
       <GeneratedAreaLinks locale="en" />
     </>
   )
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/', 'en', baseMetadata)
 }

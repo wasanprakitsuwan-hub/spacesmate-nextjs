@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import ServicesBody from '@/components/marketing/ServicesBody'
 import { SERVICES_T } from '@/lib/marketing-i18n'
 
 const t = SERVICES_T.en
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDesc,
   openGraph: {
@@ -21,4 +25,9 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return <ServicesBody locale="en" />
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/services', 'en', baseMetadata)
 }
