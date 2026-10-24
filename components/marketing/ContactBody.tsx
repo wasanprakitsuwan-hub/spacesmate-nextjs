@@ -19,6 +19,7 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
   const [submitted, setSubmitted] = useState(false)
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState('')
+  const [sendFailed, setSendFailed] = useState(false)
   const [form,      setForm]      = useState({ name: '', phone: '', email: '', intent: '', message: '' })
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -34,6 +35,7 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setSendFailed(false)
 
     // Validate phone
     const digits = form.phone.replace(/\D/g, '')
@@ -50,6 +52,10 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
+        if (json.error === 'email_failed') {
+          setSendFailed(true)
+          throw new Error(t.errSendFailed)
+        }
         throw new Error(json.error || `HTTP ${res.status}`)
       }
       trackEvent('contact_form_submit', { intent: form.intent })
@@ -242,7 +248,13 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
 
                 {/* Error */}
                 {error && (
-                  <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}</p>
+                  <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}{sendFailed && (
+                    <>
+                      {' '}
+                      <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                        style={{ color: '#06C755', fontWeight: 700, textDecoration: 'underline' }}>@spacesmate</a>
+                    </>
+                  )}</p>
                 )}
 
                 <button
