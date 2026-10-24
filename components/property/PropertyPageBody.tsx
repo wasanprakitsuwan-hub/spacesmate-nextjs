@@ -26,7 +26,12 @@ import DescriptionBody from '@/components/property/DescriptionBody'
 import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
 import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
-import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
+import { nearbyStations, nearbyLandmarks, stationLabel, distanceLabel } from '@/lib/search-match'
+import { LANDMARK_ICON, type LandmarkKind } from '@/lib/landmarks'
+import { localeHref } from '@/lib/routes-i18n'
+import { mergePlaces } from '@/lib/search-places'
+import ListingStatBeacon from '@/components/property/ListingStatBeacon'
+import { loadPlaceOverrides } from '@/lib/search-places-server'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -134,10 +139,35 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     } catch { /* a missing building link must not break the listing page */ }
   }
 
-  const stations = p.lat && p.lng ? nearbyStations(parseFloat(p.lat), parseFloat(p.lng)) : []
+  // Place lists as the admin left them (renames, new places, hidden ones).
+  const hasPin = !!(p.lat && p.lng)
+  const places = hasPin ? mergePlaces((await loadPlaceOverrides()).overrides) : null
+  const pinLat = parseFloat(p.lat), pinLng = parseFloat(p.lng)
+  const stations = places ? nearbyStations(pinLat, pinLng, 2, 3, places.stations) : []
+
+  // "What's nearby": up to three of each kind within 3 km, transport first
+  // (stations, then airports and the like), the order renters ask about.
+  type NearbyItem = { key: string; name: string; km: number; icon: string; href: string }
+  const nearbyGroups: { kind: LandmarkKind; items: NearbyItem[] }[] = []
+  if (places) {
+    const landmarks = nearbyLandmarks(pinLat, pinLng, 3, places.landmarks)
+    const searchHref = localeHref('/search', locale)
+    for (const kind of ['transport', 'university', 'hospital', 'mall', 'place'] as LandmarkKind[]) {
+      const items: NearbyItem[] = kind === 'transport'
+        ? stations.map(({ station, km }) => ({ key: `s:${station.id}`, name: stationLabel(station, locale), km, icon: 'train', href: `${searchHref}?station=${station.id}` }))
+        : []
+      for (const { landmark, km } of landmarks.filter(x => x.landmark.kind === kind)) {
+        items.push({ key: `l:${landmark.id}`, name: locale === 'en' ? landmark.en : landmark.th, km, icon: LANDMARK_ICON[kind], href: `${searchHref}?landmark=${encodeURIComponent(landmark.id)}` })
+      }
+      items.sort((a, b) => a.km - b.km)
+      if (items.length) nearbyGroups.push({ kind, items: items.slice(0, 3) })
+    }
+  }
 
   return (
     <div className="bg-white min-h-screen">
+      {/* Owner statistics — database listings only; static ones have no owner. */}
+      {raw?.id && <ListingStatBeacon propertyId={String(raw.id)} />}
 
       <ListingLd
         name={p.title}
@@ -412,6 +442,34 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                 </a>
               </div>
             )}
+
+            {/* What's nearby — from the same place list the search box uses, so
+                every name here is one a renter can search by. */}
+            {nearbyGroups.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.nearbyHeading}</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px 28px' }}>
+                  {nearbyGroups.map(g => (
+                    <div key={g.kind}>
+                      <p style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.nearbyGroups[g.kind]}</p>
+                      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                        {g.items.map(item => (
+                          <li key={item.key} style={{ borderTop: '1px solid #f1f5f4' }}>
+                            <Link href={item.href} title={t.searchNearPlace(item.name)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', color: '#231f20', textDecoration: 'none', fontSize: 14 }}>
+                              <span className="msym" style={{ fontSize: 18, color: '#048c73', flexShrink: 0 }}>{item.icon}</span>
+                              <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
+                              <span style={{ color: '#64748b', fontSize: 13, whiteSpace: 'nowrap' }}>{distanceLabel(item.km, locale)}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '12px 0 0' }}>{t.nearbyNote}</p>
+              </div>
+            )}
           </div>
 
           {/* Sticky sidebar */}
@@ -431,24 +489,24 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {/* LINE button — listing-specific or SpacesMate default */}
                 {dbContact?.line ? (
-                  <a href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
+                  <a data-stat="line" href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
                     style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
                   </a>
                 ) : (
-                  <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
+                  <a data-stat="line" href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
                     style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
                   </a>
                 )}
                 {/* Phone button — listing-specific or SpacesMate default */}
                 {dbContact?.phone ? (
-                  <a href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
+                  <a data-stat="phone" href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
                     style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call(dbContact.phone)}
                   </a>
                 ) : (
-                  <a href="tel:+66621524526"
+                  <a data-stat="phone" href="tel:+66621524526"
                     style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call('062-152-4526')}
                   </a>
@@ -507,7 +565,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                   style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block' }}>
                   {t.ownerServicesCta}
                 </Link>
-                <Link href="/submit"
+                <Link href="/list-your-property"
                   style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block', border: '1px solid rgba(255,255,255,0.2)' }}>
                   {t.ownerListCta}
                 </Link>

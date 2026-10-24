@@ -17,6 +17,8 @@
  * (/api/stripe/buy-slots). Promo codes are entered on Stripe's page; both
  * routes set allow_promotion_codes.
  */
+import { buildPlans, PRICING_T } from '@/lib/pricing-i18n'
+import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -86,6 +88,7 @@ function Checkout({ locale }: { locale: Locale }) {
   // Extending adds days to one slot; a subscription cannot do that.
   const effectiveBilling: Billing = mode === 'extend' ? 'once' : billing
   const chosen = PACKAGES.find(p => p.id === pkg)!
+  const plan   = buildPlans(locale).find(p => p.id === pkg)
   const total  = (PACKAGE_PRICE_THB[pkg] ?? 0) * qty
   const fmt    = (n: number) => n.toLocaleString(locale === 'en' ? 'en-GB' : 'th-TH')
 
@@ -179,6 +182,18 @@ function Checkout({ locale }: { locale: Locale }) {
                   <span style={{ display: 'block', fontSize: 12.5, color: '#64748b', marginTop: 3 }}>
                     {t.perMonth(fmt(pricePerMonth(p.id)))} · {t.photos(PACKAGE_IMAGE_LIMITS[p.id], p.id === 'premium')}
                   </span>
+                  {/* The chosen package's full detail. /pricing used to carry
+                      this; it now lives where the owner is choosing. */}
+                  {on && plan && (
+                    <span style={{ display: 'block', marginTop: 10, paddingTop: 10, borderTop: '1px solid #cfe9df' }}>
+                      <span style={{ display: 'block', fontSize: 13, color: '#334155', marginBottom: 6 }}>{plan.description}</span>
+                      {plan.features.map(f => (
+                        <span key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
+                          <span className="msym" style={{ fontSize: 15, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", marginTop: 1 }}>check</span>{f}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -197,6 +212,15 @@ function Checkout({ locale }: { locale: Locale }) {
             </div>
           )}
           <p style={{ fontSize: 12.5, color: '#64748b', margin: '12px 0 0', lineHeight: 1.5 }}>{t.slotExplainer}</p>
+          {/* Shared by all three packages, so it sits outside the choices. */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#02402e', margin: '0 0 6px' }}>{PRICING_T[locale].includesTitle}</p>
+            {PRICING_T[locale].includes.map(f => (
+              <span key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12.5, color: '#475569', lineHeight: 1.5 }}>
+                <span className="msym" style={{ fontSize: 14, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1", marginTop: 1 }}>check</span>{f}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div style={card}>
@@ -236,6 +260,7 @@ function Checkout({ locale }: { locale: Locale }) {
         </div>
 
         <a href={localeHref('/owner-dashboard', locale)} style={{ fontSize: 13.5, color: '#048c73', textDecoration: 'none' }}>← {t.backToDashboard}</a>
+        <OwnerHelpLinks locale={locale} />
       </div>
     </div>
   )

@@ -2,7 +2,7 @@
  * The listing wizard, per locale.
  *
  * This is the form an owner fills in to publish a listing, shared by
- * /submit/new and the owner dashboard. It is the longest single piece of copy
+ * /list-your-property/new and the owner dashboard. It is the longest single piece of copy
  * on the site and the one with the most ways to go wrong, so a few rules:
  *
  * WHAT IS NEVER TRANSLATED

@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
           product_data: {
             name: extendId
               ? `SpacesMate ${package_id} — ต่ออายุประกาศ ${days} วัน`
-              : `SpacesMate ${package_id} — สล็อตลงประกาศ ${days} วัน`,
-            description: '1 สล็อต = ประกาศออนไลน์ 1 รายการ · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ',
+              : `SpacesMate ${package_id} — แพ็กเกจลงประกาศ ${days} วัน`,
+            description: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ',
           },
         },
         quantity: qty,
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
         submit: {
           message:
             'จ่ายครั้งเดียว ไม่มีการต่ออายุอัตโนมัติ — ' +
-            `สล็อตใช้งานได้ ${days} วันนับจากวันที่เผยแพร่ประกาศ`,
+            `แพ็กเกจใช้งานได้ ${days} วันนับจากวันที่เผยแพร่ประกาศ`,
         },
       },
     })
