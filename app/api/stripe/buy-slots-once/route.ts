@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { package_id = 'basic', quantity = 1, publish_property_id = null } = await req.json()
+    const { package_id = 'basic', quantity = 1, publish_property_id = null, extend_property_id = null } = await req.json()
 
     const unitPrice = PACKAGE_PRICE_THB[package_id as keyof typeof PACKAGE_PRICE_THB]
     if (!unitPrice || unitPrice <= 0) {
@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
 
     // Same bound as the card route. A typo in a quantity field should not
     // create a 10,000-slot order, and Stripe will happily take it.
-    const qty = Math.max(1, Math.min(Math.floor(Number(quantity) || 1), 50))
+    // Extending buys exactly one term for one listing.
+    const qty = extend_property_id ? 1 : Math.max(1, Math.min(Math.floor(Number(quantity) || 1), 50))
 
     const supabase = createServerClient()
 
@@ -61,6 +62,20 @@ export async function POST(req: NextRequest) {
         .eq('id', publish_property_id)
         .maybeSingle()
       if (owned && owned.landlord_id === auth.id) publishId = owned.id as string
+    }
+
+    // Same check for an extension: the term is added to this listing's slot.
+    let extendId: string | null = null
+    if (extend_property_id) {
+      const { data: owned } = await supabase
+        .from('properties')
+        .select('id, landlord_id')
+        .eq('id', extend_property_id)
+        .maybeSingle()
+      if (!owned || owned.landlord_id !== auth.id) {
+        return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+      }
+      extendId = owned.id as string
     }
 
     const { data: profile } = await supabase
@@ -87,6 +102,9 @@ export async function POST(req: NextRequest) {
       quantity:      String(qty),
       duration_days: String(days),
       publish_property_id: publishId ?? '',
+      // Set when the owner pressed Extend: the webhook adds this term to the
+      // slot the listing already holds instead of leaving a new free slot.
+      extend_property_id: extendId ?? '',
       // Recorded on the slot as `source`, so a one-time slot is
       // distinguishable from a subscription slot when one silently fails to
       // renew and somebody has to work out why.
@@ -110,8 +128,10 @@ export async function POST(req: NextRequest) {
           currency: 'thb',
           unit_amount: unitPrice * 100,   // satang
           product_data: {
-            name: `SpacesMate ${package_id} — สล็อตลงประกาศ ${days} วัน`,
-            description: '1 สล็อต = ประกาศออนไลน์ 1 รายการ · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ',
+            name: extendId
+              ? `SpacesMate ${package_id} — ต่ออายุประกาศ ${days} วัน`
+              : `SpacesMate ${package_id} — แพ็กเกจลงประกาศ ${days} วัน`,
+            description: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ',
           },
         },
         quantity: qty,
@@ -120,7 +140,7 @@ export async function POST(req: NextRequest) {
       // sid lets the client-side purchase event carry a transaction_id, so a
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&pp=1&sid={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${siteUrl}/pricing`,
+      cancel_url:  `${siteUrl}/checkout`,
       allow_promotion_codes: true,
       locale: 'auto',
       // One hour, kept deliberately short now that card shares this session.
@@ -136,7 +156,7 @@ export async function POST(req: NextRequest) {
         submit: {
           message:
             'จ่ายครั้งเดียว ไม่มีการต่ออายุอัตโนมัติ — ' +
-            `สล็อตใช้งานได้ ${days} วันนับจากวันที่เผยแพร่ประกาศ`,
+            `แพ็กเกจใช้งานได้ ${days} วันนับจากวันที่เผยแพร่ประกาศ`,
         },
       },
     })

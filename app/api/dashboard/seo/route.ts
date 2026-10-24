@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { slug, title_th, title_en, meta_description, area_type, status, has_content, page_score, notes } = body
+    const { slug, title_th, title_en, meta_description, area_type, status, has_content, page_score, notes, place_key } = body
     if (!slug?.trim()) return NextResponse.json({ error: 'slug required' }, { status: 400 })
 
     const supabase = createServerClient()
@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
         has_content: has_content ?? false,
         page_score: page_score ?? null,
         notes: notes?.trim() || null,
+        // 'station:E4', 'landmark:chula', 'name:<uuid>' — the place this page is about.
+        place_key: place_key || null,
       })
       .select()
       .single()

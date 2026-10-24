@@ -4,8 +4,8 @@
  * Same pattern as the other page dictionaries. Three pages share one file
  * because none is large on its own and they are translated together.
  *
- * Note on /submit: it is the landing page, not the form. Its main CTA goes to
- * /submit/new, which renders SharedListingForm and is still Thai. Translating
+ * Note on /list-your-property: it is the landing page, not the form. Its main CTA goes to
+ * /list-your-property/new, which renders SharedListingForm and is still Thai. Translating
  * that form is a separate job (245 strings) and an all-or-nothing one, because
  * it ends at Stripe checkout — a half-translated purchase path is worse than an
  * untranslated one.
@@ -157,6 +157,20 @@ export const SEARCH_T = {
     sqm: 'ตร.ม.',
     viewDetail: 'ดูรายละเอียด',
     loading: 'กำลังโหลด...',
+
+    popularPlaces: 'ทำเลยอดนิยม',
+    suggestStations: 'สถานีรถไฟฟ้า',
+    suggestDistricts: 'เขต',
+    nearPrefix: 'ใกล้',
+    closestTo: 'ประกาศที่ใกล้ที่สุดจาก',
+    noneNearPlace: 'ยังไม่มีประกาศในระยะที่เลือก',
+    distanceFromStation: 'ระยะทางจากจุดที่เลือก',
+    pickStationFirst: 'เลือกสถานีหรือสถานที่ในช่องค้นหาด้านบนก่อน แล้วปรับระยะได้ที่นี่',
+    suggestLandmarks: 'สถานที่',
+    fromPlace: 'ห่างจาก {p} {d}',
+    findOnMap: 'ค้นหา “{q}” บนแผนที่',
+    mapLoading: 'กำลังค้นหาบนแผนที่…',
+    mapNotFound: 'ไม่พบสถานที่นี้บนแผนที่ แสดงผลจากคำค้นแทน',
   },
   en: {
     metaTitle: 'Search rentals',
@@ -219,12 +233,26 @@ export const SEARCH_T = {
     sqm: 'm²',
     viewDetail: 'View details',
     loading: 'Loading…',
+
+    popularPlaces: 'Popular locations',
+    suggestStations: 'Train stations',
+    suggestDistricts: 'Districts',
+    nearPrefix: 'Near',
+    closestTo: 'Closest listings to',
+    noneNearPlace: 'No listings within that distance yet',
+    distanceFromStation: 'Distance from chosen place',
+    pickStationFirst: 'Choose a station or place in the search box above, then set the distance here',
+    suggestLandmarks: 'Places',
+    fromPlace: '{d} from {p}',
+    findOnMap: 'Find “{q}” on the map',
+    mapLoading: 'Looking it up on the map…',
+    mapNotFound: 'Couldn’t find that place on the map, showing keyword matches instead',
   },
 } as const
 
 export const SUBMIT_T = {
   th: {
-    metaTitle: 'ลงประกาศเช่า',
+    metaTitle: 'ลงประกาศให้เช่า',
     metaDesc: 'ลงประกาศเช่าอพาร์ทเม้นท์ คอนโด บ้าน ออฟฟิศ หรือโคเวิร์กกิ้งสเปซ เริ่มต้นเพียง ฿299/เดือน เผยแพร่ทันทีหลังชำระ เข้าถึงผู้เช่าที่กำลังมองหาจริงๆ',
 
     heroTitleA: 'ลงประกาศเช่ากับ',
@@ -257,10 +285,10 @@ export const SUBMIT_T = {
     step1Free: 'ฟรี',
     step1BodyA: 'กรอกข้อมูลห้องและอัปโหลดรูปได้ถึง',
     step1BodyB: 'รูป พร้อมวิดีโอ บันทึกเป็นฉบับร่างไว้ได้ ยังไม่ต้องจ่าย',
-    step2Title: 'ซื้อสล็อตเมื่อพร้อม',
-    step2Body: 'เลือกแพ็กเกจตามระยะเวลาที่ต้องการแสดงผล 1 สล็อต = ประกาศออนไลน์ 1 รายการ ซื้อหลายสล็อตพร้อมกันได้',
+    step2Title: 'ซื้อแพ็กเกจเมื่อพร้อม',
+    step2Body: 'เลือกแพ็กเกจตามระยะเวลาที่ต้องการแสดงผล 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ซื้อหลายแพ็กเกจพร้อมกันได้',
     step3Title: 'เผยแพร่ทันที',
-    step3Body: 'ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ สลับประกาศในสล็อตได้ตลอดอายุ',
+    step3Body: 'ประกาศขึ้นเว็บทันทีที่ชำระสำเร็จ สลับประกาศในแพ็กเกจได้ตลอดอายุ',
 
     ownersEyebrow: 'สำหรับเจ้าของทรัพย์สิน',
     ownersTitle: 'ลงประกาศปล่อยเช่า',
@@ -274,7 +302,7 @@ export const SUBMIT_T = {
     stepsHeading: 'ลงประกาศง่ายๆ 3 ขั้นตอน',
     packagesHeading: 'แพ็กเกจราคา',
 
-    note1: '1 สล็อต = ประกาศออนไลน์ 1 รายการ · เผยแพร่ทันที ไม่ต้องรอ',
+    note1: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · เผยแพร่ทันที ไม่ต้องรอ',
     note2A: 'กรอกประกาศได้เต็มที่ทุกแพ็กเกจ',
     note2B: 'แพ็กเกจกำหนดแค่ว่าแสดงบนเว็บไซต์กี่รูป อัปเกรดแล้วส่วนที่เหลือแสดงทันที',
     note3: 'แพ็กเกจสูงสุด 12 เดือน เพื่อให้ประกาศได้รับการอัปเดตเสมอ — ข้อมูลแม่นกว่าเว็บอื่น',
@@ -286,16 +314,15 @@ export const SUBMIT_T = {
     recommended: 'แนะนำ',
     baht: 'บาท',
     save: 'ประหยัด',
-    packagesCta: 'ดูรายละเอียดและซื้อสล็อต',
 
     draftTitle: 'สร้างประกาศก่อน — ฟรี ยังไม่ต้องจ่าย',
-    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด แล้วค่อยซื้อสล็อตเมื่อพร้อมเผยแพร่',
+    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด พร้อมเผยแพร่เมื่อไหร่ค่อยซื้อแพ็กเกจในแดชบอร์ด',
 
     closingTitle: 'พร้อมปล่อยเช่าแล้วหรือยัง?',
     closingBody: 'เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299',
   },
   en: {
-    metaTitle: 'List a rental',
+    metaTitle: 'List your property',
     metaDesc: 'List an apartment, condo, house, office or co-working space from ฿299/month. Live as soon as you pay, in front of renters who are actively looking.',
 
     heroTitleA: 'List your rental with',
@@ -328,10 +355,10 @@ export const SUBMIT_T = {
     step1Free: 'free',
     step1BodyA: 'Fill in the room details and upload up to',
     step1BodyB: 'photos, plus video. Save it as a draft — nothing to pay yet.',
-    step2Title: 'Buy a slot when you are ready',
-    step2Body: 'Choose a package for how long you want it live. One slot = one live listing, and you can buy several at once.',
+    step2Title: 'Buy a package when you are ready',
+    step2Body: 'Choose a package for how long you want it live. One package = one live listing, and you can buy several at once.',
     step3Title: 'Publish immediately',
-    step3Body: 'The listing goes live the moment payment succeeds, and you can swap listings within the slot for the rest of its term.',
+    step3Body: 'The listing goes live the moment payment succeeds, and you can swap listings within the package for the rest of its term.',
 
     ownersEyebrow: 'For property owners',
     ownersTitle: 'List your property to let',
@@ -345,7 +372,7 @@ export const SUBMIT_T = {
     stepsHeading: 'Three simple steps',
     packagesHeading: 'Packages',
 
-    note1: 'One slot = one live listing · published immediately, with nothing to wait for',
+    note1: 'One package = one live listing · published immediately, with nothing to wait for',
     note2A: 'Every package lets you fill in the whole listing.',
     note2B: 'The package only decides how many photos show on the website; upgrade and the rest appear immediately.',
     note3: 'Packages run to 12 months at most, so listings stay updated — which is why the data here is more accurate than elsewhere.',
@@ -357,10 +384,9 @@ export const SUBMIT_T = {
     recommended: 'Recommended',
     baht: 'baht',
     save: 'Saves',
-    packagesCta: 'See the detail and buy a slot',
 
     draftTitle: 'Create the listing first — free, nothing to pay',
-    draftBody: 'Keep it as a draft for as long as you like, then buy a slot when you are ready to publish.',
+    draftBody: 'Keep it as a draft for as long as you like, then buy a package from your dashboard when you are ready to publish.',
 
     closingTitle: 'Ready to let it?',
     closingBody: 'Put your listing in front of thousands of renters, from ฿299.',

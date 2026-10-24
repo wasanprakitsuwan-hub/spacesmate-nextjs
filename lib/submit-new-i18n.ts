@@ -1,5 +1,5 @@
 /**
- * The /submit/new wrapper: top bar, step indicator, validation messages, the
+ * The /list-your-property/new wrapper: top bar, step indicator, validation messages, the
  * "what happens next" panel, the consent tick and the save button.
  *
  * The form itself lives in lib/wizard-i18n. This file is only the scaffolding
@@ -30,6 +30,7 @@ export const SUBMIT_NEW_T = {
     needRoomType: 'กรุณาเพิ่มอย่างน้อย 1 ประเภทห้อง / พื้นที่',
     needPrice: 'กรุณากรอกราคาเช่า',
     needProvince: 'กรุณาเลือกจังหวัด',
+    needPin: 'กรุณาปักหมุดตำแหน่งบนแผนที่ เพื่อให้ผู้เช่าเห็นรถไฟฟ้าใกล้เคียง',
     needImage: 'กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป',
     needContact: 'กรุณากรอกชื่อและเบอร์โทรติดต่อ',
     needConsent: 'กรุณายอมรับเงื่อนไขการให้บริการก่อนดำเนินการ',
@@ -50,7 +51,7 @@ export const SUBMIT_NEW_T = {
     draftLine1a: 'กดบันทึกแล้วประกาศจะถูกเก็บเป็น ',
     draftLine1b: 'ฉบับร่าง',
     draftLine1c: ' ในบัญชีของคุณ — ยังไม่มีการเรียกเก็บเงิน และยังไม่แสดงบนเว็บไซต์',
-    draftLine2: 'หากคุณมีสล็อตว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อสล็อต — เลือกแพ็กเกจตอนนั้นได้เลย ไม่ต้องตัดสินใจตอนนี้',
+    draftLine2: 'หากคุณมีแพ็กเกจว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อแพ็กเกจ — เลือกแพ็กเกจตอนนั้นได้เลย ไม่ต้องตัดสินใจตอนนี้',
     fillFreely: 'กรอกได้เต็มที่',
     fillFreelyBody: (maxImages: number) =>
       ` — ใส่รูปได้ถึง ${maxImages} รูปและใส่วิดีโอได้ทุกแพ็กเกจ แพ็กเกจมีผลกับจำนวนที่แสดงบนเว็บไซต์เท่านั้น ไม่ได้จำกัดสิ่งที่คุณกรอก อัปเกรดเมื่อไหร่ รูปและวิดีโอที่เหลือจะแสดงทันทีโดยไม่ต้องอัปโหลดใหม่`,
@@ -67,7 +68,7 @@ export const SUBMIT_NEW_T = {
     back: 'ย้อนกลับ',
     saving: 'กำลังบันทึก...',
     saveListing: 'บันทึกประกาศ',
-    savedAsDraftNote: 'บันทึกเป็นฉบับร่างก่อน — ยังไม่มีการเรียกเก็บเงิน ขั้นตอนถัดไปคือซื้อสล็อตเพื่อเผยแพร่',
+    savedAsDraftNote: 'บันทึกเป็นฉบับร่างก่อน — ยังไม่มีการเรียกเก็บเงิน ขั้นตอนถัดไปคือซื้อแพ็กเกจเพื่อเผยแพร่',
   },
 
   en: {
@@ -86,6 +87,7 @@ export const SUBMIT_NEW_T = {
     needRoomType: 'Please add at least one room or space type',
     needPrice: 'Please enter a rent',
     needProvince: 'Please choose a province',
+    needPin: 'Please drop a pin on the map so renters can see the nearest stations',
     needImage: 'Please upload at least one photo',
     needContact: 'Please enter a contact name and phone number',
     needConsent: 'Please accept the Terms of Service before continuing',
@@ -103,7 +105,7 @@ export const SUBMIT_NEW_T = {
     draftLine1a: 'When you save, the listing is kept as a ',
     draftLine1b: 'draft',
     draftLine1c: ' in your account — nothing is charged, and it is not shown on the website yet.',
-    draftLine2: 'If you already hold a free slot we publish it straight away. If not, we take you to buy one — you choose the package then, not now.',
+    draftLine2: 'If you already hold an unused package we publish it straight away. If not, we take you to buy one — you choose the package then, not now.',
     fillFreely: 'Fill it in fully',
     fillFreelyBody: (maxImages: number) =>
       ` — you can add up to ${maxImages} photos and a video on any package. The package decides how many of them appear on the website, not how many you may enter. Upgrade at any time and the rest appear immediately, with nothing to re-upload.`,
@@ -118,7 +120,7 @@ export const SUBMIT_NEW_T = {
     back: 'Back',
     saving: 'Saving…',
     saveListing: 'Save listing',
-    savedAsDraftNote: 'Saved as a draft first — nothing is charged. The next step is buying a slot to publish it.',
+    savedAsDraftNote: 'Saved as a draft first — nothing is charged. The next step is buying a package to publish it.',
   },
 } as const
 

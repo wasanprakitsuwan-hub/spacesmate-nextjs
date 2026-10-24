@@ -55,6 +55,7 @@ const ALLOWED = new Map([
   ['lib/legal-i18n.ts',       'the th half of the dictionary'],
   ['lib/auth-i18n.ts',        'the th half of the dictionary'],
   ['lib/dashboard-i18n.ts',   'the th half of the dictionary'],
+  ['lib/checkout-i18n.ts',    'the th half of the dictionary'],
   ['lib/faq-data.ts',         'the th half of the dictionary'],
   ['lib/constants.ts',        'area keywords and Thai place names'],
   ['components/listing/SharedListingForm.tsx', 'FACING / OTHER_CHARGES / TYPE_LABEL values + Thai-only dashboard exports'],
@@ -74,6 +75,7 @@ const ALLOWED = new Map([
   ['components/property/PropertyVideo.tsx',     'heading and aria text, gated on locale'],
   ['components/listing/BuildingAutocomplete.tsx', 'status lines, gated on locale'],
   ['components/property/DescriptionBody.tsx',   'sentinel strings + the bilingual tab label'],
+  ['components/marketing/SearchBody.tsx',      'TERM_SUFFIX price suffixes, gated on locale'],
   ['components/ui/FloatingChat.tsx',            'deliberately bilingual aria-label'],
 
   // ── Thai that is matched against, not displayed ──
@@ -81,6 +83,9 @@ const ALLOWED = new Map([
   ['lib/areas.ts',                       'district values as stored in the DB'],
   ['components/sections/AreaLinks.tsx',  'search terms matched against listing text'],
   ['lib/slug.ts',                        'the Thai unicode range in a regex'],
+  ['lib/search-match.ts',                'Thai synonyms matched against queries; unit labels gated on locale'],
+  ['lib/stations.ts',                    'the th half of each station name (en beside it)'],
+  ['lib/landmarks.ts',                   'the th half of each landmark name and Thai aliases (en beside it)'],
   ['lib/types.ts',                       'trailing comments on field declarations'],
   ['components/marketing/ContactBody.tsx', 'interest values submitted with the form'],
   ['components/marketing/ManageBody.tsx',  'icon map keyed by the stored channel value'],

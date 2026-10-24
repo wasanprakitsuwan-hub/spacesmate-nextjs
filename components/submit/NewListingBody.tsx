@@ -14,6 +14,7 @@ import { trackEvent } from '@/lib/analytics'
 import { MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
 import { createBrowserClient } from '@/lib/supabase'
 import { SUBMIT_NEW_T, type Locale } from '@/lib/submit-new-i18n'
+import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
 import {
   FormState, BLANK, prepareSubmitData, ListingFormFields,
 } from '@/components/listing/SharedListingForm'
@@ -23,7 +24,7 @@ import {
 // It existed so this page could charge, and later so it could set an image
 // allowance. It does neither now: packages are a display entitlement decided by
 // the slot the owner buys, and this page only writes the listing. Prices live
-// in lib/packages and are shown on /pricing.
+// in lib/packages and are shown on /list-your-property and at /checkout.
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const SINP: React.CSSProperties = {
@@ -82,6 +83,18 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     }
   }, [])
 
+  // Listing needs an account. A logged-out owner registers first and comes
+  // back here, rather than filling the whole form and meeting the login wall at
+  // the end (Founder, 24 Oct 2026). The stash above still covers anyone whose
+  // session expires mid-form.
+  useEffect(() => {
+    createBrowserClient().auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        window.location.replace(`${lp('/login')}?tab=signup&redirect=${encodeURIComponent(lp('/list-your-property/new'))}`)
+      }
+    }).catch(() => {})
+  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Contact info (separate from listing FormState)
 
   // Promo state was removed with the promo box — this page no longer charges,
@@ -112,6 +125,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     if (['condo', 'house'].includes(form.property_type) && !form.condo_rental.price_12mo && !form.condo_rental.price_1mo)
       return t.needPrice
     if (!form.province) return t.needProvince
+    if (!form.lat || !form.lng) return t.needPin
     if (form.images.length === 0) return t.needImage
     return null
   }
@@ -171,7 +185,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
       if (!authSess?.access_token) {
         trackEvent('listing_draft_needs_account', { package_id: form.package_type })
         sessionStorage.setItem('spacesmate_pending_listing', JSON.stringify(form))
-        window.location.href = `${lp('/login')}?redirect=${encodeURIComponent(lp('/submit/new'))}`
+        window.location.href = `${lp('/login')}?redirect=${encodeURIComponent(lp('/list-your-property/new'))}`
         return
       }
 
@@ -226,10 +240,13 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
         return
       }
 
-      // Otherwise the draft is saved and waiting for capacity. Send them
-      // straight at the slot purchase with the package they picked, rather
-      // than leaving them to find the pricing page themselves.
-      window.location.href = `${lp('/pricing')}?draft=1&package=${encodeURIComponent(form.package_type)}`
+      // Otherwise the draft is saved and waiting for a slot. Checkout opens
+      // with this listing and the package they picked already selected; it
+      // links back to the dashboard for anyone who wants to pay later.
+      const draftId = json.listing?.id as string | undefined
+      window.location.href = draftId
+        ? `${lp('/checkout')}?listing=${encodeURIComponent(draftId)}&pkg=${encodeURIComponent(form.package_type)}`
+        : '/owner-dashboard'
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t.genericError)
       setLoading(false)
@@ -293,7 +310,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
             video, and the slot the owner buys decides how much of that the
             public sees. So there is nothing to pick here, and asking would
             only put a price list in front of someone who came to write a
-            listing. Pricing lives on /pricing. */}
+            listing. Prices live on /list-your-property and /checkout. */}
 
         {/* ═══════════════════════════════════════════════════
             STEP 1 — Full Listing Form
@@ -303,7 +320,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
             {/* No package badge any more.
                 Packages decide what the public sees, not what may be entered,
                 so there is nothing to choose here and nothing this form needs
-                to know. Pricing lives on /pricing; this page is only about
+                to know. Prices live on /list-your-property and /checkout; this page is only about
                 writing the listing. */}
 
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 20px' }}>{t.listingInfo}</h2>
@@ -447,6 +464,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
           </div>
         )}
 
+        <OwnerHelpLinks locale={locale} />
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -456,7 +474,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
 
 // ── Shared body ───────────────────────────────────────────────────────────────
 /**
- * Rendered by both /submit/new (Thai) and /en/submit/new (English). Thai is the
+ * Rendered by both /list-your-property/new (Thai) and /en/submit/new (English). Thai is the
  * default so the existing route is unchanged.
  */
 export default function NewListingBody({ locale = 'th' }: { locale?: Locale }) {

@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
+import { withPageSeo } from '@/lib/page-seo'
+
+// Picks up title and description edits from /dashboard/pages.
+export const revalidate = 300
 import TermsBody from '@/components/marketing/TermsBody'
 import { LEGAL_T } from '@/lib/legal-i18n'
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: LEGAL_T.en.termsMetaTitle,
   alternates: {
     canonical: 'https://spacesmate.com/en/terms',
@@ -12,4 +16,9 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return <TermsBody locale="en" />
+}
+
+/** Title, description and indexing from /dashboard/pages override the defaults above. */
+export async function generateMetadata(): Promise<Metadata> {
+  return withPageSeo('/terms', 'en', baseMetadata)
 }

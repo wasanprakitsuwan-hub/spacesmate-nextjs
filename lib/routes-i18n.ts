@@ -33,12 +33,12 @@ const EN_STATIC = new Set([
   '/about',
   '/blog',
   '/services',
-  '/pricing',
+  '/checkout',
   '/faq',
   '/contact',
   '/search',
-  '/submit',
-  '/submit/new',
+  '/list-your-property',
+  '/list-your-property/new',
   '/manage',
   '/login',
   '/reset-password',
@@ -76,8 +76,8 @@ const EN_DYNAMIC_PREFIXES = ['/property/', '/area/']
  * Thai-only, deliberately, and worth naming so nobody wonders:
  *   /blog/[slug]         see below — NOT a missing page
  *   /building/[slug]     no English version yet
- *   /submit/success      post-checkout, reached from Stripe
- *   /submit/cancel       likewise
+ *   /list-your-property/success      post-checkout, reached from Stripe
+ *   /list-your-property/cancel       likewise
  *   /dashboard/*         admin surfaces, Thai-only by design
  *
  * WHY /blog/[slug] IS ABSENT WHILE /blog IS LISTED

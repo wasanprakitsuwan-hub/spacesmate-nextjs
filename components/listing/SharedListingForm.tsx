@@ -1163,7 +1163,7 @@ export function ListingFormFields({
   onChange: (k: string, v: any) => void
   onAmenityToggle: (a: string) => void
   onImagesChange: (imgs: string[]) => void
-  /** Public /submit/new form — uses the unauthenticated upload endpoint */
+  /** Public /list-your-property/new form — uses the unauthenticated upload endpoint */
   isPublicUpload?: boolean
   /** Admin screen — shows the package selector and the read-only slug */
   isAdmin?: boolean
@@ -1171,7 +1171,7 @@ export function ListingFormFields({
   isMobile?: boolean
   /**
    * Which language the owner reads. Thai by default, so the owner dashboard and
-   * the admin screen are unaffected — only /en/submit/new passes 'en'.
+   * the admin screen are unaffected — only /en/list-your-property/new passes 'en'.
    *
    * This changes labels only. Every value the form writes — room type key,
    * amenity name, facing, district, charge key — is identical in both locales.

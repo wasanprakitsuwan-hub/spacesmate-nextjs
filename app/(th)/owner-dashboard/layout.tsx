@@ -8,7 +8,7 @@ import DashboardChrome from '@/components/dashboard/DashboardChrome'
  */
 export const metadata: Metadata = {
   title: 'ประกาศของฉัน',
-  description: 'จัดการประกาศ สล็อต และแพ็กเกจของคุณบน SpacesMate',
+  description: 'จัดการประกาศและแพ็กเกจของคุณบน SpacesMate',
   robots: { index: false, follow: false },
 }
 
