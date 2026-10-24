@@ -233,7 +233,7 @@ export const BLOG_CONTENT: Record<number, string> = {
 <h2>ควรเลือกช่องทางไหน?</h2>
 <p>คำแนะนำตรงๆ คือใช้ทั้งสองช่องทาง — Facebook เพื่อการมองเห็นในวงกว้างและเร็ว ส่วนแพลตฟอร์มเฉพาะทางเพื่อดึงผู้เช่าที่จริงจังและอยู่ในตลาดอยู่แล้ว สำหรับทรัพย์สินที่มีทำเลดีและสิ่งอำนวยความสะดวกครบ การลงบน SpacesMate มักได้ผลตอบรับจากผู้เช่าคุณภาพเร็วกว่าการรอในกลุ่ม Facebook</p>
 
-<p>ลงประกาศฟรีบน SpacesMate ได้เลยที่ <a href="/submit">spacesmate.com/submit</a></p>
+<p>ลงประกาศฟรีบน SpacesMate ได้เลยที่ <a href="/list-your-property">spacesmate.com/list-your-property</a></p>
 `,
 
   // ─── 19385 | ha-hong-pak-spacesmate ─────────────────────────────────────────

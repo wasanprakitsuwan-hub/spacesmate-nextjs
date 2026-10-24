@@ -139,6 +139,10 @@ export const PRICING_T = {
 export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   th: [
     {
+      q: 'สมัครใหม่ลงประกาศฟรีไหม?',
+      a: 'ฟรี บัญชีใหม่ได้สล็อต Basic ฟรี 1 สล็อต ประกาศแรกที่บันทึกจะเผยแพร่ทันทีและแสดงได้ 30 วัน นับจากวันที่เผยแพร่ ประกาศถัดไปหรือเมื่อครบ 30 วัน เลือกแพ็กเกจและชำระเงินได้จากแดชบอร์ด',
+    },
+    {
       q: 'สล็อตคืออะไร? ต่างจากประกาศอย่างไร?',
       a: 'ประกาศคือข้อมูลห้องที่คุณกรอกไว้ — เก็บอยู่ในบัญชีของคุณตลอด ไม่มีวันหาย ส่วนสล็อตคือสิทธิ์ในการนำประกาศขึ้นแสดงบนเว็บไซต์ 1 รายการ ตามระยะเวลาที่ซื้อ พูดง่าย ๆ คือ 1 สล็อต = ประกาศออนไลน์ 1 รายการ',
     },
@@ -164,7 +168,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'ชำระเงินอย่างไร?',
-      a: 'ชำระผ่าน Stripe ได้ 2 แบบ — บัตรเครดิต/เดบิตทุกธนาคาร หรือพร้อมเพย์ (สแกน QR) · บัตร: ต่ออายุอัตโนมัติทุกรอบจนกว่าจะยกเลิก ประกาศไม่หลุดกลางคัน · พร้อมเพย์: จ่ายครั้งเดียว ไม่ต่ออัตโนมัติ เมื่อครบกำหนดประกาศจะหยุดแสดงจนกว่าจะซื้อสล็อตใหม่ · สล็อตเข้าบัญชีอัตโนมัติหลังชำระสำเร็จ กรณีพร้อมเพย์ระบบจะรอธนาคารยืนยันก่อนจึงเพิ่มสล็อตให้ ปกติไม่กี่วินาที',
+      a: 'ชำระผ่าน Stripe เลือกได้ 2 แบบในหน้าชำระเงิน · จ่ายครั้งเดียว: พร้อมเพย์ (สแกน QR) หรือบัตรเครดิต/เดบิต ไม่ต่ออายุอัตโนมัติ เมื่อครบกำหนดประกาศจะหยุดแสดงจนกว่าจะต่ออายุ · ต่ออายุอัตโนมัติ: บัตรเครดิต/เดบิตเท่านั้น ตัดบัตรทุกรอบจนกว่าจะยกเลิก ประกาศไม่หลุดกลางคัน · สล็อตเข้าบัญชีอัตโนมัติหลังชำระสำเร็จ กรณีพร้อมเพย์ระบบจะรอธนาคารยืนยันก่อน ปกติไม่กี่วินาที',
     },
     {
       q: 'SpacesMate ต่างจากเว็บประกาศอสังหาทั่วไปอย่างไร?',
@@ -173,6 +177,10 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   ],
 
   en: [
+    {
+      q: 'Is my first listing free?',
+      a: 'Yes. A new account gets one free Basic slot: the first listing you save is published straight away and shows for 30 days from that day. For further listings, or after the 30 days, choose a package and pay from your dashboard.',
+    },
     {
       q: 'What is a slot? How is it different from a listing?',
       a: 'A listing is the room details you fill in — it stays on your account permanently and is never lost. A slot is the right to show one listing on the website, for the period you bought. Put simply: one slot = one live listing.',
@@ -199,7 +207,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'How do I pay?',
-      a: 'Through Stripe, two ways — credit or debit card from any bank, or PromptPay (scan the QR). · Card: renews automatically each period until you cancel, so the listing never drops off mid-way. · PromptPay: a single payment with no auto-renewal; when the period ends the listing stops showing until you buy a new slot. · Slots are added to your account automatically once payment succeeds. With PromptPay the system waits for the bank to confirm before adding them, which is usually a few seconds.',
+      a: 'Through Stripe, with two options at checkout. · One-time: PromptPay (scan the QR) or credit/debit card, with no auto-renewal; when the period ends the listing stops showing until you renew. · Auto-renew: credit/debit card only, charged each period until you cancel, so the listing never drops off mid-way. · Slots are added to your account automatically once payment succeeds. With PromptPay the system waits for the bank to confirm first, which is usually a few seconds.',
     },
     {
       q: 'How is SpacesMate different from other property listing sites?',
@@ -217,7 +225,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
  *
  * The price and the saving are derived from PACKAGE_PRICE_THB rather than
  * written out, so changing a price in one place changes every page that shows
- * it. /submit used to carry its own copy with savings: '22%' as a literal; it
+ * it. /list-your-property used to carry its own copy with savings: '22%' as a literal; it
  * happened to be right, but only until the next price change.
  */
 export function buildPlans(locale: Locale) {
@@ -294,54 +302,3 @@ export function buildPlans(locale: Locale) {
 }
 
 
-/**
- * The slot checkout buttons — components/pricing/BuySlotsCta.
- *
- * This was missed when /en/pricing was translated: the page around it was
- * English and the button an owner actually presses to pay was Thai. It is the
- * last step before Stripe, so it is the worst possible place to lose someone.
- *
- * WHAT THE TWO BUTTONS MEAN
- *   The choice is a BILLING MODEL, not a payment method. 'once' buys a term
- *   that expires; 'subscription' buys one that renews on a card. The instrument
- *   is chosen afterwards at Stripe — one-time offers PromptPay and card,
- *   subscription can only offer card, because PromptPay cannot do recurring.
- *   The English must not blur that, or someone picks a renewing charge thinking
- *   they made a single payment.
- *
- *   PromptPay is kept as the Thai name in English too. It is a brand, it is what
- *   the Stripe screen says, and an English reader who is paying in Thailand will
- *   recognise it.
- */
-export const SLOT_CTA_T = {
-  th: {
-    quantity: 'จำนวนสล็อต',
-    decrease: 'ลดจำนวน',
-    increase: 'เพิ่มจำนวน',
-    loading: 'กำลังโหลด…',
-    payOnce: (total: string) => `จ่ายครั้งเดียว · ฿${total}`,
-    payOnceNote: 'พร้อมเพย์ หรือ บัตรเครดิต/เดบิต · ไม่ต่ออายุอัตโนมัติ',
-    subscribe: (total: string) => `ต่ออายุอัตโนมัติ · ฿${total}`,
-    subscribeNote: 'บัตรเครดิต/เดบิตเท่านั้น · ตัดบัตรอัตโนมัติทุกรอบ ยกเลิกได้ทุกเมื่อ',
-    choose: (total: string) => `เลือกแพ็กเกจนี้ · ฿${total}`,
-    payOptions: 'จ่ายครั้งเดียวด้วยพร้อมเพย์/บัตร หรือต่ออายุอัตโนมัติด้วยบัตร',
-    slotExplainer: '1 สล็อต = เผยแพร่ได้ 1 ประกาศ · เปลี่ยนประกาศในสล็อตได้ตลอดอายุ',
-    checkoutFailed: 'ไม่สามารถเริ่มการชำระเงินได้',
-    genericError: 'เกิดข้อผิดพลาด',
-  },
-  en: {
-    quantity: 'Number of slots',
-    decrease: 'Decrease quantity',
-    increase: 'Increase quantity',
-    loading: 'Loading…',
-    payOnce: (total: string) => `Pay once · ฿${total}`,
-    payOnceNote: 'PromptPay or credit/debit card · does not renew',
-    subscribe: (total: string) => `Auto-renew · ฿${total}`,
-    subscribeNote: 'Credit/debit card only · charged each term, cancel any time',
-    choose: (total: string) => `Choose this package · ฿${total}`,
-    payOptions: 'Pay once by PromptPay/card, or auto-renew by card',
-    slotExplainer: '1 slot = 1 published listing · swap which listing fills it any time during the term',
-    checkoutFailed: 'We could not start the payment',
-    genericError: 'Something went wrong',
-  },
-} as const

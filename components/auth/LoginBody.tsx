@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import TermsTick from '@/components/auth/TermsTick'
+import { termsMetadata, savePendingTerms } from '@/lib/terms-consent'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -32,6 +34,21 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   const [signEmail, setSignEmail] = useState('')
   const [signPwd,   setSignPwd]   = useState('')
   const [signPwd2,  setSignPwd2]  = useState('')
+
+  // Sign-up acceptance (lib/terms-consent): terms + privacy required, marketing optional.
+  const [accepted,  setAccepted]  = useState(false)
+  const [marketing, setMarketing] = useState(false)
+
+  // ?tab=signup opens on sign-up (the "list a property" buttons send logged-out
+  // owners here); ?redirect= is where to go afterwards. Same-site paths only —
+  // an open redirect is a phishing primitive.
+  const [redirect, setRedirect] = useState<string | null>(null)
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search)
+    if (qs.get('tab') === 'signup') setTab('signup')
+    const wanted = qs.get('redirect')
+    if (wanted && wanted.startsWith('/') && !wanted.startsWith('//')) setRedirect(wanted)
+  }, [])
 
   function switchTab(t: 'login' | 'signup') {
     setTab(t); setError(''); setSuccess(''); setForgotPwd(false)
@@ -109,6 +126,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
   // ── Sign Up ───────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    if (!accepted) { setError(t.acceptRequired); return }
     if (signPwd !== signPwd2) { setError(t.pwdMismatch); return }
     // 8, matching AuthModal. These are two front doors to the same Supabase
     // account; until 17 Oct 2026 this one asked for 6 and the modal for 8, so
@@ -119,7 +137,10 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
       const supabase = createBrowserClient()
       const { data, error: authErr } = await supabase.auth.signUp({
         email: signEmail, password: signPwd,
-        options: { data: { full_name: signName } },
+        options: {
+          data: { full_name: signName, ...termsMetadata(marketing) },
+          emailRedirectTo: `${window.location.origin}${redirect ?? localeHref('/owner-dashboard', locale)}`,
+        },
       })
       if (authErr) {
         setError(authErr.message || t.signupFailedShort)
@@ -172,9 +193,21 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
           <div className="p-7">
             {/* Google above the fold on both tabs — the one-tap path should be
                 visible before anyone starts typing a password. */}
+            {tab === 'signup' && !success && (
+              <div className="mb-5">
+                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
+                  marketing={marketing} onMarketing={setMarketing} />
+              </div>
+            )}
             <GoogleSignInButton
               locale={locale}
               label={tab === 'login' ? t.googleLogin : t.googleSignup}
+              redirectTo={redirect ?? undefined}
+              beforeSignIn={tab === 'signup' ? () => {
+                if (!accepted) { setError(t.acceptRequired); return false }
+                savePendingTerms(marketing)
+                return true
+              } : undefined}
             />
             <div className="flex items-center gap-3 my-5">
               <span className="flex-1 h-px bg-gray-200" />

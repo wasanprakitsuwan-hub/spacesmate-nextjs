@@ -1,5 +1,5 @@
 /**
- * The /submit/new wrapper: top bar, step indicator, validation messages, the
+ * The /list-your-property/new wrapper: top bar, step indicator, validation messages, the
  * "what happens next" panel, the consent tick and the save button.
  *
  * The form itself lives in lib/wizard-i18n. This file is only the scaffolding

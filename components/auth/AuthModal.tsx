@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
 import GoogleSignInButton from './GoogleSignInButton'
+import TermsTick from './TermsTick'
+import { termsMetadata, savePendingTerms } from '@/lib/terms-consent'
 import { AUTH_T, type Locale } from '@/lib/auth-i18n'
 import { localeHref } from '@/lib/routes-i18n'
 
@@ -100,6 +102,10 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
   const [success,  setSuccess]  = useState('')
+
+  // Sign-up acceptance (lib/terms-consent): terms + privacy required, marketing optional.
+  const [accepted,  setAccepted]  = useState(false)
+  const [marketing, setMarketing] = useState(false)
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('')
@@ -231,6 +237,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
   // ── Sign Up ────────────────────────────────────────────────────────────────
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    if (!accepted) { setError(t.acceptRequired); return }
     if (!signName.trim() || !signEmail.trim() || !signPhone || !signPwd) { setError(t.needAllFields); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signEmail.trim())) { setError(t.badEmail); return }
     const cleanPhone = signPhone.replace(/[\s\-]/g, '')
@@ -267,7 +274,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
         password: signPwd,
         options:  {
           // Pass all fields in metadata — the DB trigger reads these to populate user_profiles
-          data: { full_name: signName, phone: cleanPhone },
+          data: { full_name: signName, phone: cleanPhone, ...termsMetadata(marketing) },
           emailRedirectTo: `${window.location.origin}/owner-dashboard`,
         },
       })
@@ -421,7 +428,15 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
             <>
               {/* Google first, deliberately. The one-tap path should be the
                   one people see before they start typing a password. */}
-              <GoogleSignInButton locale={locale} label={t.googleSignup} />
+              <div style={{ marginBottom: 16 }}>
+                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
+                  marketing={marketing} onMarketing={setMarketing} />
+              </div>
+              <GoogleSignInButton locale={locale} label={t.googleSignup} beforeSignIn={() => {
+                if (!accepted) { setError(t.acceptRequired); return false }
+                savePendingTerms(marketing)
+                return true
+              }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
                 <span style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.or}</span>
@@ -503,12 +518,6 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
                 {loading ? t.signingUp : t.signupFree}
               </button>
 
-              <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', margin: '14px 0 0', lineHeight: 1.6 }}>
-                {t.consentLead}{' '}
-                <a href={localeHref('/terms', locale)} style={{ color: '#048c73' }}>{t.terms}</a>{' '}
-                {t.and}{' '}
-                <a href={localeHref('/privacy', locale)} style={{ color: '#048c73' }}>{t.privacy}</a>
-              </p>
               <p style={{ textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: '10px 0 0' }}>
                 {t.haveAccount}{' '}
                 <button type="button" onClick={() => switchTab('login')} style={{ color: '#048c73', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>

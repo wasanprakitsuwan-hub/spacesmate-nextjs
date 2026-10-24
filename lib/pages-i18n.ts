@@ -4,8 +4,8 @@
  * Same pattern as the other page dictionaries. Three pages share one file
  * because none is large on its own and they are translated together.
  *
- * Note on /submit: it is the landing page, not the form. Its main CTA goes to
- * /submit/new, which renders SharedListingForm and is still Thai. Translating
+ * Note on /list-your-property: it is the landing page, not the form. Its main CTA goes to
+ * /list-your-property/new, which renders SharedListingForm and is still Thai. Translating
  * that form is a separate job (245 strings) and an all-or-nothing one, because
  * it ends at Stripe checkout — a half-translated purchase path is worse than an
  * untranslated one.
@@ -252,7 +252,7 @@ export const SEARCH_T = {
 
 export const SUBMIT_T = {
   th: {
-    metaTitle: 'ลงประกาศเช่า',
+    metaTitle: 'ลงประกาศให้เช่า',
     metaDesc: 'ลงประกาศเช่าอพาร์ทเม้นท์ คอนโด บ้าน ออฟฟิศ หรือโคเวิร์กกิ้งสเปซ เริ่มต้นเพียง ฿299/เดือน เผยแพร่ทันทีหลังชำระ เข้าถึงผู้เช่าที่กำลังมองหาจริงๆ',
 
     heroTitleA: 'ลงประกาศเช่ากับ',
@@ -322,7 +322,7 @@ export const SUBMIT_T = {
     closingBody: 'เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299',
   },
   en: {
-    metaTitle: 'List a rental',
+    metaTitle: 'List your property',
     metaDesc: 'List an apartment, condo, house, office or co-working space from ฿299/month. Live as soon as you pay, in front of renters who are actively looking.',
 
     heroTitleA: 'List your rental with',

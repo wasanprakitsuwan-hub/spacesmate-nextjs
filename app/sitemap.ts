@@ -22,7 +22,7 @@ export const revalidate = 3600
  * so new listings and articles appear without anyone remembering to add them.
  *
  * Deliberately excluded: /dashboard, /owner-dashboard, /login, /reset-password,
- * /submit/success, /submit/cancel — all also disallowed in robots.ts.
+ * /list-your-property/success, /list-your-property/cancel — all also disallowed in robots.ts.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
@@ -34,8 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/en`,       changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/`, en: `${SITE}/en` } } },
     { url: `${SITE}/manage`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
     { url: `${SITE}/en/manage`, changeFrequency: 'monthly', priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
-    { url: `${SITE}/submit`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now },
-    { url: `${SITE}/pricing`,  changeFrequency: 'monthly', priority: 0.8,  lastModified: now, alternates: { languages: { th: `${SITE}/pricing`, en: `${SITE}/en/pricing` } } },
+    { url: `${SITE}/list-your-property`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now },
     { url: `${SITE}/services`, changeFrequency: 'monthly', priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
     { url: `${SITE}/en/services`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
     { url: `${SITE}/blog`,     changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
@@ -49,11 +48,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/en/blog`,  changeFrequency: 'weekly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
     { url: `${SITE}/about`,    changeFrequency: 'yearly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
     { url: `${SITE}/en/about`, changeFrequency: 'yearly',  priority: 0.4,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
-    { url: `${SITE}/en/pricing`, changeFrequency: 'monthly', priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/pricing`, en: `${SITE}/en/pricing` } } },
     { url: `${SITE}/en/faq`,   changeFrequency: 'monthly', priority: 0.6,  lastModified: now, alternates: { languages: { th: `${SITE}/faq`, en: `${SITE}/en/faq` } } },
     { url: `${SITE}/en/contact`, changeFrequency: 'yearly', priority: 0.4, lastModified: now, alternates: { languages: { th: `${SITE}/contact`, en: `${SITE}/en/contact` } } },
     { url: `${SITE}/en/search`, changeFrequency: 'daily',  priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/search`, en: `${SITE}/en/search` } } },
-    { url: `${SITE}/en/submit`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/submit`, en: `${SITE}/en/submit` } } },
+    { url: `${SITE}/en/list-your-property`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/list-your-property`, en: `${SITE}/en/list-your-property` } } },
     { url: `${SITE}/en/privacy`, changeFrequency: 'yearly', priority: 0.3, lastModified: now, alternates: { languages: { th: `${SITE}/privacy`, en: `${SITE}/en/privacy` } } },
     { url: `${SITE}/en/terms`,  changeFrequency: 'yearly', priority: 0.3, lastModified: now, alternates: { languages: { th: `${SITE}/terms`, en: `${SITE}/en/terms` } } },
     { url: `${SITE}/contact`,  changeFrequency: 'yearly',  priority: 0.5,  lastModified: now },
