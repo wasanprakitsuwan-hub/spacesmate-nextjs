@@ -191,29 +191,19 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
           </div>
 
           <div className="p-7">
-            {/* Google above the fold on both tabs — the one-tap path should be
-                visible before anyone starts typing a password. */}
-            {tab === 'signup' && !success && (
-              <div className="mb-5">
-                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
-                  marketing={marketing} onMarketing={setMarketing} />
-              </div>
+            {/* Login: Google first, the one-tap path. Sign-up: the form first,
+                then the ticks and the button, with Google as the alternative
+                below (Founder, 24 Oct 2026). */}
+            {tab === 'login' && (
+              <>
+                <GoogleSignInButton locale={locale} label={t.googleLogin} redirectTo={redirect ?? undefined} />
+                <div className="flex items-center gap-3 my-5">
+                  <span className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">{t.or}</span>
+                  <span className="flex-1 h-px bg-gray-200" />
+                </div>
+              </>
             )}
-            <GoogleSignInButton
-              locale={locale}
-              label={tab === 'login' ? t.googleLogin : t.googleSignup}
-              redirectTo={redirect ?? undefined}
-              beforeSignIn={tab === 'signup' ? () => {
-                if (!accepted) { setError(t.acceptRequired); return false }
-                savePendingTerms(marketing)
-                return true
-              } : undefined}
-            />
-            <div className="flex items-center gap-3 my-5">
-              <span className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">{t.or}</span>
-              <span className="flex-1 h-px bg-gray-200" />
-            </div>
 
             {/* ── LOGIN FORM ── */}
             {tab === 'login' && forgotPwd && (
@@ -235,7 +225,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 >
                   {loading ? t.sending : t.sendResetLink}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+                <p className="text-center text-sm text-gray-400 mt-4">
                   <button type="button" onClick={() => { setForgotPwd(false); setError('') }} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.backToLogin}
                   </button>
@@ -278,7 +268,7 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? t.loggingIn : t.login}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+                <p className="text-center text-sm text-gray-400 mt-4">
                   {t.noAccount}{' '}
                   <button type="button" onClick={() => switchTab('signup')} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.signupFree}
@@ -349,6 +339,8 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                     className="input-field w-full"
                   />
                 </div>
+                <TermsTick locale={locale} accepted={accepted} onAccepted={v => { setAccepted(v); setError('') }}
+                  marketing={marketing} onMarketing={setMarketing} />
                 {error && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                     <p className="text-amber-700 text-xs">{error}</p>
@@ -362,13 +354,32 @@ export default function LoginBody({ locale = 'th' }: { locale?: Locale }) {
                 <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? t.signingUpLong : t.signupFree}
                 </button>
-                <p className="text-center text-sm text-gray-400 pt-1">
+              </form>
+            )}
+            {tab === 'signup' && !success && (
+              <>
+                <div className="flex items-center gap-3 my-5">
+                  <span className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">{t.or}</span>
+                  <span className="flex-1 h-px bg-gray-200" />
+                </div>
+                <GoogleSignInButton
+                  locale={locale}
+                  label={t.googleSignup}
+                  redirectTo={redirect ?? undefined}
+                  beforeSignIn={() => {
+                    if (!accepted) { setError(t.acceptRequired); return false }
+                    savePendingTerms(marketing)
+                    return true
+                  }}
+                />
+                <p className="text-center text-sm text-gray-400 mt-4">
                   {t.haveAccount}{' '}
                   <button type="button" onClick={() => switchTab('login')} className="text-spacemate-brandTeal font-medium hover:underline">
                     {t.login}
                   </button>
                 </p>
-              </form>
+              </>
             )}
           </div>
         </div>
