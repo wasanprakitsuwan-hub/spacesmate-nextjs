@@ -12,11 +12,39 @@
 
 import { STATIONS, STATION_BY_ID, type Station } from '@/lib/stations'
 import { LANDMARKS, LANDMARK_BY_ID, LANDMARK_ICON, type Landmark } from '@/lib/landmarks'
+import type { Building, PlaceList } from '@/lib/search-places'
 import { DISTRICT_EN_BY_PAIR } from '@/lib/thai-districts.generated'
 import { stripDistrictPrefix } from '@/lib/geo-i18n'
 import { DEFAULT_AMENITIES } from '@/lib/amenities'
 
 export type Locale = 'th' | 'en'
+
+// ── The place list in use ────────────────────────────────────────────────────
+//
+// Starts as the built-in lists. /search swaps in the admin-edited list (see
+// lib/search-places.ts) once /api/search-places answers; the server merges it
+// itself and passes it to the functions that take a `list`.
+
+let STATION_LIST: Station[] = STATIONS
+let LANDMARK_LIST: Landmark[] = LANDMARKS
+let BUILDING_LIST: Building[] = []
+let STATION_INDEX: Record<string, Station> = STATION_BY_ID
+let LANDMARK_INDEX: Record<string, Landmark> = LANDMARK_BY_ID
+let BUILDING_INDEX: Record<string, Building> = {}
+
+export function setPlaceList(list: PlaceList): void {
+  STATION_LIST = list.stations
+  LANDMARK_LIST = list.landmarks
+  BUILDING_LIST = list.buildings
+  STATION_INDEX = Object.fromEntries(list.stations.map(s => [s.id, s]))
+  LANDMARK_INDEX = Object.fromEntries(list.landmarks.map(l => [l.id, l]))
+  BUILDING_INDEX = Object.fromEntries(list.buildings.map(b => [b.id, b]))
+  STATION_ALIASES = list.stations.map(s => [norm(s.th), norm(s.en)])
+}
+
+export function stationById(id: string): Station | undefined {
+  return STATION_INDEX[id]
+}
 
 // ── Distance ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +67,7 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
 export function nearestStation(lat: number, lng: number, maxKm = 3): { station: Station; km: number } | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
   let best: { station: Station; km: number } | null = null
-  for (const s of STATIONS) {
+  for (const s of STATION_LIST) {
     const km = haversineKm(lat, lng, s.lat, s.lng)
     if (!best || km < best.km) best = { station: s, km }
   }
@@ -47,9 +75,11 @@ export function nearestStation(lat: number, lng: number, maxKm = 3): { station: 
 }
 
 /** Stations within `maxKm`, closest first — what a listing page lists as "nearby". */
-export function nearbyStations(lat: number, lng: number, maxKm = 2, limit = 3): { station: Station; km: number }[] {
+export function nearbyStations(
+  lat: number, lng: number, maxKm = 2, limit = 3, stations: Station[] = STATION_LIST,
+): { station: Station; km: number }[] {
   if (!isFinite(lat) || !isFinite(lng)) return []
-  return STATIONS
+  return stations
     .map(s => ({ station: s, km: haversineKm(lat, lng, s.lat, s.lng) }))
     .filter(x => x.km <= maxKm)
     .sort((a, b) => a.km - b.km)
@@ -156,7 +186,7 @@ const PLACE_ALIASES: string[][] = [
   ['บางกะปิ', 'bangkapi'], ['ลาดกระบัง', 'latkrabang', 'ladkrabang'], ['นนทบุรี', 'nonthaburi'],
 ]
 
-const STATION_ALIASES: string[][] = STATIONS.map(s => [norm(s.th), norm(s.en)])
+let STATION_ALIASES: string[][] = STATIONS.map(s => [norm(s.th), norm(s.en)])
 
 const AMENITY_EN_TO_TH: Record<string, string> = Object.fromEntries(
   DEFAULT_AMENITIES.map(a => [norm(a.name_en), a.name_th]),
@@ -167,6 +197,8 @@ const AMENITY_EN_TO_TH: Record<string, string> = Object.fromEntries(
 export type Place =
   | { kind: 'station'; station: Station }
   | { kind: 'landmark'; landmark: Landmark }
+  /** A property name with coordinates, from the admin list. */
+  | { kind: 'building'; building: Building }
   | { kind: 'district'; th: string; en: string }
   /** Found by the map lookup for something we have no list entry for. */
   | { kind: 'point'; name: string; lat: number; lng: number }
@@ -175,6 +207,7 @@ export type Place =
 export function placePoint(p: Place): { lat: number; lng: number } | null {
   if (p.kind === 'station') return { lat: p.station.lat, lng: p.station.lng }
   if (p.kind === 'landmark') return { lat: p.landmark.lat, lng: p.landmark.lng }
+  if (p.kind === 'building') return { lat: p.building.lat, lng: p.building.lng }
   if (p.kind === 'point') return { lat: p.lat, lng: p.lng }
   return null
 }
@@ -182,6 +215,7 @@ export function placePoint(p: Place): { lat: number; lng: number } | null {
 export function placeIcon(p: Place): string {
   if (p.kind === 'station') return 'train'
   if (p.kind === 'landmark') return LANDMARK_ICON[p.landmark.kind]
+  if (p.kind === 'building') return 'apartment'
   return 'location_on'
 }
 
@@ -206,6 +240,7 @@ function aliasesFor(enNorm: string): string[] {
 export function placeKey(p: Place): string {
   if (p.kind === 'station') return `station:${p.station.id}`
   if (p.kind === 'landmark') return `landmark:${p.landmark.id}`
+  if (p.kind === 'building') return `building:${p.building.id}`
   if (p.kind === 'point') return `point:${p.lat},${p.lng}`
   return `district:${p.th}`
 }
@@ -213,17 +248,20 @@ export function placeKey(p: Place): string {
 export function placeLabel(p: Place, locale: Locale): string {
   if (p.kind === 'station') return stationLabel(p.station, locale)
   if (p.kind === 'landmark') return locale === 'en' ? p.landmark.en : p.landmark.th
+  if (p.kind === 'building') return locale === 'en' && p.building.en ? p.building.en : p.building.th
   if (p.kind === 'point') return p.name
   return locale === 'en' ? p.en : `เขต${p.th}`
 }
 
-/** URL form: ?station=E4, ?landmark=chula, ?district=บางนา or ?at=13.74,100.53&name=… */
+/** URL form: ?station=E4, ?landmark=chula, ?building=<id>, ?district=บางนา or ?at=13.74,100.53&name=… */
 export function placeFromParams(
   station: string | null, district: string | null,
   landmark: string | null = null, at: string | null = null, name: string | null = null,
+  building: string | null = null,
 ): Place | null {
-  if (station && STATION_BY_ID[station]) return { kind: 'station', station: STATION_BY_ID[station] }
-  if (landmark && LANDMARK_BY_ID[landmark]) return { kind: 'landmark', landmark: LANDMARK_BY_ID[landmark] }
+  if (station && STATION_INDEX[station]) return { kind: 'station', station: STATION_INDEX[station] }
+  if (landmark && LANDMARK_INDEX[landmark]) return { kind: 'landmark', landmark: LANDMARK_INDEX[landmark] }
+  if (building && BUILDING_INDEX[building]) return { kind: 'building', building: BUILDING_INDEX[building] }
   if (at) {
     const [lat, lng] = at.split(',').map(Number)
     if (isFinite(lat) && isFinite(lng) && inGreaterBangkok(lat, lng)) return { kind: 'point', name: name || at, lat, lng }
@@ -238,8 +276,8 @@ export function placeFromParams(
 
 /**
  * Places matching what has been typed so far, best first: names that start
- * with the text before names that merely contain it; stations, then landmarks,
- * then districts.
+ * with the text before names that merely contain it; stations, then property
+ * names and landmarks, then districts.
  */
 export function suggestPlaces(q: string, limit = 8): Place[] {
   const n = norm(q).replace(/^(bts|mrt|arl|srt|เขต)/, '')
@@ -249,8 +287,9 @@ export function suggestPlaces(q: string, limit = 8): Place[] {
   const loose = n.length >= 3
   const scored: { place: Place; score: number }[] = []
   const candidates: { place: Place; names: string[]; base: number }[] = [
-    ...STATIONS.map(s => ({ place: { kind: 'station' as const, station: s }, names: [norm(s.th), norm(s.en), ...aliasesFor(norm(s.en))], base: 0 })),
-    ...LANDMARKS.map(l => ({ place: { kind: 'landmark' as const, landmark: l }, names: [norm(l.th), norm(l.en), ...(l.aliases ?? []).map(norm)], base: 0.5 })),
+    ...STATION_LIST.map(s => ({ place: { kind: 'station' as const, station: s }, names: [norm(s.th), norm(s.en), ...aliasesFor(norm(s.en))], base: 0 })),
+    ...BUILDING_LIST.map(b => ({ place: { kind: 'building' as const, building: b }, names: [norm(b.th), norm(b.en), ...(b.aliases ?? []).map(norm)].filter(Boolean), base: 0.5 })),
+    ...LANDMARK_LIST.map(l => ({ place: { kind: 'landmark' as const, landmark: l }, names: [norm(l.th), norm(l.en), ...(l.aliases ?? []).map(norm)], base: 0.5 })),
     ...BKK_DISTRICTS.map(d => ({ place: { kind: 'district' as const, ...d }, names: [norm(d.th), norm(d.en)], base: 1 })),
   ]
   for (const c of candidates) {

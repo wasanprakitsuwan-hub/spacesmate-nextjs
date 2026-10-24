@@ -12,8 +12,8 @@ const NAV = [
   // user accounts is the one capability reserved to super_admin.
   { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false, superAdminOnly: true },
   { href: '/dashboard/pages',            label: 'Pages',          icon: 'web',               exact: false },
-  { href: '/dashboard/property-names',   label: 'ชื่ออสังหา',     icon: 'domain',            exact: false },
-  { href: '/dashboard/seo',              label: 'SEO Tracker',    icon: 'travel_explore',    exact: false },
+  // Property names, places, stations and their SEO pages — one menu.
+  { href: '/dashboard/places',           label: 'สถานที่ค้นหา',   icon: 'travel_explore',    exact: false },
   { href: '/dashboard/revenue',          label: 'รายได้',         icon: 'bar_chart',         exact: false },
   { href: '/dashboard/blog',             label: 'บทความ',         icon: 'article',           exact: false },
   { href: '/dashboard/settings',         label: 'ตั้งค่า',        icon: 'settings',          exact: false },

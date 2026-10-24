@@ -27,6 +27,8 @@ import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings }
 import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
 import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
+import { mergePlaces } from '@/lib/search-places'
+import { loadPlaceOverrides } from '@/lib/search-places-server'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -134,7 +136,10 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     } catch { /* a missing building link must not break the listing page */ }
   }
 
-  const stations = p.lat && p.lng ? nearbyStations(parseFloat(p.lat), parseFloat(p.lng)) : []
+  // Station list as the admin left it (renames, new stations, hidden ones).
+  const stations = p.lat && p.lng
+    ? nearbyStations(parseFloat(p.lat), parseFloat(p.lng), 2, 3, mergePlaces((await loadPlaceOverrides()).overrides).stations)
+    : []
 
   return (
     <div className="bg-white min-h-screen">
