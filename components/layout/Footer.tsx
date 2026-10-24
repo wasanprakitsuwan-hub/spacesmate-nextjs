@@ -28,7 +28,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="mb-4">
-              <Image src="/logo-white.png" alt="SpacesMate" width={148} height={46} style={{ height: 46, width: 'auto' }}
+              <Image src="/logo-white.png" unoptimized alt="SpacesMate" width={148} height={46} style={{ height: 46, width: 'auto' }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
