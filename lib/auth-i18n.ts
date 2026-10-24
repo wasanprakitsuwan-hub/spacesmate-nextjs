@@ -127,6 +127,16 @@ export const AUTH_T = {
     terms: 'เงื่อนไขการใช้งาน',
     and: 'และ',
     privacy: 'นโยบายความเป็นส่วนตัว',
+    // ── Sign-up acceptance and owner help links ──
+    acceptTerms: 'ฉันได้อ่านและยอมรับ',
+    acceptRequired: 'กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก',
+    marketingOptIn: 'รับข่าวสารและโปรโมชันจาก SpacesMate (ไม่บังคับ)',
+    termsGateTitle: 'ยอมรับเงื่อนไขก่อนใช้งานต่อ',
+    termsGateBody: 'เพื่อใช้งานบัญชี SpacesMate ต่อ กรุณาอ่านและยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว',
+    termsGateCta: 'ยอมรับและดำเนินการต่อ',
+    termsGateFailed: 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง',
+    helpLead: 'มีคำถาม?',
+    howToList: 'วิธีลงประกาศและแพ็กเกจ',
   },
 
   en: {
@@ -216,6 +226,15 @@ export const AUTH_T = {
     terms: 'Terms of Use',
     and: 'and',
     privacy: 'Privacy Policy',
+    acceptTerms: 'I have read and accept the',
+    acceptRequired: 'Please accept the Terms of Use and Privacy Policy to create an account.',
+    marketingOptIn: 'Send me news and offers from SpacesMate (optional)',
+    termsGateTitle: 'Accept the terms to continue',
+    termsGateBody: 'To keep using your SpacesMate account, please read and accept the Terms of Use and Privacy Policy.',
+    termsGateCta: 'Accept and continue',
+    termsGateFailed: 'Could not save. Please try again.',
+    helpLead: 'Questions?',
+    howToList: 'How listing and packages work',
   },
 } as const
 
