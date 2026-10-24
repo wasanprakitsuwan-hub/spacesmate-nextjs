@@ -164,6 +164,8 @@ export const SEARCH_T = {
     nearPrefix: 'ใกล้',
     closestTo: 'ประกาศที่ใกล้ที่สุดจาก',
     noneNearPlace: 'ยังไม่มีประกาศในระยะที่เลือก',
+    distanceFromStation: 'ระยะจากสถานี',
+    pickStationFirst: 'เลือกสถานีในช่องค้นหาด้านบนก่อน แล้วปรับระยะได้ที่นี่',
   },
   en: {
     metaTitle: 'Search rentals',
@@ -233,6 +235,8 @@ export const SEARCH_T = {
     nearPrefix: 'Near',
     closestTo: 'Closest listings to',
     noneNearPlace: 'No listings within that distance yet',
+    distanceFromStation: 'Distance from station',
+    pickStationFirst: 'Choose a station in the search box above, then set the distance here',
   },
 } as const
 

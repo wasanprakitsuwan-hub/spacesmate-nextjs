@@ -43,6 +43,9 @@ const radiusOptions = (t: SearchStrings) => [
   { km: 10, label: t.within10 },
 ]
 
+// Distances offered around a chosen station; 1 km is the default walk.
+const STATION_RADII = [1, 2, 5]
+
 const typeFilters = (t: SearchStrings) => [
   { key: '',          label: t.allTypes },
   { key: 'Apartment', label: t.apartment },
@@ -119,7 +122,10 @@ function SearchContent({ locale }: { locale: Locale }) {
 
   // A chosen place — a station or a district — from a suggestion, a chip or the URL.
   const [place, setPlace] = useState<Place | null>(() => placeFromParams(sp.get('station'), sp.get('district')))
-  const [placeRadiusKm, setPlaceRadiusKm] = useState(1)
+  const [placeRadiusKm, setPlaceRadiusKm] = useState(() => {
+    const r = Number(sp.get('r'))
+    return STATION_RADII.includes(r) ? r : 1
+  })
   const [suggestOpen, setSuggestOpen] = useState(false)
   const suggestions = useMemo(() => (place ? [] : suggestPlaces(keyword)), [keyword, place])
 
@@ -246,12 +252,19 @@ function SearchContent({ locale }: { locale: Locale }) {
     router.replace(`${localeHref('/search', locale)}?${p.toString()}`)
   }
 
+  function chooseStationRadius(km: number) {
+    setPlaceRadiusKm(km)
+    const p = new URLSearchParams(sp.toString())
+    if (km === 1) p.delete('r'); else p.set('r', String(km))
+    router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
+  }
+
   function choosePlace(next: Place | null) {
     setPlace(next)
     setSuggestOpen(false)
     if (next) setKeyword('')
     const p = new URLSearchParams(sp.toString())
-    p.delete('station'); p.delete('district'); p.delete('q')
+    p.delete('station'); p.delete('district'); p.delete('q'); p.delete('r')
     if (next?.kind === 'station') p.set('station', next.station.id)
     if (next?.kind === 'district') p.set('district', next.th)
     router.replace(`${localeHref('/search', locale)}${p.toString() ? `?${p.toString()}` : ''}`)
@@ -287,6 +300,7 @@ function SearchContent({ locale }: { locale: Locale }) {
     setSortBy('recent')
     clearGeo()
     setPlace(null)
+    setPlaceRadiusKm(1)
     setKeyword('')
     router.replace(localeHref('/search', locale))
   }
@@ -348,12 +362,6 @@ function SearchContent({ locale }: { locale: Locale }) {
                     <span className="msym" style={{ fontSize: 16 }}>close</span>
                   </button>
                 </span>
-                {place.kind === 'station' && RADIUS_OPTIONS.slice(0, 3).map(opt => (
-                  <button key={opt.km} onClick={() => setPlaceRadiusKm(opt.km)}
-                    style={{ borderRadius: 20, padding: '6px 12px', fontSize: 12.5, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.5)', background: placeRadiusKm === opt.km ? '#fff' : 'transparent', color: placeRadiusKm === opt.km ? '#02402e' : '#fff', fontWeight: placeRadiusKm === opt.km ? 600 : 400 }}>
-                    {opt.label}
-                  </button>
-                ))}
               </>
             ) : (
               <>
@@ -386,6 +394,33 @@ function SearchContent({ locale }: { locale: Locale }) {
           <aside className={`sm-filter-aside${filterOpen ? ' filter-open' : ''}`}
             style={{ alignSelf: 'start', position: 'sticky', top: 86, background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, boxShadow: '0 6px 20px -12px rgba(2,64,46,0.08)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 18px' }}>{t.filters}</h3>
+
+            {/* Distance from the chosen station */}
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.distanceFromStation}</p>
+              {place?.kind === 'station' ? (
+                <>
+                  <p style={{ fontSize: 13, color: '#02402e', fontWeight: 600, margin: '0 0 9px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>train</span>{placeLabel(place, locale)}
+                  </p>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {RADIUS_OPTIONS.filter(opt => STATION_RADII.includes(opt.km)).map(opt => {
+                      const on = placeRadiusKm === opt.km
+                      return (
+                        <button key={opt.km} onClick={() => chooseStationRadius(opt.km)}
+                          style={{ flex: 1, padding: '8px 4px', borderRadius: 9, fontSize: 13, cursor: 'pointer', transition: 'all .2s', border: `1px solid ${on ? '#048c73' : '#eef0ef'}`, background: on ? '#eaf6f1' : '#fff', color: on ? '#02402e' : '#475569', fontWeight: on ? 600 : 400 }}>
+                          {opt.km} {locale === 'en' ? 'km' : 'กม.'}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>{t.pickStationFirst}</p>
+              )}
+            </div>
+
+            <div style={{ height: 1, background: '#eef0ef', margin: '0 0 20px' }} />
 
             {/* Type filter */}
             <div style={{ marginBottom: 22 }}>
