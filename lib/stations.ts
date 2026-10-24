@@ -1,0 +1,152 @@
+/**
+ * Bangkok rail stations — BTS, MRT and Airport Rail Link — with coordinates.
+ *
+ * Source: github.com/gusb3ll/thailand-public-train-data (dist/data.json, CC0),
+ * converted once and committed. Spelling fixed where the source had typos
+ * (Suvarnabhumi, Phloen Chit, Ekkamai, แ written as เเ, เพชร as เพรช), and
+ * interchange stations listed once with every system that serves them.
+ *
+ * NOT YET INCLUDED: MRT Yellow and Pink lines and the SRT Red lines, which the
+ * source predates. Add them here with real coordinates, never estimated ones —
+ * nearest-station labels and station search are only as true as this list.
+ */
+
+export type RailSystem = 'BTS' | 'MRT' | 'ARL'
+
+export type Station = {
+  /** First station code the source gives it, e.g. 'E4' for Asok. Stable — used in URLs. */
+  id: string
+  th: string
+  en: string
+  systems: RailSystem[]
+  lat: number
+  lng: number
+}
+
+export const STATIONS: Station[] = [
+  { id: 'A1', th: 'สุวรรณภูมิ', en: 'Suvarnabhumi', systems: ['ARL'], lat: 13.69843, lng: 100.752222 },
+  { id: 'A2', th: 'ลาดกระบัง', en: 'Lat Krabang', systems: ['ARL'], lat: 13.727822, lng: 100.747366 },
+  { id: 'A3', th: 'บ้านทับช้าง', en: 'Ban Thap Chang', systems: ['ARL'], lat: 13.732814, lng: 100.691318 },
+  { id: 'A4', th: 'หัวหมาก', en: 'Hua Mak', systems: ['ARL'], lat: 13.738035, lng: 100.645173 },
+  { id: 'A5', th: 'รามคำแหง', en: 'Ramkhamhaeng', systems: ['ARL'], lat: 13.743033, lng: 100.600151 },
+  { id: 'A6', th: 'มักกะสัน', en: 'Makkasan', systems: ['ARL'], lat: 13.751188, lng: 100.560754 },
+  { id: 'A7', th: 'ราชปรารภ', en: 'Ratchaprarop', systems: ['ARL'], lat: 13.755199, lng: 100.542122 },
+  { id: 'A8', th: 'พญาไท', en: 'Phaya Thai', systems: ['ARL', 'BTS'], lat: 13.756767, lng: 100.534842 },
+  { id: 'N1', th: 'ราชเทวี', en: 'Ratchathewi', systems: ['BTS'], lat: 13.752248, lng: 100.531567 },
+  { id: 'N3', th: 'อนุสาวรีย์ชัยสมรภูมิ', en: 'Victory Monument', systems: ['BTS'], lat: 13.762939, lng: 100.537117 },
+  { id: 'N4', th: 'สนามเป้า', en: 'Sanam Pao', systems: ['BTS'], lat: 13.77285, lng: 100.542049 },
+  { id: 'N5', th: 'อารีย์', en: 'Ari', systems: ['BTS'], lat: 13.780302, lng: 100.544611 },
+  { id: 'N7', th: 'สะพานควาย', en: 'Saphan Khwai', systems: ['BTS'], lat: 13.793881, lng: 100.549763 },
+  { id: 'N8', th: 'หมอชิต', en: 'Mo Chit', systems: ['BTS'], lat: 13.802504, lng: 100.55382 },
+  { id: 'N9', th: 'ห้าแยกลาดพร้าว', en: 'Ha Yaek Lat Phrao', systems: ['BTS'], lat: 13.816607, lng: 100.561853 },
+  { id: 'N10', th: 'พหลโยธิน 24', en: 'Phahon Yothin 24', systems: ['BTS'], lat: 13.82427, lng: 100.56646 },
+  { id: 'N11', th: 'รัชโยธิน', en: 'Ratchayothin', systems: ['BTS'], lat: 13.830175, lng: 100.569801 },
+  { id: 'N12', th: 'เสนานิคม', en: 'Sena Nikhom', systems: ['BTS'], lat: 13.8366, lng: 100.573568 },
+  { id: 'N13', th: 'มหาวิทยาลัยเกษตรศาสตร์', en: 'Kasetsart University', systems: ['BTS'], lat: 13.842611, lng: 100.577153 },
+  { id: 'N14', th: 'กรมป่าไม้', en: 'Royal Forest Department', systems: ['BTS'], lat: 13.850617, lng: 100.581785 },
+  { id: 'N15', th: 'บางบัว', en: 'Bang Bua', systems: ['BTS'], lat: 13.856254, lng: 100.585191 },
+  { id: 'N16', th: 'กรมทหารราบที่ 11', en: '11th Infantry Regiment', systems: ['BTS'], lat: 13.867695, lng: 100.591972 },
+  { id: 'N17', th: 'วัดพระศรีมหาธาตุ', en: 'Wat Phra Sri Mahathat', systems: ['BTS'], lat: 13.870875, lng: 100.593627 },
+  { id: 'N18', th: 'พหลโยธิน 59', en: 'Phahon Yothin 59', systems: ['BTS'], lat: 13.884311, lng: 100.601866 },
+  { id: 'N19', th: 'สายหยุด', en: 'Sai Yud', systems: ['BTS'], lat: 13.888713, lng: 100.604292 },
+  { id: 'N20', th: 'สะพานใหม่', en: 'Saphan Mai', systems: ['BTS'], lat: 13.896957, lng: 100.60906 },
+  { id: 'N21', th: 'โรงพยาบาลภูมิพลอดุลยเดช', en: 'Bhumibol Adulyadej Hospital', systems: ['BTS'], lat: 13.910393, lng: 100.617405 },
+  { id: 'N22', th: 'พิพิธภัณฑ์กองทัพอากาศ', en: 'Royal Thai Air Force Museum', systems: ['BTS'], lat: 13.918122, lng: 100.621769 },
+  { id: 'N23', th: 'แยก คปอ.', en: 'Yaek Kor Por Aor', systems: ['BTS'], lat: 13.922529, lng: 100.6245 },
+  { id: 'N24', th: 'คูคต', en: 'Khu Khot', systems: ['BTS'], lat: 13.932436, lng: 100.646659 },
+  { id: 'E1', th: 'ชิดลม', en: 'Chit Lom', systems: ['BTS'], lat: 13.744218, lng: 100.543046 },
+  { id: 'E2', th: 'เพลินจิต', en: 'Phloen Chit', systems: ['BTS'], lat: 13.743128, lng: 100.54892 },
+  { id: 'E3', th: 'นานา', en: 'Nana', systems: ['BTS'], lat: 13.740658, lng: 100.555396 },
+  { id: 'E4', th: 'อโศก', en: 'Asok', systems: ['BTS'], lat: 13.73726, lng: 100.560319 },
+  { id: 'E5', th: 'พร้อมพงษ์', en: 'Phrom Phong', systems: ['BTS'], lat: 13.730518, lng: 100.56972 },
+  { id: 'E6', th: 'ทองหล่อ', en: 'Thong Lo', systems: ['BTS'], lat: 13.724318, lng: 100.578417 },
+  { id: 'E7', th: 'เอกมัย', en: 'Ekkamai', systems: ['BTS'], lat: 13.719681, lng: 100.58509 },
+  { id: 'E8', th: 'พระโขนง', en: 'Phra Khanong', systems: ['BTS'], lat: 13.715267, lng: 100.591249 },
+  { id: 'E9', th: 'อ่อนนุช', en: 'On Nut', systems: ['BTS'], lat: 13.705802, lng: 100.601006 },
+  { id: 'E10', th: 'บางจาก', en: 'Bang Chak', systems: ['BTS'], lat: 13.696909, lng: 100.605312 },
+  { id: 'E11', th: 'ปุณณวิถี', en: 'Punnawithi', systems: ['BTS'], lat: 13.68958, lng: 100.608976 },
+  { id: 'E12', th: 'อุดมสุข', en: 'Udom Suk', systems: ['BTS'], lat: 13.680252, lng: 100.609707 },
+  { id: 'E13', th: 'บางนา', en: 'Bang Na', systems: ['BTS'], lat: 13.668292, lng: 100.60466 },
+  { id: 'E14', th: 'แบริ่ง', en: 'Bearing', systems: ['BTS'], lat: 13.661404, lng: 100.601777 },
+  { id: 'E15', th: 'สำโรง', en: 'Samrong', systems: ['BTS'], lat: 13.646424, lng: 100.595639 },
+  { id: 'E16', th: 'ปู่เจ้า', en: 'Pu Chao', systems: ['BTS'], lat: 13.637366, lng: 100.591954 },
+  { id: 'E17', th: 'ช้างเอราวัณ', en: 'Chang Erawan', systems: ['BTS'], lat: 13.621747, lng: 100.590123 },
+  { id: 'E18', th: 'โรงเรียนนายเรือ', en: 'Royal Thai Naval Academy', systems: ['BTS'], lat: 13.608571, lng: 100.594981 },
+  { id: 'E19', th: 'ปากน้ำ', en: 'Pak Nam', systems: ['BTS'], lat: 13.602194, lng: 100.597108 },
+  { id: 'E20', th: 'ศรีนครินทร์', en: 'Srinagarindra', systems: ['BTS'], lat: 13.592215, lng: 100.608938 },
+  { id: 'E21', th: 'แพรกษา', en: 'Phraek Sa', systems: ['BTS'], lat: 13.584501, lng: 100.608016 },
+  { id: 'E22', th: 'สายลวด', en: 'Sai Luat', systems: ['BTS'], lat: 13.577815, lng: 100.605371 },
+  { id: 'E23', th: 'เคหะฯ', en: 'Kheha', systems: ['BTS'], lat: 13.568043, lng: 100.607713 },
+  { id: 'CEN', th: 'สยาม', en: 'Siam', systems: ['BTS'], lat: 13.745853, lng: 100.534095 },
+  { id: 'W1', th: 'สนามกีฬาแห่งชาติ', en: 'National Stadium', systems: ['BTS'], lat: 13.746671, lng: 100.529052 },
+  { id: 'S1', th: 'ราชดำริ', en: 'Ratchadamri', systems: ['BTS'], lat: 13.739654, lng: 100.539528 },
+  { id: 'S2', th: 'ศาลาแดง', en: 'Sala Daeng', systems: ['BTS'], lat: 13.728687, lng: 100.534106 },
+  { id: 'S3', th: 'ช่องนนทรี', en: 'Chong Nonsi', systems: ['BTS'], lat: 13.724106, lng: 100.529432 },
+  { id: 'S4', th: 'เซนต์หลุยส์', en: 'Saint Louis', systems: ['BTS'], lat: 13.721306, lng: 100.526792 },
+  { id: 'S5', th: 'สุรศักดิ์', en: 'Surasak', systems: ['BTS'], lat: 13.719537, lng: 100.521452 },
+  { id: 'S6', th: 'สะพานตากสิน', en: 'Saphan Taksin', systems: ['BTS'], lat: 13.719003, lng: 100.513975 },
+  { id: 'S7', th: 'กรุงธนบุรี', en: 'Krung Thon Buri', systems: ['BTS'], lat: 13.721116, lng: 100.502713 },
+  { id: 'S8', th: 'วงเวียนใหญ่', en: 'Wongwian Yai', systems: ['BTS'], lat: 13.721343, lng: 100.495138 },
+  { id: 'S9', th: 'โพธิ์นิมิตร', en: 'Pho Nimit', systems: ['BTS'], lat: 13.719358, lng: 100.485871 },
+  { id: 'S10', th: 'ตลาดพลู', en: 'Talat Phlu', systems: ['BTS'], lat: 13.7144, lng: 100.476804 },
+  { id: 'S11', th: 'วุฒากาศ', en: 'Wutthakat', systems: ['BTS'], lat: 13.713278, lng: 100.468797 },
+  { id: 'S12', th: 'บางหว้า', en: 'Bang Wa', systems: ['BTS'], lat: 13.720729, lng: 100.457805 },
+  { id: 'G2', th: 'เจริญนคร', en: 'Charoen Nakhon', systems: ['BTS'], lat: 13.726672, lng: 100.509077 },
+  { id: 'G3', th: 'คลองสาน', en: 'Khlong San', systems: ['BTS'], lat: 13.730456, lng: 100.507605 },
+  { id: 'BL01', th: 'ท่าพระ', en: 'Tha Phra', systems: ['MRT'], lat: 13.729723, lng: 100.4742 },
+  { id: 'BL02', th: 'จรัญฯ 13', en: 'Charan 13', systems: ['MRT'], lat: 13.73973, lng: 100.470753 },
+  { id: 'BL03', th: 'ไฟฉาย', en: 'Fai Chai', systems: ['MRT'], lat: 13.755142, lng: 100.469214 },
+  { id: 'BL04', th: 'บางขุนนนท์', en: 'Bang Khun Non', systems: ['MRT'], lat: 13.763217, lng: 100.473271 },
+  { id: 'BL05', th: 'บางยี่ขัน', en: 'Bang Yi Khan', systems: ['MRT'], lat: 13.777547, lng: 100.48526 },
+  { id: 'BL06', th: 'สิรินธร', en: 'Sirindhorn', systems: ['MRT'], lat: 13.784137, lng: 100.493485 },
+  { id: 'BL07', th: 'บางพลัด', en: 'Bang Phlat', systems: ['MRT'], lat: 13.792558, lng: 100.504978 },
+  { id: 'BL08', th: 'บางอ้อ', en: 'Bang O', systems: ['MRT'], lat: 13.798857, lng: 100.509702 },
+  { id: 'BL09', th: 'บางโพ', en: 'Bang Pho', systems: ['MRT'], lat: 13.806462, lng: 100.521056 },
+  { id: 'BL10', th: 'เตาปูน', en: 'Tao Poon', systems: ['MRT'], lat: 13.806251, lng: 100.530804 },
+  { id: 'BL11', th: 'บางซื่อ', en: 'Bang Sue', systems: ['MRT'], lat: 13.803108, lng: 100.539162 },
+  { id: 'BL12', th: 'กำแพงเพชร', en: 'Kamphaeng Phet', systems: ['MRT'], lat: 13.798164, lng: 100.547559 },
+  { id: 'BL13', th: 'สวนจตุจักร', en: 'Chatuchak Park', systems: ['MRT'], lat: 13.802634, lng: 100.55379 },
+  { id: 'BL14', th: 'พหลโยธิน', en: 'Phahon Yothin', systems: ['MRT'], lat: 13.814375, lng: 100.560125 },
+  { id: 'BL15', th: 'ลาดพร้าว', en: 'Lat Phrao', systems: ['MRT'], lat: 13.806192, lng: 100.573578 },
+  { id: 'BL16', th: 'รัชดาภิเษก', en: 'Ratchadaphisek', systems: ['MRT'], lat: 13.799302, lng: 100.574581 },
+  { id: 'BL17', th: 'สุทธิสาร', en: 'Sutthisan', systems: ['MRT'], lat: 13.789832, lng: 100.574209 },
+  { id: 'BL18', th: 'ห้วยขวาง', en: 'Huai Khwang', systems: ['MRT'], lat: 13.778609, lng: 100.573614 },
+  { id: 'BL19', th: 'ศูนย์วัฒนธรรมแห่งประเทศไทย', en: 'Thailand Cultural Centre', systems: ['MRT'], lat: 13.766315, lng: 100.570266 },
+  { id: 'BL20', th: 'พระราม 9', en: 'Phra Ram 9', systems: ['MRT'], lat: 13.757999, lng: 100.565578 },
+  { id: 'BL21', th: 'เพชรบุรี', en: 'Phetchaburi', systems: ['MRT'], lat: 13.748825, lng: 100.5631 },
+  { id: 'BL22', th: 'สุขุมวิท', en: 'Sukhumvit', systems: ['MRT'], lat: 13.738691, lng: 100.561468 },
+  { id: 'BL23', th: 'ศูนย์การประชุมแห่งชาติสิริกิติ์', en: 'Queen Sirikit National Convention Center', systems: ['MRT'], lat: 13.723279, lng: 100.560073 },
+  { id: 'BL24', th: 'คลองเตย', en: 'Khlong Toei', systems: ['MRT'], lat: 13.722396, lng: 100.553873 },
+  { id: 'BL25', th: 'ลุมพินี', en: 'Lumphini', systems: ['MRT'], lat: 13.725957, lng: 100.545702 },
+  { id: 'BL26', th: 'สีลม', en: 'Si Lom', systems: ['MRT'], lat: 13.729422, lng: 100.536561 },
+  { id: 'BL27', th: 'สามย่าน', en: 'Sam Yan', systems: ['MRT'], lat: 13.732394, lng: 100.53006 },
+  { id: 'BL28', th: 'หัวลำโพง', en: 'Hua Lamphong', systems: ['MRT'], lat: 13.737957, lng: 100.517242 },
+  { id: 'BL29', th: 'วัดมังกร', en: 'Wat Mangkon', systems: ['MRT'], lat: 13.742025, lng: 100.510316 },
+  { id: 'BL30', th: 'สามยอด', en: 'Sam Yot', systems: ['MRT'], lat: 13.747405, lng: 100.50222 },
+  { id: 'BL31', th: 'สนามไชย', en: 'Sanam Chai', systems: ['MRT'], lat: 13.743995, lng: 100.494634 },
+  { id: 'BL32', th: 'อิสรภาพ', en: 'Itsaraphap', systems: ['MRT'], lat: 13.738504, lng: 100.485213 },
+  { id: 'BL33', th: 'บางไผ่', en: 'Bang Phai', systems: ['MRT'], lat: 13.724699, lng: 100.465239 },
+  { id: 'BL34', th: 'ท่าเรือบางหว้า', en: 'Bang Wa Pier', systems: ['MRT'], lat: 13.720553, lng: 100.457199 },
+  { id: 'BL35', th: 'เพชรเกษม 48', en: 'Phetkasem 48', systems: ['MRT'], lat: 13.715643, lng: 100.445623 },
+  { id: 'BL36', th: 'ภาษีเจริญ', en: 'Phasi Charoen', systems: ['MRT'], lat: 13.712855, lng: 100.43423 },
+  { id: 'BL37', th: 'บางแค', en: 'Bang Khae', systems: ['MRT'], lat: 13.711914, lng: 100.422366 },
+  { id: 'BL38', th: 'หลักสอง', en: 'Lak Song', systems: ['MRT'], lat: 13.711001, lng: 100.410006 },
+  { id: 'PP01', th: 'คลองบางไผ่', en: 'Khlong Bang Phai', systems: ['MRT'], lat: 13.892301, lng: 100.408235 },
+  { id: 'PP02', th: 'ตลาดบางใหญ่', en: 'Talad Bang Yai', systems: ['MRT'], lat: 13.881082, lng: 100.409235 },
+  { id: 'PP03', th: 'สามแยกบางใหญ่', en: 'Sam Yaek Bang Yai', systems: ['MRT'], lat: 13.874625, lng: 100.419445 },
+  { id: 'PP04', th: 'บางพลู', en: 'Bang Phlu', systems: ['MRT'], lat: 13.875643, lng: 100.433935 },
+  { id: 'PP05', th: 'บางรักใหญ่', en: 'Bang Rak Yai', systems: ['MRT'], lat: 13.876635, lng: 100.444908 },
+  { id: 'PP06', th: 'บางรักน้อยท่าอิฐ', en: 'Bang Rak Noi Tha It', systems: ['MRT'], lat: 13.874708, lng: 100.456179 },
+  { id: 'PP07', th: 'ไทรม้า', en: 'Sai Ma', systems: ['MRT'], lat: 13.870584, lng: 100.466667 },
+  { id: 'PP08', th: 'สะพานพระนั่งเกล้า', en: 'Phra Nang Klao Bridge', systems: ['MRT'], lat: 13.870393, lng: 100.480429 },
+  { id: 'PP09', th: 'แยกนนทบุรี 1', en: 'Yaek Nonthaburi 1', systems: ['MRT'], lat: 13.865971, lng: 100.494805 },
+  { id: 'PP10', th: 'บางกระสอ', en: 'Bang Krasor', systems: ['MRT'], lat: 13.861881, lng: 100.504277 },
+  { id: 'PP11', th: 'ศูนย์ราชการนนทบุรี', en: 'Nonthaburi Civic Center', systems: ['MRT'], lat: 13.860147, lng: 100.513245 },
+  { id: 'PP12', th: 'กระทรวงสาธารณสุข', en: 'Ministry of Public Health', systems: ['MRT'], lat: 13.848715, lng: 100.514788 },
+  { id: 'PP13', th: 'แยกติวานนท์', en: 'Yaek Tiwanon', systems: ['MRT'], lat: 13.83957, lng: 100.51495 },
+  { id: 'PP14', th: 'วงศ์สว่าง', en: 'Wong Sawang', systems: ['MRT'], lat: 13.830365, lng: 100.526651 },
+  { id: 'PP15', th: 'บางซ่อน', en: 'Bang Son', systems: ['MRT'], lat: 13.82067, lng: 100.532707 },
+]
+
+export const STATION_BY_ID: Record<string, Station> =
+  Object.fromEntries(STATIONS.map(s => [s.id, s]))

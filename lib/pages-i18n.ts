@@ -157,6 +157,13 @@ export const SEARCH_T = {
     sqm: 'ตร.ม.',
     viewDetail: 'ดูรายละเอียด',
     loading: 'กำลังโหลด...',
+
+    popularPlaces: 'ทำเลยอดนิยม',
+    suggestStations: 'สถานีรถไฟฟ้า',
+    suggestDistricts: 'เขต',
+    nearPrefix: 'ใกล้',
+    closestTo: 'ประกาศที่ใกล้ที่สุดจาก',
+    noneNearPlace: 'ยังไม่มีประกาศในระยะที่เลือก',
   },
   en: {
     metaTitle: 'Search rentals',
@@ -219,6 +226,13 @@ export const SEARCH_T = {
     sqm: 'm²',
     viewDetail: 'View details',
     loading: 'Loading…',
+
+    popularPlaces: 'Popular locations',
+    suggestStations: 'Train stations',
+    suggestDistricts: 'Districts',
+    nearPrefix: 'Near',
+    closestTo: 'Closest listings to',
+    noneNearPlace: 'No listings within that distance yet',
   },
 } as const
 
