@@ -565,7 +565,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                   style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block' }}>
                   {t.ownerServicesCta}
                 </Link>
-                <Link href="/submit"
+                <Link href="/list-your-property"
                   style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block', border: '1px solid rgba(255,255,255,0.2)' }}>
                   {t.ownerListCta}
                 </Link>

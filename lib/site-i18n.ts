@@ -91,7 +91,7 @@ export const SITE_T = {
     // ── Navbar ──
     navSearch: 'ค้นหาที่พัก',
     navForOwners: 'สำหรับเจ้าของ',
-    navSubmit: 'ลงประกาศปล่อยเช่า',
+    navSubmit: 'ลงประกาศให้เช่า',
     navSubmitDesc: 'สร้างประกาศเอง ฟรี + แพ็กเกจ',
     navManage: 'รับฝากบริหาร',
     navManageDesc: 'ให้เราดูแลให้ครบวงจร',

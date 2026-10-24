@@ -255,7 +255,7 @@ export default async function BlogPostPage({ params }: Props) {
                   ดูบริการรับฝากบริหาร
                 </Link>
                 <Link
-                  href="/submit"
+                  href="/list-your-property"
                   className="inline-block text-white/80 font-medium text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/10 transition-all"
                 >
                   ลงประกาศฟรี

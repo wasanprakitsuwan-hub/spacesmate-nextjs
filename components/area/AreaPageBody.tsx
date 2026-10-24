@@ -238,7 +238,7 @@ export default function AreaPageBody({ view, locale, slug }: { view: AreaView; l
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.6, fontWeight: 300 }}>
                 {t.ownerBody}
               </p>
-              <Link href="/submit" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '12px 0', borderRadius: 22, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
+              <Link href="/list-your-property" style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '12px 0', borderRadius: 22, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
                 {t.listCta}
               </Link>
               <Link href="/manage" style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13, padding: '10px 0', borderRadius: 22, textAlign: 'center', textDecoration: 'none', display: 'block', border: '1px solid rgba(255,255,255,0.25)' }}>
