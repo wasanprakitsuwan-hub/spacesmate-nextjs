@@ -314,10 +314,9 @@ export const SUBMIT_T = {
     recommended: 'แนะนำ',
     baht: 'บาท',
     save: 'ประหยัด',
-    packagesCta: 'ดูรายละเอียดและซื้อสล็อต',
 
     draftTitle: 'สร้างประกาศก่อน — ฟรี ยังไม่ต้องจ่าย',
-    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด แล้วค่อยซื้อสล็อตเมื่อพร้อมเผยแพร่',
+    draftBody: 'บันทึกเป็นฉบับร่างไว้ได้ตลอด พร้อมเผยแพร่เมื่อไหร่ค่อยซื้อสล็อตในแดชบอร์ด',
 
     closingTitle: 'พร้อมปล่อยเช่าแล้วหรือยัง?',
     closingBody: 'เผยแพร่ประกาศของคุณต่อผู้เช่าหลายพันคน เริ่มต้นเพียง ฿299',
@@ -385,10 +384,9 @@ export const SUBMIT_T = {
     recommended: 'Recommended',
     baht: 'baht',
     save: 'Saves',
-    packagesCta: 'See the detail and buy a slot',
 
     draftTitle: 'Create the listing first — free, nothing to pay',
-    draftBody: 'Keep it as a draft for as long as you like, then buy a slot when you are ready to publish.',
+    draftBody: 'Keep it as a draft for as long as you like, then buy a slot from your dashboard when you are ready to publish.',
 
     closingTitle: 'Ready to let it?',
     closingBody: 'Put your listing in front of thousands of renters, from ฿299.',

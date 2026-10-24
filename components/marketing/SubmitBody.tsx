@@ -229,34 +229,13 @@ export default function SubmitBody({ locale = 'th' }: { locale?: Locale }) {
                   ))}
                 </ul>
 
-                {/* CTA → /pricing, not the listing form.
-                    These are prices, so the button goes where buying happens.
-                    It used to open the listing form, which meant a visitor who
-                    clicked a price ended up filling in a property instead —
-                    the confusion that started this. Writing a listing is the
-                    single call to action below the grid. */}
-                <Link href={localeHref('/pricing', locale)}
-                  style={{
-                    display: 'block', textAlign: 'center', fontWeight: 600, fontSize: 15,
-                    borderRadius: 28, padding: '13px 0', textDecoration: 'none', transition: 'all .2s',
-                    background: pkg.highlight ? '#d97f11' : '#fff',
-                    color: pkg.highlight ? '#fff' : '#374151',
-                    border: `1.5px solid ${pkg.highlight ? '#d97f11' : '#d1d5db'}`,
-                  }}>
-                  {t.packagesCta}
-                </Link>
               </div>
             ))}
           </div>
 
-          {/* The other route, stated rather than hidden.
-              Buying a slot and writing a listing are separate things and can
-              happen in either order — the pricing FAQ says so explicitly. This
-              page only ever offered the write-first path, so an owner who had
-              already drafted a listing, or who just wanted capacity for a
-              building, had nowhere obvious to go. */}
-          {/* Writing a listing is free and needs no package, so it gets its own
-              call to action rather than hiding behind a price. */}
+          {/* The cards show prices only. Slots are bought from the owner
+              dashboard (/checkout), so this page has one call to action:
+              write the listing. */}
           <div style={{ maxWidth: 860, margin: '30px auto 0', textAlign: 'center' }}>
             <Link href={localeHref('/submit/new', locale)}
               style={{
