@@ -21,7 +21,10 @@ export type Slot = {
   expires_at: string | null
   property_id: string | null
   stripe_subscription_id: string | null
+  source?: string | null
 }
+
+const SLOT_COLUMNS = 'id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id, source'
 
 /** `expires_at IS NULL` means never expires — see the migration for why this
  *  cannot be written as a plain `.gt()` filter. */
@@ -36,7 +39,7 @@ export async function listSlots(
 ): Promise<Slot[]> {
   const { data, error } = await supabase
     .from('listing_slots')
-    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .select(SLOT_COLUMNS)
     .eq('user_id', userId)
     .order('expires_at', { ascending: true, nullsFirst: false })
 
@@ -94,12 +97,13 @@ export async function claimSlot(
   // unfiltered .maybeSingle() would error on the second one.
   const { data: existing } = await supabase
     .from('listing_slots')
-    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .select(SLOT_COLUMNS)
     .eq('property_id', propertyId)
     .eq('status', 'active')
     .maybeSingle()
   if (existing && isLive(existing as Slot)) return existing as Slot
 
+  await ensureWelcomeSlot(supabase, userId)
   const free = await findFreeSlot(supabase, userId)
   if (!free) return null
 
@@ -115,7 +119,74 @@ export async function claimSlot(
     console.error('[slots] claimSlot failed —', error.message)
     return null
   }
-  return (data as Slot) ?? null
+  const claimed = (data as Slot) ?? null
+
+  // The welcome slot's 30 days start on first publish, not on sign-up: an
+  // owner who registers and takes a week to write the listing keeps the full
+  // term. After that it behaves like any paid slot — unpublishing keeps the
+  // remaining days, it does not restart them.
+  if (claimed && claimed.source === 'welcome' && claimed.expires_at === null) {
+    const expires = new Date()
+    expires.setDate(expires.getDate() + (PACKAGE_DAYS.basic ?? 30))
+    const { data: dated } = await supabase
+      .from('listing_slots')
+      .update({ expires_at: expires.toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', claimed.id)
+      .is('expires_at', null)
+      .select(SLOT_COLUMNS)
+      .maybeSingle()
+    return (dated as Slot) ?? { ...claimed, expires_at: expires.toISOString() }
+  }
+  return claimed
+}
+
+/**
+ * Accounts created on or after this date get one free Basic slot. Older
+ * accounts do not — the Founder's decision was new accounts only.
+ */
+export const WELCOME_SLOT_SINCE = '2026-10-24T00:00:00+07:00'
+
+/**
+ * Give a new owner their one free Basic slot, if they have not had it yet.
+ *
+ * Granted lazily — the first time their slots are counted or a listing is
+ * published — rather than in the sign-up trigger, so email and Google sign-ups
+ * are covered by the same code and nothing in auth has to change.
+ *
+ * The slot is created undated (expires_at NULL) and dated on first publish;
+ * see claimSlot. Once used, expired or cancelled it is never granted again:
+ * the check is "ever had one", not "has one now". The partial unique index in
+ * the 20261024b migration makes that hold under concurrent requests too.
+ */
+export async function ensureWelcomeSlot(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { data: had } = await supabase
+    .from('listing_slots')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source', 'welcome')
+    .limit(1)
+  if (had?.length) return
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('created_at, role')
+    .eq('id', userId)
+    .maybeSingle()
+  if (!profile || profile.role !== 'landlord') return
+  if (new Date(profile.created_at as string) < new Date(WELCOME_SLOT_SINCE)) return
+
+  const { error } = await supabase.from('listing_slots').insert({
+    user_id: userId,
+    package_type: 'basic',
+    status: 'active',
+    expires_at: null,
+    source: 'welcome',
+  })
+  // 23505: a concurrent request granted it first. That is the outcome we wanted.
+  if (error && error.code !== '23505') console.error('[slots] ensureWelcomeSlot failed —', error.message)
 }
 
 /**
@@ -159,7 +230,7 @@ export async function extendListingSlot(
 ): Promise<Slot | null> {
   const { data: held } = await supabase
     .from('listing_slots')
-    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .select(SLOT_COLUMNS)
     .eq('property_id', propertyId)
     .eq('status', 'active')
     .maybeSingle()
@@ -172,7 +243,7 @@ export async function extendListingSlot(
     .from('listing_slots')
     .update({ expires_at: from.toISOString(), updated_at: new Date().toISOString() })
     .eq('id', held.id)
-    .select('id, user_id, package_type, status, expires_at, property_id, stripe_subscription_id')
+    .select(SLOT_COLUMNS)
     .maybeSingle()
   if (error || !extended) {
     console.error('[slots] extendListingSlot failed —', error?.message)
