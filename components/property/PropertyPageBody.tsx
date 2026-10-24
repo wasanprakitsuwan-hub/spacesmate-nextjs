@@ -26,6 +26,7 @@ import DescriptionBody from '@/components/property/DescriptionBody'
 import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
 import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
+import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -133,6 +134,8 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     } catch { /* a missing building link must not break the listing page */ }
   }
 
+  const stations = p.lat && p.lng ? nearbyStations(parseFloat(p.lat), parseFloat(p.lng)) : []
+
   return (
     <div className="bg-white min-h-screen">
 
@@ -211,6 +214,22 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
               <span>{p.neighborhood}</span>
               {p.address && <span style={{ color: '#94a3b8', fontWeight: 400 }}>— {p.address}</span>}
             </div>
+
+            {/* Nearby stations, worked out from the map pin. Each links to a
+                search around that station, so a renter can compare. */}
+            {stations.length > 0 && (
+              <div aria-label={t.nearbyStations} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '-14px 0 24px' }}>
+                {stations.map(({ station, km }) => (
+                  <Link key={station.id} href={`/search?station=${station.id}`} title={t.searchNearStation(stationLabel(station, locale))}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20,
+                      border: '1px solid #d6e6e0', background: '#fff', color: '#02402e', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                    <span className="msym" style={{ fontSize: 15, color: '#048c73' }}>train</span>
+                    {stationLabel(station, locale)}
+                    <span style={{ color: '#64748b', fontWeight: 400 }}>· {distanceLabel(km, locale)}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {building && (
               <div style={{ marginBottom: 24 }}>

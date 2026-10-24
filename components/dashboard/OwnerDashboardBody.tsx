@@ -156,6 +156,7 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated, locale }: { userI
     } else {
       if (!form.price_from) validErr = t.needStartPrice
     }
+    if (!validErr && (!form.lat || !form.lng)) validErr = t.needPin
     if (validErr) { setError(validErr); return }
 
     setSaving(true); setError('')
@@ -325,6 +326,7 @@ function EditDrawer({ listing, userId, onClose, onSaved, locale }: { listing: Ow
     } else if (['condo', 'house'].includes(form.property_type)) {
       if (!form.condo_rental.price_1mo && !form.condo_rental.price_12mo) validErr = t.needPrice
     }
+    if (!validErr && (!form.lat || !form.lng)) validErr = t.needPin
     if (validErr) { setError(validErr); return }
 
     setSaving(true); setError('')
