@@ -59,7 +59,7 @@ export const BLOG_T = {
     related: 'บทความที่เกี่ยวข้อง',
     otherPosts: 'บทความอื่น ๆ ที่น่าสนใจ',
     seeAll: 'ดูทั้งหมด →',
-    areaBox: 'ที่พักในย่านนี้',
+    areaBox: 'ที่พักในทำเลที่กล่าวถึง',
     listings: (n: number) => `${n} ประกาศ`,
   },
   en: {
@@ -84,7 +84,7 @@ export const BLOG_T = {
     related: 'Related articles',
     otherPosts: 'More articles',
     seeAll: 'See all →',
-    areaBox: 'Rentals in this area',
+    areaBox: 'Rentals in the places mentioned',
     listings: (n: number) => `${n} listing${n === 1 ? '' : 's'}`,
   },
 } as const
