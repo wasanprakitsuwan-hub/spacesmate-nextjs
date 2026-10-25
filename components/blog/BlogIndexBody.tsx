@@ -15,6 +15,9 @@
  *
  *   /en/blog is a real route. It costs one more file and fixes all four.
  *
+ * CATEGORY CHIPS now filter (BlogGrid, client side). They used to be decorative
+ * spans that looked clickable and did nothing.
+ *
  * LINKS ARE DELIBERATELY NOT LocaleLink HERE
  *   Two kinds of href on this page must not be rewritten by locale:
  *
@@ -29,9 +32,10 @@
  */
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
-import { BLOG_T, CATEGORY_VALUES, categoryLabel, formatBlogDate } from '@/lib/blog-i18n'
+import { BLOG_T } from '@/lib/blog-i18n'
 import type { Locale } from '@/lib/routes-i18n'
-import { cleanPostTitle } from '@/lib/blog-text'
+import { C, WRAP } from '@/lib/ui'
+import BlogGrid, { type BlogCard } from '@/components/blog/BlogGrid'
 
 export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale }) {
   const t = BLOG_T[locale]
@@ -44,170 +48,46 @@ export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale
     .eq('language', locale)
     .order('published_at', { ascending: false })
 
-  const posts = data ?? []
-  const featured = posts[0]
-  const rest = posts.slice(1)
-
-  const tabClass = (active: boolean) =>
-    `px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-      active
-        ? 'bg-spacemate-brandDark text-white'
-        : 'bg-spacemate-bgLight text-gray-500 hover:text-spacemate-brandDark'
-    }`
+  const posts = (data ?? []) as BlogCard[]
+  const tab = (active: boolean): React.CSSProperties => ({
+    fontSize: 14, textDecoration: 'none', padding: '4px 0',
+    color: active ? C.green : C.muted, fontWeight: active ? 600 : 400,
+    borderBottom: `2px solid ${active ? C.green : 'transparent'}`,
+  })
 
   return (
-    <div className="bg-white min-h-screen">
-
-      {/* Hero */}
-      <div className="bg-spacemate-brandDark py-14 md:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-spacemate-brandTeal text-sm font-semibold tracking-widest uppercase mb-3">
-            {t.heroEyebrow}
-          </p>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
-            {t.heroTitle}
-          </h1>
-          <p className="text-white/60 text-base font-light max-w-xl mx-auto">
-            {t.heroSub}
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-        {/* TH / EN tabs — real routes now, not ?lang= */}
-        <div className="flex items-center gap-2 mb-8">
-          <Link href="/blog" className={tabClass(locale === 'th')}>
-            🇹🇭 ภาษาไทย
-          </Link>
-          <Link href="/en/blog" className={tabClass(locale === 'en')}>
-            🇬🇧 English
-          </Link>
-        </div>
-
-        {/*
-          Category chips.
-
-          NOTE: these are decorative. They render as <span>, not <Link>, so
-          nothing filters when you click one — and the hover state makes them
-          look as though something should. Either wire them to a ?category=
-          query or drop them; a control that looks interactive and is not is
-          worse than no control. Carried over as-is from the old page so this
-          change is a move, not a redesign.
-        */}
-        <div className="flex gap-2 flex-wrap mb-10">
-          {CATEGORY_VALUES.map((value, i) => (
-            <span
-              key={value}
-              className={`px-4 py-2 rounded-full text-sm font-medium cursor-default select-none ${
-                i === 0
-                  ? 'bg-spacemate-brandDark text-white'
-                  : 'bg-spacemate-bgLight text-gray-500 hover:text-spacemate-brandDark'
-              }`}
-            >
-              {categoryLabel(value, locale)}
-            </span>
-          ))}
-        </div>
-
-        {/* Featured post — newest */}
-        {featured && (
-          <Link
-            href={`/blog/${featured.slug}`}
-            className="group flex flex-col md:flex-row gap-0 rounded-2xl border border-spacemate-borderLight overflow-hidden hover:shadow-premium hover:-translate-y-0.5 transition-all duration-200 mb-8"
-          >
-            <div className="md:w-1/2 h-56 md:h-auto overflow-hidden bg-spacemate-bgLight flex-shrink-0">
-              <img
-                src={featured.thumbnail ?? '/blog/placeholder.jpg'}
-                alt={featured.thumbnail_alt ?? cleanPostTitle(featured.title)}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <div className="flex-1 p-7 flex flex-col justify-center">
-              <span className="inline-block text-xs font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-2.5 py-1 rounded-full mb-3 w-fit">
-                {categoryLabel(featured.category, locale)}
-              </span>
-              <h2 className="font-bold text-spacemate-textCharcoal text-xl leading-snug mb-3 group-hover:text-spacemate-brandDark transition-colors">
-                {cleanPostTitle(featured.title)}
-              </h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{featured.meta_desc}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">
-                  {featured.published_at ? formatBlogDate(featured.published_at, locale) : ''}
-                </span>
-                <span className="text-spacemate-brandTeal text-sm font-semibold">{t.readMore}</span>
-              </div>
-            </div>
-          </Link>
-        )}
-
-        {/* Grid — remaining posts */}
-        {rest.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {rest.map((post) => (
-              <Link
-                key={post.slug}
-                href={`/blog/${post.slug}`}
-                className="group bg-white rounded-2xl border border-spacemate-borderLight overflow-hidden hover:shadow-premium hover:-translate-y-1 transition-all duration-200"
-              >
-                <div className="h-48 overflow-hidden bg-spacemate-bgLight">
-                  <img
-                    src={post.thumbnail ?? '/blog/placeholder.jpg'}
-                    alt={post.thumbnail_alt ?? cleanPostTitle(post.title)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-5">
-                  <span className="inline-block text-xs font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-2.5 py-1 rounded-full mb-3">
-                    {categoryLabel(post.category, locale)}
-                  </span>
-                  <h2 className="font-semibold text-spacemate-textCharcoal text-sm leading-snug mb-3 group-hover:text-spacemate-brandDark transition-colors line-clamp-3">
-                    {cleanPostTitle(post.title)}
-                  </h2>
-                  <p className="text-gray-400 text-xs leading-relaxed mb-4 line-clamp-2">{post.meta_desc}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">
-                      {post.published_at ? formatBlogDate(post.published_at, locale) : ''}
-                    </span>
-                    <span className="text-spacemate-brandTeal text-xs font-medium">{t.readMore}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+    <div style={{ background: C.paper, padding: '40px 16px 72px' }}>
+      <div style={{ maxWidth: WRAP, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
+          <div>
+            <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', fontWeight: 600, color: C.green, margin: '0 0 6px' }}>{t.heroTitle}</h1>
+            <p style={{ fontSize: 16, color: C.muted, margin: 0 }}>{t.heroSub}</p>
           </div>
-        )}
+          {/* TH / EN: real routes, not ?lang= (see the note above). */}
+          <div style={{ display: 'flex', gap: 16 }}>
+            <Link href="/blog" style={tab(locale === 'th')}>ภาษาไทย</Link>
+            <Link href="/en/blog" style={tab(locale === 'en')}>English</Link>
+          </div>
+        </div>
 
-        {/* Empty state */}
-        {posts.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-gray-400 text-sm">{t.empty}</p>
-            {/*
-              An English reader on an empty index has somewhere to go: the Thai
-              blog has articles, and a reader who got here via an English page
-              may well read Thai too. Without this the page is a dead end.
-            */}
+        {posts.length > 0 ? (
+          <BlogGrid posts={posts} locale={locale} />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <p style={{ color: C.muted, fontSize: 15, margin: 0 }}>{t.empty}</p>
+            {/* An English reader on an empty index still has somewhere to go. */}
             {locale === 'en' && (
-              <Link
-                href="/blog"
-                className="inline-block mt-4 text-spacemate-brandTeal text-sm font-semibold hover:underline"
-              >
-                Read the Thai blog →
-              </Link>
+              <Link href="/blog" style={{ display: 'inline-block', marginTop: 12, color: C.teal, fontSize: 15, textDecoration: 'none' }}>Read the Thai blog →</Link>
             )}
           </div>
         )}
 
-        {/* Follow CTA */}
-        <div className="mt-14 text-center py-10 rounded-2xl border border-dashed border-spacemate-borderLight">
-          <p className="text-gray-400 text-sm">{t.followPrompt}</p>
-          <div className="flex justify-center gap-4 mt-3">
-            <a href="https://www.facebook.com/spacesmateTH" target="_blank" rel="noopener noreferrer"
-               className="text-spacemate-brandTeal text-sm font-medium hover:underline">Facebook</a>
-            <a href="https://www.instagram.com/spacesmate/" target="_blank" rel="noopener noreferrer"
-               className="text-spacemate-brandTeal text-sm font-medium hover:underline">Instagram</a>
-          </div>
-        </div>
-
+        <p style={{ marginTop: 48, textAlign: 'center', color: C.muted, fontSize: 14.5 }}>
+          {t.followPrompt}{' '}
+          <a href="https://www.facebook.com/spacesmateTH" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>Facebook</a>
+          {' · '}
+          <a href="https://www.instagram.com/spacesmate/" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>Instagram</a>
+        </p>
       </div>
     </div>
   )

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let body: { name?: string; phone?: string; type?: string; location?: string; channel?: string }
+  let body: { name?: string; phone?: string; type?: string; location?: string; channel?: string; building?: string; rooms?: string }
   try {
     body = await req.json()
   } catch {
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { name = '', phone = '', type = '', location = '', channel = '' } = body
+  const building = String(body.building ?? '').slice(0, 200)
+  const rooms    = String(body.rooms ?? '').slice(0, 20)
 
   if (!name.trim() || !phone.trim()) {
     return NextResponse.json({ error: 'ชื่อและเบอร์โทรศัพท์จำเป็น' }, { status: 400 })
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       const res = await fetch(scriptUrl, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, phone, type, location, channel }),
+        body:    JSON.stringify({ name, phone, type, location, channel, building, rooms }),
         redirect: 'follow',
       })
       if (!res.ok) {
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
   // to hear about it — otherwise they wait for a call that never comes.
   let emailed = false
   try {
-    emailed = await sendManagementEnquiry({ name, phone, type, location, channel })
+    emailed = await sendManagementEnquiry({ name, phone, type, location, channel, building, rooms })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     errors.push(`email: ${msg}`)

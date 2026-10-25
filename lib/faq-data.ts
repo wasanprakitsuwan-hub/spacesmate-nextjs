@@ -46,7 +46,7 @@ const TH: Category[] = [
       },
       {
         q: 'SpacesMate ต่างจากเว็บประกาศอสังหาริมทรัพย์ทั่วไปอย่างไร?',
-        a: 'SpacesMate ใช้ระบบ Fair Rotation — ทุกประกาศที่เจ้าของยืนยันข้อมูล (อย่างน้อยทุก 6 เดือน) จะถูกสุ่มขึ้นตำแหน่ง Featured ใหม่ทุกครั้งที่โหลดหน้า ไม่มีการซื้อลำดับ ทุกประกาศมีโอกาสเท่าเทียมกัน นอกจากนี้ SpacesMate ยังรับลงประกาศอสังหาฯ ครบทุกประเภท รวมถึงออฟฟิศและโคเวิร์กกิ้งสเปซ ซึ่งหลายแพลตฟอร์มไม่รับ และยังมีบริการ Full Property Management ที่เว็บประกาศทั่วไปไม่มี',
+        a: 'SpacesMate ใช้ระบบ Fair Rotation — ลำดับ "แนะนำ" ของประกาศจะสลับใหม่ทุกวัน ไม่มีการซื้อลำดับ ทุกประกาศมีโอกาสเท่าเทียมกัน นอกจากนี้ SpacesMate ยังรับลงประกาศอสังหาฯ ครบทุกประเภท รวมถึงออฟฟิศและโคเวิร์กกิ้งสเปซ ซึ่งหลายแพลตฟอร์มไม่รับ และยังมีบริการ Full Property Management ที่เว็บประกาศทั่วไปไม่มี',
       },
       {
         q: 'SpacesMate ให้บริการในพื้นที่ใดบ้าง?',
@@ -70,7 +70,7 @@ const TH: Category[] = [
       },
       {
         q: 'ประกาศบน SpacesMate น่าเชื่อถือหรือไม่?',
-        a: 'ประกาศบน SpacesMate ต้องผ่านการตรวจสอบเบื้องต้น และระบบ Fair Rotation จะกรองเฉพาะประกาศที่เจ้าของยืนยันข้อมูลล่าสุดภายใน 6 เดือนออกมาแสดง ประกาศที่ไม่ได้รับการอัปเดตจะถูกซ่อนอัตโนมัติ ทำให้ผู้เช่าเห็นเฉพาะทรัพย์ที่พร้อมให้เช่าจริง',
+        a: 'ประกาศบน SpacesMate แสดงเฉพาะช่วงที่เจ้าของซื้อแพ็กเกจไว้ และปิดอัตโนมัติเมื่อครบอายุ หากเจ้าของไม่ต่ออายุ ประกาศที่ค้างอยู่บนเว็บจึงเป็นประกาศที่เจ้าของยังดูแลอยู่ ผู้เช่าติดต่อเจ้าของได้โดยตรงทางโทรและ LINE',
       },
       {
         q: 'วิธีค้นหาที่พักบน SpacesMate?',
@@ -94,7 +94,7 @@ const TH: Category[] = [
       },
       {
         q: 'มีกฎหรือเงื่อนไขพิเศษสำหรับการลงประกาศหรือไม่?',
-        a: 'มีเงื่อนไขสำคัญ 1 ข้อ — เจ้าของต้องยืนยันความถูกต้องของข้อมูลประกาศอย่างน้อยทุก 6 เดือน เพื่อให้ผู้เช่าได้รับข้อมูลที่แม่นยำและเป็นปัจจุบัน ประกาศที่ไม่ได้รับการยืนยันในเวลาที่กำหนดจะถูกซ่อนจากการแสดงผลโดยอัตโนมัติจนกว่าจะได้รับการยืนยันใหม่',
+        a: 'ประกาศแสดงบนเว็บตามอายุแพ็กเกจที่ซื้อ (30, 90 หรือ 365 วัน) และปิดอัตโนมัติเมื่อครบอายุ หากไม่ต่ออายุ ข้อมูลในประกาศต้องเป็นความจริง และเจ้าของแก้ไขประกาศได้ทุกเมื่อจากแดชบอร์ด',
       },
       {
         q: 'นายหน้าหรือเอเจนซี่อสังหาริมทรัพย์ลงประกาศได้หรือไม่?',
@@ -149,7 +149,7 @@ const EN: Category[] = [
       },
       {
         q: 'How is SpacesMate different from other property listing sites?',
-        a: 'SpacesMate uses Fair Rotation — every listing whose owner has confirmed its details (at least every 6 months) is shuffled into a featured position at random on each page load. Position is not for sale, and every listing gets an equal chance. SpacesMate also accepts every property type, including offices and co-working space, which many platforms do not, and offers full property management, which ordinary listing sites do not.',
+        a: 'SpacesMate uses Fair Rotation — the order of "recommended" listings is reshuffled every day. Position is not for sale, and every listing gets an equal chance. SpacesMate also accepts every property type, including offices and co-working space, which many platforms do not, and offers full property management, which ordinary listing sites do not.',
       },
       {
         q: 'Where does SpacesMate operate?',
@@ -173,7 +173,7 @@ const EN: Category[] = [
       },
       {
         q: 'Can I trust the listings on SpacesMate?',
-        a: 'Listings go through an initial check, and Fair Rotation only shows listings whose owner has confirmed the details within the last 6 months. Listings that have not been updated are hidden automatically, so renters see only properties that are genuinely available.',
+        a: 'A listing on SpacesMate shows only for the package period its owner bought and turns off automatically at the end unless renewed, so what is on the site is being kept up by its owner. Renters contact the owner directly by phone and LINE.',
       },
       {
         q: 'How do I search for a place on SpacesMate?',
@@ -197,7 +197,7 @@ const EN: Category[] = [
       },
       {
         q: 'Are there any special rules or conditions for listing?',
-        a: 'One that matters — the owner must confirm the listing details are still correct at least every 6 months, so renters get accurate, current information. A listing that is not confirmed in time is hidden from the site automatically until it is confirmed again.',
+        a: 'A listing shows for the package period bought (30, 90 or 365 days) and turns off automatically when it ends unless renewed. The details must be true, and the owner can edit the listing any time from the dashboard.',
       },
       {
         q: 'Can brokers or real estate agencies list?',
