@@ -5,22 +5,23 @@ import Link from '@/components/ui/LocaleLink'
 import Image from 'next/image'
 import type { Property } from '@/lib/property-data'
 import { SITE_T, type Locale } from '@/lib/site-i18n'
+import { C, RADIUS } from '@/lib/ui'
 
-export type FeaturedCard = Pick<Property,
-  'slug' | 'title' | 'priceDisplay' | 'bedrooms' | 'bathrooms' | 'size' |
-  'neighborhood' | 'image' | 'propertyType'>
+export type FeaturedCard = Pick<Property, 'slug' | 'title' | 'image' | 'propertyType'> & {
+  /** "฿6,000 – 9,700", or "ask for price". */
+  price: string
+  /** "/เดือน", or empty when there is no price. */
+  priceSuffix: string
+  /** "ใกล้ BTS อุดมสุข 600 ม.", or the district when no station is near. */
+  place: string
+  lineColor: string
+}
 
-const SHOW = 6
+const SHOW = 8
 const VISITOR_KEY = 'sm_rotation_id'
 
 const TYPE_KEYS: Record<string, 'apartment' | 'condoShort' | 'office' | 'coSpace'> = {
   Apartment: 'apartment', Condo: 'condoShort', Office: 'office', 'Co-Working': 'coSpace',
-}
-const GRADS: Record<string, string> = {
-  Apartment: 'linear-gradient(135deg,#02402e,#036b56)',
-  Condo:     'linear-gradient(135deg,#036b56,#048c73)',
-  Office:    'linear-gradient(135deg,#4a1d1d,#8b3a3a)',
-  default:   'linear-gradient(135deg,#02402e,#048c73)',
 }
 
 /**
@@ -77,12 +78,12 @@ function dailyPick(pool: FeaturedCard[]): FeaturedCard[] {
  *
  * Each visitor gets their own order of every live listing, which holds all day
  * and turns over the next. Across all visitors every listing gets the same
- * share of the six slots, which is what owners pay for; a visitor who comes
+ * share of the eight slots, which is what owners pay for; a visitor who comes
  * back the same afternoon finds the cards where they left them.
  *
- * The server's HTML carries the six newest (crawlers follow those links). They
+ * The server's HTML carries the eight newest (crawlers follow those links). They
  * are hidden behind card-shaped placeholders until this has picked the
- * visitor's six, so the swap does not show as cards jumping.
+ * visitor's eight, so the swap does not show as cards jumping.
  */
 export default function FeaturedGrid({ pool, locale }: { pool: FeaturedCard[]; locale: Locale }) {
   const t = SITE_T[locale]
@@ -93,47 +94,31 @@ export default function FeaturedGrid({ pool, locale }: { pool: FeaturedCard[]; l
   const displayed = picked ?? pool.slice(0, SHOW)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}
-      className={picked ? 'sm-feat-grid' : 'sm-feat-grid sm-feat-pending'}>
-      {displayed.map((p) => {
-        const bedroomLabel = p.bedrooms === 0 ? t.studio : t.bedroomsValue(p.bedrooms)
-        const grad = GRADS[p.propertyType] || GRADS.default
-        return (
-          <Link key={p.slug} href={locale === 'en' ? `/en/property/${p.slug}` : `/property/${p.slug}`} className="sm-feat-card"
-            style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', display: 'block', textDecoration: 'none', transition: 'all .25s', boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)' }}>
-            {/* Image */}
-            <div style={{ height: 185, background: grad, position: 'relative', overflow: 'hidden' }}>
-              {p.image && (
-                <Image src={p.image} alt={p.title} fill
-                  sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
-                  className="sm-feat-img"
-                  style={{ objectFit: 'cover', transition: 'transform .3s' }} />
-              )}
-              <span style={{ position: 'absolute', bottom: 10, right: 10, fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.9)', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(4px)', padding: '3px 9px', borderRadius: 6 }}>
-                {t[TYPE_KEYS[p.propertyType]] ?? p.propertyType}
-              </span>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '40px 24px' }}
+      className={picked ? undefined : 'sm-feat-pending'}>
+      {displayed.map(p => (
+        <Link key={p.slug} href={locale === 'en' ? `/en/property/${p.slug}` : `/property/${p.slug}`} className="sm-card"
+          style={{ display: 'flex', flexDirection: 'column', gap: 12, color: C.ink, textDecoration: 'none' }}>
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: RADIUS, overflow: 'hidden', background: C.line }}>
+            {p.image && (
+              <Image src={p.image} alt={p.title} fill
+                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 25vw"
+                style={{ objectFit: 'cover' }} />
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.muted }}>
+              <span aria-hidden="true" style={{ width: 14, height: 4, borderRadius: 2, background: p.lineColor, flexShrink: 0 }} />
+              <span>{p.place}</span>
             </div>
-            {/* Content */}
-            <div style={{ padding: 16 }}>
-              <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}>
-                <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{p.neighborhood}
-              </p>
-              <h3 style={{ fontSize: 14.5, fontWeight: 600, margin: '0 0 10px', lineHeight: 1.35, color: '#231f20', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} className="sm-feat-title">
-                {p.title}
-              </h3>
-              <div style={{ display: 'flex', gap: 10, borderTop: '1px solid #f3f5f4', paddingTop: 10, marginBottom: 10, fontSize: 11, color: '#7a8a85' }}>
-                <span>{bedroomLabel}</span>
-                {p.bathrooms > 0 && <span>{t.bathroomsValue(p.bathrooms)}</span>}
-                {p.size && <span>{t.sqm(p.size)}</span>}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#d97f11' }}>{p.priceDisplay}</span>
-                <span style={{ color: '#048c73', fontSize: 12.5, fontWeight: 600 }}>{t.viewDetail}</span>
-              </div>
+            <div className="sm-card-title" style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.45 }}>{p.title}</div>
+            <div style={{ fontSize: 13, color: C.muted }}>{t[TYPE_KEYS[p.propertyType]] ?? p.propertyType}</div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: C.amber, fontVariantNumeric: 'tabular-nums' }}>
+              {p.price}<span style={{ fontSize: 13, fontWeight: 400, color: C.muted }}>{p.priceSuffix ? ` ${p.priceSuffix}` : ''}</span>
             </div>
-          </Link>
-        )
-      })}
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }

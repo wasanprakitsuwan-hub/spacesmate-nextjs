@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase'
 import { LANDMARKS } from '@/lib/landmarks'
 import { haversineKm } from '@/lib/search-match'
 import { SITE_T, type Locale } from '@/lib/site-i18n'
+import { C, WRAP } from '@/lib/ui'
 import { RADIUS_KM, rentPath } from '@/lib/rent-slugs'
 
 /**
@@ -58,31 +59,16 @@ export default async function UniversityLinks({ locale = 'th' }: { locale?: Loca
     .sort((a, b) => b.count - a.count)
 
   return (
-    <section className="py-12 bg-white border-t border-spacemate-borderLight">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-spacemate-brandDark mb-2">
-          {t.uniAreaHeading}
-        </h2>
-        <p className="text-gray-500 text-sm mb-8">
-          {t.uniAreaSub}
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {unis.map(u => (
-            <Link
-              key={u.id}
-              href={rentPath({ kind: 'landmark', id: u.id, landmark: u })}
-              className="group flex items-center justify-between p-4 bg-spacemate-bgLight rounded-xl border border-spacemate-borderLight hover:border-spacemate-brandTeal hover:shadow-premium transition-all duration-200"
-            >
-              <span className="text-sm font-medium text-spacemate-textCharcoal group-hover:text-spacemate-brandDark leading-tight transition-colors">
-                {locale === 'en' ? u.en : u.th}
-              </span>
-              <span className="text-sm font-semibold text-spacemate-brandTeal ml-3 flex-shrink-0 tabular-nums">
-                {u.count}
-              </span>
-            </Link>
-          ))}
-        </div>
+    <section style={{ maxWidth: WRAP, margin: '0 auto', padding: '8px 24px 72px' }}>
+      <h3 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 600, color: C.green }}>{t.uniAreaHeading}</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '4px 32px', fontSize: 14 }}>
+        {unis.map(u => (
+          <Link key={u.id} href={rentPath({ kind: 'landmark', id: u.id, landmark: u })} className="sm-row-link"
+            style={{ color: C.ink, display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: `1px solid ${C.line2}`, textDecoration: 'none' }}>
+            <span>{locale === 'en' ? u.en : u.th}</span>
+            <span style={{ color: C.muted, fontVariantNumeric: 'tabular-nums' }}>{u.count}</span>
+          </Link>
+        ))}
       </div>
     </section>
   )

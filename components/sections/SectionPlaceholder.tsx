@@ -9,10 +9,10 @@
 export default function SectionPlaceholder() {
   return (
     <section aria-hidden="true" style={{ maxWidth: 1240, margin: '0 auto', padding: '56px 24px' }}>
-      <div style={{ width: 240, height: 26, borderRadius: 8, background: '#eef2f0', marginBottom: 28 }} />
+      <div style={{ width: 240, height: 26, borderRadius: 6, background: '#ece9e2', marginBottom: 28 }} />
       <div className="sm-ph-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ height: 300, borderRadius: 18, background: '#eef2f0' }} />
+          <div key={i} style={{ height: 300, borderRadius: 6, background: '#ece9e2' }} />
         ))}
       </div>
       <style>{`@media (max-width: 600px) { .sm-ph-grid { grid-template-columns: 1fr !important; } }`}</style>

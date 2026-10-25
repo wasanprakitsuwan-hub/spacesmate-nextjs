@@ -8,9 +8,8 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 60
 export const dynamic = 'force-static'
 import HeroSection from '@/components/sections/HeroSection'
-import CategorySection from '@/components/sections/CategorySection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
-import WhySpacesMate from '@/components/sections/WhySpacesMate'
+import OwnerPitch from '@/components/sections/OwnerPitch'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
@@ -54,9 +53,8 @@ export default function EnglishHome() {
   return (
     <>
       <HeroSection locale="en" />
-      <CategorySection locale="en" />
       <Suspense fallback={<SectionPlaceholder />}><FeaturedListings locale="en" /></Suspense>
-      <WhySpacesMate locale="en" />
+      <OwnerPitch locale="en" />
       <ManagementCTA locale="en" />
       <Suspense fallback={<SectionPlaceholder />}><BlogSection locale="en" /></Suspense>
       <AreaLinks locale="en" />
