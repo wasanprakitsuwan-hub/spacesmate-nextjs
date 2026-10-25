@@ -179,7 +179,7 @@ export const WIZARD_T = {
     videoKeptForUpgrade: 'ระบบจะเก็บไว้ให้ และจะแสดงทันทีเมื่ออัปเกรด โดยไม่ต้องใส่ลิงก์ใหม่',
     uploadingEllipsis: 'กำลังอัปโหลด...',
     uploadVideo: 'อัปโหลดวิดีโอ (สูงสุด 50 MB)',
-    orPasteVideoLink: 'หรือวางลิงก์วิดีโอ (YouTube / Vimeo)',
+    orPasteVideoLink: 'หรือวางลิงก์วิดีโอ (YouTube / TikTok)',
     remove: 'ลบ',
 
     // ── Package / sections ──
@@ -356,7 +356,7 @@ export const WIZARD_T = {
     videoKeptForUpgrade: 'We keep it for you and it appears as soon as you upgrade, with no need to add the link again',
     uploadingEllipsis: 'Uploading…',
     uploadVideo: 'Upload a video (up to 50 MB)',
-    orPasteVideoLink: 'Or paste a video link (YouTube / Vimeo)',
+    orPasteVideoLink: 'Or paste a video link (YouTube / TikTok)',
     remove: 'Remove',
 
     listingPackage: 'Listing package',
