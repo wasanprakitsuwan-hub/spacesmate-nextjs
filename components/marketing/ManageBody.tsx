@@ -17,6 +17,9 @@ import {
  * #enquiry, which the home page's management band links to.
  */
 
+/** Loose check only: catches typos like a missing @ or domain, not deliverability. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -30,8 +33,10 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
   const [error, setError]     = useState('')
   const [sendFailed, setSendFailed] = useState(false)
 
-  const [name,     setName]     = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName,  setLastName]  = useState('')
   const [phone,    setPhone]    = useState('')
+  const [email,    setEmail]    = useState('')
   // Submitted to /api/manage-lead, which writes them to a Google Sheet and the
   // founder's notification email. Thai in both locales — see lib/manage-i18n.
   const [type,     setType]     = useState<string>(PROPERTY_TYPE_VALUES[0])
@@ -41,11 +46,14 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
   const [channel,  setChannel]  = useState<ChannelValue>(CHANNEL_VALUES[0])
 
   const handleSubmit = useCallback(async () => {
-    if (!name.trim()) { setError(t.needName); return }
+    if (!firstName.trim()) { setError(t.needFirstName); return }
+    if (!lastName.trim())  { setError(t.needLastName); return }
     const digits = phone.replace(/\D/g, '')
     if (!digits)                   { setError(t.needPhone); return }
     if (digits.length !== 10)      { setError(t.phoneLength); return }
     if (!/^0[2-9]/.test(digits))   { setError(t.phoneFormat); return }
+    if (!email.trim())             { setError(t.needEmail); return }
+    if (!EMAIL_RE.test(email.trim())) { setError(t.emailFormat); return }
 
     setError('')
     setSendFailed(false)
@@ -54,7 +62,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
       const res = await fetch('/api/manage-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone: digits, type, location, channel, building, rooms }),
+        body: JSON.stringify({ firstName, lastName, phone: digits, email: email.trim(), type, location, channel, building, rooms }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -71,7 +79,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
     } finally {
       setLoading(false)
     }
-  }, [name, phone, type, location, channel, building, rooms, t])
+  }, [firstName, lastName, phone, email, type, location, channel, building, rooms, t])
 
   const input: React.CSSProperties = {
     width: '100%', border: `1px solid ${C.border}`, borderRadius: RADIUS, padding: '11px 12px', fontSize: 15,
@@ -193,12 +201,22 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
                 <div style={{ display: 'grid', gap: 14 }}>
                   <div className="sm-mg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label htmlFor="mg-name" style={label}>{t.name}</label>
-                      <input id="mg-name" value={name} onChange={e => { setName(e.target.value); setError('') }} placeholder={t.namePlaceholder} style={input} />
+                      <label htmlFor="mg-first-name" style={label}>{t.firstName}</label>
+                      <input id="mg-first-name" value={firstName} onChange={e => { setFirstName(e.target.value); setError('') }} placeholder={t.firstNamePlaceholder} autoComplete="given-name" style={input} />
                     </div>
                     <div>
+                      <label htmlFor="mg-last-name" style={label}>{t.lastName}</label>
+                      <input id="mg-last-name" value={lastName} onChange={e => { setLastName(e.target.value); setError('') }} placeholder={t.lastNamePlaceholder} autoComplete="family-name" style={input} />
+                    </div>
+                  </div>
+                  <div className="sm-mg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
                       <label htmlFor="mg-phone" style={label}>{t.phone}</label>
-                      <input id="mg-phone" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError('') }} placeholder="0XXXXXXXXX" inputMode="numeric" style={input} />
+                      <input id="mg-phone" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError('') }} placeholder="0XXXXXXXXX" inputMode="numeric" autoComplete="tel" style={input} />
+                    </div>
+                    <div>
+                      <label htmlFor="mg-email" style={label}>{t.email}</label>
+                      <input id="mg-email" type="email" value={email} onChange={e => { setEmail(e.target.value); setError('') }} placeholder="email@example.com" autoComplete="email" style={input} />
                     </div>
                   </div>
                   <div>
@@ -259,7 +277,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
                 <p style={{ fontSize: 15, color: C.ink, margin: '0 0 20px', lineHeight: 1.65 }}>
                   {t.sentBodyA} <strong style={{ color: C.green }}>{t.sentBodyB}</strong>
                 </p>
-                <button onClick={() => { setSent(false); setName(''); setPhone(''); setBuilding(''); setRooms(''); setType(PROPERTY_TYPE_VALUES[0]); setLocation(''); setChannel(CHANNEL_VALUES[0]) }}
+                <button onClick={() => { setSent(false); setFirstName(''); setLastName(''); setPhone(''); setEmail(''); setBuilding(''); setRooms(''); setType(PROPERTY_TYPE_VALUES[0]); setLocation(''); setChannel(CHANNEL_VALUES[0]) }}
                   className="sm-btn-ghost" style={btnStyle('ghost')}>
                   {t.sendAnother}
                 </button>
