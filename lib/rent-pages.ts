@@ -41,6 +41,7 @@ import {
 } from '@/lib/rent-slugs'
 
 export * from '@/lib/rent-slugs'
+import { defaultRentContent, splitLines, splitParagraphs } from '@/lib/rent-content'
 
 export const SITE = 'https://spacesmate.com'
 export const TEMPLATE_KEY = 'rent_page_template'
@@ -184,8 +185,11 @@ export type RentView = {
   typeLinks: (RentLink & { type: RentType | null })[]
   /** Other places within 3 km with listings, closest first. */
   nearby: RentLink[]
-  /** Short answers built from the live numbers, rendered and sent as FAQPage. */
+  /** Short answers built from the live numbers, plus any hand-written ones. */
   faq: { q: string; a: string }[]
+  /** "Why people rent here" points and the area write-up; empty when none. */
+  highlights: string[]
+  body: string[]
 }
 
 function typeLower(type: RentType): string {
@@ -302,12 +306,20 @@ export const loadRentPage = cache(async (rawSlug: string, locale: Locale): Promi
     .slice(0, 12)
     .map(x => x.link)
 
+  // Write-up: the page's own override, else the drafted or carried-over text.
+  const fallback = defaultRentContent(rentPlaceKey(place), type)
+  const ownHighlights = splitLines(locale === 'en' ? o.highlights_en : o.highlights_th)
+  const ownBody = splitParagraphs(locale === 'en' ? o.body_en : o.body_th)
+  const highlights = ownHighlights.length ? ownHighlights : (fallback ? fallback.highlights[locale] : [])
+  const body = ownBody.length ? ownBody : (fallback ? fallback.body[locale] : [])
+
   const placeLabel = rentPlaceLabel(place, locale)
   return {
     slug, place, type, placeLabel, title, description, intro, listings, priceFrom,
     indexable: listings.length >= INDEX_MIN && o.noindex !== true,
     typeLinks, nearby,
-    faq: buildFaq({ listings, placeLabel, type }, locale),
+    faq: [...buildFaq({ listings, placeLabel, type }, locale), ...(fallback?.faq[locale] ?? [])],
+    highlights, body,
   }
 })
 
@@ -339,11 +351,6 @@ export async function listRentPages(): Promise<RentPageSummary[]> {
 }
 
 /** The old /area slug folded into this rent page, if any — for its hand-written text. */
-export function foldedAreaFor(view: Pick<RentView, 'place' | 'type'>): string | null {
-  const key = rentPlaceKey(view.place)
-  const hit = Object.entries(FOLDED_AREAS).find(([, f]) => f.place === key && f.type === view.type)
-  return hit ? hit[0] : null
-}
 
 /** Metadata for both locales. Shares loadRentPage's cache() entry with the body. */
 export async function buildRentMetadata(rawSlug: string, locale: Locale) {

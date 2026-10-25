@@ -6,6 +6,7 @@ import {
   DEFAULT_TEMPLATE, INDEX_MIN, RADIUS_KM, RENT_TYPES, TYPE_NAME,
   type RentPageSummary, type RentTemplate, type TemplateStrings, type RentType,
 } from '@/lib/rent-slugs'
+import { defaultRentContent } from '@/lib/rent-content'
 
 /**
  * /dashboard/rent-pages — the "rent near a station or landmark" pages.
@@ -51,6 +52,7 @@ const PLACEHOLDERS = [
 type Override = {
   title_th: string; title_en: string; meta_description: string; meta_description_en: string
   intro_th: string; intro_en: string; noindex: boolean
+  highlights_th: string; highlights_en: string; body_th: string; body_en: string
 }
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: 20, marginBottom: 20 }
@@ -108,6 +110,8 @@ export default function RentPagesAdmin() {
       title_th: o.title_th ?? '', title_en: o.title_en ?? '',
       meta_description: o.meta_description ?? '', meta_description_en: o.meta_description_en ?? '',
       intro_th: o.intro_th ?? '', intro_en: o.intro_en ?? '', noindex: o.noindex === true,
+      // Pre-filled with the drafted text so it can be edited rather than retyped.
+      ...writeupFields(p, o),
     })
   }
 
@@ -115,7 +119,13 @@ export default function RentPagesAdmin() {
     if (!editing || !draft) return
     setSaving(true); setMsg(null)
     try {
-      await authFetch('/api/dashboard/rent-pages', { method: 'PUT', body: JSON.stringify({ slug: editing, ...draft }) })
+      // Text left exactly as drafted is not saved as an override, so a later
+      // improvement to the draft still reaches this page.
+      const p = pages.find(x => x.slug === editing)
+      const d = p ? writeupFields(p, {}) : null
+      const send = { ...draft }
+      if (d) for (const k of WRITEUP_KEYS) if (send[k].trim() === d[k].trim()) send[k] = ''
+      await authFetch('/api/dashboard/rent-pages', { method: 'PUT', body: JSON.stringify({ slug: editing, ...send }) })
       setMsg('บันทึกแล้ว')
       setEditing(null); setDraft(null)
       await load()
@@ -225,7 +235,7 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
     ? { label: 'ขึ้น Google', bg: '#dcfce7', color: '#15803d' }
     : forced ? { label: 'ปิดไม่ให้ขึ้น Google', bg: '#fee2e2', color: '#b91c1c' }
       : { label: `ยังไม่ขึ้น (ต้องมี ${INDEX_MIN})`, bg: '#f1f5f9', color: '#64748b' }
-  const custom = p.override && ['title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en']
+  const custom = p.override && ['title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en', ...WRITEUP_KEYS]
     .some(k => (p.override as Record<string, unknown>)[k])
   const path = `/rent/${p.slug}`
   const set = (k: keyof Override, v: string | boolean) => draft && setDraft({ ...draft, [k]: v })
@@ -252,12 +262,14 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
       {editing && draft && (
         <tr>
           <td colSpan={5} style={{ padding: '4px 8px 16px' }}>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>เว้นว่างไว้เพื่อใช้ข้อความจากแม่แบบ ใช้ตัวแปรแบบแม่แบบไม่ได้ในช่องนี้</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>เว้นว่างไว้เพื่อใช้ข้อความจากแม่แบบ ใช้ตัวแปรแบบแม่แบบไม่ได้ในช่องนี้ ช่องเกี่ยวกับทำเลใส่ข้อความร่างไว้ให้แล้ว (ถ้ามี) แก้ได้เลย ถ้าลบให้ว่างจะกลับไปใช้ข้อความร่าง</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {([
                 ['title_th', 'หัวข้อ (ไทย)', 1], ['title_en', 'Title (English)', 1],
                 ['meta_description', 'คำอธิบาย meta (ไทย)', 2], ['meta_description_en', 'Meta description (English)', 2],
                 ['intro_th', 'ย่อหน้าแนะนำ (ไทย)', 3], ['intro_en', 'Intro (English)', 3],
+                ['highlights_th', 'ทำไมถึงนิยมเช่าในย่านนี้ (ไทย) — บรรทัดละข้อ', 5], ['highlights_en', 'Why people rent here (English) — one per line', 5],
+                ['body_th', 'ข้อมูลเพิ่มเติมเกี่ยวกับทำเลนี้ (ไทย) — เว้นบรรทัดระหว่างย่อหน้า', 8], ['body_en', 'About this area (English) — blank line between paragraphs', 8],
               ] as [keyof Override, string, number][]).map(([k, label, rows]) => (
                 <label key={k} style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
                   {label}
@@ -278,4 +290,17 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
       )}
     </>
   )
+}
+
+const WRITEUP_KEYS = ['highlights_th', 'highlights_en', 'body_th', 'body_en'] as const
+
+/** The page's saved write-up, or the drafted / carried-over text, as editable text. */
+function writeupFields(p: RentPageSummary, o: Partial<Record<(typeof WRITEUP_KEYS)[number], string | null>>) {
+  const d = defaultRentContent(p.placeKey, p.type)
+  return {
+    highlights_th: o.highlights_th ?? (d ? d.highlights.th.join('\n') : ''),
+    highlights_en: o.highlights_en ?? (d ? d.highlights.en.join('\n') : ''),
+    body_th: o.body_th ?? (d ? d.body.th.join('\n\n') : ''),
+    body_en: o.body_en ?? (d ? d.body.en.join('\n\n') : ''),
+  }
 }

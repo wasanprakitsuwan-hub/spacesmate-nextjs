@@ -1,0 +1,720 @@
+/**
+ * Area write-ups for the /rent pages: "why people rent here" points and a
+ * couple of paragraphs about the place, in Thai and English.
+ *
+ * Where a page's text comes from, first match wins:
+ *   1. its own override in seo_pages (highlights_*, body_*), edited from
+ *      /dashboard/rent-pages
+ *   2. the hand-written guide of the /area page it replaced (FOLDED_AREAS),
+ *      for those 16 type pages
+ *   3. PLACE_CONTENT below, on the place's all-types page only. Type pages
+ *      of the same place don't repeat it: six pages with one paragraph is
+ *      duplicate content.
+ *
+ * PLACE_CONTENT was drafted on 25 Oct 2026 for the 21 universities and 20
+ * busy stations. Facts are kept to what holds still: lines, what is nearby
+ * (from lib/stations and lib/landmarks), and who tends to rent there. No
+ * prices; those come live from listings in the FAQ.
+ *
+ * Pure: no React, no Supabase, so the dashboard can show the defaults.
+ */
+import { AREA_CONTENT } from '@/lib/area-content'
+import { FOLDED_AREAS, type Locale, type RentType } from '@/lib/rent-slugs'
+
+export type PlaceContent = {
+  highlights: Record<Locale, string[]>
+  body: Record<Locale, string[]>
+}
+
+export type RentContent = PlaceContent & { faq: Record<Locale, { q: string; a: string }[]> }
+
+export function splitLines(s: string | null | undefined): string[] {
+  return (s ?? '').split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+}
+
+export function splitParagraphs(s: string | null | undefined): string[] {
+  return (s ?? '').split(/\n\s*\n/).map(p => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean)
+}
+
+/** The old /area slug a page took over, if any. */
+export function foldedSlugFor(placeKey: string, type: RentType | null): string | null {
+  const hit = Object.entries(FOLDED_AREAS).find(([, f]) => f.place === placeKey && f.type === type)
+  return hit ? hit[0] : null
+}
+
+/** Text a page shows when it has no override of its own. */
+export function defaultRentContent(placeKey: string, type: RentType | null): RentContent | null {
+  const folded = foldedSlugFor(placeKey, type)
+  const a = folded ? AREA_CONTENT[folded] : undefined
+  if (a) {
+    return {
+      highlights: { th: a.highlights_th, en: a.highlights_en },
+      body: { th: a.body_th, en: a.body_en },
+      faq: { th: a.faq_th, en: a.faq_en },
+    }
+  }
+  const p = type === null ? PLACE_CONTENT[placeKey] : undefined
+  return p ? { ...p, faq: { th: [], en: [] } } : null
+}
+
+export const PLACE_CONTENT: Record<string, PlaceContent> = {
+  // ── Universities ───────────────────────────────────────────────────────────
+  'landmark:chula': {
+    highlights: {
+      th: ['ใจกลางเมือง ติดสยาม สามย่าน และบรรทัดทอง', 'MRT สามย่าน และ BTS สยาม / สนามกีฬาแห่งชาติ เดินถึงหรือนั่งต่อสั้นๆ', 'ใกล้สามย่านมิตรทาวน์ MBK และโรงพยาบาลจุฬาลงกรณ์', 'มีทั้งหอพัก อพาร์ทเม้นท์ และคอนโดใกล้มหาวิทยาลัย'],
+      en: ['Central Bangkok, next to Siam, Sam Yan and Banthat Thong', 'MRT Sam Yan and BTS Siam / National Stadium within walking or a short ride', 'Close to Samyan Mitrtown, MBK and King Chulalongkorn Memorial Hospital', 'Dorms, apartments and condos all within reach of campus'],
+    },
+    body: {
+      th: [
+        'จุฬาลงกรณ์มหาวิทยาลัยตั้งอยู่ในเขตปทุมวัน ล้อมรอบด้วยสยาม สามย่าน และถนนบรรทัดทอง นิสิต อาจารย์ และบุคลากรโรงพยาบาลจุฬาฯ จำนวนมากจึงเลือกเช่าที่พักในรัศมีที่เดินหรือนั่งรถสั้นๆ ถึงได้ ทั้งหอพักในซอยจุฬาฯ อพาร์ทเม้นท์ย่านสามย่าน และคอนโดตามแนวพระราม 4 และบรรทัดทอง',
+        'การเดินทางสะดวกทั้ง MRT สามย่าน และ BTS สยามกับสนามกีฬาแห่งชาติ ร้านอาหารและร้านค้าตลอดบรรทัดทองเปิดถึงดึก ห้องใกล้มหาวิทยาลัยมีคนถามหาตลอดปี โดยเฉพาะช่วงก่อนเปิดภาคเรียน ควรเริ่มหาล่วงหน้า',
+      ],
+      en: [
+        'Chulalongkorn University sits in Pathum Wan, surrounded by Siam, Sam Yan and Banthat Thong Road. Students, staff and the team at King Chulalongkorn Memorial Hospital tend to rent within walking distance or a short ride: dorms in the Chula sois, apartments around Sam Yan, and condos along Rama 4 and Banthat Thong.',
+        'MRT Sam Yan and BTS Siam and National Stadium are all close, and Banthat Thong\'s restaurants stay open late. Rooms near campus are in demand all year, most of all just before term starts, so it pays to look early.',
+      ],
+    },
+  },
+  'landmark:kasetsart': {
+    highlights: {
+      th: ['BTS มหาวิทยาลัยเกษตรศาสตร์ และรถไฟฟ้าสายสีแดง สถานีบางเขน', 'หอพักและอพาร์ทเม้นท์จำนวนมากตามถนนงามวงศ์วาน พหลโยธิน และเสนานิคม', 'ใกล้โรงพยาบาลวิภาวดี', 'นั่ง BTS ไม่กี่สถานีถึงห้าแยกลาดพร้าวและหมอชิต'],
+      en: ['BTS Kasetsart University and the SRT Red Line at Bang Khen', 'Plenty of dorms and apartments along Ngamwongwan, Phahonyothin and Sena Nikhom', 'Near Vibhavadi Hospital', 'A few BTS stops to Ha Yaek Lat Phrao and Mo Chit'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตบางเขน เป็นหนึ่งในวิทยาเขตที่ใหญ่ที่สุดในกรุงเทพฯ รอบมหาวิทยาลัยจึงมีหอพักและอพาร์ทเม้นท์ให้เลือกมาก โดยเฉพาะตามถนนงามวงศ์วาน ถนนพหลโยธิน และซอยเสนานิคม ราคามักเป็นมิตรกับนิสิตมากกว่าย่านใจกลางเมือง',
+        'BTS สายสุขุมวิทส่วนต่อขยายมีสถานีมหาวิทยาลัยเกษตรศาสตร์ และรถไฟฟ้าสายสีแดงจอดที่สถานีบางเขน เดินทางเข้าเมืองหรือไปดอนเมืองได้ง่าย ผู้เช่ากลุ่มคนทำงานย่านพหลโยธินและวิภาวดีก็นิยมทำเลนี้เช่นกัน',
+      ],
+      en: [
+        'Kasetsart\'s Bang Khen campus is one of the largest in Bangkok, so the streets around it are full of dorms and apartments, especially along Ngamwongwan Road, Phahonyothin Road and the Sena Nikhom sois. Rents are generally kinder to students than in the city centre.',
+        'The BTS Sukhumvit Line extension stops at Kasetsart University, and the SRT Red Line stops at Bang Khen, so the city and Don Mueang are both easy to reach. People working along Phahonyothin and Vibhavadi rent here too.',
+      ],
+    },
+  },
+  'landmark:thammasat-tha-phra-chan': {
+    highlights: {
+      th: ['ริมแม่น้ำเจ้าพระยา ย่านเกาะรัตนโกสินทร์ ติดสนามหลวง', 'เรือด่วนเจ้าพระยาและเรือข้ามฟากที่ท่าพระจันทร์', 'MRT สนามไชย และสามยอด ในระยะไม่ถึง 2 กม.', 'ข้ามฝั่งไปโรงพยาบาลศิริราชได้ด้วยเรือข้ามฟาก'],
+      en: ['On the Chao Phraya in Rattanakosin, next to Sanam Luang', 'Chao Phraya Express and cross-river ferries at Tha Phra Chan pier', 'MRT Sanam Chai and Sam Yot within 2 km', 'A short ferry across to Siriraj Hospital'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยธรรมศาสตร์ ท่าพระจันทร์ อยู่ในเขตเมืองเก่าริมแม่น้ำเจ้าพระยา ซึ่งมีข้อจำกัดเรื่องความสูงอาคาร ที่พักในย่านจึงเป็นอพาร์ทเม้นท์และห้องเช่าขนาดเล็กเป็นหลัก หลายคนเลือกเช่าย่านบางลำพู ถนนข้าวสาร หรือข้ามฝั่งไปบางกอกน้อย อรุณอมรินทร์ และปิ่นเกล้า ที่มีคอนโดมากกว่า',
+        'การเดินทางใช้ได้ทั้งเรือด่วนเจ้าพระยา เรือข้ามฟาก และ MRT สายสีน้ำเงินที่สถานีสนามไชยและสามยอด เหมาะกับนักศึกษาและบุคลากรที่ต้องการอยู่ใกล้ท่าพระจันทร์ รวมถึงผู้ที่ทำงานโรงพยาบาลศิริราชฝั่งตรงข้าม',
+      ],
+      en: [
+        'Thammasat\'s Tha Phra Chan campus is in the old town on the Chao Phraya, where building heights are restricted, so rentals nearby are mostly apartments and small rooms. Many people rent in Banglamphu or around Khaosan Road, or cross the river to Bangkok Noi, Arun Amarin and Pinklao, where there are more condos.',
+        'You can get around by Chao Phraya Express boat, the cross-river ferry, or the MRT Blue Line at Sanam Chai and Sam Yot. It suits students and staff who want to be close to Tha Phra Chan, and people working at Siriraj Hospital across the river.',
+      ],
+    },
+  },
+  'landmark:silpakorn-wang-tha-phra': {
+    highlights: {
+      th: ['ใจกลางเกาะรัตนโกสินทร์ ใกล้พระบรมมหาราชวัง', 'ติดกับธรรมศาสตร์ ท่าพระจันทร์ และท่าเรือท่าช้าง / ท่าพระจันทร์', 'MRT สนามไชย ประมาณ 1 กม.', 'ข้ามฝั่งไปศิริราชและปิ่นเกล้าได้สะดวก'],
+      en: ['In the heart of Rattanakosin, near the Grand Palace', 'Next to Thammasat Tha Phra Chan and the Tha Chang / Tha Phra Chan piers', 'About 1 km to MRT Sanam Chai', 'Easy to cross to Siriraj and Pinklao'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยศิลปากร วังท่าพระ อยู่ในย่านเมืองเก่าที่เต็มไปด้วยวัด พิพิธภัณฑ์ และร้านอาหารดั้งเดิม ที่พักใกล้มหาวิทยาลัยมีจำกัดเพราะเป็นเขตอนุรักษ์ ส่วนใหญ่เป็นห้องเช่าและอพาร์ทเม้นท์ขนาดเล็กในย่านบางลำพู ท่าเตียน และฝั่งธนบุรี',
+        'นักศึกษาหลายคนเลือกเช่าคอนโดฝั่งปิ่นเกล้าและบางกอกน้อย แล้วนั่งเรือข้ามฟากหรือรถเมล์มาเรียน หรือเช่าใกล้ MRT สนามไชยและสามยอดที่ต่อเข้าเมืองได้ง่าย',
+      ],
+      en: [
+        'Silpakorn\'s Wang Tha Phra campus is in the old town, among temples, museums and long-standing restaurants. Housing right by campus is limited because the area is protected, so most rentals are rooms and small apartments in Banglamphu, Tha Tien and across the river in Thonburi.',
+        'Many students rent condos in Pinklao or Bangkok Noi and come over by ferry or bus, or rent near MRT Sanam Chai and Sam Yot for an easy ride into the city.',
+      ],
+    },
+  },
+  'landmark:kmitl': {
+    highlights: {
+      th: ['หอพักและอพาร์ทเม้นท์หนาแน่นรอบสถาบัน โดยเฉพาะย่านเกกีงามและถนนฉลองกรุง', 'Airport Rail Link สถานีลาดกระบัง', 'ใกล้สนามบินสุวรรณภูมิ', 'ราคาเช่าต่ำกว่าย่านใจกลางเมืองมาก'],
+      en: ['A dense cluster of dorms and apartments around campus, especially the Keki Ngam sois and Chalong Krung Road', 'Airport Rail Link at Lat Krabang', 'Close to Suvarnabhumi Airport', 'Rents well below the city centre'],
+    },
+    body: {
+      th: [
+        'สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง มีนักศึกษาจำนวนมาก ย่านรอบสถาบันจึงกลายเป็นชุมชนหอพักขนาดใหญ่ ทั้งในซอยเกกีงามและตามถนนฉลองกรุง มีร้านอาหาร ร้านสะดวกซื้อ และบริการซักรีดรองรับครบ',
+        'Airport Rail Link สถานีลาดกระบังพาเข้าเมืองถึงพญาไทได้โดยตรง และอยู่ใกล้สนามบินสุวรรณภูมิ ทำเลนี้จึงเหมาะกับทั้งนักศึกษาและคนที่ทำงานในสนามบินหรือนิคมอุตสาหกรรมลาดกระบัง',
+      ],
+      en: [
+        'KMITL has a large student body, and the streets around campus have grown into a big dorm community, in the Keki Ngam sois and along Chalong Krung Road, with restaurants, convenience stores and laundries to match.',
+        'The Airport Rail Link at Lat Krabang runs straight into the city at Phaya Thai, and Suvarnabhumi is close by. The area suits students as well as people working at the airport or the Lat Krabang industrial estate.',
+      ],
+    },
+  },
+  'landmark:kmutt': {
+    highlights: {
+      th: ['หอพักและอพาร์ทเม้นท์ตามถนนประชาอุทิศและซอยรอบมหาวิทยาลัย', 'ใกล้เซ็นทรัล พระราม 2', 'ย่านที่อยู่อาศัย เงียบ ราคาเช่าย่อมเยา', 'เข้าเมืองผ่านถนนพระราม 2 และสุขสวัสดิ์'],
+      en: ['Dorms and apartments along Pracha Uthit Road and the sois around campus', 'Near Central Rama 2', 'Quiet residential area with modest rents', 'Into the city via Rama 2 and Suk Sawat roads'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี (บางมด) อยู่ในเขตทุ่งครุ ฝั่งธนบุรี รอบมหาวิทยาลัยมีหอพักและอพาร์ทเม้นท์มากมายตามถนนประชาอุทิศ นักศึกษาส่วนใหญ่เช่าห้องที่เดินหรือนั่งมอเตอร์ไซค์รับจ้างถึงมหาวิทยาลัยได้',
+        'ย่านนี้ยังไม่มีรถไฟฟ้าผ่าน การเดินทางเข้าเมืองใช้ถนนพระราม 2 และสุขสวัสดิ์ ข้อดีคือค่าเช่าต่ำกว่าฝั่งพระนครมาก และมีห้างอย่างเซ็นทรัล พระราม 2 ไม่ไกล',
+      ],
+      en: [
+        'KMUTT (Bang Mod) is in Thung Khru on the Thonburi side. Pracha Uthit Road and the sois around campus are lined with dorms and apartments, and most students rent somewhere they can walk or take a motorbike taxi to class.',
+        'There is no rail line here yet, so trips into the city go via Rama 2 and Suk Sawat roads. In return, rents are far lower than on the Phra Nakhon side, and Central Rama 2 is not far.',
+      ],
+    },
+  },
+  'landmark:ramkhamhaeng': {
+    highlights: {
+      th: ['ชุมชนหอพักขนาดใหญ่ตามถนนรามคำแหงและซอยแยก', 'Airport Rail Link สถานีรามคำแหง และ MRT สายสีเหลือง', 'ใกล้เดอะมอลล์บางกะปิ', 'ค่าเช่าหลากหลาย ตั้งแต่ห้องพัดลมถึงคอนโด'],
+      en: ['A huge dorm community along Ramkhamhaeng Road and its sois', 'Airport Rail Link at Ramkhamhaeng and the MRT Yellow Line', 'Near The Mall Bangkapi', 'Everything from fan rooms to condos'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยรามคำแหงเป็นมหาวิทยาลัยเปิดที่มีนักศึกษาจำนวนมาก ถนนรามคำแหงและซอยแยกจึงเต็มไปด้วยหอพัก อพาร์ทเม้นท์ ร้านถ่ายเอกสาร และร้านอาหารราคาประหยัด เป็นหนึ่งในย่านห้องเช่าที่ใหญ่ที่สุดของกรุงเทพฯ',
+        'การเดินทางใช้ได้ทั้ง Airport Rail Link สถานีรามคำแหง MRT สายสีเหลืองที่วิ่งตามถนนลาดพร้าวและศรีนครินทร์ และรถเมล์หลายสาย ใกล้เดอะมอลล์บางกะปิ เหมาะทั้งนักศึกษาและคนทำงานที่ต้องการค่าเช่าไม่สูง',
+      ],
+      en: [
+        'Ramkhamhaeng is an open university with a very large student body, so Ramkhamhaeng Road and its sois are packed with dorms, apartments, print shops and cheap restaurants. It is one of the biggest rental areas in Bangkok.',
+        'You can travel by Airport Rail Link at Ramkhamhaeng, the MRT Yellow Line along Lat Phrao and Srinagarindra, or many bus routes. The Mall Bangkapi is nearby. It suits students and workers looking for a lower rent.',
+      ],
+    },
+  },
+  'landmark:mahidol-salaya': {
+    highlights: {
+      th: ['วิทยาเขตขนาดใหญ่ในอำเภอพุทธมณฑล จังหวัดนครปฐม', 'หอพักและอพาร์ทเม้นท์จำนวนมากรอบศาลายา', 'บรรยากาศเงียบ พื้นที่สีเขียวเยอะ', 'เข้ากรุงเทพฯ ผ่านถนนบรมราชชนนีและพุทธมณฑลสาย 4'],
+      en: ['A large campus in Phutthamonthon, Nakhon Pathom', 'Many dorms and apartments around Salaya', 'Quiet, green surroundings', 'Into Bangkok via Borommaratchachonnani and Phutthamonthon Sai 4 roads'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยมหิดล ศาลายา เป็นวิทยาเขตหลักที่อยู่นอกตัวเมืองกรุงเทพฯ ย่านศาลายาจึงเติบโตเป็นชุมชนหอพักและอพาร์ทเม้นท์สำหรับนักศึกษาและบุคลากร มีตลาด ร้านอาหาร และร้านค้าครบในระยะใกล้',
+        'ผู้เช่าส่วนใหญ่เลือกอยู่ใกล้มหาวิทยาลัยเพราะการเดินทางเข้าเมืองใช้เวลา ทำเลนี้ให้ห้องที่กว้างขึ้นในราคาที่ต่ำกว่ากรุงเทพฯ ชั้นใน และบรรยากาศเงียบสงบเหมาะกับการเรียน',
+      ],
+      en: [
+        'Mahidol\'s Salaya campus is its main campus, outside central Bangkok, and Salaya has grown into a community of dorms and apartments for students and staff, with markets, restaurants and shops close by.',
+        'Most renters stay near campus because the trip into the city takes time. In exchange you get more space for less rent than inner Bangkok, and a quiet setting that suits studying.',
+      ],
+    },
+  },
+  'landmark:nida': {
+    highlights: {
+      th: ['MRT สายสีเหลือง สถานีแยกลำสาลีและบางกะปิ', 'ใกล้เดอะมอลล์บางกะปิและแฮปปี้แลนด์', 'ผู้เช่าส่วนใหญ่เป็นนักศึกษาปริญญาโท-เอกและคนทำงาน', 'คอนโดและอพาร์ทเม้นท์ตามถนนเสรีไทยและนวมินทร์'],
+      en: ['MRT Yellow Line at Yaek Lam Sali and Bang Kapi', 'Near The Mall Bangkapi and Happyland', 'Mostly postgraduate students and working professionals', 'Condos and apartments along Seri Thai and Nawamin roads'],
+    },
+    body: {
+      th: [
+        'สถาบันบัณฑิตพัฒนบริหารศาสตร์ (นิด้า) อยู่ถนนเสรีไทย เขตบางกะปิ เป็นสถาบันระดับบัณฑิตศึกษา ผู้เช่าในย่านนี้จึงมักเป็นนักศึกษาที่ทำงานไปด้วย ต้องการห้องที่เงียบและเดินทางไปที่ทำงานได้สะดวก',
+        'MRT สายสีเหลืองสถานีแยกลำสาลีและบางกะปิทำให้ต่อไปลาดพร้าวและศรีนครินทร์ได้ง่าย รอบๆ มีทั้งคอนโดใหม่ อพาร์ทเม้นท์ และห้างอย่างเดอะมอลล์บางกะปิ',
+      ],
+      en: [
+        'NIDA is on Seri Thai Road in Bang Kapi and teaches at graduate level, so renters here are often students who also work, looking for a quiet room with an easy commute.',
+        'The MRT Yellow Line at Yaek Lam Sali and Bang Kapi links to Lat Phrao and Srinagarindra. Around it are new condos, apartments and malls such as The Mall Bangkapi.',
+      ],
+    },
+  },
+  'landmark:kmutnb': {
+    highlights: {
+      th: ['MRT สายสีม่วง สถานีบางโพ และวงศ์สว่าง', 'ใกล้สถานีกลางกรุงเทพอภิวัฒน์ (บางซื่อ)', 'หอพักและอพาร์ทเม้นท์ตามถนนประชาราษฎร์สาย 1 และพิบูลสงคราม', 'ใกล้โรงพยาบาลยันฮี'],
+      en: ['MRT Purple Line at Bang Pho and Wong Sawang', 'Near Krung Thep Aphiwat Central Terminal (Bang Sue)', 'Dorms and apartments along Pracharat Sai 1 and Phibun Songkhram roads', 'Near Yanhee Hospital'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ อยู่ย่านบางซื่อ ใกล้แม่น้ำเจ้าพระยา รอบมหาวิทยาลัยมีหอพักและอพาร์ทเม้นท์สำหรับนักศึกษาจำนวนมาก โดยเฉพาะตามถนนประชาราษฎร์สาย 1',
+        'MRT สายสีม่วงที่บางโพและวงศ์สว่าง และสถานีกลางกรุงเทพอภิวัฒน์ที่อยู่ไม่ไกล ทำให้ทำเลนี้เดินทางได้หลายทาง ทั้งเข้าเมืองและไปนนทบุรี คนทำงานย่านบางซื่อก็นิยมเช่าที่นี่',
+      ],
+      en: [
+        'KMUTNB is in Bang Sue, near the Chao Phraya. There are many student dorms and apartments around campus, especially along Pracharat Sai 1 Road.',
+        'The MRT Purple Line at Bang Pho and Wong Sawang, and Krung Thep Aphiwat Central Terminal nearby, give plenty of ways to get around, into the city or out to Nonthaburi. People working in Bang Sue rent here too.',
+      ],
+    },
+  },
+  'landmark:utcc': {
+    highlights: {
+      th: ['ถนนวิภาวดีรังสิต เขตดินแดง', 'MRT ห้วยขวางและสุทธิสาร, BTS อารีย์ ในระยะประมาณ 2 กม.', 'หอพักและอพาร์ทเม้นท์ย่านดินแดง ประชาสงเคราะห์ และสุทธิสาร', 'ใกล้เอสพลานาด รัชดาฯ'],
+      en: ['On Vibhavadi Rangsit Road in Din Daeng', 'MRT Huai Khwang and Sutthisan, BTS Ari, all around 2 km', 'Dorms and apartments in Din Daeng, Pracha Songkhro and Sutthisan', 'Near Esplanade Ratchada'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยหอการค้าไทยอยู่ริมถนนวิภาวดีรังสิต ย่านดินแดง นักศึกษานิยมเช่าหอพักและอพาร์ทเม้นท์ในซอยประชาสงเคราะห์ ดินแดง และสุทธิสาร ที่มีร้านอาหารและร้านค้าครบ',
+        'ทำเลนี้อยู่ระหว่าง MRT สายสีน้ำเงิน (ห้วยขวาง สุทธิสาร) และ BTS อารีย์ จึงเดินทางไปรัชดาฯ พหลโยธิน และใจกลางเมืองได้สะดวก เหมาะทั้งนักศึกษาและคนทำงานย่านวิภาวดี',
+      ],
+      en: [
+        'UTCC is on Vibhavadi Rangsit Road in Din Daeng. Students tend to rent dorms and apartments in the Pracha Songkhro, Din Daeng and Sutthisan sois, which have plenty of food and shops.',
+        'The area sits between the MRT Blue Line (Huai Khwang, Sutthisan) and BTS Ari, so Ratchada, Phahonyothin and the city centre are all easy to reach. It suits students and people working along Vibhavadi.',
+      ],
+    },
+  },
+  'landmark:chandrakasem': {
+    highlights: {
+      th: ['ถนนรัชดาภิเษก ช่วงลาดพร้าว เขตจตุจักร', 'BTS พหลโยธิน 24 และรัชโยธิน, MRT ลาดพร้าว', 'ใกล้เซ็นทรัลลาดพร้าวและยูเนี่ยนมอลล์', 'อพาร์ทเม้นท์และคอนโดหลายระดับราคา'],
+      en: ['On Ratchadaphisek Road near Lat Phrao, Chatuchak', 'BTS Phahon Yothin 24 and Ratchayothin, MRT Lat Phrao', 'Near Central Ladprao and Union Mall', 'Apartments and condos across price ranges'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยราชภัฏจันทรเกษมอยู่ถนนรัชดาภิเษก ระหว่างแยกรัชโยธินและแยกลาดพร้าว ย่านนี้มีทั้งหอพักนักศึกษา อพาร์ทเม้นท์ และคอนโดใหม่ตามแนวรถไฟฟ้า',
+        'เดินทางได้ทั้ง BTS สายสุขุมวิท (พหลโยธิน 24 รัชโยธิน) และ MRT สายสีน้ำเงิน (ลาดพร้าว) ใกล้แหล่งช้อปปิ้งอย่างเซ็นทรัลลาดพร้าวและยูเนี่ยนมอลล์ เหมาะกับนักศึกษาและคนทำงานย่านรัชโยธิน',
+      ],
+      en: [
+        'Chandrakasem Rajabhat University is on Ratchadaphisek Road between the Ratchayothin and Lat Phrao junctions. The area has student dorms, apartments and new condos along the rail lines.',
+        'Both the BTS Sukhumvit Line (Phahon Yothin 24, Ratchayothin) and the MRT Blue Line (Lat Phrao) are close, as are Central Ladprao and Union Mall. It suits students and people working around Ratchayothin.',
+      ],
+    },
+  },
+  'landmark:sripatum': {
+    highlights: {
+      th: ['BTS บางบัว อยู่หน้ามหาวิทยาลัย', 'หอพักและอพาร์ทเม้นท์ตามถนนพหลโยธินและซอยบางบัว', 'ใกล้มหาวิทยาลัยเกษตรศาสตร์', 'นั่ง BTS ตรงเข้าหมอชิตและสยาม'],
+      en: ['BTS Bang Bua right outside campus', 'Dorms and apartments along Phahonyothin and the Bang Bua sois', 'Near Kasetsart University', 'Direct BTS to Mo Chit and Siam'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยศรีปทุมอยู่ริมถนนพหลโยธิน เขตบางเขน มี BTS บางบัวอยู่หน้ามหาวิทยาลัย ห้องเช่าในรัศมีเดินถึงสถานีจึงเป็นที่ต้องการทั้งจากนักศึกษาและคนทำงาน',
+        'ย่านนี้มีหอพักและอพาร์ทเม้นท์ราคาเป็นมิตร ใกล้มหาวิทยาลัยเกษตรศาสตร์และกรมป่าไม้ นั่ง BTS สายสุขุมวิทเข้าหมอชิต อารีย์ และสยามได้โดยไม่ต้องเปลี่ยนสาย',
+      ],
+      en: [
+        'Sripatum University is on Phahonyothin Road in Bang Khen, with BTS Bang Bua right outside. Rooms within walking distance of the station are wanted by students and workers alike.',
+        'The area has reasonably priced dorms and apartments, close to Kasetsart University and the Royal Forest Department. The BTS Sukhumvit Line runs straight to Mo Chit, Ari and Siam with no change.',
+      ],
+    },
+  },
+  'landmark:dpu': {
+    highlights: {
+      th: ['ถนนประชาชื่น เขตหลักสี่', 'รถไฟฟ้าสายสีแดง สถานีทุ่งสองห้อง', 'ใกล้ศูนย์ราชการแจ้งวัฒนะ และ MRT สายสีชมพู', 'หอพักและอพาร์ทเม้นท์ราคาประหยัดตามประชาชื่นและงามวงศ์วาน'],
+      en: ['On Prachachuen Road in Lak Si', 'SRT Red Line at Thung Song Hong', 'Near the Chaeng Watthana Government Complex and the MRT Pink Line', 'Budget dorms and apartments along Prachachuen and Ngamwongwan'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยธุรกิจบัณฑิตย์อยู่ถนนประชาชื่น เขตหลักสี่ รอบมหาวิทยาลัยมีหอพักและอพาร์ทเม้นท์สำหรับนักศึกษาจำนวนมาก ราคาส่วนใหญ่ย่อมเยากว่าย่านใจกลางเมือง',
+        'รถไฟฟ้าสายสีแดงสถานีทุ่งสองห้อง และ MRT สายสีชมพูตามถนนแจ้งวัฒนะ ช่วยให้เดินทางไปบางซื่อ ดอนเมือง และศูนย์ราชการได้สะดวก ข้าราชการและคนทำงานย่านแจ้งวัฒนะก็เช่าในย่านนี้',
+      ],
+      en: [
+        'Dhurakij Pundit University is on Prachachuen Road in Lak Si. There are many student dorms and apartments around campus, mostly cheaper than in the city centre.',
+        'The SRT Red Line at Thung Song Hong and the MRT Pink Line along Chaeng Watthana make Bang Sue, Don Mueang and the Government Complex easy to reach. Civil servants and others working on Chaeng Watthana rent here too.',
+      ],
+    },
+  },
+  'landmark:krirk': {
+    highlights: {
+      th: ['ถนนรามอินทรา ใกล้วงเวียนบางเขน', 'MRT รามอินทรา 3 และสถานีร่วม BTS/MRT วัดพระศรีมหาธาตุ', 'ต่อ BTS สายสุขุมวิทและ MRT สายสีชมพูได้ที่สถานีเดียว', 'อพาร์ทเม้นท์และคอนโดราคาเป็นมิตร'],
+      en: ['On Ram Inthra Road near the Bang Khen roundabout', 'MRT Ram Inthra 3 and the BTS/MRT Wat Phra Sri Mahathat interchange', 'BTS Sukhumvit Line and MRT Pink Line from one station', 'Reasonably priced apartments and condos'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเกริกอยู่ต้นถนนรามอินทรา ใกล้วงเวียนบางเขนและอนุสาวรีย์หลักสี่ ย่านนี้มีอพาร์ทเม้นท์และคอนโดใหม่เพิ่มขึ้นมากตามแนวรถไฟฟ้า',
+        'สถานีวัดพระศรีมหาธาตุเป็นจุดเปลี่ยนระหว่าง BTS สายสุขุมวิทและ MRT สายสีชมพู ส่วน MRT รามอินทรา 3 อยู่ใกล้มหาวิทยาลัย เดินทางเข้าเมืองหรือไปแจ้งวัฒนะและมีนบุรีได้สะดวก',
+      ],
+      en: [
+        'Krirk University is at the start of Ram Inthra Road, near the Bang Khen roundabout and the Lak Si monument. New apartments and condos have been going up along the rail lines here.',
+        'Wat Phra Sri Mahathat is the interchange between the BTS Sukhumvit Line and the MRT Pink Line, and MRT Ram Inthra 3 is right by campus, so the city, Chaeng Watthana and Min Buri are all easy to reach.',
+      ],
+    },
+  },
+  'landmark:bangkok-university-rangsit': {
+    highlights: {
+      th: ['ถนนพหลโยธิน อำเภอคลองหลวง จังหวัดปทุมธานี', 'หอพักและอพาร์ทเม้นท์หนาแน่นรอบมหาวิทยาลัย', 'ใกล้ฟิวเจอร์พาร์ค รังสิต', 'รถไฟฟ้าสายสีแดง สถานีรังสิต'],
+      en: ['On Phahonyothin Road in Khlong Luang, Pathum Thani', 'A dense cluster of dorms and apartments around campus', 'Near Future Park Rangsit', 'SRT Red Line at Rangsit'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยกรุงเทพ วิทยาเขตรังสิต อยู่ริมถนนพหลโยธินในจังหวัดปทุมธานี นักศึกษาส่วนใหญ่เช่าหอพักและอพาร์ทเม้นท์ที่อยู่รอบมหาวิทยาลัย ซึ่งมีให้เลือกมากและราคาเป็นมิตร',
+        'ย่านรังสิตมีห้างใหญ่อย่างฟิวเจอร์พาร์ค และรถไฟฟ้าสายสีแดงสถานีรังสิตที่ต่อเข้าบางซื่อได้ เหมาะกับผู้ที่ต้องการห้องกว้างในราคาต่ำกว่ากรุงเทพฯ',
+      ],
+      en: [
+        'Bangkok University\'s Rangsit campus is on Phahonyothin Road in Pathum Thani. Most students rent the dorms and apartments around campus, of which there are plenty at friendly prices.',
+        'Rangsit has big malls such as Future Park, and the SRT Red Line at Rangsit runs into Bang Sue. It suits people who want more space for less than Bangkok rents.',
+      ],
+    },
+  },
+  'landmark:kasem-bundit': {
+    highlights: {
+      th: ['ถนนพัฒนาการ เขตสวนหลวง ติดสถาบันไทย-ญี่ปุ่น', 'Airport Rail Link และ MRT สายสีเหลือง สถานีหัวหมาก', 'อพาร์ทเม้นท์และคอนโดตามแนวพัฒนาการ', 'ใกล้มหาวิทยาลัยรามคำแหง'],
+      en: ['On Phatthanakan Road in Suan Luang, next to Thai-Nichi Institute', 'Airport Rail Link and MRT Yellow Line at Hua Mak', 'Apartments and condos along Phatthanakan', 'Near Ramkhamhaeng University'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเกษมบัณฑิต วิทยาเขตพัฒนาการ อยู่ติดกับสถาบันเทคโนโลยีไทย-ญี่ปุ่น ทำให้ย่านนี้มีนักศึกษาสองสถาบันมาเช่าที่พักรวมกัน มีทั้งหอพักในซอยและคอนโดตามถนนพัฒนาการ',
+        'สถานีหัวหมากเป็นจุดเปลี่ยนระหว่าง Airport Rail Link และ MRT สายสีเหลือง เดินทางเข้าเมือง ไปสุวรรณภูมิ หรือไปลาดพร้าวและศรีนครินทร์ได้ง่าย',
+      ],
+      en: [
+        'Kasem Bundit\'s Phatthanakan campus is next door to Thai-Nichi Institute of Technology, so students from both rent in the area, from dorms in the sois to condos along Phatthanakan Road.',
+        'Hua Mak is the interchange between the Airport Rail Link and the MRT Yellow Line, so the city, Suvarnabhumi, Lat Phrao and Srinagarindra are all easy to reach.',
+      ],
+    },
+  },
+  'landmark:tni': {
+    highlights: {
+      th: ['ถนนพัฒนาการ เขตสวนหลวง ติดมหาวิทยาลัยเกษมบัณฑิต', 'Airport Rail Link และ MRT สายสีเหลือง สถานีหัวหมาก', 'หลักสูตรเชื่อมกับอุตสาหกรรมญี่ปุ่น', 'หอพักและคอนโดตามแนวพัฒนาการ'],
+      en: ['On Phatthanakan Road in Suan Luang, next to Kasem Bundit University', 'Airport Rail Link and MRT Yellow Line at Hua Mak', 'Programmes linked to Japanese industry', 'Dorms and condos along Phatthanakan'],
+    },
+    body: {
+      th: [
+        'สถาบันเทคโนโลยีไทย-ญี่ปุ่นอยู่ถนนพัฒนาการ ติดกับมหาวิทยาลัยเกษมบัณฑิต นักศึกษานิยมเช่าหอพักในซอยพัฒนาการและคอนโดใกล้สถานีหัวหมาก',
+        'Airport Rail Link และ MRT สายสีเหลืองที่หัวหมากพาไปได้ทั้งใจกลางเมือง สุวรรณภูมิ และศรีนครินทร์ ทำเลนี้ค่าเช่าต่ำกว่าย่านพระราม 9 ที่อยู่ไม่ไกล',
+      ],
+      en: [
+        'Thai-Nichi Institute of Technology is on Phatthanakan Road, next to Kasem Bundit University. Students tend to rent dorms in the Phatthanakan sois or condos near Hua Mak station.',
+        'The Airport Rail Link and MRT Yellow Line at Hua Mak reach the city centre, Suvarnabhumi and Srinagarindra. Rents are lower than in nearby Rama 9.',
+      ],
+    },
+  },
+  'landmark:stamford': {
+    highlights: {
+      th: ['ย่านหัวหมาก ใกล้ Airport Rail Link และ MRT สายสีเหลือง', 'นักศึกษานานาชาติจำนวนมาก', 'คอนโดและอพาร์ทเม้นท์พร้อมเฟอร์นิเจอร์', 'ไม่ไกลจากย่านพระราม 9'],
+      en: ['Hua Mak, near the Airport Rail Link and MRT Yellow Line', 'A large international student body', 'Furnished condos and apartments', 'Not far from Rama 9'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยนานาชาติแสตมฟอร์ด วิทยาเขตกรุงเทพฯ มีนักศึกษาต่างชาติจำนวนมาก ผู้เช่าในย่านนี้จึงมักมองหาคอนโดหรืออพาร์ทเม้นท์พร้อมเฟอร์นิเจอร์ สัญญายืดหยุ่น และอยู่ใกล้สถานีรถไฟฟ้า',
+        'สถานีหัวหมาก (Airport Rail Link และ MRT สายสีเหลือง) และกาลันตันอยู่ในระยะไม่ถึง 3 กม. เดินทางไปสุวรรณภูมิและใจกลางเมืองได้สะดวก',
+      ],
+      en: [
+        'Stamford International University\'s Bangkok campus has many international students, so renters here usually want furnished condos or apartments, flexible contracts and a station nearby.',
+        'Hua Mak (Airport Rail Link and MRT Yellow Line) and Kalantan stations are under 3 km away, for easy trips to Suvarnabhumi and the city centre.',
+      ],
+    },
+  },
+  'landmark:mahanakorn': {
+    highlights: {
+      th: ['ถนนเชื่อมสัมพันธ์ เขตหนองจอก', 'หอพักและอพาร์ทเม้นท์รอบมหาวิทยาลัย', 'ย่านที่อยู่อาศัยชานเมือง เงียบ ค่าเช่าต่ำ', 'เข้าเมืองผ่านมีนบุรีและ MRT สายสีชมพู'],
+      en: ['On Chueam Samphan Road in Nong Chok', 'Dorms and apartments around campus', 'Quiet suburban area with low rents', 'Into the city via Min Buri and the MRT Pink Line'],
+    },
+    body: {
+      th: [
+        'มหาวิทยาลัยเทคโนโลยีมหานครอยู่เขตหนองจอก ชานเมืองฝั่งตะวันออกของกรุงเทพฯ นักศึกษาส่วนใหญ่เช่าหอพักและอพาร์ทเม้นท์ที่อยู่รอบมหาวิทยาลัย เพราะการเดินทางจากในเมืองใช้เวลานาน',
+        'ข้อดีของทำเลนี้คือค่าเช่าต่ำและบรรยากาศเงียบ เมื่อต้องเข้าเมืองสามารถไปต่อรถไฟฟ้า MRT สายสีชมพูที่มีนบุรี',
+      ],
+      en: [
+        'Mahanakorn University of Technology is in Nong Chok on Bangkok\'s eastern edge. Most students rent the dorms and apartments around campus, since getting there from the city takes a while.',
+        'Rents are low and the area is quiet. For trips into town, the MRT Pink Line starts at Min Buri.',
+      ],
+    },
+  },
+  'landmark:pathumwan-institute': {
+    highlights: {
+      th: ['ถนนพระราม 1 ติด BTS สนามกีฬาแห่งชาติ', 'ใกล้ MBK สยามเซ็นเตอร์ และสยามพารากอน', 'ใกล้จุฬาลงกรณ์มหาวิทยาลัย', 'ห้องเช่าและอพาร์ทเม้นท์ย่านบรรทัดทองและราชเทวี'],
+      en: ['On Rama 1 Road by BTS National Stadium', 'Near MBK, Siam Center and Siam Paragon', 'Close to Chulalongkorn University', 'Rooms and apartments around Banthat Thong and Ratchathewi'],
+    },
+    body: {
+      th: [
+        'สถาบันเทคโนโลยีปทุมวันอยู่ใจกลางเมือง ติด BTS สนามกีฬาแห่งชาติและห้าง MBK ที่พักใกล้สถาบันส่วนใหญ่เป็นห้องเช่าและอพาร์ทเม้นท์ย่านบรรทัดทอง ราชเทวี และเพชรบุรี',
+        'ทำเลนี้เดินทางสะดวกมาก นั่ง BTS ไปสยามได้ในสถานีเดียว และอยู่ใกล้จุฬาลงกรณ์มหาวิทยาลัย ค่าเช่าสูงกว่าชานเมืองแต่ประหยัดเวลาเดินทาง',
+      ],
+      en: [
+        'Pathumwan Institute of Technology is right in the centre, by BTS National Stadium and MBK. Rentals nearby are mostly rooms and apartments around Banthat Thong, Ratchathewi and Phetchaburi.',
+        'It is very well connected: one BTS stop to Siam, and close to Chulalongkorn University. Rents are higher than in the suburbs, but the commute is short.',
+      ],
+    },
+  },
+
+  // ── Stations ───────────────────────────────────────────────────────────────
+  'station:E5': {
+    highlights: {
+      th: ['ติดเอ็มโพเรียม เอ็มควอเทียร์ และเอ็มสเฟียร์', 'ใกล้สวนเบญจกิติ', 'ชุมชนชาวญี่ปุ่นและชาวต่างชาติขนาดใหญ่', 'คอนโดระดับกลางถึงพรีเมียมตามซอยสุขุมวิท 24, 26, 33 และ 39'],
+      en: ['Next to Emporium, EmQuartier and EmSphere', 'Near Benjakitti Park', 'A large Japanese and expat community', 'Mid-range to premium condos along Sukhumvit 24, 26, 33 and 39'],
+    },
+    body: {
+      th: [
+        'พร้อมพงษ์เป็นหนึ่งในทำเลเช่าคอนโดที่ได้รับความนิยมที่สุดบนถนนสุขุมวิท มีห้างเอ็มโพเรียม เอ็มควอเทียร์ และเอ็มสเฟียร์อยู่ติดสถานี และมีชุมชนชาวญี่ปุ่นขนาดใหญ่ ทำให้มีซูเปอร์มาร์เก็ต ร้านอาหาร และคลินิกที่รองรับชาวต่างชาติครบ',
+        'คอนโดในซอยสุขุมวิท 24, 26, 33 และ 39 มีตั้งแต่ห้องสตูดิโอไปจนถึงห้องครอบครัวขนาดใหญ่ ใกล้สวนเบญจกิติ และนั่ง BTS ไปอโศกเพื่อต่อ MRT ได้ในสถานีเดียว',
+      ],
+      en: [
+        'Phrom Phong is one of the most sought-after condo areas on Sukhumvit. Emporium, EmQuartier and EmSphere sit by the station, and the large Japanese community means supermarkets, restaurants and clinics that cater to foreign residents.',
+        'Condos on Sukhumvit 24, 26, 33 and 39 run from studios to large family units. Benjakitti Park is close, and Asok, for the MRT, is one BTS stop away.',
+      ],
+    },
+  },
+  'station:E3': {
+    highlights: {
+      th: ['สุขุมวิทซอย 3–15 ใจกลางย่านธุรกิจ', 'ใกล้โรงพยาบาลบำรุงราษฎร์', 'เดินถึงอโศก เทอร์มินอล 21 และ MRT สุขุมวิท', 'เซอร์วิสอพาร์ทเม้นท์และคอนโดพร้อมอยู่จำนวนมาก'],
+      en: ['Sukhumvit Sois 3–15, in the heart of the business district', 'Near Bumrungrad International Hospital', 'Walk to Asok, Terminal 21 and MRT Sukhumvit', 'Plenty of serviced apartments and ready-to-move-in condos'],
+    },
+    body: {
+      th: [
+        'นานาอยู่ระหว่างเพลินจิตและอโศก ครอบคลุมสุขุมวิทซอย 3 ถึง 15 เป็นย่านที่มีเซอร์วิสอพาร์ทเม้นท์ โรงแรม และคอนโดพร้อมอยู่จำนวนมาก ผู้เช่ามีทั้งคนทำงานต่างชาติ ผู้ที่มารักษาตัวที่โรงพยาบาลบำรุงราษฎร์ และคนที่ต้องการสัญญาระยะสั้น',
+        'จากสถานีเดินถึงอโศก เทอร์มินอล 21 และ MRT สุขุมวิทได้ในไม่กี่นาที ร้านอาหารนานาชาติเปิดถึงดึก ห้องในซอยลึกจะเงียบกว่าห้องติดถนนใหญ่',
+      ],
+      en: [
+        'Nana sits between Phloen Chit and Asok, covering Sukhumvit Sois 3 to 15. It is full of serviced apartments, hotels and ready-to-move-in condos, rented by foreign professionals, patients at Bumrungrad, and anyone after a shorter contract.',
+        'Asok, Terminal 21 and MRT Sukhumvit are a few minutes\' walk from the station. International restaurants stay open late; rooms deeper in the sois are quieter than those on the main road.',
+      ],
+    },
+  },
+  'station:E8': {
+    highlights: {
+      th: ['สุขุมวิท 71–77 ระหว่างเอกมัยและอ่อนนุช', 'ค่าเช่าต่ำกว่าเอกมัยและทองหล่อ', 'ใกล้เกตเวย์ เอกมัย', 'คอนโดใหม่จำนวนมากตามแนว BTS'],
+      en: ['Sukhumvit 71–77, between Ekkamai and On Nut', 'Lower rents than Ekkamai and Thong Lo', 'Near Gateway Ekkamai', 'Many newer condos along the BTS'],
+    },
+    body: {
+      th: [
+        'พระโขนงเป็นทางเลือกยอดนิยมของคนที่อยากอยู่สุขุมวิทแต่ไม่อยากจ่ายค่าเช่าระดับทองหล่อ ห่างจากเอกมัยเพียงสถานีเดียว มีคอนโดใหม่ขึ้นตามแนว BTS หลายโครงการ',
+        'ย่านนี้มีทั้งตลาดท้องถิ่น ร้านอาหาร และคาเฟ่ ปรีดีพนมยงค์ (สุขุมวิท 71) เชื่อมไปเพชรบุรีตัดใหม่และพระราม 9 ได้ เหมาะกับคนทำงานในเมืองที่ต้องการความคุ้มค่า',
+      ],
+      en: [
+        'Phra Khanong is a popular pick for people who want Sukhumvit without Thong Lo rents. It is one stop from Ekkamai, and several newer condos have gone up along the BTS.',
+        'There are local markets, restaurants and cafés, and Pridi Banomyong (Sukhumvit 71) connects north to New Phetchaburi and Rama 9. It suits city workers looking for value.',
+      ],
+    },
+  },
+  'station:E10': {
+    highlights: {
+      th: ['สุขุมวิท 93–99 ระหว่างอ่อนนุชและปุณณวิถี', 'ใกล้ True Digital Park ที่ปุณณวิถี', 'คอนโดราคาเข้าถึงได้ตามแนว BTS', 'ย่านที่อยู่อาศัย มีตลาดและร้านอาหารท้องถิ่น'],
+      en: ['Sukhumvit 93–99, between On Nut and Punnawithi', 'Near True Digital Park at Punnawithi', 'Affordable condos along the BTS', 'Residential, with local markets and food'],
+    },
+    body: {
+      th: [
+        'บางจากเป็นทำเลคอนโดราคาเข้าถึงได้บนสุขุมวิทตอนปลาย อยู่ระหว่างอ่อนนุชและปุณณวิถี เหมาะกับคนทำงานที่ต้องการห้องใกล้ BTS ในงบที่จำกัด',
+        'สถานีถัดไปคือปุณณวิถี ที่ตั้งของ True Digital Park ซึ่งมีบริษัทเทคโนโลยีและสตาร์ทอัพจำนวนมาก นั่ง BTS ไปอโศกได้ในประมาณ 20 นาที',
+      ],
+      en: [
+        'Bang Chak is an affordable condo area on outer Sukhumvit, between On Nut and Punnawithi. It suits workers who want a room near the BTS on a tighter budget.',
+        'The next stop, Punnawithi, is home to True Digital Park and its many tech companies and start-ups. Asok is roughly 20 minutes away by BTS.',
+      ],
+    },
+  },
+  'station:E12': {
+    highlights: {
+      th: ['ปากซอยสุขุมวิท 103 (อุดมสุข) เชื่อมไปศรีนครินทร์', 'คอนโดราคาเข้าถึงได้จำนวนมาก', 'ใกล้ปุณณวิถีและบางนา', 'เซ็นทรัล บางนา ประมาณ 3 กม.'],
+      en: ['At Sukhumvit 103 (Udom Suk), linking to Srinagarindra', 'Lots of affordable condos', 'Near Punnawithi and Bang Na', 'About 3 km to Central Bangna'],
+    },
+    body: {
+      th: [
+        'อุดมสุขอยู่ปากซอยสุขุมวิท 103 ซึ่งเป็นถนนเชื่อมไปศรีนครินทร์ ย่านนี้มีคอนโดหลายโครงการในราคาที่เข้าถึงได้ เป็นที่นิยมของคนทำงานฝั่งบางนา สุขุมวิทตอนปลาย และศรีนครินทร์',
+        'นั่ง BTS เข้าเมืองได้โดยตรง และอยู่ไม่ไกลจากเซ็นทรัล บางนา และ True Digital Park ที่ปุณณวิถี',
+      ],
+      en: [
+        'Udom Suk is at the mouth of Sukhumvit 103, the road through to Srinagarindra. Many affordable condos have been built here, popular with people working in Bang Na, outer Sukhumvit and Srinagarindra.',
+        'The BTS runs straight into the city, and Central Bangna and True Digital Park at Punnawithi are close.',
+      ],
+    },
+  },
+  'station:N3': {
+    highlights: {
+      th: ['จุดเชื่อมรถเมล์และรถตู้ที่ใหญ่ที่สุดแห่งหนึ่งของกรุงเทพฯ', 'ใกล้โรงพยาบาลราชวิถี พระมงกุฎเกล้า และรามาธิบดี', 'ถนนรางน้ำ ร้านอาหารและคาเฟ่เยอะ', 'สถานีเดียวถึงพญาไทเพื่อต่อ Airport Rail Link'],
+      en: ['One of Bangkok\'s biggest bus and van hubs', 'Near Rajavithi, Phramongkutklao and Ramathibodi hospitals', 'Rang Nam Road, full of restaurants and cafés', 'One stop to Phaya Thai for the Airport Rail Link'],
+    },
+    body: {
+      th: [
+        'อนุสาวรีย์ชัยสมรภูมิเป็นศูนย์กลางการเดินทางของกรุงเทพฯ มีรถเมล์และรถตู้หลายสาย และอยู่ใกล้โรงพยาบาลใหญ่หลายแห่ง ทั้งราชวิถี พระมงกุฎเกล้า และรามาธิบดี บุคลากรทางการแพทย์และนักศึกษาจึงเช่าในย่านนี้มาก',
+        'ที่พักมีทั้งอพาร์ทเม้นท์ในซอยและคอนโดย่านรางน้ำ ราชวิถี และพหลโยธิน นั่ง BTS สถานีเดียวถึงพญาไทเพื่อต่อ Airport Rail Link ไปสุวรรณภูมิ',
+      ],
+      en: [
+        'Victory Monument is a transport hub, with many bus and van routes, and it is close to several big hospitals: Rajavithi, Phramongkutklao and Ramathibodi. Medical staff and students rent here in large numbers.',
+        'There are apartments in the sois and condos around Rang Nam, Ratchawithi and Phahonyothin. Phaya Thai, for the Airport Rail Link to Suvarnabhumi, is one BTS stop away.',
+      ],
+    },
+  },
+  'station:N1': {
+    highlights: {
+      th: ['สถานีเดียวถึงสยาม', 'ใกล้พันธุ์ทิพย์ประตูน้ำ และถนนเพชรบุรี', 'อพาร์ทเม้นท์และคอนโดในซอยเพชรบุรีและราชเทวี', 'ใกล้โรงพยาบาลพญาไท 1'],
+      en: ['One stop to Siam', 'Near Pantip Plaza and Phetchaburi Road', 'Apartments and condos in the Phetchaburi and Ratchathewi sois', 'Near Phyathai 1 Hospital'],
+    },
+    body: {
+      th: [
+        'ราชเทวีอยู่ห่างสยามเพียงสถานีเดียว จึงเป็นทำเลที่คนทำงานย่านสยามและนักศึกษาจุฬาฯ หรือสถาบันใกล้เคียงนิยมเช่า ค่าเช่าโดยรวมต่ำกว่าห้องติดสยามโดยตรง',
+        'ในซอยเพชรบุรีและราชเทวีมีอพาร์ทเม้นท์และคอนโดหลายระดับราคา ใกล้พันธุ์ทิพย์ ประตูน้ำ และโรงพยาบาลพญาไท 1 เดินทางต่อไปพญาไทเพื่อขึ้น Airport Rail Link ได้ง่าย',
+      ],
+      en: [
+        'Ratchathewi is one stop from Siam, which makes it popular with people working around Siam and with students at Chula and nearby institutes. Rents are generally lower than right next to Siam.',
+        'The Phetchaburi and Ratchathewi sois have apartments and condos at a range of prices, near Pantip, Pratunam and Phyathai 1 Hospital. Phaya Thai, for the Airport Rail Link, is close.',
+      ],
+    },
+  },
+  'station:A8': {
+    highlights: {
+      th: ['สถานีร่วม BTS และ Airport Rail Link ไปสุวรรณภูมิ', 'ใกล้โรงพยาบาลพญาไท 1 และ 2', 'ใกล้อนุสาวรีย์ชัยฯ และถนนรางน้ำ', 'คอนโดและอพาร์ทเม้นท์ตามถนนพญาไทและศรีอยุธยา'],
+      en: ['BTS and Airport Rail Link interchange, direct to Suvarnabhumi', 'Near Phyathai 1 and 2 hospitals', 'Near Victory Monument and Rang Nam Road', 'Condos and apartments along Phaya Thai and Si Ayutthaya roads'],
+    },
+    body: {
+      th: [
+        'พญาไทเป็นสถานีเปลี่ยนระหว่าง BTS สายสุขุมวิทและ Airport Rail Link ผู้ที่เดินทางไปสนามบินสุวรรณภูมิบ่อยหรือทำงานทั้งในเมืองและฝั่งตะวันออกจึงนิยมเช่าทำเลนี้',
+        'รอบสถานีมีคอนโดและอพาร์ทเม้นท์ตามถนนพญาไท ศรีอยุธยา และรางน้ำ ใกล้โรงพยาบาลหลายแห่งและอนุสาวรีย์ชัยสมรภูมิ นั่ง BTS สองสถานีถึงสยาม',
+      ],
+      en: [
+        'Phaya Thai is the interchange between the BTS Sukhumvit Line and the Airport Rail Link, so it suits frequent flyers and anyone working both in town and out east.',
+        'Around the station are condos and apartments along Phaya Thai, Si Ayutthaya and Rang Nam roads, near several hospitals and Victory Monument. Siam is two BTS stops away.',
+      ],
+    },
+  },
+  'station:N8': {
+    highlights: {
+      th: ['สถานีร่วม BTS หมอชิต และ MRT สวนจตุจักร', 'ติดตลาดนัดจตุจักรและสวนจตุจักร', 'ใกล้ JJ Mall และยูเนี่ยนมอลล์', 'ใกล้สถานีกลางกรุงเทพอภิวัฒน์ (บางซื่อ)'],
+      en: ['BTS Mo Chit and MRT Chatuchak Park interchange', 'Next to Chatuchak Weekend Market and Chatuchak Park', 'Near JJ Mall and Union Mall', 'Close to Krung Thep Aphiwat Central Terminal (Bang Sue)'],
+    },
+    body: {
+      th: [
+        'หมอชิตเป็นจุดเปลี่ยนระหว่าง BTS สายสุขุมวิทและ MRT สายสีน้ำเงิน อยู่ติดสวนจตุจักรและตลาดนัดจตุจักร ทำเลนี้จึงเดินทางสะดวกไปเกือบทุกทิศของกรุงเทพฯ',
+        'ที่พักมีทั้งคอนโดตามถนนพหลโยธินและกำแพงเพชร และอพาร์ทเม้นท์ในซอยย่านสะพานควาย คนทำงานย่านพหลโยธิน วิภาวดี และบางซื่อนิยมเช่าที่นี่',
+      ],
+      en: [
+        'Mo Chit is the interchange between the BTS Sukhumvit Line and the MRT Blue Line, right by Chatuchak Park and the weekend market, so most of Bangkok is easy to reach.',
+        'There are condos along Phahonyothin and Kamphaeng Phet roads and apartments in the sois towards Saphan Khwai. People working on Phahonyothin, Vibhavadi and in Bang Sue rent here.',
+      ],
+    },
+  },
+  'station:N9': {
+    highlights: {
+      th: ['ติดเซ็นทรัลลาดพร้าวและยูเนี่ยนมอลล์', 'เดินถึง MRT พหลโยธิน', 'แยกใหญ่ที่พหลโยธิน ลาดพร้าว และวิภาวดีมาบรรจบ', 'คอนโดหลายโครงการรอบห้าแยก'],
+      en: ['Next to Central Ladprao and Union Mall', 'Walk to MRT Phahon Yothin', 'Where Phahonyothin, Lat Phrao and Vibhavadi meet', 'Plenty of condos around the junction'],
+    },
+    body: {
+      th: [
+        'ห้าแยกลาดพร้าวเป็นจุดที่ถนนพหลโยธิน ลาดพร้าว และวิภาวดีรังสิตมาบรรจบ มีเซ็นทรัลลาดพร้าวและยูเนี่ยนมอลล์อยู่ติดสถานี และเดินถึง MRT พหลโยธินได้',
+        'รอบห้าแยกมีคอนโดหลายโครงการทั้งเก่าและใหม่ เหมาะกับคนทำงานย่านพหลโยธิน รัชโยธิน และวิภาวดี ที่ต้องการทั้ง BTS และ MRT ใกล้บ้าน',
+      ],
+      en: [
+        'Ha Yaek Lat Phrao is where Phahonyothin, Lat Phrao and Vibhavadi Rangsit roads meet. Central Ladprao and Union Mall are by the station, and MRT Phahon Yothin is a short walk.',
+        'There are many condos around the junction, old and new. It suits people working around Phahonyothin, Ratchayothin and Vibhavadi who want both the BTS and MRT close by.',
+      ],
+    },
+  },
+  'station:E1': {
+    highlights: {
+      th: ['ใจกลางย่านช้อปปิ้งราชประสงค์', 'เดินถึงเซ็นทรัลเวิลด์ เกษรวิลเลจ และเซ็นทรัลเอ็มบาสซี', 'ใกล้ถนนหลังสวนและสวนลุมพินี', 'คอนโดและเซอร์วิสอพาร์ทเม้นท์ระดับพรีเมียม'],
+      en: ['In the heart of the Ratchaprasong shopping district', 'Walk to CentralWorld, Gaysorn Village and Central Embassy', 'Near Lang Suan Road and Lumphini Park', 'Premium condos and serviced apartments'],
+    },
+    body: {
+      th: [
+        'ชิดลมอยู่ใจกลางย่านราชประสงค์ ล้อมรอบด้วยเซ็นทรัลเวิลด์ เกษรวิลเลจ และเซ็นทรัลเอ็มบาสซี ที่พักในย่านนี้ส่วนใหญ่เป็นคอนโดและเซอร์วิสอพาร์ทเม้นท์ระดับพรีเมียมในซอยหลังสวนและต้นสุขุมวิท',
+        'ผู้เช่ามักเป็นผู้บริหารและคนทำงานต่างชาติที่ต้องการอยู่ใกล้ที่ทำงานในย่านเพลินจิตและสีลม เดินไปสวนลุมพินีได้ และนั่ง BTS สถานีเดียวถึงสยาม',
+      ],
+      en: [
+        'Chit Lom is in the middle of Ratchaprasong, surrounded by CentralWorld, Gaysorn Village and Central Embassy. Housing here is mostly premium condos and serviced apartments around Lang Suan and lower Sukhumvit.',
+        'Renters are often executives and foreign professionals working around Phloen Chit and Silom. Lumphini Park is walkable, and Siam is one BTS stop away.',
+      ],
+    },
+  },
+  'station:E2': {
+    highlights: {
+      th: ['ถนนวิทยุ ย่านสถานทูตและอาคารสำนักงาน', 'ติดเซ็นทรัลเอ็มบาสซี', 'ใกล้โรงพยาบาลบำรุงราษฎร์', 'คอนโดหรูและเซอร์วิสอพาร์ทเม้นท์'],
+      en: ['Wireless Road, among embassies and office towers', 'Next to Central Embassy', 'Near Bumrungrad International Hospital', 'Luxury condos and serviced apartments'],
+    },
+    body: {
+      th: [
+        'เพลินจิตอยู่ระหว่างชิดลมและนานา ใกล้ถนนวิทยุที่มีสถานทูตหลายแห่งและอาคารสำนักงานเกรด A ผู้เช่าส่วนใหญ่เป็นคนทำงานต่างชาติ นักการทูต และผู้บริหาร',
+        'คอนโดในย่านนี้มีตั้งแต่ห้องหรูติดสถานีไปจนถึงเซอร์วิสอพาร์ทเม้นท์ในซอยสุขุมวิท 1 และ 2 ใกล้เซ็นทรัลเอ็มบาสซีและโรงพยาบาลบำรุงราษฎร์',
+      ],
+      en: [
+        'Phloen Chit sits between Chit Lom and Nana, near Wireless Road with its embassies and Grade A offices. Most renters are foreign professionals, diplomats and executives.',
+        'Condos range from luxury units by the station to serviced apartments on Sukhumvit Sois 1 and 2, close to Central Embassy and Bumrungrad.',
+      ],
+    },
+  },
+  'station:CEN': {
+    highlights: {
+      th: ['สถานีเปลี่ยนสาย BTS สุขุมวิทและสีลม', 'ติดสยามพารากอน สยามเซ็นเตอร์ และใกล้ MBK', 'ใกล้จุฬาลงกรณ์มหาวิทยาลัย', 'คอนโดย่านบรรทัดทอง ราชเทวี และพระราม 1'],
+      en: ['Interchange of the BTS Sukhumvit and Silom lines', 'Next to Siam Paragon, Siam Center and near MBK', 'Close to Chulalongkorn University', 'Condos around Banthat Thong, Ratchathewi and Rama 1'],
+    },
+    body: {
+      th: [
+        'สยามเป็นสถานีเปลี่ยนสายหลักของ BTS ทั้งสายสุขุมวิทและสายสีลม และเป็นย่านช้อปปิ้งที่คึกคักที่สุดของกรุงเทพฯ ที่พักติดสถานีมีจำกัด ส่วนใหญ่เป็นคอนโดในย่านบรรทัดทอง ราชเทวี และพระราม 1',
+        'ผู้เช่าเป็นทั้งนักศึกษาจุฬาฯ คนทำงานย่านสยามและราชประสงค์ และคนที่ต้องการเดินทางได้ทุกทิศด้วย BTS ค่าเช่าสูงแต่ประหยัดเวลาเดินทาง',
+      ],
+      en: [
+        'Siam is the main BTS interchange, where the Sukhumvit and Silom lines cross, and Bangkok\'s busiest shopping district. Housing right at the station is limited; most of it is condos around Banthat Thong, Ratchathewi and Rama 1.',
+        'Renters include Chula students, people working around Siam and Ratchaprasong, and anyone who wants the whole BTS network on their doorstep. Rents are high, but the commute is short.',
+      ],
+    },
+  },
+  'station:S5': {
+    highlights: {
+      th: ['ถนนสาทร ใกล้ย่านสำนักงาน', 'ใกล้โรงพยาบาลเซนต์หลุยส์และเลิดสิน', 'ระหว่างช่องนนทรีและสะพานตากสิน', 'คอนโดตามสาทรใต้และเจริญราษฎร์'],
+      en: ['On Sathorn, close to the office district', 'Near Saint Louis and Lerdsin hospitals', 'Between Chong Nonsi and Saphan Taksin', 'Condos along South Sathorn and Charoen Rat'],
+    },
+    body: {
+      th: [
+        'สุรศักดิ์อยู่บนถนนสาทร ระหว่างช่องนนทรีและสะพานตากสิน ใกล้อาคารสำนักงานย่านสาทรและสีลม ทำเลนี้มีคอนโดหลายระดับราคาและค่าเช่ามักต่ำกว่าช่วงสาทร-ช่องนนทรี',
+        'ใกล้โรงพยาบาลเซนต์หลุยส์และเลิดสิน นั่ง BTS สถานีเดียวถึงสะพานตากสินเพื่อต่อเรือด่วนเจ้าพระยา และไปไอคอนสยามได้ไม่ไกล',
+      ],
+      en: [
+        'Surasak is on Sathorn between Chong Nonsi and Saphan Taksin, close to the Sathorn and Silom offices. Condos here span many price points, and rents are usually lower than around Chong Nonsi.',
+        'Saint Louis and Lerdsin hospitals are nearby. Saphan Taksin, for the Chao Phraya Express boat, is one BTS stop, and ICONSIAM is not far.',
+      ],
+    },
+  },
+  'station:S6': {
+    highlights: {
+      th: ['ริมแม่น้ำเจ้าพระยา ท่าเรือสาทร', 'ต่อเรือด่วนเจ้าพระยาและเรือไปไอคอนสยาม', 'ย่านเจริญกรุงที่มีร้านอาหารและแกลเลอรีเยอะ', 'คอนโดวิวแม่น้ำ'],
+      en: ['On the Chao Phraya at Sathorn Pier', 'Chao Phraya Express boats and the shuttle to ICONSIAM', 'Charoen Krung, full of restaurants and galleries', 'River-view condos'],
+    },
+    body: {
+      th: [
+        'สะพานตากสินเป็นสถานี BTS ที่ติดแม่น้ำเจ้าพระยา ต่อเรือด่วนเจ้าพระยาที่ท่าสาทรได้ทันที และนั่งเรือข้ามไปไอคอนสยามได้ง่าย ทำเลนี้มีคอนโดวิวแม่น้ำหลายโครงการ',
+        'ย่านเจริญกรุงรอบสถานีมีร้านอาหาร คาเฟ่ และแกลเลอรีมากมาย เหมาะกับคนที่ทำงานย่านสาทรและสีลมและต้องการบรรยากาศริมน้ำ',
+      ],
+      en: [
+        'Saphan Taksin is the BTS station on the Chao Phraya, with Chao Phraya Express boats at Sathorn Pier and an easy crossing to ICONSIAM. Several condos here have river views.',
+        'Charoen Krung around the station is full of restaurants, cafés and galleries. It suits people working in Sathorn and Silom who want to live by the river.',
+      ],
+    },
+  },
+  'station:BL17': {
+    highlights: {
+      th: ['แยกรัชดาฯ-สุทธิสาร', 'อพาร์ทเม้นท์และคอนโดราคาเข้าถึงได้', 'ใกล้มหาวิทยาลัยหอการค้าไทย', 'MRT สายสีน้ำเงินตรงไปพระราม 9 และสีลม'],
+      en: ['At the Ratchada–Sutthisan junction', 'Affordable apartments and condos', 'Near the University of the Thai Chamber of Commerce', 'MRT Blue Line direct to Rama 9 and Silom'],
+    },
+    body: {
+      th: [
+        'สุทธิสารอยู่บนถนนรัชดาภิเษก ตัดกับถนนสุทธิสารวินิจฉัย ย่านนี้มีอพาร์ทเม้นท์และคอนโดราคาเข้าถึงได้จำนวนมาก นิยมทั้งในกลุ่มนักศึกษาและคนทำงาน',
+        'นั่ง MRT สายสีน้ำเงินไปพระราม 9 สุขุมวิท และสีลมได้โดยตรง ใกล้มหาวิทยาลัยหอการค้าไทย และอยู่ไม่ไกลจากห้วยขวางและลาดพร้าว',
+      ],
+      en: [
+        'Sutthisan is on Ratchadaphisek where it crosses Sutthisan Winitchai Road. The area has lots of affordable apartments and condos, popular with students and workers alike.',
+        'The MRT Blue Line runs direct to Rama 9, Sukhumvit and Silom. UTCC is close, as are Huai Khwang and Lat Phrao.',
+      ],
+    },
+  },
+  'station:BL18': {
+    highlights: {
+      th: ['ย่านชุมชนจีนและร้านอาหารจีนจำนวนมาก', 'ตลาดห้วยขวางและร้านอาหารเปิดถึงดึก', 'อพาร์ทเม้นท์และคอนโดราคาเข้าถึงได้', 'ใกล้เอสพลานาด รัชดาฯ'],
+      en: ['A Chinese community with many Chinese restaurants', 'Huai Khwang market and late-night food', 'Affordable apartments and condos', 'Near Esplanade Ratchada'],
+    },
+    body: {
+      th: [
+        'ห้วยขวางเป็นย่านที่มีชุมชนชาวจีนขนาดใหญ่ ร้านอาหารจีนและร้านค้าเปิดถึงดึก บนถนนประชาราษฎร์บำเพ็ญและรอบตลาดห้วยขวาง ที่พักส่วนใหญ่เป็นอพาร์ทเม้นท์และคอนโดราคาไม่สูง',
+        'MRT สายสีน้ำเงินพาไปพระราม 9 สุขุมวิท และสีลมได้โดยตรง เหมาะกับคนทำงานย่านรัชดาฯ และพระราม 9 ที่ต้องการค่าเช่าคุ้มค่า',
+      ],
+      en: [
+        'Huai Khwang has a large Chinese community, with Chinese restaurants and shops open late along Pracha Rat Bamphen Road and around Huai Khwang market. Housing is mostly modestly priced apartments and condos.',
+        'The MRT Blue Line runs direct to Rama 9, Sukhumvit and Silom. It suits people working in Ratchada and Rama 9 who want good value.',
+      ],
+    },
+  },
+  'station:BL19': {
+    highlights: {
+      th: ['ติดเอสพลานาด รัชดาฯ', 'ใกล้เซ็นทรัล พระราม 9 และย่านธุรกิจพระราม 9', 'ใกล้สถานทูตจีน ถนนรัชดาภิเษก', 'คอนโดหลายโครงการตามแนวรัชดาฯ'],
+      en: ['Next to Esplanade Ratchada', 'Near Central Rama 9 and the Rama 9 business district', 'Near the Chinese Embassy on Ratchadaphisek', 'Many condos along Ratchada'],
+    },
+    body: {
+      th: [
+        'ศูนย์วัฒนธรรมแห่งประเทศไทยอยู่บนถนนรัชดาภิเษก ติดห้างเอสพลานาด ย่านนี้มีคอนโดหลายโครงการ และอยู่ใกล้ย่านธุรกิจพระราม 9 ที่มีอาคารสำนักงานใหม่จำนวนมาก',
+        'ผู้เช่ามีทั้งคนทำงานย่านพระราม 9 และรัชดาฯ และผู้เช่าชาวจีนที่ต้องการอยู่ใกล้สถานทูตจีนและห้วยขวาง นั่ง MRT สถานีเดียวถึงพระราม 9',
+      ],
+      en: [
+        'Thailand Cultural Centre station is on Ratchadaphisek next to Esplanade. There are many condos here, and the Rama 9 business district with its new office towers is close.',
+        'Renters include people working in Rama 9 and Ratchada, and Chinese residents who want to be near the Chinese Embassy and Huai Khwang. Phra Ram 9 is one MRT stop away.',
+      ],
+    },
+  },
+  'station:BL24': {
+    highlights: {
+      th: ['ใกล้ศูนย์การประชุมแห่งชาติสิริกิติ์', 'ใกล้สวนเบญจกิติและวัน แบงค็อก', 'ถนนพระราม 4 ระหว่างสุขุมวิทและสีลม', 'คอนโดและอพาร์ทเม้นท์ราคาหลากหลาย'],
+      en: ['Near Queen Sirikit National Convention Center', 'Near Benjakitti Park and One Bangkok', 'On Rama 4 between Sukhumvit and Silom', 'Condos and apartments at a range of prices'],
+    },
+    body: {
+      th: [
+        'สถานีคลองเตยอยู่บนถนนพระราม 4 ระหว่างย่านสุขุมวิทและสีลม ใกล้ศูนย์การประชุมแห่งชาติสิริกิติ์ สวนเบญจกิติ และโครงการวัน แบงค็อก',
+        'ที่พักมีทั้งคอนโดและอพาร์ทเม้นท์ ค่าเช่ามักต่ำกว่าย่านอโศกและลุมพินีที่อยู่ใกล้กัน นั่ง MRT ไปสุขุมวิทหรือสีลมได้ในไม่กี่สถานี',
+      ],
+      en: [
+        'Khlong Toei station is on Rama 4 between Sukhumvit and Silom, near Queen Sirikit National Convention Center, Benjakitti Park and One Bangkok.',
+        'There are condos and apartments, usually cheaper than nearby Asok and Lumphini. Sukhumvit and Silom are a few MRT stops away.',
+      ],
+    },
+  },
+  'station:BL25': {
+    highlights: {
+      th: ['ติดวัน แบงค็อก', 'เดินถึงสวนลุมพินี', 'ระหว่างสาทร ถนนวิทยุ และสีลม', 'คอนโดหรูและเซอร์วิสอพาร์ทเม้นท์'],
+      en: ['Next to One Bangkok', 'Walk to Lumphini Park', 'Between Sathorn, Wireless Road and Silom', 'Luxury condos and serviced apartments'],
+    },
+    body: {
+      th: [
+        'ลุมพินีอยู่หัวมุมถนนพระราม 4 และถนนวิทยุ ติดโครงการวัน แบงค็อก และเดินถึงสวนลุมพินีได้ ย่านนี้เป็นทำเลคอนโดหรูที่อยู่ใกล้ทั้งสาทร สีลม และเพลินจิต',
+        'ผู้เช่าส่วนใหญ่เป็นผู้บริหารและคนทำงานต่างชาติ นั่ง MRT สถานีเดียวถึงสีลมเพื่อต่อ BTS ศาลาแดง',
+      ],
+      en: [
+        'Lumphini is at the corner of Rama 4 and Wireless Road, next to One Bangkok and a short walk from Lumphini Park. It is a luxury condo area close to Sathorn, Silom and Phloen Chit.',
+        'Most renters are executives and foreign professionals. Si Lom, for BTS Sala Daeng, is one MRT stop away.',
+      ],
+    },
+  },
+}

@@ -178,6 +178,12 @@ export type RentOverride = {
   meta_description_en?: string | null
   intro_th?: string | null
   intro_en?: string | null
+  /** One point per line. */
+  highlights_th?: string | null
+  highlights_en?: string | null
+  /** Paragraphs separated by a blank line. */
+  body_th?: string | null
+  body_en?: string | null
   noindex?: boolean | null
 }
 

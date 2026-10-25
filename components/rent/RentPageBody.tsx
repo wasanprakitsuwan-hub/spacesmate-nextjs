@@ -6,9 +6,8 @@
 // Link here is LocaleLink: write the Thai path, the reader's language is kept.
 import Link from '@/components/ui/LocaleLink'
 import { ItemListLd, BreadcrumbLd, FaqLd } from '@/components/seo/JsonLd'
-import { AREA_CONTENT } from '@/lib/area-content'
 import { distanceLabel } from '@/lib/search-match'
-import { SITE, TYPE_NAME, foldedAreaFor, type RentView, type Locale, type RentType } from '@/lib/rent-pages'
+import { SITE, TYPE_NAME, type RentView, type Locale, type RentType } from '@/lib/rent-pages'
 
 const T = {
   th: {
@@ -64,11 +63,7 @@ function searchHref(view: RentView): string {
 export default function RentPageBody({ view, locale }: { view: RentView; locale: Locale }) {
   const t = T[locale]
   const pageUrl = `${t.rentBase}/${encodeURI(view.slug)}`
-  const folded = foldedAreaFor(view)
-  const content = folded ? AREA_CONTENT[folded] : undefined
-  const highlights = locale === 'en' ? content?.highlights_en : content?.highlights_th
-  const body = locale === 'en' ? content?.body_en : content?.body_th
-  const faq = [...view.faq, ...((locale === 'en' ? content?.faq_en : content?.faq_th) ?? [])]
+  const { highlights, body, faq } = view
 
   return (
     <div className="bg-white min-h-screen">
@@ -171,7 +166,7 @@ export default function RentPageBody({ view, locale }: { view: RentView; locale:
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 28, marginBottom: 48 }} className="sm-rent-layout">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Hand-written text carried over from the /area page this one replaced */}
+            {/* Area write-up: page override, carried-over /area guide, or drafted text (lib/rent-content) */}
             {highlights && highlights.length > 0 && (
               <section style={{ background: '#f7f9f8', borderRadius: 20, padding: '24px 28px' }}>
                 <h2 style={{ fontSize: 17, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.whyRent}</h2>

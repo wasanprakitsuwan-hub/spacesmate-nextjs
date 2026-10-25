@@ -56,7 +56,10 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-const OVERRIDE_FIELDS = ['title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en'] as const
+const OVERRIDE_FIELDS = [
+  'title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en',
+  'highlights_th', 'highlights_en', 'body_th', 'body_en',
+] as const
 
 export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req)
@@ -86,9 +89,9 @@ export async function PUT(req: NextRequest) {
 
     const { error } = await createServerClient().from('seo_pages').upsert(row, { onConflict: 'slug' })
     if (error) {
-      // 42703 = undefined column: the 20261025a migration has not been run.
+      // 42703 = undefined column: a rent-page migration has not been run.
       if (error.code === '42703' || /column .* does not exist/i.test(error.message)) {
-        return NextResponse.json({ error: 'Run supabase/migrations/20261025a_rent_pages.sql (WEBSITE database) first.' }, { status: 409 })
+        return NextResponse.json({ error: 'Run supabase/migrations/20261025a_rent_pages.sql and 20261025b_rent_page_writeups.sql (WEBSITE database) first.' }, { status: 409 })
       }
       throw error
     }
