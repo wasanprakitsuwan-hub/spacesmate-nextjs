@@ -14,9 +14,15 @@ const config: Config = {
           brandTeal:    '#048c73',   // 20% Secondary — Vibrant Teal
           brandGold:    '#d97f11',   // 10% Highlight — Ochre Gold
           textCharcoal: '#231f20',   // Body text
-          bgLight:      '#F8FAFC',   // Page background
+          bgLight:      '#f7f6f2',   // Page background — warm paper (redesign, 25 Oct 2026)
           white:        '#ffffff',
-          borderLight:  '#E2E8F0',
+          borderLight:  '#e5e2da',
+        },
+        // Redesign tokens — mirror lib/ui.ts (AA-safe teal and amber)
+        sm: {
+          paper: '#f7f6f2', line: '#e5e2da', line2: '#ece9e2', border: '#dcd8ce',
+          ink: '#231f20', muted: '#6b6660', green: '#02402e', teal: '#037a64',
+          amber: '#a65f08', tint: '#eaf4f0',
         },
       },
       fontFamily: {
