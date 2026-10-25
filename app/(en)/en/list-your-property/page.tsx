@@ -5,16 +5,14 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import SubmitBody from '@/components/marketing/SubmitBody'
 import { SUBMIT_T } from '@/lib/pages-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const t = SUBMIT_T.en
 
 const baseMetadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDesc,
-  alternates: {
-    canonical: 'https://spacesmate.com/en/list-your-property',
-    languages: { th: 'https://spacesmate.com/list-your-property' },
-  },
+  alternates: hreflang('/list-your-property', 'en'),
 }
 
 export default function Page() {

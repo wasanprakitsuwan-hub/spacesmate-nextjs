@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase'
 import { BLOG_CONTENT } from '@/lib/blog-content'
+import { BLOG_T, formatBlogDate } from '@/lib/blog-i18n'
+import { cleanPostTitle, linkPlaces, postDescription, rewriteLegacyLinks } from '@/lib/blog-links'
 
 export const revalidate = 300
 export const dynamicParams = true
@@ -34,21 +36,26 @@ export async function generateStaticParams() {
   return (data ?? []).map((p) => ({ slug: p.slug }))
 }
 
-// Strip HTML tags to produce a plain-text excerpt for meta description fallback
-function stripHtml(html: string, maxLen = 160): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLen)
-}
+/**
+ * Every article lives at /blog/<slug> whatever its language (see lib/routes-i18n),
+ * so the page takes its copy, schema language and og:locale from the post's own
+ * `language` rather than from the route.
+ */
+type PostLang = 'th' | 'en'
+const langOf = (v: unknown): PostLang => (v === 'en' ? 'en' : 'th')
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createServerClient()
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('title, meta_title, meta_desc, thumbnail, thumbnail_alt, published_at, content')
+    .select('title, meta_title, meta_desc, thumbnail, thumbnail_alt, published_at, updated_at, content, language')
     .eq('slug', params.slug)
     .eq('status', 'published')
     .single()
 
-  if (!post) return { title: 'ไม่พบบทความ' }
+  if (!post) return { title: BLOG_T.th.notFound }
+  const lang = langOf(post.language)
+  const t = BLOG_T[lang]
 
   /**
    * Strip a brand suffix the author typed in.
@@ -61,12 +68,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
    *
    * Stripping here rather than cleaning the rows, because the admin editor will
    * keep accepting it and the next author will type it again.
+   *
+   * A title that names the brand anywhere else ("… ด้วย SpacesMate") is used
+   * as it is, without the template, or it would read "SpacesMate | SpacesMate".
    */
-  const rawTitle   = post.meta_title ?? post.title
-  const pageTitle  = rawTitle.replace(/\s*\|\s*SpacesMate\s*$/i, '').trim() || post.title
-  const pageDesc   = post.meta_desc
-    || (post.content ? stripHtml(post.content) : '')
-    || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'
+  const pageTitle  = cleanPostTitle(post.meta_title ?? post.title)
+  const title      = /spacesmate/i.test(pageTitle) ? { absolute: pageTitle } : pageTitle
+  const pageDesc   = postDescription(post.meta_desc, post.content ?? '', t.fallbackDesc)
   const canonicalUrl = `https://spacesmate.com/blog/${params.slug}`
   const ogImage = post.thumbnail
     // No width/height: the generated thumbnails are 1536x1024, and declaring
@@ -76,7 +84,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : [{ url: 'https://spacesmate.com/og-image.jpg' }]
 
   return {
-    title: pageTitle,
+    title,
     description: pageDesc,
     alternates: { canonical: canonicalUrl },
     openGraph: {
@@ -86,8 +94,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'article',
       url: canonicalUrl,
       siteName: 'SpacesMate',
-      locale: 'th_TH',
+      locale: lang === 'en' ? 'en_GB' : 'th_TH',
       publishedTime: post.published_at ?? undefined,
+      modifiedTime: post.updated_at ?? post.published_at ?? undefined,
     },
     twitter: {
       card: 'summary_large_image',
@@ -98,27 +107,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function formatThaiDate(iso: string): string {
-  const d = new Date(iso)
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`
-}
-
 export default async function BlogPostPage({ params }: Props) {
   const supabase = createServerClient()
 
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, content, published_at, author')
+    .select('slug, title, category, thumbnail, thumbnail_alt, meta_desc, content, published_at, updated_at, author, language')
     .eq('slug', params.slug)
     .eq('status', 'published')
     .single()
 
   if (!post) notFound()
 
+  const lang = langOf(post.language)
+  const t = BLOG_T[lang]
+  const home = lang === 'en' ? '/en' : ''
+  const postTitle = cleanPostTitle(post.title)
+
   // Content: use DB field if populated, else fall back to static BLOG_CONTENT
   const wpId = SLUG_TO_WP_ID[post.slug]
-  const content = post.content ?? (wpId ? BLOG_CONTENT[wpId] : '') ?? '<p>ไม่พบเนื้อหา</p>'
+  const content = post.content ?? (wpId ? BLOG_CONTENT[wpId] : '') ?? `<p>${t.noContent}</p>`
+  // Sanitise first, then add our own links: they are built from page paths,
+  // never from the article text.
+  const { html: bodyHtml, mentioned } = await linkPlaces(rewriteLegacyLinks(sanitizeHtml(content)), lang)
 
   // Related posts — same category first, top up with recent posts if < 3 found
   const { data: sameCatData } = await supabase
@@ -146,20 +157,19 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   // Build JSON-LD Article schema for rich snippets
-  const metaDesc = post.meta_desc
-    || (content ? stripHtml(content) : '')
-    || 'บทความจาก SpacesMate — ข้อมูลอสังหาริมทรัพย์และที่พักในกรุงเทพ'
+  const metaDesc = postDescription(post.meta_desc, content, t.fallbackDesc)
+  const postUrl = `https://spacesmate.com/blog/${post.slug}`
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: post.title,
+    headline: postTitle,
     description: metaDesc,
     image: post.thumbnail
       ? [post.thumbnail]
       : ['https://spacesmate.com/og-image.jpg'],
     datePublished: post.published_at ?? undefined,
-    dateModified: post.published_at ?? undefined,
+    dateModified: post.updated_at ?? post.published_at ?? undefined,
     author: {
       '@type': 'Organization',
       name: post.author ?? 'SpacesMate',
@@ -176,10 +186,20 @@ export default async function BlogPostPage({ params }: Props) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://spacesmate.com/blog/${post.slug}`,
+      '@id': postUrl,
     },
     articleSection: post.category,
-    inLanguage: 'th',
+    inLanguage: lang,
+  }
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'SpacesMate', item: `https://spacesmate.com${home || '/'}` },
+      { '@type': 'ListItem', position: 2, name: t.crumb, item: `https://spacesmate.com${home}/blog` },
+      { '@type': 'ListItem', position: 3, name: postTitle, item: postUrl },
+    ],
   }
 
   return (
@@ -190,12 +210,16 @@ export default async function BlogPostPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
 
       {/* Hero image */}
       <div className="w-full h-64 md:h-96 overflow-hidden bg-spacemate-bgLight relative">
         <img
           src={post.thumbnail ?? '/blog/placeholder.jpg'}
-          alt={post.thumbnail_alt ?? post.title}
+          alt={post.thumbnail_alt ?? postTitle}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(2,64,46,0.25))' }} />
@@ -205,9 +229,9 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href="/blog" className="hover:text-spacemate-brandDark transition-colors">บทความ</Link>
+          <Link href={`${home}/blog`} className="hover:text-spacemate-brandDark transition-colors">{t.crumb}</Link>
           <span>/</span>
-          <span className="text-spacemate-brandDark font-medium line-clamp-1">{post.title}</span>
+          <span className="text-spacemate-brandDark font-medium line-clamp-1">{postTitle}</span>
         </div>
 
         {/* Category badge */}
@@ -217,13 +241,13 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Title */}
         <h1 className="text-2xl md:text-3xl font-bold text-spacemate-brandDark mb-5 leading-snug tracking-tight">
-          {post.title}
+          {postTitle}
         </h1>
 
         {/* Meta row */}
         <div className="flex items-center gap-3 text-gray-400 text-sm mb-8 pb-8 border-b border-spacemate-borderLight">
           <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>calendar_today</span>
-          <span>{post.published_at ? formatThaiDate(post.published_at) : ''}</span>
+          <span>{post.published_at ? formatBlogDate(post.published_at, lang) : ''}</span>
           <span>·</span>
           <span>{post.author ?? 'SpacesMate'}</span>
         </div>
@@ -231,8 +255,27 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Full content */}
         <div
           className="blog-content text-gray-700 leading-relaxed text-base"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
         />
+
+        {/* Rentals in the places the article mentions: the blog's link into the listing pages. */}
+        {mentioned.length > 0 && (
+          <div className="mt-12 p-6 rounded-2xl border border-spacemate-borderLight bg-spacemate-bgLight">
+            <h2 className="text-lg font-bold text-spacemate-brandDark mb-4">{t.areaBox}</h2>
+            <div className="flex flex-wrap gap-2">
+              {mentioned.map(m => (
+                <Link
+                  key={m.path}
+                  href={`${home}${m.path}`}
+                  className="inline-flex items-center gap-2 bg-white border border-spacemate-borderLight rounded-full px-4 py-2 text-sm font-medium text-spacemate-brandDark hover:border-spacemate-brandTeal hover:text-spacemate-brandTeal transition-colors"
+                >
+                  {m.label}
+                  <span className="text-xs text-gray-400">{t.listings(m.count)}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA block */}
         <div
@@ -242,23 +285,21 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="flex items-start gap-4">
             <span className="msym text-4xl text-spacemate-brandTeal flex-shrink-0">handshake</span>
             <div className="flex-1">
-              <h3 className="font-bold text-lg mb-1">มีทรัพย์สินอยากปล่อยเช่า?</h3>
-              <p className="text-white/70 text-sm mb-4">
-                ให้ SpacesMate ดูแลตั้งแต่หาผู้เช่า ทำสัญญา ไปจนถึงเก็บค่าเช่า — ครบวงจรในที่เดียว
-              </p>
+              <h3 className="font-bold text-lg mb-1">{t.ctaTitle}</h3>
+              <p className="text-white/70 text-sm mb-4">{t.ctaSub}</p>
               <div className="flex gap-3 flex-wrap">
                 <Link
-                  href="/services"
+                  href={`${home}/services`}
                   className="inline-block text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-all hover:brightness-110"
                   style={{ background: '#d97f11' }}
                 >
-                  ดูบริการรับฝากบริหาร
+                  {t.ctaManage}
                 </Link>
                 <Link
-                  href="/list-your-property"
+                  href={`${home}/list-your-property`}
                   className="inline-block text-white/80 font-medium text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/10 transition-all"
                 >
-                  ลงประกาศฟรี
+                  {t.ctaList}
                 </Link>
               </div>
             </div>
@@ -270,10 +311,10 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="mt-14">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-spacemate-brandDark">
-                {related.some(r => r.category === post.category) ? 'บทความที่เกี่ยวข้อง' : 'บทความอื่น ๆ ที่น่าสนใจ'}
+                {related.some(r => r.category === post.category) ? t.related : t.otherPosts}
               </h2>
-              <Link href="/blog" className="text-sm text-spacemate-brandTeal font-medium hover:underline">
-                ดูทั้งหมด →
+              <Link href={`${home}/blog`} className="text-sm text-spacemate-brandTeal font-medium hover:underline">
+                {t.seeAll}
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -286,7 +327,7 @@ export default async function BlogPostPage({ params }: Props) {
                   <div className="h-32 overflow-hidden bg-spacemate-bgLight">
                     <img
                       src={p.thumbnail ?? '/blog/placeholder.jpg'}
-                      alt={p.thumbnail_alt ?? p.title}
+                      alt={p.thumbnail_alt ?? cleanPostTitle(p.title)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -297,10 +338,10 @@ export default async function BlogPostPage({ params }: Props) {
                       </span>
                     )}
                     <p className="text-xs font-semibold text-spacemate-brandDark leading-snug line-clamp-3 group-hover:text-spacemate-brandTeal transition-colors">
-                      {p.title}
+                      {cleanPostTitle(p.title)}
                     </p>
                     <p className="text-gray-400 text-xs mt-2">
-                      {p.published_at ? formatThaiDate(p.published_at) : ''}
+                      {p.published_at ? formatBlogDate(p.published_at, lang) : ''}
                     </p>
                   </div>
                 </Link>

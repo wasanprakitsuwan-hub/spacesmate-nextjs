@@ -1,7 +1,7 @@
 /**
  * Site chrome and home-page strings, per locale.
  *
- * Same approach as lib/area-shared and lib/property-i18n: one dictionary rather
+ * Same approach as lib/property-i18n: one dictionary rather
  * than a second copy of each component, so the Thai and English surfaces cannot
  * drift apart. Thai stays the default so every existing route renders unchanged
  * when no locale is passed.
@@ -109,6 +109,7 @@ export const SITE_T = {
     // ── Footer ──
     footerExplore: 'สำรวจ',
     footerPopularAreas: 'ทำเลยอดนิยม',
+    footerRentNear: (place: string) => `ห้องเช่าใกล้ ${place}`,
     footerForOwners: 'สำหรับเจ้าของ',
     footerPricing: 'แพ็กเกจราคา',
     footerCompany: 'บริษัท & ช่วยเหลือ',
@@ -201,6 +202,7 @@ export const SITE_T = {
 
     footerExplore: 'Explore',
     footerPopularAreas: 'Popular areas',
+    footerRentNear: (place: string) => `Rentals near ${place}`,
     footerForOwners: 'For owners',
     footerPricing: 'Pricing',
     footerCompany: 'Company & help',

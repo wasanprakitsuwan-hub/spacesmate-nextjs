@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { hreflang } from '@/lib/hreflang'
 
 /**
  * The root layout's template already appends "| SpacesMate", so repeating it
@@ -8,13 +9,7 @@ export const metadata: Metadata = {
   title: 'เข้าสู่ระบบ',
   description: 'เข้าสู่ระบบหรือสร้างบัญชี SpacesMate เพื่อจัดการประกาศและดูรายงานทรัพย์สิน',
   robots: { index: false, follow: false },
-  alternates: {
-    canonical: 'https://spacesmate.com/login',
-    languages: {
-      'th-TH': 'https://spacesmate.com/login',
-      'en-US': 'https://spacesmate.com/en/login',
-    },
-  },
+  alternates: hreflang('/login', 'th'),
 }
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {

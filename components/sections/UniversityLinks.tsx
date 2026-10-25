@@ -5,21 +5,21 @@ import { createServerClient } from '@/lib/supabase'
 import { LANDMARKS } from '@/lib/landmarks'
 import { haversineKm } from '@/lib/search-match'
 import { SITE_T, type Locale } from '@/lib/site-i18n'
+import { RADIUS_KM, rentPath } from '@/lib/rent-slugs'
 
 /**
  * Homepage links to rentals near Bangkok universities.
  *
- * Each tile opens /search on that university with a 2 km radius, the same
- * search a renter gets by typing its name, and counts the active listings
- * inside that radius here on the server, so the number matches what the
- * search shows. Busiest first; universities with nothing nearby yet stay
+ * Each tile opens that university's /rent page (listings within RADIUS_KM,
+ * the same radius /search uses), and counts the active listings inside that
+ * radius here on the server, so the number matches the page. They used to open
+ * /search?landmark=…, which canonicalises to /search and so passed no ranking
+ * value to anything. Busiest first; universities with nothing nearby yet stay
  * listed, last, because the search behind them is still the right answer.
  *
  * Replaced the district list (GeneratedAreaLinks) on 24 Oct 2026; the
  * district pages themselves remain, linked from the sitemap.
  */
-const RADIUS_KM = 2
-
 const UNIVERSITIES = LANDMARKS.filter(l => l.kind === 'university')
 
 async function activePoints(): Promise<{ lat: number; lng: number }[]> {
@@ -71,7 +71,7 @@ export default async function UniversityLinks({ locale = 'th' }: { locale?: Loca
           {unis.map(u => (
             <Link
               key={u.id}
-              href={`/search?landmark=${u.id}&r=${RADIUS_KM}`}
+              href={rentPath({ kind: 'landmark', id: u.id, landmark: u })}
               className="group flex items-center justify-between p-4 bg-spacemate-bgLight rounded-xl border border-spacemate-borderLight hover:border-spacemate-brandTeal hover:shadow-premium transition-all duration-200"
             >
               <span className="text-sm font-medium text-spacemate-textCharcoal group-hover:text-spacemate-brandDark leading-tight transition-colors">

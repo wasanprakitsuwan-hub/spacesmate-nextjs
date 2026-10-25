@@ -30,7 +30,7 @@ const baseMetadata: Metadata = {
     url: 'https://spacesmate.com',
     images: [{ url: 'https://spacesmate.com/og-image.jpg', width: 1200, height: 630, alt: 'SpacesMate — ห้องเช่าในกรุงเทพ' }],
   },
-  alternates: { canonical: 'https://spacesmate.com' },
+  alternates: hreflang('/', 'th'),
 }
 
 
@@ -41,6 +41,7 @@ import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
 import UniversityLinks from '@/components/sections/UniversityLinks'
+import { hreflang } from '@/lib/hreflang'
 
 export default function HomePage() {
   return (

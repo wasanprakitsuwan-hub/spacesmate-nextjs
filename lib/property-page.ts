@@ -12,6 +12,7 @@ import { createServerClient } from '@/lib/supabase'
 import { visibleImages, showsVideo } from '@/lib/packages'
 import { PROPERTY_T, TERM_SUFFIX, DEFAULT_TERM_SUFFIX, type Locale } from '@/lib/property-i18n'
 import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
+import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
 
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
@@ -154,6 +155,36 @@ export function plainText(html: string | null | undefined, max: number): string 
   return (sp > max * 0.6 ? cut.slice(0, sp) : cut).trimEnd() + '…'
 }
 
+const LISTING_TYPE: Record<Locale, Record<string, string>> = {
+  th: { condo: 'คอนโดให้เช่า', apartment: 'อพาร์ทเม้นท์ให้เช่า', house: 'บ้านเช่า', office: 'ออฟฟิศให้เช่า', coworking: 'โคเวิร์กกิ้งสเปซ' },
+  en: { condo: 'Condo for rent', apartment: 'Apartment for rent', house: 'House for rent', office: 'Office for rent', coworking: 'Co-working space' },
+}
+
+/**
+ * The searchable facts of a listing, in the reader's language: type, rent,
+ * size, nearest station with walking distance, district. Leads the meta
+ * description because owners' own text is often a few words, or Thai on an
+ * English page, and these are the words people actually search with.
+ */
+function listingFacts(raw: any, locale: Locale): { lead: string; near: string | null } {
+  const en = locale === 'en'
+  const parts: string[] = []
+  const type = LISTING_TYPE[locale][String(raw.property_type || '').toLowerCase()]
+  if (type) parts.push(type)
+  if (raw.price_from) {
+    const suffix = TERM_SUFFIX[locale][raw.rental_term] ?? DEFAULT_TERM_SUFFIX[locale]
+    parts.push(`฿${Number(raw.price_from).toLocaleString('en-US')}${suffix}`)
+  }
+  if (raw.bedrooms) parts.push(en ? `${raw.bedrooms} bed` : `${raw.bedrooms} ห้องนอน`)
+  if (raw.area_sqm) parts.push(en ? `${raw.area_sqm} m²` : `${raw.area_sqm} ตร.ม.`)
+  const st = raw.lat && raw.lng ? nearbyStations(Number(raw.lat), Number(raw.lng), 2, 1)[0] : undefined
+  const near = st ? stationLabel(st.station, locale) : null
+  if (st) parts.push(en ? `${distanceLabel(st.km, locale)} to ${near}` : `ห่าง ${near} ${distanceLabel(st.km, locale)}`)
+  const district = districtLabel(raw.district, raw.province, locale)
+  if (district) parts.push(district)
+  return { lead: parts.join(' · '), near }
+}
+
 /** Metadata for both locales. */
 export async function buildPropertyMetadata(slug: string, locale: Locale): Promise<Metadata> {
   const t = PROPERTY_T[locale]
@@ -161,10 +192,10 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
   // let a stale entry shadow a real listing that shared a slug.
   const raw = await getDbPropertyRaw(slug)
   const path = locale === 'en' ? `/en/property/${slug}` : `/property/${slug}`
-  const other = locale === 'en' ? `/property/${slug}` : `/en/property/${slug}`
   const alternates = {
     canonical: path,
-    languages: locale === 'en' ? { th: other } : { en: other },
+    // Full set on both sides: self, twin and x-default (Thai). See lib/hreflang.
+    languages: { th: `/property/${slug}`, en: `/en/property/${slug}`, 'x-default': `/property/${slug}` },
   }
 
   if (!raw) {
@@ -185,13 +216,20 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
     return { title: t.notFoundTitle }
   }
 
-  const title = (locale === 'en'
+  const facts = listingFacts(raw, locale)
+  let title = (locale === 'en'
     ? (raw.title_en || raw.title_th)
     : (raw.title_th || raw.title_en)) || t.fallbackListingName
-  // Description follows the same fallback as the page body: show the owner's
-  // English if they wrote it, otherwise their Thai rather than nothing.
-  const body = locale === 'en' ? (raw.description_en || raw.description_th) : raw.description_th
-  const description = plainText(body, 160)
+  // A bare building name says nothing to a searcher; add the nearest station.
+  if (title.length < 30 && facts.near && !title.includes(facts.near)) {
+    title = locale === 'en' ? `${title} near ${facts.near}` : `${title} ใกล้ ${facts.near}`
+  }
+  // Facts first, then the owner's own words. On English pages the owner's Thai
+  // is left out rather than mixed in; a short English line takes its place.
+  const body = locale === 'en'
+    ? (raw.description_en || 'Contact the owner directly on SpacesMate, no agent fee.')
+    : (raw.description_th || 'ติดต่อเจ้าของโดยตรงที่ SpacesMate ไม่มีค่านายหน้า')
+  const description = plainText(facts.lead ? `${facts.lead}. ${body}` : body, 160)
   return {
     title,
     description,

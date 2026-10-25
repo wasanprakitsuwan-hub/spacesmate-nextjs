@@ -1,62 +1,41 @@
-'use client'
-
 // Link here is LocaleLink: it keeps the reader in the language they are already
 // reading. See components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
-import { useEffect, useState } from 'react'
-import { AREA_KEYWORDS } from '@/lib/constants'
 import { SITE_T, type Locale } from '@/lib/site-i18n'
+import { listRentPages, TYPE_PHRASE, FOLDED_AREAS, type RentPageSummary } from '@/lib/rent-pages'
 
-// Search terms to match each area slug against listing fields (district, address_th, title_th)
-const MATCH_MAP: Record<string, { types: string[]; terms: string[] }> = {
-  'condo-rent-bts-asok':             { types: ['condo'],     terms: ['asok', 'อโศก', 'sukhumvit 21', 'สุขุมวิท 21'] },
-  'apartment-rent-sukhumvit':        { types: ['apartment'], terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-ekkamai':          { types: ['condo'],     terms: ['ekkamai', 'เอกมัย'] },
-  'house-rent-lat-phrao':            { types: ['house','apartment'], terms: ['lat phrao', 'ลาดพร้าว'] },
-  'condo-rent-bts-thonglor':         { types: ['condo'],     terms: ['thonglor', 'ทองหล่อ', 'thong lor'] },
-  'office-rent-silom':               { types: ['office'],    terms: ['silom', 'สีลม'] },
-  'condo-rent-bts-on-nut':           { types: ['condo'],     terms: ['on nut', 'อ่อนนุช', 'on-nut'] },
-  'apartment-rent-ratchada':         { types: ['apartment'], terms: ['ratchada', 'รัชดา', 'ratchadaphisek', 'รัชดาภิเษก'] },
-  'house-rent-rama-9':               { types: ['house','apartment'], terms: ['rama 9', 'พระราม 9', 'rama9'] },
-  'condo-rent-mrt-lat-phrao':        { types: ['condo'],     terms: ['lat phrao', 'ลาดพร้าว'] },
-  'coworking-rent-sukhumvit':        { types: ['coworking'], terms: ['sukhumvit', 'สุขุมวิท'] },
-  'condo-rent-bts-saphan-kwai':      { types: ['condo'],     terms: ['saphan kwai', 'สะพานควาย'] },
-  'condo-rent-bts-ari':              { types: ['condo'],     terms: ['ari', 'อารีย์', 'aree'] },
-  'apartment-rent-bang-na':          { types: ['apartment'], terms: ['bang na', 'บางนา', 'bangna'] },
-  'condo-rent-mrt-phahon-yothin':    { types: ['condo'],     terms: ['phahon', 'พหลโยธิน', 'phahonyothin'] },
-  'office-rent-sathorn':             { types: ['office'],    terms: ['sathorn', 'สาทร'] },
+/**
+ * Homepage links to the busiest "rent near" pages.
+ *
+ * This used to list the 16 hand-written /area guides, counted in the browser
+ * by matching words in addresses. Those guides were folded into the /rent
+ * pages on 25 Oct 2026, so the section now links straight to the rent pages
+ * with the most listings, counted on the server so crawlers see the numbers
+ * and the links. Indexable pages come first; if fewer than SHOW have stock,
+ * the pages that took over the old guides fill the rest, so the section never
+ * shrinks to nothing on a quiet week.
+ */
+const SHOW = 16
+
+function label(r: RentPageSummary, locale: Locale): string {
+  const place = locale === 'en' ? r.placeEn : r.placeTh
+  if (!r.type) return locale === 'en' ? `Rentals near ${place}` : `ห้องเช่าใกล้${place}`
+  return locale === 'en' ? `${TYPE_PHRASE.en[r.type]} near ${place}` : `${TYPE_PHRASE.th[r.type]} ใกล้${place}`
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function countForArea(listings: any[], slug: string): number {
-  const match = MATCH_MAP[slug]
-  if (!match) return 0
-  return listings.filter(l => {
-    if (!match.types.includes(l.property_type)) return false
-    const haystack = [l.district, l.sub_district, l.address_th, l.title_th]
-      .filter(Boolean).join(' ').toLowerCase()
-    return match.terms.some(t => haystack.includes(t.toLowerCase()))
-  }).length
-}
-
-export default function AreaLinks({ locale = 'th' }: { locale?: Locale }) {
+export default async function AreaLinks({ locale = 'th' }: { locale?: Locale }) {
   const t = SITE_T[locale]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [listings, setListings] = useState<any[]>([])
+  const all = await listRentPages()
 
-  useEffect(() => {
-    fetch('/api/listings/public')
-      .then(r => r.json())
-      .then(d => setListings(d.listings ?? []))
-      .catch(() => {})
-  }, [])
-
-  // Most listings first. Before the counts arrive every area is 0 and the sort
-  // is stable, so the first paint (and what a crawler sees) is the list order.
-  const areas = AREA_KEYWORDS.map(area => ({
-    ...area,
-    count: countForArea(listings, area.slug),
-  })).sort((a, b) => b.count - a.count)
+  const picked = all.filter(r => r.indexable).sort((a, b) => b.count - a.count).slice(0, SHOW)
+  if (picked.length < SHOW) {
+    const have = new Set(picked.map(r => r.slug))
+    const folded = new Set(Object.values(FOLDED_AREAS).map(f => `${f.place}|${f.type}`))
+    for (const r of all) {
+      if (picked.length >= SHOW) break
+      if (!have.has(r.slug) && folded.has(`${r.placeKey}|${r.type}`)) picked.push(r)
+    }
+  }
 
   return (
     <section className="py-12 bg-spacemate-bgLight border-t border-spacemate-borderLight">
@@ -65,17 +44,17 @@ export default function AreaLinks({ locale = 'th' }: { locale?: Locale }) {
         <p className="text-gray-500 text-sm mb-8">{t.areaSub}</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {areas.map((area) => (
+          {picked.map(r => (
             <Link
-              key={area.slug}
-              href={locale === 'en' ? `/en/area/${area.slug}` : `/area/${area.slug}`}
+              key={r.slug}
+              href={`/rent/${r.slug}`}
               className="group flex items-center justify-between p-4 bg-white rounded-xl border border-spacemate-borderLight hover:border-spacemate-brandTeal hover:shadow-premium transition-all duration-200"
             >
               <span className="text-sm font-medium text-spacemate-textCharcoal group-hover:text-spacemate-brandDark leading-tight transition-colors">
-                {locale === 'en' ? area.label_en : area.label_th}
+                {label(r, locale)}
               </span>
               <span className="text-sm font-semibold text-spacemate-brandTeal ml-3 flex-shrink-0 tabular-nums">
-                {area.count}
+                {r.count}
               </span>
             </Link>
           ))}

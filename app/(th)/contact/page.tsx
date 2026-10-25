@@ -5,16 +5,14 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import ContactBody from '@/components/marketing/ContactBody'
 import { CONTACT_T } from '@/lib/pages-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const t = CONTACT_T.th
 
 const baseMetadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDesc,
-  alternates: {
-    canonical: 'https://spacesmate.com/contact',
-    languages: { en: 'https://spacesmate.com/en/contact' },
-  },
+  alternates: hreflang('/contact', 'th'),
 }
 
 export default function Page() {

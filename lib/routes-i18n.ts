@@ -69,8 +69,12 @@ const EN_STATIC = new Set([
  * an unconditional prefix is safe. The guarantee lives in loadArea — if a
  * `locale` gate is ever reintroduced there, this entry becomes a lie and every
  * data-driven area link on an /en page becomes a 404.
+ *
+ * /rent — station and landmark pages. Both locales resolve the same slug set
+ * from the same place list (loadRentPage ignores locale when resolving), so
+ * the same reasoning as /area holds.
  */
-const EN_DYNAMIC_PREFIXES = ['/property/', '/area/']
+const EN_DYNAMIC_PREFIXES = ['/property/', '/area/', '/rent/']
 
 /**
  * Thai-only, deliberately, and worth naming so nobody wonders:

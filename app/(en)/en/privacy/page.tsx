@@ -5,13 +5,11 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import PrivacyBody from '@/components/marketing/PrivacyBody'
 import { LEGAL_T } from '@/lib/legal-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const baseMetadata: Metadata = {
   title: LEGAL_T.en.privacyMetaTitle,
-  alternates: {
-    canonical: 'https://spacesmate.com/en/privacy',
-    languages: { th: 'https://spacesmate.com/privacy' },
-  },
+  alternates: hreflang('/privacy', 'en'),
 }
 
 export default function Page() {

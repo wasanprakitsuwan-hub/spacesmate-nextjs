@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { hreflang } from '@/lib/hreflang'
 
 /**
  * Without this, /en/login fell through to the root layout's Thai default title
@@ -9,13 +10,7 @@ export const metadata: Metadata = {
   title: 'Sign in',
   description: 'Sign in or create a SpacesMate account to manage your listings and see how your properties are performing.',
   robots: { index: false, follow: false },
-  alternates: {
-    canonical: 'https://spacesmate.com/en/login',
-    languages: {
-      'th-TH': 'https://spacesmate.com/login',
-      'en-US': 'https://spacesmate.com/en/login',
-    },
-  },
+  alternates: hreflang('/login', 'en'),
 }
 
 export default function EnLoginLayout({ children }: { children: React.ReactNode }) {

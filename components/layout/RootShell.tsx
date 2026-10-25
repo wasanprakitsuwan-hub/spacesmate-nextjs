@@ -51,8 +51,8 @@ export default function RootShell({
   return (
     <html lang={lang} className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
-        <OrganizationLd />
-        <WebSiteLd />
+        <OrganizationLd locale={lang} />
+        <WebSiteLd locale={lang} />
 
         <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
 
