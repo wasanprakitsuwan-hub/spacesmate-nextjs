@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
+import { revalidateTag } from 'next/cache'
+import { LISTING_GUIDE_KEY, GUIDE_TAG } from '@/lib/guide-data'
 
 // ── GET — fetch one setting by ?key= or all settings ─────────────────────────
 /**
@@ -63,6 +65,8 @@ export async function PATCH(req: NextRequest) {
       )
 
     if (error) throw error
+    // The public guide caches the saved text; show an edit straight away.
+    if (key === LISTING_GUIDE_KEY) revalidateTag(GUIDE_TAG)
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     // Supabase PostgrestError is NOT an Error instance — it has .message/.details/.hint/.code

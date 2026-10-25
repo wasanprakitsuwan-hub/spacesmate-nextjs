@@ -43,9 +43,8 @@ const baseMetadata: Metadata = {
 }
 
 
-import CategorySection from '@/components/sections/CategorySection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
-import WhySpacesMate from '@/components/sections/WhySpacesMate'
+import OwnerPitch from '@/components/sections/OwnerPitch'
 import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
@@ -56,9 +55,8 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <CategorySection />
       <Suspense fallback={<SectionPlaceholder />}><FeaturedListings /></Suspense>
-      <WhySpacesMate />
+      <OwnerPitch />
       <ManagementCTA />
       <Suspense fallback={<SectionPlaceholder />}><BlogSection /></Suspense>
       <AreaLinks />

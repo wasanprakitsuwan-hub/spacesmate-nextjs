@@ -25,7 +25,7 @@ const baseMetadata: Metadata = {
 
 export default function Page() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="min-h-screen">
       {/* Server-rendered, so it is in the HTML an answer engine actually fetches. */}
       <FaqLd qa={faqQa('en')} />
       <FAQAccordion locale="en" />

@@ -3,6 +3,7 @@ import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { PACKAGE_PRICE_THB } from '@/lib/packages'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
+import { promoSessionParams } from '@/lib/stripe-promo'
 
 /**
  * Buy publishing slots as a one-time payment — PromptPay or card.
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { package_id = 'basic', quantity = 1, publish_property_id = null, extend_property_id = null } = await req.json()
+    const { package_id = 'basic', quantity = 1, publish_property_id = null, extend_property_id = null, promotion_code_id = null, method = null } = await req.json()
 
     const unitPrice = PACKAGE_PRICE_THB[package_id as keyof typeof PACKAGE_PRICE_THB]
     if (!unitPrice || unitPrice <= 0) {
@@ -115,11 +116,17 @@ export async function POST(req: NextRequest) {
       payment_method: 'once',
     }
 
+    // A code typed and checked on /checkout rides in as a discount.
+    const promoParams = await promoSessionParams(promotion_code_id)
+    // /checkout lets the buyer pick PromptPay or card up front; without a
+    // choice Stripe offers both, as before.
+    const methods: ('promptpay' | 'card')[] = method === 'promptpay' ? ['promptpay'] : method === 'card' ? ['card'] : ['promptpay', 'card']
+
     const session = await stripe.checkout.sessions.create({
       // One-time, not subscription — and therefore able to offer PromptPay,
       // which cannot do recurring. Card rides along on the same session.
       mode: 'payment',
-      payment_method_types: ['promptpay', 'card'],
+      payment_method_types: methods,
       ...customerParams,
       line_items: [{
         // Inline rather than a Price ID: STRIPE_PRICES holds recurring prices,
@@ -141,7 +148,7 @@ export async function POST(req: NextRequest) {
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&pp=1&sid={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${siteUrl}/checkout`,
-      allow_promotion_codes: true,
+      ...promoParams,
       locale: 'auto',
       // One hour, kept deliberately short now that card shares this session.
       //

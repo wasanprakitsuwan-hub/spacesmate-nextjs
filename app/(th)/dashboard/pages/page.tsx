@@ -390,6 +390,19 @@ export default function PagesPage() {
         </button>
       </div>
 
+      {/* Content editors that live under Pages */}
+      <a href="/dashboard/pages/guide" style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+        padding: '14px 18px', marginBottom: 24, borderRadius: 6, border: '1px solid #e5e2da',
+        background: '#fff', textDecoration: 'none',
+      }}>
+        <span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: '#02402e' }}>คู่มือการลงประกาศ (/guide)</span>
+          <span style={{ display: 'block', fontSize: 13, color: '#6b6660', marginTop: 2 }}>แก้ขั้นตอน ภาพหน้าจอ และคำถามท้ายคู่มือ ทั้งภาษาไทยและอังกฤษ</span>
+        </span>
+        <span style={{ fontSize: 14, color: '#037a64', whiteSpace: 'nowrap' }}>แก้ไข →</span>
+      </a>
+
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 32 }}>
         {[

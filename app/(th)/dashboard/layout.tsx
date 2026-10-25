@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase'
+import { C, RADIUS } from '@/lib/ui'
 
 const NAV = [
   { href: '/dashboard',                  label: 'ภาพรวมระบบ',    icon: 'grid_view',        exact: true },
@@ -11,7 +12,7 @@ const NAV = [
   // superAdminOnly: admin and super_admin are otherwise equivalent — control of
   // user accounts is the one capability reserved to super_admin.
   { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false, superAdminOnly: true },
-  { href: '/dashboard/pages',            label: 'Pages',          icon: 'web',               exact: false },
+  { href: '/dashboard/pages',            label: 'หน้าเว็บ (Pages)', icon: 'web',             exact: false },
   // Property names, places, stations and their SEO pages — one menu.
   { href: '/dashboard/places',           label: 'สถานที่ค้นหา',   icon: 'travel_explore',    exact: false },
   // Landing pages per station, university and landmark: shared template and per-page text.
@@ -91,136 +92,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!authReady) {
     return (
-      <div style={{ minHeight: '100vh', background: '#02402e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 36, height: 36, border: '3px solid #d97f11', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ minHeight: '100vh', background: C.paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: `3px solid ${C.teal}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
-  const initial = (userEmail.charAt(0) || 'A').toUpperCase()
   const displayName = userEmail.split('@')[0] || 'Admin'
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f4f6f5', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: C.paper, fontFamily: "'Prompt', -apple-system, sans-serif" }}>
 
-      {/* ── SIDEBAR ─────────────────────────────────── */}
-      <aside style={{
-        width: 248, flexShrink: 0, background: '#02402e',
-        padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 4,
+      {/* ── SIDEBAR ── calm green rail, as in the approved admin mockups */}
+      <aside className="sm-adm-side" style={{
+        width: 232, flexShrink: 0, background: C.green,
+        padding: '20px 12px', display: 'flex', flexDirection: 'column', gap: 2,
         position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
       }}>
-        {/* Brand.
-            The real mark, not an orange "S" placeholder. logo-white-h.png is
-            the white logo cropped to its own edges — the source file carries a
-            wide transparent margin, so setting a height on it renders the mark
-            at roughly two thirds the size asked for and it looks shrunken next
-            to everything else. Cropping is the fix; scaling up is not.
-            The mark already contains the SPACES MATE wordmark, so the only text
-            left here is what the logo does not say: which surface this is. */}
-        <div style={{ padding: '4px 10px 22px' }}>
+        {/* logo-white-h.png is the white mark cropped to its edges; see git history for why. */}
+        <div style={{ padding: '2px 10px 20px', display: 'flex', alignItems: 'baseline', gap: 8 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-white-h.png"
-            alt="SpacesMate"
-            style={{ width: 140, height: 'auto', display: 'block' }}
-          />
-          <div style={{
-            color: '#d97f11', fontSize: 10, fontWeight: 600, letterSpacing: 1.6,
-            marginTop: 7,
-          }}>ADMIN</div>
+          <img src="/logo-white-h.png" alt="SpacesMate" style={{ width: 112, height: 'auto', display: 'block' }} />
+          <span style={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>แอดมิน</span>
         </div>
 
-        {/* Nav */}
         {NAV.filter(n => !('superAdminOnly' in n && n.superAdminOnly) || userRole === 'super_admin').map(n => {
           const isActive = n.exact ? pathname === n.href : (pathname ?? '').startsWith(n.href)
           const badge = n.href === '/dashboard/listings' ? pendingBadge : 0
           return (
-            <Link key={n.href} href={n.href} style={{
-              display: 'flex', alignItems: 'center', gap: 11,
-              padding: '11px 13px', borderRadius: 11,
-              fontSize: 14, fontWeight: 500, cursor: 'pointer',
-              textDecoration: 'none', transition: 'all .18s',
-              color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+            <Link key={n.href} href={n.href} aria-current={isActive ? 'page' : undefined} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 11px', borderRadius: RADIUS,
+              fontSize: 14, textDecoration: 'none',
+              color: isActive ? C.white : 'rgba(255,255,255,0.72)',
               background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+              fontWeight: isActive ? 500 : 400,
             }}>
-              <span className="msym" style={{ fontSize: 20, lineHeight: 1, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{n.icon}</span>
+              <span className="msym" style={{ fontSize: 19, lineHeight: 1, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{n.icon}</span>
               <span style={{ flex: 1 }}>{n.label}</span>
               {badge > 0 && (
-                <span style={{
-                  background: '#d97f11', color: '#fff', fontSize: 11, fontWeight: 600,
-                  minWidth: 20, height: 20, borderRadius: 10,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px',
-                }}>{badge}</span>
+                <span style={{ background: C.white, color: C.green, fontSize: 11.5, fontWeight: 600, minWidth: 20, height: 20, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>{badge}</span>
               )}
             </Link>
           )
         })}
 
-        {/* User footer */}
-        <div style={{ marginTop: 'auto', padding: '14px 13px 4px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            width: 34, height: 34, borderRadius: '50%', background: '#048c73',
-            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 600, fontSize: 14, flexShrink: 0,
-          }}>{initial}</span>
-          <div style={{ lineHeight: 1.2, minWidth: 0, flex: 1 }}>
-            <div style={{ color: '#fff', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, marginTop: 2,
-              color: userRole === 'super_admin' ? '#d97f11' : 'rgba(255,255,255,0.45)',
-              display: 'flex', alignItems: 'center' }}>
-              {userRole === 'super_admin' ? <><span className="msym" style={{ fontSize: 11, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 3 }}>grade</span>SUPER ADMIN</> : 'ADMIN'}
+        <div style={{ marginTop: 'auto', padding: '14px 11px 2px', borderTop: '1px solid rgba(255,255,255,0.12)', display: 'grid', gap: 10 }}>
+          <Link href="/" style={{ fontSize: 13.5, color: 'rgba(255,255,255,.75)', textDecoration: 'none' }}>← ดูเว็บไซต์</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ lineHeight: 1.3, minWidth: 0, flex: 1 }}>
+              <div style={{ color: C.white, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{userRole === 'super_admin' ? 'Super admin' : 'Admin'}</div>
             </div>
+            <button onClick={handleLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: 2, lineHeight: 1 }}>
+              <span className="msym" style={{ fontSize: 19, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>logout</span>
+            </button>
           </div>
-          <button onClick={handleLogout} title="ออกจากระบบ" style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-            cursor: 'pointer', padding: '0 2px', lineHeight: 1,
-          }}>
-            <span className="msym" style={{ fontSize: 19, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>logout</span>
-          </button>
         </div>
       </aside>
 
-      {/* ── MAIN ────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-
-        {/* Top bar */}
-        <header style={{
-          background: '#fff', borderBottom: '1px solid #eef0ef',
-          padding: '0 32px', height: 60,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 40,
-        }}>
-          <Link href="/" style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>arrow_back</span>
-            กลับไปยังเว็บไซต์
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, background: '#f4f6f5',
-              borderRadius: 11, padding: '8px 14px', fontSize: 13, color: '#94a3b8',
-              minWidth: 200, border: '1px solid #eef0ef',
-            }}>
-              <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>search</span>
-              <span>ค้นหา...</span>
-            </div>
-            <span style={{
-              position: 'relative', width: 40, height: 40, borderRadius: 11,
-              background: '#f4f6f5', border: '1px solid #eef0ef',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}>
-              <span className="msym" style={{ fontSize: 20, color: '#64748b', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>notifications</span>
-              <span style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#d97f11' }} />
-            </span>
-          </div>
-        </header>
-
-        {/* Page */}
-        <main style={{ flex: 1, padding: '28px 32px 56px' }} data-caller-role={userRole}>
-          {children}
-        </main>
-      </div>
+      {/* ── MAIN ── (the old top bar's search box and bell did nothing, so they are gone) */}
+      <main style={{ flex: 1, minWidth: 0, padding: '28px 32px 56px' }} data-caller-role={userRole}>
+        {children}
+      </main>
     </div>
   )
 }

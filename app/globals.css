@@ -9,7 +9,7 @@
   }
 
   body {
-    background-color: #ffffff;
+    background-color: #f7f6f2;
     color: #231f20;
   }
 
@@ -21,7 +21,7 @@
 
   a { text-decoration: none; color: inherit; }
   input, select, textarea, button { font-family: inherit; }
-  ::selection { background: #d97f11; color: #fff; }
+  ::selection { background: #cfe3d9; color: #02402e; }
 }
 
 /* Material Symbols */
@@ -106,3 +106,11 @@
 .property-content p { margin: .4em 0; }
 .property-content strong, .property-content b { font-weight: 600; }
 .property-content a { color: #048c73; text-decoration: underline; }
+
+/* ── Redesign 2026: shared hover states (inline styles cannot express :hover) ── */
+.sm-btn-primary:hover { background: #02402e !important; border-color: #02402e !important; }
+.sm-btn-ghost:hover { border-color: #037a64 !important; color: #02402e !important; }
+.sm-chip-link:hover { border-color: #037a64 !important; color: #02402e !important; }
+.sm-card:hover .sm-card-title { text-decoration: underline; text-underline-offset: 3px; }
+.sm-row-link:hover { color: #02402e !important; }
+.sm-footer a:hover { color: #ffffff !important; }

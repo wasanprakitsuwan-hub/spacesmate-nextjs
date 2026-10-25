@@ -20,9 +20,6 @@ export type Locale = 'th' | 'en'
 
 export const SUBMIT_NEW_T = {
   th: {
-    topBar: 'ลงประกาศอสังหาฯ',
-    step1: 'ข้อมูลประกาศ',
-    step2: 'ข้อมูลติดต่อ & บันทึก',
     loading: 'กำลังโหลด...',
 
     // ── Validation ──
@@ -37,25 +34,13 @@ export const SUBMIT_NEW_T = {
     genericError: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
 
     // ── Step 1 ──
-    listingInfo: 'ข้อมูลประกาศ',
-    nextContact: 'ถัดไป — ข้อมูลติดต่อ',
 
     // ── Step 2 summary card ──
-    listingToPublish: 'ประกาศที่จะเผยแพร่',
-    untitled: '(ไม่มีชื่อ)',
-    photosN: (n: number) => `${n} รูป`,
-    oneVideo: 'วิดีโอ 1 รายการ',
 
     // ── What happens next ──
-    whatNext: 'ขั้นตอนถัดไป',
-    draftLine1a: 'กดบันทึกแล้วประกาศจะถูกเก็บเป็น ',
-    draftLine1b: 'ฉบับร่าง',
-    draftLine1c: ' ในบัญชีของคุณ — ยังไม่มีการเรียกเก็บเงิน และยังไม่แสดงบนเว็บไซต์',
-    draftLine2: 'หากคุณมีแพ็กเกจว่างอยู่แล้ว ระบบจะเผยแพร่ให้ทันที ถ้ายังไม่มี เราจะพาไปเลือกซื้อแพ็กเกจ — เลือกแพ็กเกจตอนนั้นได้เลย ไม่ต้องตัดสินใจตอนนี้',
     fillFreely: 'กรอกได้เต็มที่',
     fillFreelyBody: (maxImages: number) =>
       ` — ใส่รูปได้ถึง ${maxImages} รูปและใส่วิดีโอได้ทุกแพ็กเกจ แพ็กเกจมีผลกับจำนวนที่แสดงบนเว็บไซต์เท่านั้น ไม่ได้จำกัดสิ่งที่คุณกรอก อัปเกรดเมื่อไหร่ รูปและวิดีโอที่เหลือจะแสดงทันทีโดยไม่ต้องอัปโหลดใหม่`,
-    draftsNeverExpire: 'ประกาศฉบับร่างเก็บไว้ได้ตลอด ไม่มีวันหมดอายุ · แก้ไขได้ทุกเมื่อจากแดชบอร์ด',
 
     // ── Consent ──
     consentLead: 'ฉันยืนยันว่าข้อมูลประกาศเป็นความจริง และยอมรับ',
@@ -65,16 +50,35 @@ export const SUBMIT_NEW_T = {
     consentTail: 'ของ SpacesMate',
 
     // ── Actions ──
-    back: 'ย้อนกลับ',
     saving: 'กำลังบันทึก...',
-    saveListing: 'บันทึกประกาศ',
-    savedAsDraftNote: 'บันทึกเป็นฉบับร่างก่อน — ยังไม่มีการเรียกเก็บเงิน ขั้นตอนถัดไปคือซื้อแพ็กเกจเพื่อเผยแพร่',
+    pageTitle: 'ลงประกาศให้เช่า',
+    crumbMine: 'ประกาศของฉัน',
+    crumbNew: 'ลงประกาศใหม่',
+    stepFill: 'กรอกประกาศ',
+    stepPay: 'ชำระเงินและเผยแพร่',
+    saveDraft: 'บันทึกเป็นฉบับร่าง',
+    saveAndPay: 'บันทึกและไปชำระเงิน →',
+    previewTitle: 'ตัวอย่างการ์ดในผลค้นหา',
+    previewUntitled: 'ชื่อประกาศจะแสดงที่นี่',
+    perMonth: '/เดือน',
+    completeness: 'ความครบถ้วน',
+    missing: 'ขาด: ',
+    complete: 'ครบแล้ว พร้อมเผยแพร่',
+    itemTitle: 'ชื่อประกาศ',
+    itemPrice: 'ราคา',
+    itemPin: 'หมุดแผนที่',
+    itemPhotos: 'รูปภาพ',
+    itemContact: 'ข้อมูลติดต่อ',
+    itemTitleEn: 'ชื่อภาษาอังกฤษ',
+    itemDescEn: 'รายละเอียดภาษาอังกฤษ',
+    nextHeading: 'ถัดไป',
+    next1: 'บันทึกแล้วไปหน้าชำระเงิน เลือกแพ็กเกจ แล้วประกาศเผยแพร่ทันที',
+    next2: 'มีแพ็กเกจว่างอยู่แล้ว? ระบบเผยแพร่ให้เลย ไม่ต้องจ่ายซ้ำ',
+    next3: 'บันทึกเป็นฉบับร่างได้ ไม่มีวันหมดอายุ กลับมาแก้ไขจากแดชบอร์ดได้ทุกเมื่อ',
+    guideLink: 'อ่านคู่มือการลงประกาศ →',
   },
 
   en: {
-    topBar: 'List your property',
-    step1: 'Listing details',
-    step2: 'Contact details & save',
     loading: 'Loading…',
 
     /**
@@ -93,23 +97,11 @@ export const SUBMIT_NEW_T = {
     needConsent: 'Please accept the Terms of Service before continuing',
     genericError: 'Something went wrong. Please try again.',
 
-    listingInfo: 'Listing details',
-    nextContact: 'Next — contact details',
 
-    listingToPublish: 'The listing to be published',
-    untitled: '(untitled)',
-    photosN: (n: number) => `${n} ${n === 1 ? 'photo' : 'photos'}`,
-    oneVideo: '1 video',
 
-    whatNext: 'What happens next',
-    draftLine1a: 'When you save, the listing is kept as a ',
-    draftLine1b: 'draft',
-    draftLine1c: ' in your account — nothing is charged, and it is not shown on the website yet.',
-    draftLine2: 'If you already hold an unused package we publish it straight away. If not, we take you to buy one — you choose the package then, not now.',
     fillFreely: 'Fill it in fully',
     fillFreelyBody: (maxImages: number) =>
       ` — you can add up to ${maxImages} photos and a video on any package. The package decides how many of them appear on the website, not how many you may enter. Upgrade at any time and the rest appear immediately, with nothing to re-upload.`,
-    draftsNeverExpire: 'Drafts are kept indefinitely and never expire · edit them any time from your dashboard',
 
     consentLead: 'I confirm the listing details are true, and I accept the',
     terms: 'Terms of Service',
@@ -117,10 +109,32 @@ export const SUBMIT_NEW_T = {
     privacy: 'Privacy Policy',
     consentTail: 'of SpacesMate',
 
-    back: 'Back',
     saving: 'Saving…',
-    saveListing: 'Save listing',
-    savedAsDraftNote: 'Saved as a draft first — nothing is charged. The next step is buying a package to publish it.',
+    pageTitle: 'List a property for rent',
+    crumbMine: 'My listings',
+    crumbNew: 'New listing',
+    stepFill: 'Fill in listing',
+    stepPay: 'Pay and publish',
+    saveDraft: 'Save as draft',
+    saveAndPay: 'Save and continue to payment →',
+    previewTitle: 'How your card looks in search',
+    previewUntitled: 'Your listing title appears here',
+    perMonth: '/month',
+    completeness: 'Completeness',
+    missing: 'Missing: ',
+    complete: 'Complete and ready to publish',
+    itemTitle: 'title',
+    itemPrice: 'price',
+    itemPin: 'map pin',
+    itemPhotos: 'photos',
+    itemContact: 'contact details',
+    itemTitleEn: 'English title',
+    itemDescEn: 'English description',
+    nextHeading: 'Next',
+    next1: 'Save, then choose a package on the payment page and your listing goes live straight away',
+    next2: 'Already hold an unused package? We publish it for you, with nothing to pay again',
+    next3: 'Or save it as a draft. Drafts never expire and you can edit them from your dashboard',
+    guideLink: 'Read the listing guide →',
   },
 } as const
 

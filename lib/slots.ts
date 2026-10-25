@@ -147,6 +147,14 @@ export async function claimSlot(
 export const WELCOME_SLOT_SINCE = '2026-10-24T00:00:00+07:00'
 
 /**
+ * Off since 25 Oct 2026 (Founder: "switch to sm299 code for now"). The first
+ * month free is now the typed promo code at /checkout (lib/promo), and both at
+ * once would give a new owner two free months. Slots already granted are kept.
+ * Set back to true to restore the automatic free slot.
+ */
+export const WELCOME_SLOT_ENABLED = false
+
+/**
  * Give a new owner their one free Basic slot, if they have not had it yet.
  *
  * Granted lazily — the first time their slots are counted or a listing is
@@ -162,6 +170,7 @@ export async function ensureWelcomeSlot(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
+  if (!WELCOME_SLOT_ENABLED) return
   const { data: had } = await supabase
     .from('listing_slots')
     .select('id')

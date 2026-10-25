@@ -21,6 +21,8 @@ export const FAQ_T = {
     moreBody: 'ติดต่อทีมงาน SpacesMate โดยตรง — เราพร้อมตอบทุกคำถาม',
     moreCta1: 'ติดต่อเรา',
     moreCta2: 'ฝากบริหารทรัพย์สิน',
+    guideLink: 'ดูคู่มือการลงประกาศแบบละเอียด →',
+    categories: 'หมวดคำถาม',
   },
   en: {
     metaTitle: 'Frequently asked questions',
@@ -39,5 +41,7 @@ export const FAQ_T = {
     moreBody: 'Contact the SpacesMate team directly — we are happy to answer anything.',
     moreCta1: 'Contact us',
     moreCta2: 'Hand us your property',
+    guideLink: 'Read the step-by-step listing guide →',
+    categories: 'Topics',
   },
 } as const

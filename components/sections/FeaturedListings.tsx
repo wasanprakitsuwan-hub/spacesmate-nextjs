@@ -11,6 +11,14 @@ import { createServerClient } from '@/lib/supabase'
 import FeaturedGrid, { type FeaturedCard } from '@/components/sections/FeaturedGrid'
 import { SITE_T, CARD_TERM_SUFFIX, CARD_DEFAULT_SUFFIX, type Locale } from '@/lib/site-i18n'
 import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
+import { nearestStation, stationLabel, distanceLabel } from '@/lib/search-match'
+import type { RailSystem } from '@/lib/stations'
+import { C, RADIUS, WRAP, h2Style } from '@/lib/ui'
+
+/** The colour bar beside "Near BTS …" on a card. */
+function lineColor(system: RailSystem): string {
+  return system === 'BTS' ? C.bts : system === 'MRT' ? C.mrt : '#C8102E'
+}
 
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
@@ -58,7 +66,7 @@ function adaptDbListing(l: any, locale: Locale): Property {
  * reads that HTML and follows its links; it got sixteen area links and not one
  * property link, so every listing was discovered through the sitemap alone —
  * a weaker signal than being linked from the home page. The HTML still carries
- * the six newest, so that stays true.
+ * the eight newest, so that stays true.
  *
  * Columns are listed rather than selected with *, and only what a card shows is
  * passed on, so the home page does not ship description bodies in its HTML.
@@ -70,12 +78,13 @@ function adaptDbListing(l: any, locale: Locale): Property {
  * would freeze for everyone for a minute at a time.
  */
 async function loadPool(locale: Locale): Promise<FeaturedCard[]> {
+  const t = SITE_T[locale]
   try {
     const supabase = createServerClient()
     const now = new Date().toISOString()
     const { data, error } = await supabase
       .from('properties')
-      .select('slug,title_th,title_en,property_type,price_from,bedrooms,bathrooms,area_sqm,district,province,rental_term,created_at,images')
+      .select('slug,title_th,title_en,property_type,price_from,price_to,bedrooms,bathrooms,area_sqm,district,province,rental_term,created_at,images,lat,lng')
       .eq('listing_status', 'active')
       // A listing can sit past its end date with listing_status still 'active'
       // until the expiry cron catches it, so every public query carries this.
@@ -84,10 +93,19 @@ async function loadPool(locale: Locale): Promise<FeaturedCard[]> {
     if (error) throw error
     return (data ?? []).map(l => {
       const p = adaptDbListing(l, locale)
+      // "Near BTS Udom Suk 600 m" reads better than a district name, and is what
+      // renters search by. Listings more than 3 km from any station fall back to
+      // the district.
+      const near = nearestStation(Number(l.lat), Number(l.lng))
+      const from = Number(l.price_from) || 0
+      const to = Number(l.price_to) || 0
       return {
-        slug: p.slug, title: p.title, priceDisplay: p.priceDisplay,
-        bedrooms: p.bedrooms, bathrooms: p.bathrooms, size: p.size,
-        neighborhood: p.neighborhood, image: p.image, propertyType: p.propertyType,
+        slug: p.slug, title: p.title,
+        price: from ? `฿${from.toLocaleString('en-US')}${to > from ? ` – ${to.toLocaleString('en-US')}` : ''}` : t.askForPrice,
+        priceSuffix: from ? (CARD_TERM_SUFFIX[locale][l.rental_term] ?? CARD_DEFAULT_SUFFIX[locale]) : '',
+        place: near ? `${t.near(stationLabel(near.station, locale))} ${distanceLabel(near.km, locale)}` : p.neighborhood,
+        lineColor: near ? lineColor(near.station.systems[0]) : C.line,
+        image: p.image, propertyType: p.propertyType,
       }
     })
   } catch {
@@ -98,48 +116,25 @@ async function loadPool(locale: Locale): Promise<FeaturedCard[]> {
 export default async function FeaturedListings({ locale = 'th' }: { locale?: Locale }) {
   const t = SITE_T[locale]
   const pool = await loadPool(locale)
+  if (pool.length === 0) return null
 
   return (
-    <section style={{ background: '#f7f9f8', padding: '56px 0' }}>
-      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>{t.latestHeading}</h2>
-            <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>{t.latestSub}</p>
-          </div>
-          <Link href="/search" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, textDecoration: 'none' }}>
-            {t.viewAllArrow}
-          </Link>
-        </div>
-
-        <FeaturedGrid pool={pool} locale={locale} />
-
-        <div style={{ textAlign: 'center', marginTop: 28 }}>
-          <Link href="/search"
-            style={{ display: 'inline-block', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 28px', borderRadius: 24, textDecoration: 'none' }}>
-            {t.viewAll}
-          </Link>
-        </div>
+    <section style={{ maxWidth: WRAP, margin: '0 auto', padding: '56px 24px 72px', borderTop: `1px solid ${C.line}` }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
+        <h2 style={h2Style(26)}>{t.latestHeading}</h2>
+        <Link href="/search" style={{ fontSize: 15, color: C.teal, textDecoration: 'none' }}>{t.viewAllCount(pool.length)}</Link>
       </div>
 
+      <FeaturedGrid pool={pool} locale={locale} />
+
       <style>{`
-        @media (max-width: 900px) { .sm-feat-grid { grid-template-columns: repeat(2,1fr) !important; } }
-        @media (max-width: 600px) { .sm-feat-grid { grid-template-columns: 1fr !important; } }
-        .sm-feat-card:hover {
-          box-shadow: 0 16px 34px -12px rgba(2,64,46,0.18) !important;
-          transform: translateY(-4px) !important;
-        }
-        .sm-feat-card:hover .sm-feat-img { transform: scale(1.06) !important; }
-        .sm-feat-card:hover .sm-feat-title { color: #02402e !important; }
-        /* The split second before FeaturedGrid has picked this visitor's six:
-           card shells hold the layout, contents stay hidden so nothing jumps. */
-        .sm-feat-pending .sm-feat-card > * { visibility: hidden; }
-        .sm-feat-pending .sm-feat-card { background: #eef2f0 !important; box-shadow: none !important; }
+        /* The split second before FeaturedGrid has picked this visitor's cards:
+           the shells hold the layout, contents stay hidden so nothing jumps. */
+        .sm-feat-pending .sm-card > * { visibility: hidden; }
+        .sm-feat-pending .sm-card { background: ${C.line2}; border-radius: ${RADIUS}px; }
       `}</style>
-      {/* No JavaScript, no reshuffle: show the server's six as they are. */}
-      <noscript><style>{`.sm-feat-pending .sm-feat-card > * { visibility: visible !important; } .sm-feat-pending .sm-feat-card { background: #fff !important; }`}</style></noscript>
+      {/* No JavaScript, no reshuffle: show the server's cards as they are. */}
+      <noscript><style>{`.sm-feat-pending .sm-card > * { visibility: visible !important; } .sm-feat-pending .sm-card { background: none !important; }`}</style></noscript>
     </section>
   )
 }

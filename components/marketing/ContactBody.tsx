@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { CONTACT_T, type Locale } from '@/lib/pages-i18n'
 import { trackEvent } from '@/lib/analytics'
+import Link from '@/components/ui/LocaleLink'
+import { C, RADIUS, WRAP, btnStyle, h2Style } from '@/lib/ui'
 
 
 export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
@@ -12,8 +14,8 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
   // Thai literal in both locales. Translating it would file English enquiries
   // under a different interest than Thai ones and split the analytics.
   const INTENTS = [
-    { value: 'นักลงทุน',        label: t.interestInvestor, icon: 'finance'   },
-    { value: 'พันธมิตรธุรกิจ', label: t.interestPartner,  icon: 'handshake' },
+    { value: 'นักลงทุน',        label: t.interestInvestor },
+    { value: 'พันธมิตรธุรกิจ', label: t.interestPartner },
   ]
 
   const [submitted, setSubmitted] = useState(false)
@@ -67,217 +69,119 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
     }
   }
 
+  const input: React.CSSProperties = {
+    width: '100%', border: `1px solid ${C.border}`, borderRadius: RADIUS, padding: '11px 12px', fontSize: 15,
+    fontFamily: 'inherit', background: C.white, color: C.ink, boxSizing: 'border-box',
+  }
+  const label: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: C.ink, display: 'block', marginBottom: 6 }
+  const card: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 22 }
+  const channels: Array<{ k: string; v: React.ReactNode; note?: string }> = [
+    { k: 'LINE', v: <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>@spacesmate</a>, note: t.lineNote },
+    { k: t.email, v: <a href="mailto:support@spacesmate.com" style={{ color: C.teal, textDecoration: 'none' }}>support@spacesmate.com</a> },
+    { k: t.phone, v: <a href="tel:020125190" style={{ color: C.teal, textDecoration: 'none' }}>02-012-5190</a> },
+    { k: t.office, v: <>{t.officeLine0}<br />{t.officeLine1} {t.officeLine2}</> },
+    { k: t.hours, v: t.hoursValue, note: t.hoursClosed },
+  ]
+
   return (
-    <div className="bg-white min-h-screen">
+    <div style={{ background: C.paper, padding: '40px 16px 72px' }}>
+      <div style={{ maxWidth: WRAP, margin: '0 auto' }}>
+        <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', fontWeight: 600, color: C.green, margin: '0 0 6px' }}>{t.pageTitle}</h1>
+        <p style={{ fontSize: 16, color: C.muted, margin: '0 0 24px' }}>{t.pageSub}</p>
 
-      {/* Header */}
-      <div className="bg-spacemate-brandDark py-14">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">{t.heroTitle} SpacesMate</h1>
-          <p className="text-white/70 text-base font-light">{t.heroSub}</p>
+        <div className="sm-ct-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+          {t.routes.map(r => (
+            <div key={r.title} style={card}>
+              <h2 style={{ ...h2Style(18), margin: '0 0 6px' }}>{r.title}</h2>
+              <p style={{ fontSize: 14.5, color: C.ink, lineHeight: 1.65, margin: '0 0 12px' }}>{r.desc}</p>
+              {r.href.startsWith('http')
+                ? <a href={r.href} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontSize: 15, textDecoration: 'none' }}>{r.cta}</a>
+                : <Link href={r.href} style={{ color: C.teal, fontSize: 15, textDecoration: 'none' }}>{r.cta}</Link>}
+            </div>
+          ))}
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-
-          {/* Info */}
-          <div>
-            <h2 className="text-xl font-semibold text-spacemate-brandDark mb-6">{t.channels}</h2>
-
-            <div className="space-y-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-spacemate-bgLight flex items-center justify-center flex-shrink-0 text-spacemate-brandTeal">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+        <div className="sm-ct-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)', gap: 24, alignItems: 'start' }}>
+          <div style={card}>
+            <h2 style={{ ...h2Style(18), margin: '0 0 12px' }}>{t.channels}</h2>
+            <dl style={{ margin: 0 }}>
+              {channels.map((c, i) => (
+                <div key={c.k} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 12, padding: '11px 0', borderTop: i ? `1px solid ${C.line2}` : 'none', fontSize: 15 }}>
+                  <dt style={{ color: C.muted }}>{c.k}</dt>
+                  <dd style={{ margin: 0, color: C.ink, lineHeight: 1.6 }}>
+                    {c.v}
+                    {c.note && <span style={{ display: 'block', fontSize: 13.5, color: C.muted }}>{c.note}</span>}
+                  </dd>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-spacemate-textCharcoal">{t.email}</p>
-                  <a href="mailto:support@spacesmate.com" className="text-sm text-gray-500 hover:text-spacemate-brandTeal">support@spacesmate.com</a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-spacemate-bgLight flex items-center justify-center flex-shrink-0 text-spacemate-brandTeal">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-spacemate-textCharcoal">{t.phone}</p>
-                  <a href="tel:020125190" className="text-sm text-gray-500 hover:text-spacemate-brandTeal">02-012-5190</a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-spacemate-bgLight flex items-center justify-center flex-shrink-0 text-spacemate-brandTeal">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-spacemate-textCharcoal">LINE@</p>
-                  <a href="https://line.me/R/ti/p/@spacesmate" className="text-sm text-spacemate-brandTeal hover:underline">@spacesmate</a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-spacemate-bgLight flex items-center justify-center flex-shrink-0 text-spacemate-brandTeal">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-spacemate-textCharcoal">{t.office}</p>
-                  <p className="text-sm text-gray-500">{t.officeLine0}<br />{t.officeLine1}<br />{t.officeLine2}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 p-5 rounded-2xl bg-spacemate-bgLight border border-spacemate-borderLight">
-              <p className="text-xs text-gray-500 font-medium mb-2">{t.hours}</p>
-              <p className="text-sm text-spacemate-textCharcoal">{t.hoursValue}</p>
-              <p className="text-sm text-gray-400 mt-1">{t.hoursClosed}</p>
-            </div>
+              ))}
+            </dl>
           </div>
 
-          {/* Form */}
-          <div>
+          <div style={card}>
             {submitted ? (
-              <div className="text-center py-16">
-                <div className="mb-4">
-                  <span className="msym" style={{ fontSize: 44, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>
-                </div>
-                <h3 className="text-xl font-semibold text-spacemate-brandDark mb-2">{t.sentTitle}</h3>
-                <p className="text-gray-500 text-sm">{t.sentBody}</p>
+              <div style={{ textAlign: 'center', padding: '28px 0' }}>
+                <p style={{ fontSize: 30, color: C.teal, margin: '0 0 6px' }}>✓</p>
+                <h3 style={{ fontSize: 20, fontWeight: 600, color: C.green, margin: '0 0 6px' }}>{t.sentTitle}</h3>
+                <p style={{ color: C.muted, fontSize: 15, margin: 0 }}>{t.sentBody}</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <h2 className="text-xl font-semibold text-spacemate-brandDark mb-6">{t.formTitle}</h2>
-
-                {/* Name */}
+              <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
                 <div>
-                  <label className="label block mb-1.5">{t.fullName} *</label>
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                    placeholder={t.namePlaceholder}
-                    className="input-field w-full"
-                  />
+                  <h2 style={{ ...h2Style(18), margin: '0 0 4px' }}>{t.investorTitle}</h2>
+                  <p style={{ fontSize: 14.5, color: C.muted, margin: 0 }}>{t.investorSub}</p>
                 </div>
-
-                {/* Phone + Email */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="ct-name" style={label}>{t.fullName} *</label>
+                  <input id="ct-name" name="name" value={form.name} onChange={handleChange} required placeholder={t.namePlaceholder} style={input} />
+                </div>
+                <div className="sm-ct-f2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label className="label block mb-1.5">{t.phoneLabel} *</label>
-                    <input
-                      name="phone"
-                      value={form.phone}
-                      onChange={handleChange}
-                      required
-                      inputMode="numeric"
-                      placeholder="0XXXXXXXXX"
-                      className="input-field w-full"
-                    />
+                    <label htmlFor="ct-phone" style={label}>{t.phoneLabel} *</label>
+                    <input id="ct-phone" name="phone" value={form.phone} onChange={handleChange} required inputMode="numeric" placeholder="0XXXXXXXXX" style={input} />
                   </div>
                   <div>
-                    <label className="label block mb-1.5">{t.email}</label>
-                    <input
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="email@example.com"
-                      className="input-field w-full"
-                    />
+                    <label htmlFor="ct-email" style={label}>{t.email}</label>
+                    <input id="ct-email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com" style={input} />
                   </div>
                 </div>
-
-                {/* Intent pills */}
                 <div>
-                  <label className="label block mb-2">{t.interest}</label>
-                  <div className="flex gap-3 flex-wrap">
+                  <span style={label}>{t.interest}</span>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {INTENTS.map(opt => {
                       const active = form.intent === opt.value
                       return (
-                        <button
-                          key={opt.value}
-                          type="button"
+                        <button key={opt.value} type="button" aria-pressed={active}
                           onClick={() => setForm(prev => ({ ...prev, intent: active ? '' : opt.value }))}
-                          style={{
-                            display:       'flex',
-                            alignItems:    'center',
-                            gap:           8,
-                            padding:       '10px 20px',
-                            borderRadius:  100,
-                            border:        active ? '2px solid #02402e' : '1.5px solid #e2e8f0',
-                            background:    active ? '#02402e' : '#fff',
-                            color:         active ? '#fff' : '#475569',
-                            fontWeight:    active ? 600 : 400,
-                            fontSize:      14,
-                            cursor:        'pointer',
-                            transition:    'all .15s',
-                          }}
-                        >
-                          <span className="msym" style={{ fontSize: 18, fontVariationSettings: active ? "'wght' 400, 'FILL' 1" : "'wght' 300, 'FILL' 0" }}>
-                            {opt.icon}
-                          </span>
+                          style={{ padding: '9px 16px', borderRadius: RADIUS, fontSize: 14.5, cursor: 'pointer', fontFamily: 'inherit',
+                            border: `1px solid ${active ? C.teal : C.border}`, background: active ? C.tint : C.white, color: active ? C.green : C.ink, fontWeight: active ? 600 : 400 }}>
                           {opt.label}
                         </button>
                       )
                     })}
                   </div>
                 </div>
-
-                {/* Message */}
                 <div>
-                  <label className="label block mb-1.5">{t.details}</label>
-                  <textarea
-                    name="message"
-                    value={form.message}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder={t.detailsPlaceholder}
-                    className="input-field w-full resize-none"
-                  />
+                  <label htmlFor="ct-msg" style={label}>{t.details}</label>
+                  <textarea id="ct-msg" name="message" value={form.message} onChange={handleChange} rows={4} placeholder={t.detailsPlaceholder} style={{ ...input, resize: 'vertical' }} />
                 </div>
-
-                {/* Error */}
                 {error && (
-                  <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}{sendFailed && (
-                    <>
-                      {' '}
-                      <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
-                        style={{ color: '#06C755', fontWeight: 700, textDecoration: 'underline' }}>@spacesmate</a>
-                    </>
+                  <p role="alert" style={{ fontSize: 13.5, color: '#b42318', margin: 0 }}>{error}{sendFailed && (
+                    <>{' '}<a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>@spacesmate</a></>
                   )}</p>
                 )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full"
-                  style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-                >
-                  {loading ? (
-                    <><span className="msym" style={{ fontSize: 16, animation: 'spin 1s linear infinite', marginRight: 6, verticalAlign: 'middle' }}>autorenew</span>{t.sending}</>
-                  ) : (
-                    <>{t.send}<span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginLeft: 6, verticalAlign: 'middle' }}>arrow_forward</span></>
-                  )}
+                <button type="submit" disabled={loading} className="sm-btn-primary" style={{ ...btnStyle('primary'), width: '100%', opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}>
+                  {loading ? t.sending : t.send}
                 </button>
-
-                <p className="text-xs text-gray-400 text-center">
-                  {t.privacyNote}
-                </p>
+                <p style={{ fontSize: 13, color: C.muted, textAlign: 'center', margin: 0 }}>{t.privacyNote}</p>
               </form>
             )}
           </div>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 900px) { .sm-ct-3 { grid-template-columns: 1fr !important; } .sm-ct-2 { grid-template-columns: 1fr !important; } }
+        @media (max-width: 520px) { .sm-ct-f2 { grid-template-columns: 1fr !important; } }
+      `}</style>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, STRIPE_PRICES, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import { requireAuth, isErr } from '@/lib/auth-guard'
+import { promoSessionParams } from '@/lib/stripe-promo'
 
 /**
  * Buy publishing slots.
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (isErr(auth)) return auth
 
   try {
-    const { package_id = 'basic', quantity = 1, publish_property_id = null } = await req.json()
+    const { package_id = 'basic', quantity = 1, publish_property_id = null, promotion_code_id = null } = await req.json()
 
     const priceId = STRIPE_PRICES[package_id as keyof typeof STRIPE_PRICES]
     if (!priceId) return NextResponse.json({ error: 'Invalid package' }, { status: 400 })
@@ -58,6 +59,9 @@ export async function POST(req: NextRequest) {
       ? { customer: profile.stripe_customer_id }
       : { customer_email: profile?.email || undefined }
 
+    // A code typed and checked on /checkout rides in as a discount.
+    const promoParams = await promoSessionParams(promotion_code_id)
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -84,7 +88,7 @@ export async function POST(req: NextRequest) {
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&sid={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${siteUrl}/checkout`,
-      allow_promotion_codes: true,
+      ...promoParams,
       locale: 'auto',
       custom_text: {
         submit: {

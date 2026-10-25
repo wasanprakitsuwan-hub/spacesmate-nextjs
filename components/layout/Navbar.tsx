@@ -19,6 +19,7 @@ import LanguageToggle, { MobileLanguageToggle } from '@/components/layout/Langua
 import { SITE_T } from '@/lib/site-i18n'
 import { localeHref } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
+import { C, RADIUS } from '@/lib/ui'
 
 interface UserInfo {
   role:               string | null
@@ -94,15 +95,15 @@ export default function Navbar() {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
+  // Quiet links: ink by default, green with a 2px underline when current.
   const linkStyle = (href: string): React.CSSProperties => ({
-    padding: '8px 14px',
-    borderRadius: 20,
-    fontSize: 14.5,
-    fontWeight: isActive(href) ? 600 : 500,
+    padding: '8px 2px',
+    margin: '0 10px',
+    fontSize: 15,
+    fontWeight: 500,
     cursor: 'pointer',
-    transition: 'all .2s',
-    color: isActive(href) ? '#d97f11' : '#334155',
-    background: isActive(href) ? 'rgba(217,127,17,0.12)' : 'transparent',
+    color: isActive(href) ? C.green : C.ink,
+    borderBottom: `2px solid ${isActive(href) ? C.green : 'transparent'}`,
     textDecoration: 'none',
   })
 
@@ -138,58 +139,56 @@ export default function Navbar() {
   const uName = displayName(userInfo, session?.user?.email, t.navMyAccount)
 
   return (
-    <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#ffffff', borderBottom: '1px solid #eef0ef', boxShadow: '0 1px 8px -4px rgba(2,64,46,0.08)' }}>
-      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', gap: 30 }}>
+    <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: C.paper, borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '0 24px', height: 72, display: 'flex', alignItems: 'center', gap: 28 }}>
 
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <Image src="/logo.png" unoptimized alt="SpacesMate" width={168} height={52} style={{ height: 52, width: 'auto', display: 'block' }} priority />
+          <Image src="/logo.png" unoptimized alt="SpacesMate" width={130} height={40} style={{ height: 40, width: 'auto', display: 'block' }} priority />
         </Link>
 
         {/* Desktop nav links */}
-        <div className="sm-navlinks" style={{ display: 'flex', gap: 4, marginLeft: 6, alignItems: 'center' }}>
+        <div className="sm-navlinks" style={{ display: 'flex', gap: 0, marginLeft: 4, alignItems: 'center' }}>
 
           <Link href="/search" style={linkStyle('/search')}
-            onMouseEnter={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
-            onMouseLeave={e => { if (!isActive('/search')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
+            className="sm-navlink">
             {t.navSearch}
           </Link>
 
           {/* สำหรับเจ้าของ dropdown */}
           <div className="sm-owner-menu" style={{ position: 'relative' }}>
-            <a style={{
-              padding: '8px 14px', borderRadius: 20, fontSize: 14.5, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 3,
-              fontWeight: ownerActive ? 600 : 500,
-              color: ownerActive ? '#d97f11' : '#334155',
-              background: ownerActive ? 'rgba(217,127,17,0.12)' : 'transparent',
+            <a className="sm-navlink" style={{
+              padding: '8px 2px', margin: '0 10px', fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
+              fontWeight: 500,
+              color: ownerActive ? C.green : C.ink,
+              borderBottom: `2px solid ${ownerActive ? C.green : 'transparent'}`,
             }}>
               {t.navForOwners} <span className="msym" style={{ fontSize: 18 }}>expand_more</span>
             </a>
             <div className="sm-owner-pop">
-              <Link href="/list-your-property" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+              <Link href="/list-your-property" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 6, cursor: 'pointer', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.paper}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>sell</span>
+                <span className="msym" style={{ fontSize: 21, color: C.teal, marginTop: 1 }}>sell</span>
                 <span>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navSubmit}</span>
-                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>{t.navSubmitDesc}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 1 }}>{t.navSubmitDesc}</span>
                 </span>
               </Link>
-              <Link href="/manage" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 12, cursor: 'pointer', transition: 'all .2s', textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+              <Link href="/manage" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 6, cursor: 'pointer', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.paper}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                <span className="msym" style={{ fontSize: 21, color: '#048c73', marginTop: 1 }}>handshake</span>
+                <span className="msym" style={{ fontSize: 21, color: C.teal, marginTop: 1 }}>handshake</span>
                 <span>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navManage}</span>
-                  <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 1 }}>{t.navManageDesc}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 1 }}>{t.navManageDesc}</span>
                 </span>
               </Link>
             </div>
           </div>
 
           <Link href="/blog" style={linkStyle('/blog')}
-            onMouseEnter={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = '#f4f8f6'; (e.currentTarget as HTMLElement).style.color = '#02402e' } }}
-            onMouseLeave={e => { if (!isActive('/blog')) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#334155' } }}>
+            className="sm-navlink">
             {t.navBlog}
           </Link>
         </div>
@@ -206,14 +205,14 @@ export default function Navbar() {
                   onClick={() => setUserMenu(v => !v)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 7,
-                    padding: '8px 14px', borderRadius: 22,
-                    border: `1.5px solid ${userMenu ? '#02402e' : '#e2e8f0'}`,
-                    background: userMenu ? '#f4f8f6' : '#fff',
+                    padding: '8px 12px', borderRadius: 6,
+                    border: `1px solid ${userMenu ? C.green : C.border}`,
+                    background: C.white,
                     cursor: 'pointer', fontFamily: 'inherit', transition: 'all .18s',
-                    fontSize: 14, fontWeight: 600, color: '#02402e',
+                    fontSize: 14, fontWeight: 500, color: C.green,
                   }}
                 >
-                  <span className="msym" style={{ fontSize: 17, color: '#048c73' }}>account_circle</span>
+                  <span className="msym" style={{ fontSize: 17, color: C.teal }}>account_circle</span>
                   {uName}
                   <span className="msym" style={{ fontSize: 16, color: '#94a3b8', transition: 'transform .2s', display: 'inline-block', transform: userMenu ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                 </button>
@@ -223,8 +222,8 @@ export default function Navbar() {
                   <div style={{
                     position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                     width: 230, background: '#fff',
-                    border: '1px solid #eef0ef', borderRadius: 16, padding: 7,
-                    boxShadow: '0 18px 40px -14px rgba(2,64,46,0.22)',
+                    border: `1px solid ${C.line}`, borderRadius: 8, padding: 6,
+                    boxShadow: '0 10px 28px -16px rgba(35,31,32,0.25)',
                     zIndex: 60,
                   }}>
                     {/* User label */}
@@ -235,19 +234,19 @@ export default function Navbar() {
 
                     {/* 1 · ข้อมูลส่วนตัว */}
                     <Link href="/owner-dashboard/profile" onClick={() => setUserMenu(false)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#334155', textDecoration: 'none', transition: 'background .15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: RADIUS, fontSize: 13.5, fontWeight: 500, color: C.ink, textDecoration: 'none', transition: 'background .15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.white}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>person</span>
+                      <span className="msym" style={{ fontSize: 18, color: C.teal }}>person</span>
                       {t.navProfile}
                     </Link>
 
                     {/* 2 · แดชบอร์ด */}
                     <Link href={userInfo?.dashUrl ?? '/owner-dashboard'} onClick={() => setUserMenu(false)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#334155', textDecoration: 'none', transition: 'background .15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: RADIUS, fontSize: 13.5, fontWeight: 500, color: C.ink, textDecoration: 'none', transition: 'background .15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.white}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                      <span className="msym" style={{ fontSize: 18, color: '#048c73' }}>dashboard</span>
+                      <span className="msym" style={{ fontSize: 18, color: C.teal }}>dashboard</span>
                       {t.navDashboard}
                     </Link>
 
@@ -256,7 +255,7 @@ export default function Navbar() {
 
                     {/* 3 · ออกจากระบบ */}
                     <button onClick={handleSignOut}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: '#b91c1c', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderRadius: RADIUS, fontSize: 13.5, fontWeight: 500, color: '#b91c1c', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fff5f5'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                       <span className="msym" style={{ fontSize: 18 }}>logout</span>
@@ -267,10 +266,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button onClick={() => setAuthModal(true)} className="sm-hide-mobile"
-                style={{ fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: '#fff', fontFamily: 'inherit', transition: 'all .18s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#02402e'; (e.currentTarget as HTMLElement).style.color = '#02402e' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.color = '#334155' }}>
-                <span className="msym" style={{ fontSize: 17 }}>login</span>
+                style={{ fontSize: 14, fontWeight: 500, color: C.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '9px 4px', border: 'none', background: 'transparent', fontFamily: 'inherit' }}>
                 {t.navSignIn}
               </button>
             )
@@ -281,15 +277,14 @@ export default function Navbar() {
 
           {/* ลงประกาศ CTA — straight to the listing form */}
           <Link href="/list-your-property/new" onClick={handleListingClick}
-            style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 14, padding: '10px 20px', borderRadius: 22, cursor: 'pointer', transition: 'all .2s', boxShadow: '0 4px 14px -4px rgba(217,127,17,0.5)', textDecoration: 'none', display: 'inline-block' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; (e.currentTarget as HTMLElement).style.transform = '' }}>
+            className="sm-navcta"
+            style={{ background: C.teal, color: '#fff', fontWeight: 500, fontSize: 14, padding: '9px 16px', borderRadius: 6, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
             {t.navListCta}
           </Link>
 
           {/* Burger */}
           <button className="sm-burger" onClick={() => setMobileOpen(!mobileOpen)}
-            style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid #e2e8f0', display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#334155', background: 'transparent' }}>
+            style={{ width: 42, height: 42, borderRadius: 6, border: `1px solid ${C.border}`, display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.ink, background: C.white }}>
             <span className="msym" style={{ fontSize: 24 }}>{mobileOpen ? 'close' : 'menu'}</span>
           </button>
         </div>
@@ -297,14 +292,14 @@ export default function Navbar() {
 
       {/* Mobile panel */}
       {mobileOpen && (
-        <div style={{ borderTop: '1px solid #eef0ef', background: '#fff', padding: '10px 16px 18px' }}>
+        <div style={{ borderTop: `1px solid ${C.line}`, background: C.paper, padding: '10px 16px 18px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {mobileLinks.map(item => (
               <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#334155', textDecoration: 'none', transition: 'all .2s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 6, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: C.ink, textDecoration: 'none', transition: 'all .2s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.white}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>{item.icon}</span>
+                <span className="msym" style={{ fontSize: 21, color: C.teal }}>{item.icon}</span>
                 {item.label}
               </Link>
             ))}
@@ -314,10 +309,10 @@ export default function Navbar() {
             {session ? (
               <>
                 <Link href="/owner-dashboard/profile" onClick={() => setMobileOpen(false)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#334155', textDecoration: 'none', transition: 'all .2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 6, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: C.ink, textDecoration: 'none', transition: 'all .2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.white}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                  <span className="msym" style={{ fontSize: 21, color: '#048c73' }}>person</span>
+                  <span className="msym" style={{ fontSize: 21, color: C.teal }}>person</span>
                   {t.navProfile}
                 </Link>
                 <button onClick={() => { setMobileOpen(false); handleSignOut() }}
@@ -331,7 +326,7 @@ export default function Navbar() {
             ) : (
               <button onClick={() => { setMobileOpen(false); setAuthModal(true) }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 12px', borderRadius: 12, fontSize: 15.5, fontWeight: 500, cursor: 'pointer', color: '#02402e', background: 'transparent', border: 'none', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f4f8f6'}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.white}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                 <span className="msym" style={{ fontSize: 21, color: '#02402e' }}>login</span>
                 {t.navSignInUp}
@@ -348,11 +343,13 @@ export default function Navbar() {
         .sm-navlinks { display: flex !important; }
         .sm-hide-mobile { display: flex !important; }
         .sm-burger { display: none !important; }
+        .sm-navlink:hover { color: ${C.green} !important; }
+        .sm-navcta:hover { background: ${C.green} !important; }
         .sm-owner-pop {
           position: absolute; top: calc(100% + 6px); left: 0; width: 270px;
-          background: #fff; border: 1px solid #eef0ef; border-radius: 16px; padding: 7px;
-          box-shadow: 0 18px 40px -14px rgba(2,64,46,0.22); display: flex; flex-direction: column; gap: 2px;
-          opacity: 0; visibility: hidden; transform: translateY(6px); transition: all .18s ease; z-index: 60;
+          background: #fff; border: 1px solid ${C.line}; border-radius: 8px; padding: 6px;
+          box-shadow: 0 10px 28px -16px rgba(35,31,32,0.25); display: flex; flex-direction: column; gap: 2px;
+          opacity: 0; visibility: hidden; transform: translateY(4px); transition: all .15s ease; z-index: 60;
         }
         .sm-owner-menu:hover .sm-owner-pop { opacity: 1; visibility: visible; transform: translateY(0); }
         @media (max-width: 900px) {

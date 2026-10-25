@@ -17,7 +17,7 @@ type Props = {
 }
 
 /**
- * Turn a YouTube or Vimeo link into its embed form.
+ * Turn a YouTube, TikTok or Vimeo link into its embed form.
  *
  * Owners paste whatever the address bar gave them — watch links, youtu.be
  * shorts, links with a timestamp — and an <iframe> pointed at a watch URL
@@ -48,6 +48,14 @@ function toEmbedUrl(raw: string): string | null {
     return null
   }
 
+  // TikTok (approved by the Founder, 25 Oct 2026): /@user/video/ID or /embed/v2/ID.
+  // Short vm.tiktok.com links hide the id behind a redirect we cannot follow
+  // from here, so they fall through and get a plain link instead.
+  if (host === 'tiktok.com' || host === 'm.tiktok.com') {
+    const m = u.pathname.match(/\/(?:video|embed\/v2|embed)\/(\d+)/)
+    return m ? `https://www.tiktok.com/embed/v2/${m[1]}` : null
+  }
+
   if (host === 'vimeo.com' || host === 'player.vimeo.com') {
     const m = u.pathname.match(/(\d+)/)
     return m ? `https://player.vimeo.com/video/${m[1]}` : null
@@ -60,38 +68,32 @@ export default function PropertyVideo({ url, title, locale = 'th' }: Props & { l
   if (!url) return null
 
   const embed = toEmbedUrl(url)
+  const vertical = !!embed && embed.includes('tiktok.com')
+  // A TikTok link we cannot embed (a vm.tiktok.com short link) is not a video
+  // file either, so link out rather than show a broken player.
+  const linkOnly = !embed && /(^|\.)tiktok\.com$/.test((() => { try { return new URL(url).hostname } catch { return '' } })())
 
   return (
-    <section style={{ marginTop: 28 }} aria-label={locale === 'en' ? 'Property video' : 'วิดีโอทรัพย์สิน'}>
-      <h2
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: '#02402e',
-          margin: '0 0 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 7,
-        }}
-      >
-        <span
-          className="msym"
-          style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}
-        >
-          videocam
-        </span>
+    <section aria-label={locale === 'en' ? 'Property video' : 'วิดีโอทรัพย์สิน'}>
+      <h2 style={{ fontSize: 20, fontWeight: 600, color: '#02402e', margin: '0 0 14px', lineHeight: 1.4 }}>
         {locale === 'en' ? 'Video' : 'วิดีโอ'}
       </h2>
 
+      {linkOnly ? (
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#037a64' }}>
+          {locale === 'en' ? 'Watch on TikTok →' : 'ดูวิดีโอบน TikTok →'}
+        </a>
+      ) : (
       <div
         style={{
           position: 'relative',
           width: '100%',
-          aspectRatio: '16 / 9',
-          borderRadius: 14,
+          aspectRatio: vertical ? '9 / 16' : '16 / 9',
+          maxWidth: vertical ? 340 : undefined,
+          borderRadius: 6,
           overflow: 'hidden',
           background: '#02402e',
-          border: '1px solid #e7eceb',
+          border: '1px solid #e5e2da',
         }}
       >
         {embed ? (
@@ -116,6 +118,7 @@ export default function PropertyVideo({ url, title, locale = 'th' }: Props & { l
           />
         )}
       </div>
+      )}
     </section>
   )
 }

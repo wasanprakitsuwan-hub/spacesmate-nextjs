@@ -8,6 +8,7 @@
 import Link from '@/components/ui/LocaleLink'
 import { createServerClient } from '@/lib/supabase'
 import { SITE_T, TH_MONTHS, EN_MONTHS, type Locale } from '@/lib/site-i18n'
+import { C, RADIUS, WRAP, h2Style } from '@/lib/ui'
 
 /**
  * Thai dates carry the Buddhist year, English dates the Gregorian one. Printing
@@ -54,89 +55,31 @@ export default async function BlogSection({ locale = 'th' }: { locale?: Locale }
   if (posts.length === 0) return null
 
   return (
-    <section style={{ maxWidth: 1240, margin: '0 auto', padding: '8px 24px 56px' }}>
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.4px', color: '#02402e' }}>{t.blogHeading}</h2>
-          <p style={{ color: '#64748b', fontSize: 15, margin: 0, fontWeight: 300 }}>{t.blogSub}</p>
-        </div>
-        <Link href="/blog" style={{ color: '#048c73', fontWeight: 600, fontSize: 14.5, cursor: 'pointer', textDecoration: 'none' }}>
-          {t.blogViewAll}
-        </Link>
+    <section style={{ maxWidth: WRAP, margin: '0 auto', padding: '72px 24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <h2 style={h2Style(26)}>{t.blogHeading}</h2>
+        <Link href="/blog" style={{ color: C.teal, fontSize: 15, textDecoration: 'none' }}>{t.blogViewAll}</Link>
       </div>
 
-      {/* Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }} className="sm-grid3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px 32px' }}>
         {posts.map(post => (
-          <Link
-            key={post.slug}
-            href={`/blog/${post.slug}`}
-            className="sm-blog-card"
-            style={{
-              background: '#fff',
-              border: '1px solid #eef0ef',
-              borderRadius: 18,
-              overflow: 'hidden',
-              cursor: 'pointer',
-              transition: 'all .25s',
-              boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)',
-              display: 'block',
-              textDecoration: 'none',
-            }}
-          >
-            {/* Image */}
-            <div style={{ height: 180, overflow: 'hidden', background: '#f4f8f6', position: 'relative' }}>
-              <img
-                src={post.thumbnail ?? '/blog/placeholder.jpg'}
-                alt={post.thumbnail_alt ?? post.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }}
-                className="sm-blog-img"
-              />
-              <span style={{
-                position: 'absolute', top: 12, left: 12,
-                background: 'rgba(255,255,255,0.93)',
-                color: '#02402e', fontSize: 11.5, fontWeight: 600,
-                padding: '5px 12px', borderRadius: 20, backdropFilter: 'blur(4px)',
-              }}>
-                {post.category}
-              </span>
-            </div>
-
-            {/* Content */}
-            <div style={{ padding: 18 }}>
-              <h3 style={{ fontSize: 14.5, fontWeight: 600, margin: '0 0 10px', lineHeight: 1.45, color: '#231f20' }} className="sm-blog-title">
-                {post.title}
-              </h3>
-              <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <Link key={post.slug} href={`/blog/${post.slug}`} className="sm-card"
+            style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 22, color: C.ink, textDecoration: 'none' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.thumbnail ?? '/blog/placeholder.jpg'} alt={post.thumbnail_alt ?? post.title} loading="lazy"
+              style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: RADIUS, display: 'block', marginBottom: 6, background: C.line }} />
+            <span style={{ fontSize: 13, color: C.muted }}>
+              {[post.category, post.published_at ? formatDate(post.published_at, locale) : ''].filter(Boolean).join(' · ')}
+            </span>
+            <span className="sm-card-title" style={{ fontSize: 18, fontWeight: 500, lineHeight: 1.5 }}>{post.title}</span>
+            {post.meta_desc && (
+              <span style={{ fontSize: 14, lineHeight: 1.7, color: C.muted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {post.meta_desc}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 11.5, color: '#94a3b8' }}>
-                  {post.published_at ? formatDate(post.published_at, locale) : ''}
-                </span>
-                <span style={{ color: '#048c73', fontSize: 13, fontWeight: 600 }}>{t.blogReadMore}</span>
-              </div>
-            </div>
+              </span>
+            )}
           </Link>
         ))}
       </div>
-
-      <style>{`
-        .sm-blog-card:hover {
-          box-shadow: 0 16px 34px -12px rgba(2,64,46,0.18) !important;
-          transform: translateY(-4px) !important;
-        }
-        .sm-blog-card:hover .sm-blog-img { transform: scale(1.06); }
-        .sm-blog-card:hover .sm-blog-title { color: #02402e !important; }
-        @media (max-width: 900px) {
-          .sm-grid3 { grid-template-columns: repeat(2,1fr) !important; }
-        }
-        @media (max-width: 600px) {
-          .sm-grid3 { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </section>
   )
 }

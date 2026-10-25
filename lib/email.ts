@@ -491,9 +491,20 @@ export interface ManagementEnquiryData {
   type:     string
   location: string
   channel:  string
+  building?: string
+  rooms?:    string
 }
 
-export async function sendManagementEnquiry(data: ManagementEnquiryData): Promise<boolean> {
+/** Lead form text is typed by the public, so it is escaped before going into the HTML email. */
+function escHtml(v: string): string {
+  return v.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
+export async function sendManagementEnquiry(raw: ManagementEnquiryData): Promise<boolean> {
+  const data = {
+    name: escHtml(raw.name), phone: escHtml(raw.phone), type: escHtml(raw.type),
+    location: escHtml(raw.location), channel: raw.channel, building: escHtml(raw.building ?? ''), rooms: escHtml(raw.rooms ?? ''),
+  }
   const html = layout(`
   <!-- Header -->
   <div style="background:#02402e;padding:28px 32px 22px">
@@ -507,8 +518,10 @@ export async function sendManagementEnquiry(data: ManagementEnquiryData): Promis
     <table style="width:100%;border-collapse:collapse">
       ${tableRow('ชื่อ-นามสกุล', `<strong style="color:#02402e">${data.name}</strong>`)}
       ${tableRow('เบอร์โทรศัพท์', `<strong style="color:#d97f11">${data.phone}</strong>`)}
-      ${tableRow('ประเภททรัพย์สิน', data.type)}
+      ${tableRow('ชื่ออาคาร / โครงการ', data.building || '—')}
+      ${tableRow('ประเภทอาคาร', data.type)}
       ${tableRow('ทำเล', data.location || '—')}
+      ${tableRow('จำนวนห้องโดยประมาณ', data.rooms || '—')}
       ${tableRow('ช่องทางติดต่อ', data.channel)}
     </table>
   </div>
@@ -531,7 +544,7 @@ export async function sendManagementEnquiry(data: ManagementEnquiryData): Promis
 
   return sendEmail(
     [FOUNDER_EMAIL],
-    `Lead ใหม่: ${data.name} (${data.type} · ${data.location || 'ไม่ระบุทำเล'})`,
+    `Lead ใหม่: ${raw.name} (${raw.building ? raw.building + ' · ' : ''}${raw.type} · ${raw.location || 'ไม่ระบุทำเล'})`,
     html
   )
 }

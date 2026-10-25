@@ -26,8 +26,6 @@ export const CONTACT_T = {
     errGeneric: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
     errSendFailed: 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือทักเราทาง LINE',
 
-    heroTitle: 'ร่วมเติบโตกับ',
-    heroSub: 'สำหรับนักลงทุนและพันธมิตรธุรกิจที่สนใจ — ทีมงานติดต่อกลับโดยเร็วที่สุด',
 
     channels: 'ช่องทางติดต่อ',
     email: 'อีเมล',
@@ -43,7 +41,6 @@ export const CONTACT_T = {
     sentTitle: 'ได้รับข้อความแล้ว!',
     sentBody: 'ทีมงานจะติดต่อกลับโดยเร็วที่สุด',
 
-    formTitle: 'ส่งข้อความถึงเรา',
     fullName: 'ชื่อ – นามสกุล',
     namePlaceholder: 'สมชาย ใจดี',
     phoneLabel: 'เบอร์โทรศัพท์',
@@ -53,6 +50,16 @@ export const CONTACT_T = {
     sending: 'กำลังส่ง...',
     send: 'ส่งข้อความ',
     privacyNote: 'ข้อมูลของคุณปลอดภัยและเป็นความลับ ไม่มีการแชร์กับบุคคลที่สาม',
+    pageTitle: 'ติดต่อ SpacesMate',
+    pageSub: 'เลือกเรื่องที่ต้องการ เพื่อให้ถึงทีมที่ตอบได้เร็วที่สุด',
+    routes: [
+      { title: 'ผู้เช่า สอบถามห้อง', desc: 'ทักผู้ลงประกาศจากหน้าประกาศได้โดยตรง หรือถามทีมงานทาง LINE', cta: 'LINE @spacesmate →', href: 'https://line.me/R/ti/p/@spacesmate' },
+      { title: 'เจ้าของ ลงประกาศ', desc: 'ลงประกาศเองเริ่มต้น ฿299 ต่อ 30 วัน เผยแพร่ทันทีหลังชำระ', cta: 'ลงประกาศหาผู้เช่า →', href: '/list-your-property' },
+      { title: 'เจ้าของอาคาร ให้เราบริหาร', desc: 'ลงทะเบียนให้ทีมงานติดต่อกลับ และประเมินรายได้อาคาร', cta: 'บริการบริหารอาคาร →', href: '/manage#enquiry' },
+    ],
+    lineNote: 'ตอบเร็วที่สุดในเวลาทำการ',
+    investorTitle: 'นักลงทุนและพันธมิตรธุรกิจ',
+    investorSub: 'ส่งข้อความถึงทีมผู้บริหาร เราติดต่อกลับโดยเร็วที่สุด',
   },
   en: {
     metaTitle: 'Contact us',
@@ -67,8 +74,6 @@ export const CONTACT_T = {
     errGeneric: 'Something went wrong. Please try again.',
     errSendFailed: 'We could not send your details. Please try again, or message us on LINE',
 
-    heroTitle: 'Grow with',
-    heroSub: 'For investors and business partners — our team will come back to you as soon as possible.',
 
     channels: 'How to reach us',
     email: 'Email',
@@ -84,7 +89,6 @@ export const CONTACT_T = {
     sentTitle: 'Message received',
     sentBody: 'Our team will come back to you as soon as possible.',
 
-    formTitle: 'Send us a message',
     fullName: 'Full name',
     namePlaceholder: 'Somchai Jaidee',
     phoneLabel: 'Phone number',
@@ -94,6 +98,16 @@ export const CONTACT_T = {
     sending: 'Sending…',
     send: 'Send message',
     privacyNote: 'Your details are kept confidential and are never shared with third parties.',
+    pageTitle: 'Contact SpacesMate',
+    pageSub: 'Pick what you need so it reaches the team that can answer fastest',
+    routes: [
+      { title: 'Renters: ask about a room', desc: 'Message the owner straight from the listing page, or ask our team on LINE', cta: 'LINE @spacesmate →', href: 'https://line.me/R/ti/p/@spacesmate' },
+      { title: 'Owners: list a property', desc: 'List it yourself from ฿299 for 30 days, live as soon as you pay', cta: 'List your property →', href: '/list-your-property' },
+      { title: 'Building owners: let us manage', desc: 'Ask our team to call you and assess your building\'s income', cta: 'Building management →', href: '/manage#enquiry' },
+    ],
+    lineNote: 'Fastest reply during office hours',
+    investorTitle: 'Investors and business partners',
+    investorSub: 'Send a message to the management team and we will come back to you soon',
   },
 } as const
 
@@ -126,7 +140,7 @@ export const SEARCH_T = {
     home: 'หน้าแรก',
     searchRentals: 'ค้นหาที่พัก',
     inBangkok: 'ในกรุงเทพฯ',
-    searchPlaceholder: 'ค้นหาย่าน สถานี หรือชื่อที่พัก...',
+    searchPlaceholder: 'ทำเล สถานี BTS/MRT มหาวิทยาลัย หรือชื่อโครงการ',
 
     filters: 'ตัวกรอง',
     propertyType: 'ประเภททรัพย์สิน',
@@ -202,7 +216,7 @@ export const SEARCH_T = {
     home: 'Home',
     searchRentals: 'Search rentals',
     inBangkok: 'in Bangkok',
-    searchPlaceholder: 'Search an area, a station or a building name…',
+    searchPlaceholder: 'Area, BTS/MRT station, university or building name',
 
     filters: 'Filters',
     propertyType: 'Property type',

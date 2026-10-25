@@ -4,7 +4,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase'
 import { BLOG_CONTENT } from '@/lib/blog-content'
-import { BLOG_T, formatBlogDate } from '@/lib/blog-i18n'
+import { BLOG_T, categoryLabel, formatBlogDate } from '@/lib/blog-i18n'
+import { C, RADIUS, btnStyle } from '@/lib/ui'
 import { cleanPostTitle, linkPlaces, postDescription, rewriteLegacyLinks } from '@/lib/blog-links'
 
 export const revalidate = 300
@@ -129,7 +130,17 @@ export default async function BlogPostPage({ params }: Props) {
   const content = post.content ?? (wpId ? BLOG_CONTENT[wpId] : '') ?? `<p>${t.noContent}</p>`
   // Sanitise first, then add our own links: they are built from page paths,
   // never from the article text.
-  const { html: bodyHtml, mentioned } = await linkPlaces(rewriteLegacyLinks(sanitizeHtml(content)), lang)
+  const { html: linkedHtml, mentioned } = await linkPlaces(rewriteLegacyLinks(sanitizeHtml(content)), lang)
+
+  // "In this article": each <h2> gets an id so the side list can jump to it.
+  const toc: { id: string; label: string }[] = []
+  const bodyHtml = linkedHtml.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/gi, (_m, attrs: string | undefined, inner: string) => {
+    const id = `sec-${toc.length + 1}`
+    const label = inner.replace(/<[^>]+>/g, '').replace(/^\s*\d+[.)]\s*/, '').trim()
+    if (label) toc.push({ id, label })
+    const rest = (attrs ?? '').replace(/\sid=("[^"]*"|'[^']*')/i, '')
+    return `<h2 id="${id}"${rest}>${inner}</h2>`
+  })
 
   // Related posts — same category first, top up with recent posts if < 3 found
   const { data: sameCatData } = await supabase
@@ -202,8 +213,10 @@ export default async function BlogPostPage({ params }: Props) {
     ],
   }
 
+  const shareUrl = encodeURIComponent(postUrl)
+
   return (
-    <div className="bg-white min-h-screen">
+    <div style={{ background: C.paper, padding: '28px 16px 72px' }}>
 
       {/* JSON-LD structured data — Article schema for Google rich snippets */}
       <script
@@ -215,155 +228,112 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      {/* Hero image */}
-      <div className="w-full h-64 md:h-96 overflow-hidden bg-spacemate-bgLight relative">
-        <img
-          src={post.thumbnail ?? '/blog/placeholder.jpg'}
-          alt={post.thumbnail_alt ?? postTitle}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(2,64,46,0.25))' }} />
-      </div>
+      <div className="sm-bp-grid" style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', gap: 48, alignItems: 'start' }}>
+        <article style={{ minWidth: 0 }}>
+          <nav aria-label="breadcrumb" style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>
+            <Link href={`${home}/blog`} style={{ color: C.teal, textDecoration: 'none' }}>{t.crumb}</Link>
+            {post.category && <><span style={{ margin: '0 6px', color: C.faint }}>/</span>{categoryLabel(post.category, lang)}</>}
+          </nav>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 36px)', fontWeight: 600, color: C.green, margin: '0 0 12px', lineHeight: 1.35 }}>{postTitle}</h1>
+          <p style={{ fontSize: 14, color: C.muted, margin: '0 0 22px' }}>
+            {[post.category ? categoryLabel(post.category, lang) : '', post.published_at ? formatBlogDate(post.published_at, lang) : '', post.author ?? 'SpacesMate'].filter(Boolean).join(' · ')}
+          </p>
 
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href={`${home}/blog`} className="hover:text-spacemate-brandDark transition-colors">{t.crumb}</Link>
-          <span>/</span>
-          <span className="text-spacemate-brandDark font-medium line-clamp-1">{postTitle}</span>
-        </div>
-
-        {/* Category badge */}
-        <span className="inline-block text-xs font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-3 py-1.5 rounded-full mb-4">
-          {post.category}
-        </span>
-
-        {/* Title */}
-        <h1 className="text-2xl md:text-3xl font-bold text-spacemate-brandDark mb-5 leading-snug tracking-tight">
-          {postTitle}
-        </h1>
-
-        {/* Meta row */}
-        <div className="flex items-center gap-3 text-gray-400 text-sm mb-8 pb-8 border-b border-spacemate-borderLight">
-          <span className="msym" style={{ fontSize: 16, color: '#048c73' }}>calendar_today</span>
-          <span>{post.published_at ? formatBlogDate(post.published_at, lang) : ''}</span>
-          <span>·</span>
-          <span>{post.author ?? 'SpacesMate'}</span>
-        </div>
-
-        {/* Full content */}
-        <div
-          className="blog-content text-gray-700 leading-relaxed text-base"
-          dangerouslySetInnerHTML={{ __html: bodyHtml }}
-        />
-
-        {/* Rentals in the places the article mentions: the blog's link into the listing pages. */}
-        {mentioned.length > 0 && (
-          <div className="mt-12 p-6 rounded-2xl border border-spacemate-borderLight bg-spacemate-bgLight">
-            <h2 className="text-lg font-bold text-spacemate-brandDark mb-4">{t.areaBox}</h2>
-            <div className="flex flex-wrap gap-2">
-              {mentioned.map(m => (
-                <Link
-                  key={m.path}
-                  href={`${home}${m.path}`}
-                  className="inline-flex items-center gap-2 bg-white border border-spacemate-borderLight rounded-full px-4 py-2 text-sm font-medium text-spacemate-brandDark hover:border-spacemate-brandTeal hover:text-spacemate-brandTeal transition-colors"
-                >
-                  {m.label}
-                  <span className="text-xs text-gray-400">{t.listings(m.count)}</span>
-                </Link>
-              ))}
-            </div>
+          <div style={{ aspectRatio: '16 / 9', borderRadius: RADIUS, overflow: 'hidden', background: C.line2, marginBottom: 28 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.thumbnail ?? '/blog/placeholder.jpg'} alt={post.thumbnail_alt ?? postTitle} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </div>
-        )}
 
-        {/* CTA block */}
-        <div
-          className="mt-14 p-7 rounded-2xl text-white"
-          style={{ background: 'radial-gradient(120% 160% at 85% 10%, #055c43, #02402e 60%)' }}
-        >
-          <div className="flex items-start gap-4">
-            <span className="msym text-4xl text-spacemate-brandTeal flex-shrink-0">handshake</span>
-            <div className="flex-1">
-              <h3 className="font-bold text-lg mb-1">{t.ctaTitle}</h3>
-              <p className="text-white/70 text-sm mb-4">{t.ctaSub}</p>
-              <div className="flex gap-3 flex-wrap">
-                <Link
-                  href={`${home}/services`}
-                  className="inline-block text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-all hover:brightness-110"
-                  style={{ background: '#d97f11' }}
-                >
-                  {t.ctaManage}
-                </Link>
-                <Link
-                  href={`${home}/list-your-property`}
-                  className="inline-block text-white/80 font-medium text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/10 transition-all"
-                >
-                  {t.ctaList}
-                </Link>
+          <div className="blog-content" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+
+          {/* Rentals in the places the article mentions: the blog's link into the listing pages. */}
+          {mentioned.length > 0 && (
+            <div style={{ marginTop: 36, padding: 20, borderRadius: RADIUS, border: `1px solid ${C.line}`, background: C.white }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: C.green, margin: '0 0 12px' }}>{t.areaBox}</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {mentioned.map(m => (
+                  <Link key={m.path} href={`${home}${m.path}`} className="sm-chip-link"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${C.border}`, borderRadius: 999, padding: '6px 14px', fontSize: 14, color: C.green, textDecoration: 'none', background: C.white }}>
+                    {m.label}<span style={{ fontSize: 12.5, color: C.muted }}>{t.listings(m.count)}</span>
+                  </Link>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Related / other posts — always show when there's anything to read */}
-        {related.length > 0 && (
-          <div className="mt-14">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-spacemate-brandDark">
-                {related.some(r => r.category === post.category) ? t.related : t.otherPosts}
-              </h2>
-              <Link href={`${home}/blog`} className="text-sm text-spacemate-brandTeal font-medium hover:underline">
-                {t.seeAll}
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {related.map((p) => (
-                <Link
-                  key={p.slug}
-                  href={`/blog/${p.slug}`}
-                  className="group rounded-xl border border-spacemate-borderLight overflow-hidden hover:shadow-premium hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <div className="h-32 overflow-hidden bg-spacemate-bgLight">
-                    <img
-                      src={p.thumbnail ?? '/blog/placeholder.jpg'}
-                      alt={p.thumbnail_alt ?? cleanPostTitle(p.title)}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4">
-                    {p.category !== post.category && (
-                      <span className="inline-block text-[10px] font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-2 py-0.5 rounded-full mb-1.5">
-                        {p.category}
-                      </span>
-                    )}
-                    <p className="text-xs font-semibold text-spacemate-brandDark leading-snug line-clamp-3 group-hover:text-spacemate-brandTeal transition-colors">
-                      {cleanPostTitle(p.title)}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-2">
-                      {p.published_at ? formatBlogDate(p.published_at, lang) : ''}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+          <div style={{ marginTop: 36, padding: '24px 24px', borderRadius: RADIUS, background: C.green }}>
+            <h3 style={{ fontSize: 19, fontWeight: 600, color: C.white, margin: '0 0 6px' }}>{t.ctaTitle}</h3>
+            <p style={{ color: 'rgba(255,255,255,.78)', fontSize: 15, margin: '0 0 16px', lineHeight: 1.6 }}>{t.ctaSub}</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link href={`${home}/list-your-property`} style={btnStyle('light')}>{t.ctaList}</Link>
+              <Link href={`${home}/manage`} style={{ ...btnStyle('ghost'), background: 'transparent', color: C.white, borderColor: 'rgba(255,255,255,.45)' }}>{t.ctaManage}</Link>
             </div>
           </div>
-        )}
+        </article>
 
+        <aside className="sm-bp-aside" style={{ position: 'sticky', top: 88 }}>
+          {toc.length > 1 && (
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, margin: '0 0 8px' }}>{t.toc}</p>
+              <ol style={{ listStyle: 'none', padding: 0, margin: 0, borderLeft: `1px solid ${C.line}` }}>
+                {toc.map(h => (
+                  <li key={h.id}><a href={`#${h.id}`} className="sm-row-link" style={{ display: 'block', padding: '5px 0 5px 12px', fontSize: 14, color: C.ink, textDecoration: 'none', lineHeight: 1.45 }}>{h.label}</a></li>
+                ))}
+              </ol>
+            </div>
+          )}
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, margin: '0 0 8px' }}>{t.share}</p>
+          <div style={{ display: 'flex', gap: 14, fontSize: 14 }}>
+            <a href={`https://social-plugins.line.me/lineit/share?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>LINE</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>Facebook</a>
+          </div>
+        </aside>
       </div>
+
+      {/* Related / other posts, with images. Always shown when there is anything to read. */}
+      {related.length > 0 && (
+        <section style={{ maxWidth: 1120, margin: '48px auto 0' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 600, color: C.green, margin: 0 }}>
+              {related.some(r => r.category === post.category) ? t.related : t.otherPosts}
+            </h2>
+            <Link href={`${home}/blog`} style={{ fontSize: 14.5, color: C.teal, textDecoration: 'none' }}>{t.seeAll}</Link>
+          </div>
+          <div className="sm-bp-rel" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24 }}>
+            {related.map(p => (
+              <Link key={p.slug} href={`/blog/${p.slug}`} className="sm-card" style={{ display: 'block', background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, overflow: 'hidden', textDecoration: 'none' }}>
+                <div style={{ aspectRatio: '16 / 10', background: C.line2 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.thumbnail ?? '/blog/placeholder.jpg'} alt={p.thumbnail_alt ?? cleanPostTitle(p.title)} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </div>
+                <div style={{ padding: '14px 16px 18px' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 13, color: C.muted }}>
+                    {[p.category ? categoryLabel(p.category, lang) : '', p.published_at ? formatBlogDate(p.published_at, lang) : ''].filter(Boolean).join(' · ')}
+                  </p>
+                  <p className="sm-card-title" style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.green, lineHeight: 1.45 }}>{cleanPostTitle(p.title)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Blog content styles */}
       <style>{`
+        .blog-content { font-size: 17px; line-height: 1.85; color: ${C.ink}; }
         .blog-content p { margin-bottom: 1.25rem; }
-        .blog-content h2 { font-size: 1.35rem; font-weight: 700; color: #02402e; margin: 2rem 0 0.85rem; }
-        .blog-content h3 { font-size: 1.1rem; font-weight: 600; color: #231f20; margin: 1.5rem 0 0.6rem; }
+        .blog-content h2 { font-size: 1.4rem; font-weight: 600; color: ${C.green}; margin: 2.2rem 0 0.85rem; scroll-margin-top: 88px; line-height: 1.4; }
+        .blog-content h3 { font-size: 1.15rem; font-weight: 600; color: ${C.ink}; margin: 1.6rem 0 0.6rem; }
         .blog-content ul, .blog-content ol { padding-left: 1.4rem; margin-bottom: 1.25rem; }
         .blog-content li { margin-bottom: 0.4rem; }
         .blog-content strong, .blog-content b { color: #231f20; font-weight: 600; }
-        .blog-content a { color: #048c73; text-decoration: underline; }
-        .blog-content img { border-radius: 12px; margin: 1.5rem 0; max-width: 100%; }
-        .blog-content blockquote { border-left: 3px solid #048c73; padding-left: 1rem; color: #64748b; font-style: italic; margin: 1.5rem 0; }
-        .blog-content hr { border: none; border-top: 1px solid #eef0ef; margin: 2rem 0; }
+        .blog-content a { color: ${C.teal}; text-decoration: underline; }
+        .blog-content img { border-radius: ${RADIUS}px; margin: 1.5rem 0; max-width: 100%; height: auto; }
+        .blog-content blockquote { border-left: 3px solid ${C.teal}; padding-left: 1rem; color: ${C.muted}; margin: 1.5rem 0; }
+        .blog-content hr { border: none; border-top: 1px solid ${C.line}; margin: 2rem 0; }
+        @media (max-width: 960px) { .sm-bp-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; } .sm-bp-aside { position: static !important; } .sm-bp-rel { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+        @media (max-width: 640px) { .sm-bp-rel { grid-template-columns: minmax(0, 1fr) !important; } }
       `}</style>
     </div>
   )
