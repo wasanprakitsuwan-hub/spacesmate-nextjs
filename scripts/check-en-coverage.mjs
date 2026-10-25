@@ -56,6 +56,7 @@ const ALLOWED = new Map([
   ['lib/auth-i18n.ts',        'the th half of the dictionary'],
   ['lib/dashboard-i18n.ts',   'the th half of the dictionary'],
   ['lib/checkout-i18n.ts',    'the th half of the dictionary'],
+  ['lib/search-ui-i18n.ts',   'the th half of the dictionary'],
   ['lib/faq-data.ts',         'the th half of the dictionary'],
   ['lib/constants.ts',        'area keywords and Thai place names'],
   ['components/listing/SharedListingForm.tsx', 'FACING / OTHER_CHARGES / TYPE_LABEL values + Thai-only dashboard exports'],

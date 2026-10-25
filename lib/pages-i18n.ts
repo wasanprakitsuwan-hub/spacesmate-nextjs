@@ -126,7 +126,7 @@ export const SEARCH_T = {
     home: 'หน้าแรก',
     searchRentals: 'ค้นหาที่พัก',
     inBangkok: 'ในกรุงเทพฯ',
-    searchPlaceholder: 'ค้นหาย่าน สถานี หรือชื่อที่พัก...',
+    searchPlaceholder: 'ทำเล สถานี BTS/MRT มหาวิทยาลัย หรือชื่อโครงการ',
 
     filters: 'ตัวกรอง',
     propertyType: 'ประเภททรัพย์สิน',
@@ -202,7 +202,7 @@ export const SEARCH_T = {
     home: 'Home',
     searchRentals: 'Search rentals',
     inBangkok: 'in Bangkok',
-    searchPlaceholder: 'Search an area, a station or a building name…',
+    searchPlaceholder: 'Area, BTS/MRT station, university or building name',
 
     filters: 'Filters',
     propertyType: 'Property type',

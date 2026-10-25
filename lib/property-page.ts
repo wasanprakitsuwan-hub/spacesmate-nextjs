@@ -12,7 +12,7 @@ import { createServerClient } from '@/lib/supabase'
 import { visibleImages, showsVideo } from '@/lib/packages'
 import { PROPERTY_T, TERM_SUFFIX, DEFAULT_TERM_SUFFIX, type Locale } from '@/lib/property-i18n'
 import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
-import { nearbyStations, stationLabel, distanceLabel } from '@/lib/search-match'
+import { nearbyStations, stationLabel, distanceLabel, haversineKm } from '@/lib/search-match'
 
 const DB_TYPE_MAP: Record<string, Property['propertyType']> = {
   condo: 'Condo', apartment: 'Apartment', house: 'Apartment',
@@ -70,6 +70,69 @@ export async function getRelatedDbListings(
       // listing_status is only corrected when the expiry cron runs.
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .eq('property_type', raw.property_type)
+      .neq('slug', raw.slug)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return (data ?? []).map(r => normalizeDbListing(r, locale))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The nearest other live listings to this one, any type, closest first, with
+ * the distance from this listing's pin. Replaced "same type, newest" in the
+ * 2026 redesign: a renter looking at a room wants the alternatives around it.
+ * Listings without a pin, or a page without one, fall back to getRelatedDbListings.
+ */
+export async function getNearbyDbListings(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw: any,
+  locale: Locale,
+  limit = 3,
+): Promise<{ p: Property; km: number | null }[]> {
+  const lat = Number(raw.lat), lng = Number(raw.lng)
+  if (!raw.lat || !raw.lng || !isFinite(lat) || !isFinite(lng)) {
+    return (await getRelatedDbListings(raw, locale, limit)).map(p => ({ p, km: null }))
+  }
+  try {
+    const { data } = await createServerClient()
+      .from('properties')
+      .select('*')
+      .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .neq('slug', raw.slug)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .limit(2000)
+    return (data ?? [])
+      // Rooms in the same building have their own block on the page.
+      .filter(r => !raw.property_name_id || r.property_name_id !== raw.property_name_id)
+      .map(r => ({ r, km: haversineKm(lat, lng, Number(r.lat), Number(r.lng)) }))
+      .filter(x => isFinite(x.km))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, limit)
+      .map(x => ({ p: normalizeDbListing(x.r, locale), km: x.km }))
+  } catch {
+    return []
+  }
+}
+
+/** Other live listings in the same building (property_name_id), newest first. */
+export async function getSameBuildingListings(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw: any,
+  locale: Locale,
+  limit = 4,
+): Promise<Property[]> {
+  if (!raw.property_name_id) return []
+  try {
+    const { data } = await createServerClient()
+      .from('properties')
+      .select('*')
+      .eq('listing_status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .eq('property_name_id', raw.property_name_id)
       .neq('slug', raw.slug)
       .order('created_at', { ascending: false })
       .limit(limit)
