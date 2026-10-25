@@ -1,192 +1,102 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { PROPERTY_T, type Locale } from '@/lib/property-i18n'
+import { C, RADIUS } from '@/lib/ui'
 
-interface Props {
-  images: string[]       // all gallery images
-  title: string
-  priceDisplay: string
-  typeLabel: string
-  featured: boolean
-}
+/**
+ * Photo grid: one large photo and up to four beside it, with "see all N
+ * photos" opening a full-screen viewer. On a phone only the large photo shows.
+ * Redesign approved 25 Oct 2026.
+ */
+export default function PropertyGallery({ images, title, locale = 'th' }: { images: string[]; title: string; locale?: Locale }) {
+  const t = PROPERTY_T[locale]
+  const [open, setOpen] = useState(false)
+  const [idx, setIdx] = useState(0)
 
-export default function PropertyGallery({ images, title, priceDisplay, typeLabel, featured, locale = 'th' }: Props & { locale?: 'th' | 'en' }) {
-  const [active, setActive]         = useState(0)
-  const [lightboxOpen, setLightbox] = useState(false)
-  const [lightboxIdx, setLbIdx]     = useState(0)
+  const prev = useCallback(() => setIdx(i => (i - 1 + images.length) % images.length), [images.length])
+  const next = useCallback(() => setIdx(i => (i + 1) % images.length), [images.length])
 
-  const prev = useCallback(() => setActive(i => (i - 1 + images.length) % images.length), [images.length])
-  const next = useCallback(() => setActive(i => (i + 1) % images.length), [images.length])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'ArrowLeft') prev()
+      if (e.key === 'ArrowRight') next()
+    }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [open, prev, next])
 
-  const lbPrev = () => setLbIdx(i => (i - 1 + images.length) % images.length)
-  const lbNext = () => setLbIdx(i => (i + 1) % images.length)
+  function show(i: number) { setIdx(i); setOpen(true) }
 
-  function openLightbox(idx: number) {
-    setLbIdx(idx)
-    setLightbox(true)
+  if (images.length === 0) {
+    return <div style={{ aspectRatio: '16 / 7', borderRadius: RADIUS, background: C.line }} />
   }
 
-  const single = images.length <= 1
+  const side = images.slice(1, 5)
+  const btn: React.CSSProperties = { border: 0, padding: 0, cursor: 'zoom-in', display: 'block', width: '100%', height: '100%', background: C.line, borderRadius: RADIUS, overflow: 'hidden' }
+  const img: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' }
 
   return (
     <>
-      {/* ── Main gallery ─────────────────────────────────────── */}
-      <div style={{ background: '#0d2d22' }}>
-
-        {/* Hero image */}
-        <div
-          style={{ position: 'relative', width: '100%', height: 'clamp(260px, 52vw, 500px)', cursor: single ? 'default' : 'zoom-in', overflow: 'hidden' }}
-          onClick={() => !single && openLightbox(active)}
-        >
-          {images[active] ? (
-            <img
-              key={active}
-              src={images[active]}
-              alt={locale === 'en' ? `${title} — photo ${active + 1}` : `${title} — รูปที่ ${active + 1}`}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#02402e,#048c73)' }} />
-          )}
-
-          {/* Gradient overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(2,64,46,0.4))' }} />
-
-          {/* Price badge */}
-          <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
-            <span style={{ display: 'inline-block', color: '#fff', fontWeight: 700, fontSize: 20, padding: '8px 16px', borderRadius: 12, background: 'rgba(2,64,46,0.82)', backdropFilter: 'blur(8px)' }}>
-              {priceDisplay}
-            </span>
-          </div>
-
-          {/* Featured badge */}
-          {featured && (
-            <div style={{ position: 'absolute', top: 14, left: 14 }}>
-              <span style={{ display: 'inline-block', color: '#fff', fontWeight: 600, fontSize: 12, padding: '5px 12px', borderRadius: 20, background: '#d97f11' }}>แนะนำ</span>
-            </div>
-          )}
-
-          {/* Type label */}
-          <div style={{ position: 'absolute', top: 14, right: 14 }}>
-            <span style={{ display: 'inline-block', color: '#fff', fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(6px)' }}>
-              {typeLabel}
-            </span>
-          </div>
-
-          {/* Counter + zoom hint */}
-          {!single && (
-            <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(6px)', padding: '4px 10px', borderRadius: 20 }}>
-                {active + 1} / {images.length}
-              </span>
-              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(6px)', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                ⊕
-              </span>
-            </div>
-          )}
-
-          {/* Prev / Next arrows */}
-          {!single && (
-            <>
-              <button
-                onClick={e => { e.stopPropagation(); prev() }}
-                aria-label={locale === 'en' ? 'Previous photo' : 'รูปก่อนหน้า'}
-                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(6px)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}
-              >‹</button>
-              <button
-                onClick={e => { e.stopPropagation(); next() }}
-                aria-label={locale === 'en' ? 'Next photo' : 'รูปถัดไป'}
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(6px)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}
-              >›</button>
-            </>
-          )}
-        </div>
-
-        {/* Thumbnail strip */}
-        {!single && (
-          <div style={{ display: 'flex', gap: 4, padding: '4px 4px', overflowX: 'auto', scrollSnapType: 'x mandatory', background: '#0d2d22' }}>
-            {images.map((src, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                aria-label={locale === 'en' ? `View photo ${i + 1}` : `ดูรูปที่ ${i + 1}`}
-                style={{
-                  flexShrink: 0, width: 80, height: 56, border: 'none', padding: 0, cursor: 'pointer',
-                  borderRadius: 6, overflow: 'hidden', scrollSnapAlign: 'start',
-                  outline: i === active ? '2.5px solid #d97f11' : '2.5px solid transparent',
-                  outlineOffset: 1, transition: 'outline .15s', opacity: i === active ? 1 : 0.6,
-                }}
-              >
-                {src ? (
-                  <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', background: '#02402e' }} />
-                )}
-              </button>
-            ))}
-          </div>
+      <div className={side.length ? 'sm-gallery' : undefined}
+        style={{ position: 'relative', display: 'grid', gridTemplateColumns: side.length >= 3 ? '2fr 1fr 1fr' : side.length ? '2fr 1fr' : '1fr', gridTemplateRows: side.length ? '1fr 1fr' : '1fr', gap: 8, height: 'clamp(260px, 38vw, 460px)' }}>
+        <button type="button" onClick={() => show(0)} style={{ ...btn, gridRow: side.length ? '1 / 3' : undefined }} aria-label={t.photoAlt(title, 1)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={images[0]} alt={t.photoAlt(title, 1)} style={img} />
+        </button>
+        {side.map((src, i) => (
+          <button key={src + i} type="button" onClick={() => show(i + 1)} className="sm-gallery-side"
+            style={{ ...btn, gridRow: side.length === 1 ? '1 / 3' : undefined, gridColumn: side.length === 3 && i === 2 ? '2 / 4' : undefined }}
+            aria-label={t.photoAlt(title, i + 2)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={t.photoAlt(title, i + 2)} loading="lazy" style={img} />
+          </button>
+        ))}
+        {images.length > 1 && (
+          <button type="button" onClick={() => show(0)}
+            style={{ position: 'absolute', right: 14, bottom: 14, background: C.white, color: C.ink, border: `1px solid ${C.border}`, borderRadius: RADIUS, padding: '7px 12px', fontSize: 13, fontWeight: 500, cursor: 'pointer', font: 'inherit' }}>
+            {t.allPhotos(images.length)}
+          </button>
         )}
       </div>
+      <style>{`
+        @media (max-width: 700px) {
+          .sm-gallery { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; }
+          .sm-gallery-side { display: none !important; }
+        }
+      `}</style>
 
-      {/* ── Lightbox ─────────────────────────────────────────── */}
-      {lightboxOpen && (
-        <div
-          onClick={() => setLightbox(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.94)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {/* Close */}
-          <button
-            onClick={() => setLightbox(false)}
-            style={{ position: 'absolute', top: 18, right: 18, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          ><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>close</span></button>
-
-          {/* Counter */}
-          <span style={{ position: 'absolute', top: 22, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>
-            {lightboxIdx + 1} / {images.length}
-          </span>
-
-          {/* Main image */}
-          <div onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '85vh', position: 'relative' }}>
-            <img
-              src={images[lightboxIdx]}
-              alt={locale === 'en' ? `${title} photo ${lightboxIdx + 1}` : `${title} รูปที่ ${lightboxIdx + 1}`}
-              style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: 12, objectFit: 'contain', display: 'block' }}
-            />
-          </div>
-
-          {/* Prev */}
-          <button
-            onClick={e => { e.stopPropagation(); lbPrev() }}
-            style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 48, height: 48, borderRadius: '50%', cursor: 'pointer', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >‹</button>
-
-          {/* Next */}
-          <button
-            onClick={e => { e.stopPropagation(); lbNext() }}
-            style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 48, height: 48, borderRadius: '50%', cursor: 'pointer', fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >›</button>
-
-          {/* Thumbnail strip in lightbox */}
-          <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, overflowX: 'auto', maxWidth: '90vw', padding: '0 4px' }}>
-            {images.map((src, i) => (
-              <button
-                key={i}
-                onClick={e => { e.stopPropagation(); setLbIdx(i) }}
-                style={{
-                  flexShrink: 0, width: 56, height: 40, border: 'none', padding: 0, cursor: 'pointer',
-                  borderRadius: 5, overflow: 'hidden',
-                  outline: i === lightboxIdx ? '2px solid #d97f11' : '2px solid rgba(255,255,255,0.2)',
-                  opacity: i === lightboxIdx ? 1 : 0.55, transition: 'all .15s',
-                }}
-              >
-                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-              </button>
-            ))}
-          </div>
+      {open && (
+        <div role="dialog" aria-modal="true" aria-label={title} onClick={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(20,18,17,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button type="button" onClick={() => setOpen(false)} aria-label={t.closePhotos}
+            style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="msym" style={{ fontSize: 20 }}>close</span>
+          </button>
+          <span style={{ position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{idx + 1} / {images.length}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={images[idx]} alt={t.photoAlt(title, idx + 1)} onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '82vh', objectFit: 'contain', borderRadius: RADIUS, display: 'block' }} />
+          {images.length > 1 && (
+            <>
+              <button type="button" onClick={e => { e.stopPropagation(); prev() }} aria-label={t.prevPhoto}
+                style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 48, height: 48, borderRadius: '50%', cursor: 'pointer', fontSize: 26 }}>‹</button>
+              <button type="button" onClick={e => { e.stopPropagation(); next() }} aria-label={t.nextPhoto}
+                style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', width: 48, height: 48, borderRadius: '50%', cursor: 'pointer', fontSize: 26 }}>›</button>
+              <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, overflowX: 'auto', maxWidth: '90vw', padding: '0 4px' }}>
+                {images.map((src, i) => (
+                  <button key={src + i} type="button" onClick={e => { e.stopPropagation(); setIdx(i) }} aria-label={t.photoAlt(title, i + 1)}
+                    style={{ flexShrink: 0, width: 56, height: 40, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 4, overflow: 'hidden', outline: i === idx ? '2px solid #fff' : '2px solid transparent', opacity: i === idx ? 1 : 0.55 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </>

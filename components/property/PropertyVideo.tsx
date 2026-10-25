@@ -62,24 +62,8 @@ export default function PropertyVideo({ url, title, locale = 'th' }: Props & { l
   const embed = toEmbedUrl(url)
 
   return (
-    <section style={{ marginTop: 28 }} aria-label={locale === 'en' ? 'Property video' : 'วิดีโอทรัพย์สิน'}>
-      <h2
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: '#02402e',
-          margin: '0 0 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 7,
-        }}
-      >
-        <span
-          className="msym"
-          style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}
-        >
-          videocam
-        </span>
+    <section aria-label={locale === 'en' ? 'Property video' : 'วิดีโอทรัพย์สิน'}>
+      <h2 style={{ fontSize: 20, fontWeight: 600, color: '#02402e', margin: '0 0 14px', lineHeight: 1.4 }}>
         {locale === 'en' ? 'Video' : 'วิดีโอ'}
       </h2>
 
@@ -88,10 +72,10 @@ export default function PropertyVideo({ url, title, locale = 'th' }: Props & { l
           position: 'relative',
           width: '100%',
           aspectRatio: '16 / 9',
-          borderRadius: 14,
+          borderRadius: 6,
           overflow: 'hidden',
           background: '#02402e',
-          border: '1px solid #e7eceb',
+          border: '1px solid #e5e2da',
         }}
       >
         {embed ? (

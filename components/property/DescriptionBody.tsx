@@ -30,22 +30,22 @@ export default function DescriptionBody({ contentTh, contentEn, defaultLang = 't
   const activeContent = lang === 'en' && hasEn ? contentEn : contentTh
 
   return (
-    <div style={{ marginBottom: 32 }}>
+    <div>
       {/* Language toggle — only shown when English body exists */}
       {hasEn && (
-        <div style={{ display: 'flex', gap: 0, marginBottom: 14, borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 14, borderRadius: 6, overflow: 'hidden', border: '1px solid #dcd8ce', width: 'fit-content' }}>
           {(['th', 'en'] as const).map(l => (
             <button
               key={l}
               onClick={() => setLang(l)}
               style={{
                 padding: '5px 16px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: lang === l ? '#02402e' : '#f8fafc',
-                color:      lang === l ? '#fff'    : '#64748b',
+                background: lang === l ? '#02402e' : '#ffffff',
+                color:      lang === l ? '#fff'    : '#231f20',
                 transition: 'background 0.15s, color 0.15s',
               }}
             >
-              {l === 'th' ? '🇹🇭 ภาษาไทย' : '🇬🇧 English'}
+              {l === 'th' ? 'ภาษาไทย' : 'English'}
             </button>
           ))}
         </div>
@@ -54,7 +54,7 @@ export default function DescriptionBody({ contentTh, contentEn, defaultLang = 't
       {activeContent && (
         <div
           className="property-content"
-          style={{ color: '#475569', lineHeight: 1.75, fontSize: 15 }}
+          
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeContent) }}
         />
       )}

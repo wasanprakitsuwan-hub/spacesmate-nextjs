@@ -23,8 +23,10 @@ import { properties, getPropertyBySlug, fetchPropertyContent, type Property } fr
 import PropertyGallery from '@/components/property/PropertyGallery'
 import PropertyVideo from '@/components/property/PropertyVideo'
 import DescriptionBody from '@/components/property/DescriptionBody'
-import { getDbPropertyRaw, normalizeDbListing, plainText, getRelatedDbListings } from '@/lib/property-page'
+import { getDbPropertyRaw, normalizeDbListing, plainText, getNearbyDbListings, getSameBuildingListings } from '@/lib/property-page'
 import { provinceLabel } from '@/lib/geo-i18n'
+import { TH_MONTHS, EN_MONTHS } from '@/lib/site-i18n'
+import { C, RADIUS, WRAP } from '@/lib/ui'
 import { roomTypeLabel } from '@/lib/room-types'
 import { nearbyStations, nearbyLandmarks, stationLabel, distanceLabel } from '@/lib/search-match'
 import { LANDMARK_ICON, type LandmarkKind } from '@/lib/landmarks'
@@ -81,9 +83,10 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
   // A database listing gets database neighbours, localised like the rest of the
   // page. The legacy static pages keep the static array, which is the only data
   // they have.
-  const related = raw
-    ? await getRelatedDbListings(raw, locale, 3)
-    : properties.filter((r) => r.slug !== p.slug && r.propertyType === p.propertyType).slice(0, 3)
+  const nearbyListings = raw
+    ? await getNearbyDbListings(raw, locale, 3)
+    : properties.filter((r) => r.slug !== p.slug && r.propertyType === p.propertyType).slice(0, 3).map(r => ({ p: r, km: null }))
+  const sameBuilding = raw ? await getSameBuildingListings(raw, locale, 4) : []
 
   const bedroomLabel = p.bedrooms === 0 ? t.studio : t.bedroomsValue(p.bedrooms)
   const typeLabel = types[p.propertyType] || p.propertyType
@@ -163,8 +166,34 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     }
   }
 
+  const daily = raw?.rental_term === 'daily' || p.listingType === 'Daily'
+  const priceFrom = Number(raw?.price_from ?? p.priceMin) || 0
+  const priceTo = Number(raw?.price_to) || 0
+  const priceText = priceFrom
+    ? `฿${priceFrom.toLocaleString('en-US')}${priceTo > priceFrom ? ` – ${priceTo.toLocaleString('en-US')}` : ''}`
+    : t.askForPrice
+  const fullDate = (iso?: string | null) => {
+    const d = iso ? new Date(iso) : null
+    if (!d || isNaN(d.getTime())) return ''
+    return locale === 'en'
+      ? `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+      : `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
+  }
+  const nearest = stations[0]
+  const lineColor = (sys: string) => sys === 'BTS' ? C.bts : sys === 'MRT' ? C.mrt : '#C8102E'
+  const h2: React.CSSProperties = { fontSize: 20, fontWeight: 600, color: C.green, margin: '0 0 14px', lineHeight: 1.4 }
+  const section: React.CSSProperties = { padding: '28px 0', borderTop: `1px solid ${C.line}` }
+  const lineBtn = { href: dbContact?.line ? `https://line.me/R/ti/p/${dbContact.line}` : 'https://line.me/R/ti/p/@spacesmate' }
+  const phone = dbContact?.phone ? { href: `tel:${dbContact.phone.replace(/\D/g, '')}`, label: dbContact.phone } : { href: 'tel:+66621524526', label: '062-152-4526' }
+  const specs = [
+    { k: t.bedrooms, v: bedroomLabel },
+    ...(p.bathrooms > 0 ? [{ k: t.bathrooms, v: String(p.bathrooms) }] : []),
+    ...(p.size ? [{ k: t.size, v: t.sizeValue(p.size) }] : []),
+    ...(raw?.floor ? [{ k: t.floor, v: String(raw.floor) }] : []),
+  ]
+
   return (
-    <div className="bg-white min-h-screen">
+    <div style={{ background: C.paper, minHeight: '100vh' }} className="sm-detail-page">
       {/* Owner statistics — database listings only; static ones have no owner. */}
       {raw?.id && <ListingStatBeacon propertyId={String(raw.id)} />}
 
@@ -200,406 +229,304 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
         ]}
       />
 
-      {/* Photo gallery — single image falls back to hero-only view */}
-      <PropertyGallery
-        images={p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])}
-        title={p.title}
-        priceDisplay={p.priceDisplay}
-        typeLabel={typeLabel}
-        featured={p.featured}
-        locale={locale}
-      />
+      <div style={{ maxWidth: WRAP, margin: '0 auto', padding: '20px 24px 0' }}>
+        <nav style={{ fontSize: 13, color: C.muted, marginBottom: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Link href="/" style={{ color: C.muted }}>{t.home}</Link> / <Link href="/search" style={{ color: C.muted }}>{t.search}</Link>
+          {building && <> / <a href={`/building/${encodeURI(building.slug)}`} style={{ color: C.muted }}>{building.name}</a></>} / {p.title}
+        </nav>
+        <PropertyGallery images={p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])} title={p.title} locale={locale} />
+      </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }} className="sm-detaillayout">
-
-          {/* Main content column */}
-          <div>
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-gray-400 mb-5">
-              <Link href="/search" className="hover:text-spacemate-brandDark transition-colors">{t.search}</Link>
-              <span>/</span>
-              <span className="text-spacemate-brandDark font-medium line-clamp-1">{p.title}</span>
-            </div>
-
-            {/* Type + Daily badge */}
-            <div className="flex gap-2 mb-4 flex-wrap">
-              <span className="inline-block text-xs font-semibold text-spacemate-brandTeal bg-spacemate-bgLight px-3 py-1.5 rounded-full">
-                {typeLabel}
-              </span>
-              {p.listingType === 'Daily' && (
-                <span className="inline-block text-xs font-semibold text-white px-3 py-1.5 rounded-full"
-                  style={{ background: '#d97f11' }}>{t.dailyBadge}</span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 12px', letterSpacing: '-0.3px', color: '#02402e', lineHeight: 1.3 }}>
-              {p.title}
-            </h1>
-
-            {/* Location */}
-            <div className="flex items-center gap-2 mb-7" style={{ color: '#048c73', fontSize: 14, fontWeight: 500 }}>
-              <span className="msym" style={{ fontSize: 16 }}>location_on</span>
-              <span>{p.neighborhood}</span>
-              {p.address && <span style={{ color: '#94a3b8', fontWeight: 400 }}>— {p.address}</span>}
-            </div>
-
-            {/* Nearby stations, worked out from the map pin. Each links to a
-                search around that station, so a renter can compare. */}
-            {stations.length > 0 && (
-              <div aria-label={t.nearbyStations} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '-14px 0 24px' }}>
-                {stations.map(({ station, km }) => (
-                  <Link key={station.id} href={`/search?station=${station.id}`} title={t.searchNearStation(stationLabel(station, locale))}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20,
-                      border: '1px solid #d6e6e0', background: '#fff', color: '#02402e', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 15, color: '#048c73' }}>train</span>
-                    {stationLabel(station, locale)}
-                    <span style={{ color: '#64748b', fontWeight: 400 }}>· {distanceLabel(km, locale)}</span>
-                  </Link>
-                ))}
+      <div style={{ maxWidth: WRAP, margin: '0 auto', padding: '28px 24px 0', display: 'flex', gap: 48, alignItems: 'flex-start' }} className="sm-detaillayout">
+        <main style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 24 }}>
+            <span style={{ fontSize: 14, color: C.muted }}>
+              {typeLabel}{p.neighborhood ? ` · ${p.neighborhood}` : ''}{daily ? ` · ${t.dailyBadge}` : ''}
+            </span>
+            <h1 style={{ margin: 0, fontSize: 30, lineHeight: 1.35, fontWeight: 600, color: C.green }} className="sm-detail-h1">{p.title}</h1>
+            {nearest && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15 }}>
+                <span aria-hidden="true" style={{ width: 14, height: 4, borderRadius: 2, background: lineColor(nearest.station.systems[0]) }} />
+                <Link href={`/search?station=${nearest.station.id}`} title={t.searchNearStation(stationLabel(nearest.station, locale))} style={{ color: C.ink }}>
+                  {stationLabel(nearest.station, locale)}
+                </Link>
+                <span style={{ color: C.muted }}>{distanceLabel(nearest.km, locale)}</span>
               </div>
             )}
+          </div>
 
-            {building && (
-              <div style={{ marginBottom: 24 }}>
-                <a href={`/building/${encodeURI(building.slug)}`}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 15px', borderRadius: 22,
-                    border: '1px solid #d6e6e0', background: '#f2f9f6', color: '#02402e',
-                    fontSize: 13.5, fontWeight: 600, textDecoration: 'none' }}>
-                  <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>apartment</span>
-                  {t.otherRoomsIn(building.name)}
-                </a>
+          <dl style={{ display: 'grid', gridTemplateColumns: `repeat(${specs.length}, 1fr)`, border: `1px solid ${C.line}`, borderRadius: RADIUS, background: C.white, margin: '0 0 8px' }} className="sm-specs">
+            {specs.map((sp, i) => (
+              <div key={sp.k} style={{ padding: '14px 18px', borderLeft: i ? `1px solid ${C.line}` : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <dt style={{ fontSize: 13, color: C.muted }}>{sp.k}</dt>
+                <dd style={{ margin: 0, fontSize: 17, fontWeight: 500 }}>{sp.v}</dd>
               </div>
-            )}
+            ))}
+          </dl>
 
-            {/* Key specs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, marginBottom: 28, padding: 16, borderRadius: 16, border: '1px solid #eef0ef', background: '#f7f9f8' }}>
-              <div style={{ textAlign: 'center' }}>
-                <span className="msym" style={{ fontSize: 24, color: '#048c73', display: 'block', marginBottom: 4 }}>bed</span>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>{t.bedrooms}</p>
-                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: '#231f20' }}>{bedroomLabel}</p>
-              </div>
-              {p.bathrooms > 0 && (
-                <div style={{ textAlign: 'center' }}>
-                  <span className="msym" style={{ fontSize: 24, color: '#048c73', display: 'block', marginBottom: 4 }}>shower</span>
-                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>{t.bathrooms}</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: '#231f20' }}>{t.bathroomsValue(p.bathrooms)}</p>
+          {(hasContent || p.excerpt) && (
+            <section style={{ ...section, borderTop: 'none' }}>
+              <h2 style={h2}>{t.detailsHeading}</h2>
+              {p.excerpt && <p style={{ color: C.ink, fontSize: 16, lineHeight: 1.8, margin: '0 0 16px' }}>{p.excerpt}</p>}
+              {hasContent && <DescriptionBody contentTh={content} contentEn={contentEn} defaultLang={locale} />}
+            </section>
+          )}
+
+          {/* Video — Premium only. p.videoUrl is already empty for packages
+              that do not include it, so the gate lives in one place. */}
+          {p.videoUrl && (
+            <section style={section}>
+              <PropertyVideo url={p.videoUrl} title={p.title} locale={locale} />
+            </section>
+          )}
+
+          {/* Apartment unit prices. A column appears only when at least one unit
+              has that contract length, to avoid a table of empty dashes. */}
+          {aptUnits.length > 0 && (() => {
+            // All prices are per month; the columns are contract lengths.
+            // Legacy rows kept the headline rate in price_1mo, so fall back to
+            // it when price_12mo is absent.
+            const rate12 = (u: any) => u.price_12mo || u.price_1mo
+            const has1 = aptUnits.some((u: any) => u.price_12mo && u.price_1mo)
+            const has3 = aptUnits.some((u: any) => u.price_3mo)
+            const has6 = aptUnits.some((u: any) => u.price_6mo)
+            const hasDaily = aptUnits.some((u: any) => u.price_daily)
+            const money = (v: any) => v ? `฿${Number(v).toLocaleString('en-US')}` : '—'
+            const th: React.CSSProperties = { textAlign: 'left', fontWeight: 500, color: C.muted, fontSize: 13, padding: '10px 14px', whiteSpace: 'nowrap' }
+            const td: React.CSSProperties = { padding: '12px 14px', borderTop: `1px solid ${C.line2}`, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+            return (
+              <section style={section}>
+                <h2 style={h2}>{t.unitPricingHeading}</h2>
+                <div style={{ overflowX: 'auto', border: `1px solid ${C.line}`, borderRadius: RADIUS, background: C.white }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <thead><tr>
+                      <th style={th}>{t.colRoomType}</th><th style={th}>{t.colSize}</th><th style={th}>{t.col12}</th>
+                      {has6 && <th style={th}>{t.col6}</th>}{has3 && <th style={th}>{t.col3}</th>}{has1 && <th style={th}>{t.col1}</th>}{hasDaily && <th style={th}>{t.colDaily}</th>}
+                    </tr></thead>
+                    <tbody>
+                      {aptUnits.map((u: any, i: number) => (
+                        <tr key={u.id ?? i}>
+                          <td style={{ ...td, fontWeight: 500 }}>{roomTypeLabel(u.room_type, locale) || '—'}</td>
+                          <td style={{ ...td, color: C.muted }}>{u.size_sqm ? t.sizeValue(u.size_sqm) : '—'}</td>
+                          <td style={{ ...td, fontWeight: 600, color: C.amber }}>{money(rate12(u))}</td>
+                          {has6 && <td style={td}>{money(u.price_6mo)}</td>}
+                          {has3 && <td style={td}>{money(u.price_3mo)}</td>}
+                          {has1 && <td style={td}>{money(u.price_1mo)}</td>}
+                          {hasDaily && <td style={{ ...td, color: C.amber }}>{money(u.price_daily)}</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-              {p.size && (
-                <div style={{ textAlign: 'center' }}>
-                  <span className="msym" style={{ fontSize: 24, color: '#048c73', display: 'block', marginBottom: 4 }}>straighten</span>
-                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>{t.size}</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: '#231f20' }}>{t.sizeValue(p.size)}</p>
-                </div>
-              )}
-              <div style={{ textAlign: 'center' }}>
-                <span className="msym" style={{ fontSize: 24, color: '#048c73', display: 'block', marginBottom: 4 }}>apartment</span>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>{t.type}</p>
-                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: '#231f20' }}>{typeLabel}</p>
-              </div>
-            </div>
+                {(has1 || has3 || has6) && <p style={{ fontSize: 13, color: C.muted, margin: '8px 0 0' }}>{t.pricingNote}</p>}
+              </section>
+            )
+          })()}
 
-            {/* Excerpt */}
-            {p.excerpt && (
-              <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.75, margin: '0 0 24px', paddingBottom: 24, borderBottom: '1px solid #eef0ef', fontWeight: 300 }}>
-                {p.excerpt}
-              </p>
-            )}
-
-            {/* Full description — TH/EN toggle when English body is available */}
-            {hasContent && (
-              <DescriptionBody contentTh={content} contentEn={contentEn} defaultLang={locale} />
-            )}
-
-            {/* Video — Premium only. p.videoUrl is already empty for packages
-                that do not include it, so the gate lives in one place rather
-                than being re-decided here. */}
-            <PropertyVideo url={p.videoUrl ?? ''} title={p.title} locale={locale} />
-
-            {/* Apartment Unit Pricing Table
-                3- and 6-month prices were collected on the form and stored, but
-                this table only ever rendered 1-month and daily — so a landlord
-                filled them in and they appeared nowhere. Columns are now added
-                only when at least one unit actually has that term, to avoid a
-                table of empty dashes. */}
-            {aptUnits.length > 0 && (() => {
-              // All prices are per month; the columns are contract lengths.
-              // Legacy rows kept the headline rate in price_1mo, so fall back to
-              // it when price_12mo is absent.
-              const rate12 = (u: any) => u.price_12mo || u.price_1mo
-              const has1 = aptUnits.some((u: any) => u.price_12mo && u.price_1mo)
-              const has3 = aptUnits.some((u: any) => u.price_3mo)
-              const has6 = aptUnits.some((u: any) => u.price_6mo)
-              const hasDaily = aptUnits.some((u: any) => u.price_daily)
-              const cols = ['1.4fr', '0.8fr', '1fr',
-                ...(has6 ? ['1fr'] : []), ...(has3 ? ['1fr'] : []), ...(has1 ? ['1fr'] : []),
-                ...(hasDaily ? ['1fr'] : [])].join(' ')
-              const money = (v: any) => v ? `฿${Number(v).toLocaleString()}` : '—'
-              return (
-                <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.unitPricingHeading}</h2>
-                  <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '9px 16px', background: '#f7f9f8', fontSize: 11, fontWeight: 600, color: '#94a3b8', gap: 8 }}>
-                      <span>{t.colRoomType}</span>
-                      <span>{t.colSize}</span>
-                      <span>{t.col12}</span>
-                      {has6 && <span>{t.col6}</span>}
-                      {has3 && <span>{t.col3}</span>}
-                      {has1 && <span>{t.col1}</span>}
-                      {hasDaily && <span>{t.colDaily}</span>}
-                    </div>
-                    {aptUnits.map((u: any, i: number) => (
-                      <div key={u.id ?? i} style={{ display: 'grid', gridTemplateColumns: cols, padding: '12px 16px', fontSize: 14, borderTop: '1px solid #f0f4f3', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, color: '#231f20' }}>{roomTypeLabel(u.room_type, locale) || '—'}</span>
-                        <span style={{ color: '#94a3b8', fontSize: 13 }}>{u.size_sqm ? t.sizeValue(u.size_sqm) : '—'}</span>
-                        <span style={{ fontWeight: 700, color: '#d97f11' }}>{money(rate12(u))}</span>
-                        {has6 && <span style={{ color: u.price_6mo ? '#02402e' : '#94a3b8', fontWeight: u.price_6mo ? 600 : 400 }}>{money(u.price_6mo)}</span>}
-                        {has3 && <span style={{ color: u.price_3mo ? '#02402e' : '#94a3b8', fontWeight: u.price_3mo ? 600 : 400 }}>{money(u.price_3mo)}</span>}
-                        {has1 && <span style={{ color: u.price_1mo ? '#02402e' : '#94a3b8', fontWeight: u.price_1mo ? 600 : 400 }}>{money(u.price_1mo)}</span>}
-                        {hasDaily && <span style={{ color: u.price_daily ? '#d97f11' : '#94a3b8', fontWeight: u.price_daily ? 600 : 400 }}>{money(u.price_daily)}</span>}
-                      </div>
-                    ))}
+          {chargesDisplay.length > 0 && (
+            <section style={section}>
+              <h2 style={h2}>{t.chargesHeading}</h2>
+              <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '10px 32px', margin: 0, fontSize: 15 }}>
+                {chargesDisplay.map((row, i) => (
+                  <div key={i} style={{ display: 'contents' }}>
+                    <dt style={{ color: C.muted }}>{row.label}</dt>
+                    <dd style={{ margin: 0, fontWeight: 500 }}>{row.value}</dd>
                   </div>
-                  {(has1 || has3 || has6) && (
-                    <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '8px 0 0' }}>
-                      {t.pricingNote}
-                    </p>
-                  )}
-                </div>
-              )
-            })()}
+                ))}
+              </dl>
+            </section>
+          )}
 
-            {/* Rental Charges & Conditions */}
-            {chargesDisplay.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.chargesHeading}</h2>
-                <div style={{ borderRadius: 14, border: '1px solid #eef0ef', overflow: 'hidden' }}>
-                  {chargesDisplay.map((row, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < chargesDisplay.length - 1 ? '1px solid #f0f4f3' : 'none', fontSize: 14 }}>
-                      <span style={{ color: '#475569' }}>{row.label}</span>
-                      <span style={{ fontWeight: 600, color: '#231f20' }}>{row.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Amenities — split into what is in the unit and what the building
-                provides. A flat list made a tenant work out which was which. */}
-            {p.amenities.length > 0 && (() => {
-              const grouped = groupSelected(p.amenities)
-              return (
-                <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.amenitiesHeading}</h2>
-                  {AMENITY_SECTIONS.map(sec => {
-                    const items = grouped[sec.key]
-                    if (!items.length) return null
-                    return (
-                      <div key={sec.key} style={{ marginBottom: 16 }}>
-                        <p style={{ fontSize: 12.5, fontWeight: 700, color: '#64748b', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{sec.icon}</span>
-                          {amenitySectionLabel(sec, locale)}
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {items.map(a => (
-                            <span key={a} style={{ fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500,
-                              background: sec.key === 'unit' ? '#eaf6f1' : '#f2f9f6',
-                              color: '#02402e', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span>{localiseAmenity(a, locale)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })()}
-
-            {/* Map */}
-            {p.lat && p.lng && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.locationHeading}</h2>
-                <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #eef0ef', boxShadow: '0 4px 16px -8px rgba(2,64,46,0.10)' }}>
-                  <iframe
-                    title={t.mapTitle}
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(parseFloat(p.lng) - 0.009).toFixed(6)},${(parseFloat(p.lat) - 0.006).toFixed(6)},${(parseFloat(p.lng) + 0.009).toFixed(6)},${(parseFloat(p.lat) + 0.006).toFixed(6)}&layer=mapnik&marker=${p.lat},${p.lng}`}
-                    width="100%"
-                    height="240"
-                    style={{ border: 'none', display: 'block' }}
-                    loading="lazy"
-                  />
-                </div>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
-                  target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 13, color: '#048c73', fontWeight: 500, textDecoration: 'none' }}
-                >
-                  <span className="msym" style={{ fontSize: 16 }}>open_in_new</span>
-                  {t.openInMaps}
-                </a>
-              </div>
-            )}
-
-            {/* What's nearby — from the same place list the search box uses, so
-                every name here is one a renter can search by. */}
-            {nearbyGroups.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 14px' }}>{t.nearbyHeading}</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px 28px' }}>
-                  {nearbyGroups.map(g => (
-                    <div key={g.kind}>
-                      <p style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.nearbyGroups[g.kind]}</p>
-                      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                        {g.items.map(item => (
-                          <li key={item.key} style={{ borderTop: '1px solid #f1f5f4' }}>
-                            <Link href={item.href} title={t.searchNearPlace(item.name)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', color: '#231f20', textDecoration: 'none', fontSize: 14 }}>
-                              <span className="msym" style={{ fontSize: 18, color: '#048c73', flexShrink: 0 }}>{item.icon}</span>
-                              <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
-                              <span style={{ color: '#64748b', fontSize: 13, whiteSpace: 'nowrap' }}>{distanceLabel(item.km, locale)}</span>
-                            </Link>
+          {/* Amenities — what is in the unit, then what the building provides. */}
+          {p.amenities.length > 0 && (() => {
+            const grouped = groupSelected(p.amenities)
+            return (
+              <section style={section}>
+                <h2 style={h2}>{t.amenitiesHeading}</h2>
+                {AMENITY_SECTIONS.map(sec => {
+                  const items = grouped[sec.key]
+                  if (!items.length) return null
+                  return (
+                    <div key={sec.key} style={{ marginBottom: 18 }}>
+                      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 8px' }}>{amenitySectionLabel(sec, locale)}</p>
+                      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px 24px', fontSize: 15 }}>
+                        {items.map(a => (
+                          <li key={a} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
+                            {localiseAmenity(a, locale)}
                           </li>
                         ))}
                       </ul>
                     </div>
-                  ))}
-                </div>
-                <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '12px 0 0' }}>{t.nearbyNote}</p>
+                  )
+                })}
+              </section>
+            )
+          })()}
+
+          <section style={section}>
+            <h2 style={h2}>{t.infoHeading}</h2>
+            <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '10px 32px', margin: 0, fontSize: 15 }}>
+              {(p.address || p.neighborhood) && <><dt style={{ color: C.muted }}>{t.infoLocation}</dt><dd style={{ margin: 0 }}>{[p.address, p.neighborhood].filter(Boolean).join(' · ')}</dd></>}
+              {raw?.rental_term && t.minTerms[raw.rental_term] && <><dt style={{ color: C.muted }}>{t.infoMinTerm}</dt><dd style={{ margin: 0 }}>{t.minTerms[raw.rental_term]}</dd></>}
+              {fullDate(p.date) && <><dt style={{ color: C.muted }}>{t.infoPosted}</dt><dd style={{ margin: 0 }}>{fullDate(p.date)}</dd></>}
+              {fullDate(raw?.updated_at) && <><dt style={{ color: C.muted }}>{t.infoUpdated}</dt><dd style={{ margin: 0 }}>{fullDate(raw?.updated_at)}</dd></>}
+            </dl>
+          </section>
+
+          {(hasPin || nearbyGroups.length > 0) && (
+            <section style={section}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                <h2 style={{ ...h2, margin: 0 }}>{t.locationNearbyHeading}</h2>
+                {hasPin && <a href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: C.teal }}>{t.openInMaps} →</a>}
               </div>
-            )}
-          </div>
-
-          {/* Sticky sidebar */}
-          <aside style={{ position: 'sticky', top: 86 }}>
-            <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 20, padding: 22, boxShadow: '0 14px 34px -14px rgba(2,64,46,0.14)' }}>
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500, margin: '0 0 4px' }}>{t.priceLabel}</p>
-              <p style={{ fontSize: 26, fontWeight: 700, color: '#d97f11', margin: '0 0 16px', lineHeight: 1.1 }}>{p.priceDisplay}</p>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 0', borderTop: '1px solid #f3f5f4', borderBottom: '1px solid #f3f5f4', marginBottom: 16 }}>
-                <span style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#02402e,#048c73)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>S</span>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>SpacesMate</p>
-                  <p style={{ fontSize: 12, color: '#048c73', fontWeight: 500, margin: 0, display: 'flex', alignItems: 'center', gap: 3 }}>{t.verified}<span className="msym" style={{ fontSize: 12, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check</span></p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {/* LINE button — listing-specific or SpacesMate default */}
-                {dbContact?.line ? (
-                  <a data-stat="line" href={`https://line.me/R/ti/p/${dbContact.line}`} target="_blank" rel="noopener noreferrer"
-                    style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
-                  </a>
-                ) : (
-                  <a data-stat="line" href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
-                    style={{ background: '#06C755', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 18 }}>chat</span>{t.askOnLine}
-                  </a>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28 }}>
+                {hasPin && (
+                  <iframe
+                    title={t.mapTitle}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(pinLng - 0.009).toFixed(6)},${(pinLat - 0.006).toFixed(6)},${(pinLng + 0.009).toFixed(6)},${(pinLat + 0.006).toFixed(6)}&layer=mapnik&marker=${p.lat},${p.lng}`}
+                    loading="lazy"
+                    style={{ flex: '1 1 320px', minWidth: 0, height: 280, border: `1px solid ${C.line}`, borderRadius: RADIUS, display: 'block', background: C.line }}
+                  />
                 )}
-                {/* Phone button — listing-specific or SpacesMate default */}
-                {dbContact?.phone ? (
-                  <a data-stat="phone" href={`tel:${dbContact.phone.replace(/\D/g, '')}`}
-                    style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call(dbContact.phone)}
-                  </a>
-                ) : (
-                  <a data-stat="phone" href="tel:+66621524526"
-                    style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 0', borderRadius: 24, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
-                    <span className="msym" style={{ fontSize: 18 }}>call</span>{t.call('062-152-4526')}
-                  </a>
+                {nearbyGroups.length > 0 && (
+                  <div style={{ flex: '1 1 260px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                    {nearbyGroups.map(g => (
+                      <div key={g.kind}>
+                        <p style={{ fontSize: 13, color: C.muted, margin: '0 0 4px' }}>{t.nearbyGroups[g.kind]}</p>
+                        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                          {g.items.map(item => (
+                            <li key={item.key} style={{ borderBottom: `1px solid ${C.line2}` }}>
+                              <Link href={item.href} title={t.searchNearPlace(item.name)} className="sm-row-link"
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', color: C.ink, fontSize: 14 }}>
+                                {item.key.startsWith('s:') && (() => {
+                                  const st = stations.find(s => `s:${s.station.id}` === item.key)
+                                  return st ? <span aria-hidden="true" style={{ width: 14, height: 4, borderRadius: 2, background: lineColor(st.station.systems[0]), flexShrink: 0 }} /> : null
+                                })()}
+                                <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
+                                <span style={{ color: C.muted, fontSize: 13, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{distanceLabel(item.km, locale)}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                    <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>{t.nearbyNote}</p>
+                  </div>
                 )}
               </div>
+            </section>
+          )}
+        </main>
 
-              <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', margin: '14px 0 0' }}>
-                {t.noCommission}
-              </p>
+        <aside style={{ flex: '0 0 320px', position: 'sticky', top: 92 }} className="sm-detail-aside">
+          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 600, color: C.amber, lineHeight: 1.25, fontVariantNumeric: 'tabular-nums' }}>{priceText}</div>
+              {priceFrom > 0 && <div style={{ fontSize: 14, color: C.muted }}>{daily ? t.perDayWord : t.perMonthWord}</div>}
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <a data-stat="line" href={lineBtn.href} target="_blank" rel="noopener noreferrer"
+                style={{ background: '#06C755', color: C.white, fontWeight: 500, fontSize: 15, padding: '12px 0', borderRadius: RADIUS, textAlign: 'center', textDecoration: 'none' }}>
+                {t.askOnLine}
+              </a>
+              <a data-stat="phone" href={phone.href} className="sm-btn-ghost"
+                style={{ background: C.white, color: C.ink, border: `1px solid ${C.border}`, fontWeight: 500, fontSize: 15, padding: '11px 0', borderRadius: RADIUS, textAlign: 'center', textDecoration: 'none' }}>
+                {t.call(phone.label)}
+              </a>
+            </div>
+            <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.6 }}>{t.noCommission}</p>
+          </div>
+        </aside>
+      </div>
 
-            <Link href="/search"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 14, color: '#048c73', fontSize: 13.5, fontWeight: 500, textDecoration: 'none' }}>
-              <span className="msym" style={{ fontSize: 15 }}>arrow_back</span>
-              {t.browseAll}
-            </Link>
-          </aside>
-        </div>
+      <div style={{ maxWidth: WRAP, margin: '0 auto', padding: '24px 24px 72px' }}>
+        {sameBuilding.length > 0 && building && (
+          <section style={section}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', marginBottom: 6 }}>
+              <h2 style={{ ...h2, margin: 0 }}>{t.sameBuildingHeading}</h2>
+              <a href={`/building/${encodeURI(building.slug)}`} style={{ fontSize: 14, color: C.teal }}>{t.sameBuildingAll(building.name)}</a>
+            </div>
+            {sameBuilding.map(r => (
+              <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} className="sm-card"
+                style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: `1px solid ${C.line}`, color: C.ink }}>
+                <div style={{ width: 96, height: 72, borderRadius: RADIUS, overflow: 'hidden', background: C.line, flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {r.image && <img src={r.image} alt={r.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span className="sm-card-title" style={{ fontSize: 15, fontWeight: 500 }}>{r.title}</span>
+                  <span style={{ fontSize: 13, color: C.muted }}>
+                    {[r.bedrooms === 0 ? t.studio : t.bedroomsValue(r.bedrooms), r.size ? t.sizeValue(r.size) : ''].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+                <span style={{ fontWeight: 600, color: C.amber, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{r.priceDisplay}</span>
+              </Link>
+            ))}
+          </section>
+        )}
 
-        {/* Related properties */}
-        {related.length > 0 && (
-          <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid #eef0ef' }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 20px' }}>{t.relatedHeading}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }} className="sm-relatedgrid">
-              {related.map((r) => (
-                <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} className="sm-prop-card"
-                  style={{ borderRadius: 18, border: '1px solid #eef0ef', overflow: 'hidden', display: 'block', textDecoration: 'none', background: '#fff', transition: 'all .25s', boxShadow: '0 4px 16px -8px rgba(2,64,46,0.10)' }}>
-                  <div style={{ height: 140, background: 'linear-gradient(135deg,#02402e,#048c73)', overflow: 'hidden' }}>
-                    {r.image && (
-                      <img src={r.image} alt={r.title} className="sm-prop-img"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }} />
-                    )}
+        {nearbyListings.length > 0 && (
+          <section style={section}>
+            <h2 style={{ ...h2, marginBottom: 20 }}>{nearbyListings.some(x => x.km !== null) ? t.nearbyListingsHeading : t.relatedHeading}</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '32px 24px' }}>
+              {nearbyListings.map(({ p: r, km }) => (
+                <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} className="sm-card"
+                  style={{ display: 'flex', flexDirection: 'column', gap: 10, color: C.ink }}>
+                  <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: RADIUS, overflow: 'hidden', background: C.line }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {r.image && <img src={r.image} alt={r.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                   </div>
-                  <div style={{ padding: 14 }}>
-                    <p style={{ fontSize: 12, color: '#048c73', fontWeight: 500, margin: '0 0 4px' }}>{r.neighborhood}</p>
-                    <p style={{ fontSize: 13.5, fontWeight: 600, color: '#231f20', margin: '0 0 8px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#d97f11', margin: 0 }}>{r.priceDisplay}</p>
-                  </div>
+                  <span style={{ fontSize: 13, color: C.muted }}>
+                    {[km !== null ? t.awayFromHere(distanceLabel(km, locale)) : '', r.neighborhood].filter(Boolean).join(' · ')}
+                  </span>
+                  <span className="sm-card-title" style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.45 }}>{r.title}</span>
+                  <span style={{ fontSize: 17, fontWeight: 600, color: C.amber, fontVariantNumeric: 'tabular-nums' }}>{r.priceDisplay}</span>
                 </Link>
               ))}
             </div>
-          </div>
+          </section>
         )}
+      </div>
 
-        {/* Owner CTA block */}
-        <div style={{ marginTop: 48, padding: 28, borderRadius: 20, color: '#fff', background: 'radial-gradient(120% 160% at 85% 10%, #055c43, #02402e 60%)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
-            <span className="msym" style={{ fontSize: 40, color: '#048c73', flexShrink: 0 }}>home_work</span>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 6px' }}>{t.ownerHeading}</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, margin: '0 0 16px', fontWeight: 300 }}>
-                {t.ownerBody}
-              </p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <Link href="/services"
-                  style={{ background: '#d97f11', color: '#fff', fontWeight: 600, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block' }}>
-                  {t.ownerServicesCta}
-                </Link>
-                <Link href="/list-your-property"
-                  style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: 13.5, padding: '10px 20px', borderRadius: 22, textDecoration: 'none', display: 'inline-block', border: '1px solid rgba(255,255,255,0.2)' }}>
-                  {t.ownerListCta}
-                </Link>
-              </div>
-            </div>
-          </div>
+      {/* On a phone the contact card sits below the details, so price and LINE stay pinned to the bottom. */}
+      <div className="sm-mobile-contact"
+        style={{ display: 'none', position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, background: C.white, borderTop: `1px solid ${C.line}`, padding: '10px 16px', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: C.amber, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{priceText}</div>
+          {priceFrom > 0 && <div style={{ fontSize: 12, color: C.muted }}>{daily ? t.perDayWord : t.perMonthWord}</div>}
         </div>
+        <a data-stat="line" href={lineBtn.href} target="_blank" rel="noopener noreferrer"
+          style={{ background: '#06C755', color: C.white, fontWeight: 500, fontSize: 15, padding: '10px 18px', borderRadius: RADIUS, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+          {t.askOnLine}
+        </a>
       </div>
 
       <style>{`
         @media (max-width: 900px) {
-          .sm-detaillayout { grid-template-columns: 1fr !important; }
-          .sm-relatedgrid { grid-template-columns: 1fr !important; }
+          .sm-detaillayout { flex-direction: column; gap: 0 !important; }
+          .sm-detail-aside { position: static !important; flex: none !important; width: 100%; margin-top: 8px; }
+          .sm-mobile-contact { display: flex !important; }
+          .sm-detail-page { padding-bottom: 76px; }
         }
         @media (max-width: 600px) {
-          .sm-relatedgrid { grid-template-columns: 1fr !important; }
+          .sm-detail-h1 { font-size: 24px !important; }
+          .sm-specs { grid-template-columns: repeat(2, 1fr) !important; }
+          .sm-specs > div:nth-child(3) { border-left: none !important; }
+          .sm-specs > div:nth-child(n+3) { border-top: 1px solid ${C.line}; }
         }
-        .sm-prop-card:hover {
-          box-shadow: 0 16px 34px -12px rgba(2,64,46,0.18) !important;
-          transform: translateY(-4px) !important;
-        }
-        .sm-prop-card:hover .sm-prop-img { transform: scale(1.06) !important; }
-        .property-content p { margin-bottom: 1.15rem; }
-        .property-content h2 { font-size: 1.2rem; font-weight: 700; color: #02402e; margin: 1.75rem 0 0.7rem; }
-        .property-content h3 { font-size: 1rem; font-weight: 600; color: #231f20; margin: 1.4rem 0 0.5rem; }
-        .property-content ul, .property-content ol { padding-left: 1.4rem; margin-bottom: 1.15rem; }
+        .property-content { font-size: 16px; line-height: 1.8; color: ${C.ink}; }
+        .property-content p { margin-bottom: 1.1rem; }
+        .property-content h2 { font-size: 1.15rem; font-weight: 600; color: ${C.green}; margin: 1.6rem 0 0.6rem; }
+        .property-content h3 { font-size: 1rem; font-weight: 600; color: ${C.ink}; margin: 1.3rem 0 0.5rem; }
+        .property-content ul, .property-content ol { padding-left: 1.4rem; margin-bottom: 1.1rem; }
         .property-content li { margin-bottom: 0.4rem; }
-        .property-content strong, .property-content b { color: #231f20; font-weight: 600; }
-        .property-content a { color: #048c73; text-decoration: underline; }
-        .property-content img { border-radius: 12px; margin: 1.25rem 0; max-width: 100%; }
-        .property-content table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
-        .property-content th { background: #02402e; color: #fff; padding: 10px 14px; text-align: left; }
-        .property-content td { padding: 9px 14px; border-bottom: 1px solid #eef0ef; }
-        .property-content tr:nth-child(even) td { background: #f7f9f8; }
+        .property-content strong, .property-content b { color: ${C.ink}; font-weight: 600; }
+        .property-content a { color: ${C.teal}; text-decoration: underline; }
+        .property-content img { border-radius: ${RADIUS}px; margin: 1.2rem 0; max-width: 100%; }
+        .property-content table { width: 100%; border-collapse: collapse; margin: 1.4rem 0; font-size: 0.9rem; }
+        .property-content th { background: ${C.green}; color: #fff; padding: 10px 14px; text-align: left; }
+        .property-content td { padding: 9px 14px; border-bottom: 1px solid ${C.line}; }
       `}</style>
     </div>
   )
