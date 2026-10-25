@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import SectionPlaceholder from '@/components/sections/SectionPlaceholder'
 import { withPageSeo } from '@/lib/page-seo'
 
-// Picks up title and description edits from /dashboard/pages.
-export const revalidate = 300
+// Cached and rebuilt in the background every 60 seconds, the same as the Thai
+// home. See the note at the top of app/(th)/page.tsx for why it is force-static.
+export const revalidate = 60
+export const dynamic = 'force-static'
 import HeroSection from '@/components/sections/HeroSection'
 import CategorySection from '@/components/sections/CategorySection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
@@ -51,12 +55,12 @@ export default function EnglishHome() {
     <>
       <HeroSection locale="en" />
       <CategorySection locale="en" />
-      <FeaturedListings locale="en" />
+      <Suspense fallback={<SectionPlaceholder />}><FeaturedListings locale="en" /></Suspense>
       <WhySpacesMate locale="en" />
       <ManagementCTA locale="en" />
-      <BlogSection locale="en" />
+      <Suspense fallback={<SectionPlaceholder />}><BlogSection locale="en" /></Suspense>
       <AreaLinks locale="en" />
-      <UniversityLinks locale="en" />
+      <Suspense fallback={<SectionPlaceholder />}><UniversityLinks locale="en" /></Suspense>
     </>
   )
 }

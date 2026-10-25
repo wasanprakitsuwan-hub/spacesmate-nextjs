@@ -1,17 +1,26 @@
 // build: 2026-06-24
 //
-// This revalidate has no effect today and must not be relied on. Several
-// sections here query through createServerClient, which passes cache:'no-store'
-// to every request and so opts the whole route out of prerendering — production
-// returns x-vercel-cache: MISS and renders fresh on every hit.
+// Cached for 60 seconds, then rebuilt in the background (ISR).
 //
-// That is load-bearing, not incidental: Fair Rotation reshuffles the featured
-// listings per request. If the no-store queries ever go away, this line would
-// quietly start caching the page for 60s and the rotation would freeze. Delete
-// it then, or make the shuffle explicit.
+// Until 25 Oct 2026 this page was rebuilt for every visitor: createServerClient
+// passes cache:'no-store' to every Supabase request, which opted the route out
+// of prerendering, so each visit waited on a fresh render and every query
+// before the first byte. That wait was the blank gap on load.
+//
+// force-static lets this page be prerendered despite those no-store queries
+// (fetchCache = 'force-cache' does not: Next 14 still bails out on a no-store
+// fetch during static generation). The queries still run fresh, once per
+// rebuild rather than once per visitor. Nothing here reads cookies or headers,
+// so forcing them empty changes nothing. Fair Rotation no longer depends on
+// per-request rendering; it runs in the browser now (see
+// components/sections/FeaturedGrid). A new or expired listing shows up here
+// within a minute.
 export const revalidate = 60
+export const dynamic = 'force-static'
 
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import SectionPlaceholder from '@/components/sections/SectionPlaceholder'
 import { withPageSeo } from '@/lib/page-seo'
 import HeroSection from '@/components/sections/HeroSection'
 
@@ -48,12 +57,12 @@ export default function HomePage() {
     <>
       <HeroSection />
       <CategorySection />
-      <FeaturedListings />
+      <Suspense fallback={<SectionPlaceholder />}><FeaturedListings /></Suspense>
       <WhySpacesMate />
       <ManagementCTA />
-      <BlogSection />
+      <Suspense fallback={<SectionPlaceholder />}><BlogSection /></Suspense>
       <AreaLinks />
-      <UniversityLinks />
+      <Suspense fallback={<SectionPlaceholder />}><UniversityLinks /></Suspense>
     </>
   )
 }
