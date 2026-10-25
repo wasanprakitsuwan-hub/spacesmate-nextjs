@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import {
-  DEFAULT_TEMPLATE, INDEX_MIN, RADIUS_KM, RENT_TYPES, TYPE_NAME,
+  DEFAULT_DISTRICT_TEMPLATE, DEFAULT_TEMPLATE, INDEX_MIN, RADIUS_KM, RENT_TYPES, TYPE_NAME,
   type RentPageSummary, type RentTemplate, type TemplateStrings, type RentType,
 } from '@/lib/rent-slugs'
 import { defaultRentContent } from '@/lib/rent-content'
 
 /**
- * /dashboard/rent-pages — the "rent near a station or landmark" pages.
+ * /dashboard/rent-pages — the "rent near a station or landmark" pages (/rent)
+ * and the district pages (/area). A switch at the top picks which family the
+ * template and the list below work on; each has its own template.
  *
  *   แม่แบบ (template)  One wording per language for every page, with
  *                      placeholders. Empty fields use the built-in default.
@@ -41,12 +43,15 @@ const FIELDS: { key: keyof TemplateStrings; label: string; rows: number }[] = [
   { key: 'intro_type', label: 'ย่อหน้าแนะนำ — หน้าแยกประเภท', rows: 3 },
 ]
 
+type Kind = 'rent' | 'district'
+
 const PLACEHOLDERS = [
-  ['{place}', 'ชื่อสถานี/สถานที่ เช่น BTS อ่อนนุช'],
+  ['{place}', 'ชื่อสถานี/สถานที่/เขต เช่น BTS อ่อนนุช หรือ วัฒนา'],
   ['{type}', 'ประเภท เช่น คอนโดให้เช่า'],
   ['{count}', 'จำนวนประกาศ'],
   ['{price_from}', 'ราคาเริ่มต้น เช่น 7,500'],
-  ['{radius}', `รัศมี (${RADIUS_KM} กม.)`],
+  ['{type_short}', 'ประเภทแบบสั้น เช่น คอนโด'],
+  ['{radius}', `รัศมี (${RADIUS_KM} กม.) เฉพาะหน้าสถานี/สถานที่`],
 ]
 
 type Override = {
@@ -66,8 +71,13 @@ const btn = (primary = false): React.CSSProperties => ({
 function typeLabel(t: RentType | null) { return t ? TYPE_NAME.th[t] : 'ทุกประเภท' }
 
 export default function RentPagesAdmin() {
-  const [template, setTemplate] = useState<RentTemplate>(DEFAULT_TEMPLATE)
-  const [stored, setStored] = useState<RentTemplate | null>(null)
+  const [kind, setKind] = useState<Kind>('rent')
+  const [templates, setTemplates] = useState<Record<Kind, RentTemplate>>({ rent: DEFAULT_TEMPLATE, district: DEFAULT_DISTRICT_TEMPLATE })
+  const [storedAll, setStoredAll] = useState<Record<Kind, RentTemplate | null>>({ rent: null, district: null })
+  const template = templates[kind]
+  const stored = storedAll[kind]
+  const defaults = kind === 'district' ? DEFAULT_DISTRICT_TEMPLATE : DEFAULT_TEMPLATE
+  const setTemplate = (f: (t: RentTemplate) => RentTemplate) => setTemplates(all => ({ ...all, [kind]: f(all[kind]) }))
   const [pages, setPages] = useState<RentPageSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
@@ -83,8 +93,8 @@ export default function RentPagesAdmin() {
     setLoading(true)
     try {
       const d = await authFetch('/api/dashboard/rent-pages')
-      setTemplate(d.template)
-      setStored(d.stored)
+      setTemplates({ rent: d.template, district: d.districtTemplate })
+      setStoredAll({ rent: d.stored, district: d.districtStored })
       setPages(d.pages)
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e))
@@ -97,7 +107,7 @@ export default function RentPagesAdmin() {
   async function saveTemplate() {
     setSaving(true); setMsg(null)
     try {
-      await authFetch('/api/dashboard/rent-pages', { method: 'PATCH', body: JSON.stringify({ template }) })
+      await authFetch('/api/dashboard/rent-pages', { method: 'PATCH', body: JSON.stringify({ template, kind }) })
       setMsg('บันทึกแม่แบบแล้ว หน้าเว็บจะใช้ข้อความใหม่ทันที')
       await load()
     } catch (e) { setMsg(e instanceof Error ? e.message : String(e)) } finally { setSaving(false) }
@@ -135,23 +145,31 @@ export default function RentPagesAdmin() {
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase()
     return pages
+      .filter(p => (kind === 'district') === (p.placeKind === 'district'))
       .filter(p => filter === 'all' || (filter === 'indexed' ? p.indexable : p.count > 0))
       .filter(p => typeFilter === 'any' || (typeFilter === 'none' ? p.type === null : p.type === typeFilter))
       .filter(p => !n || p.placeTh.toLowerCase().includes(n) || p.placeEn.toLowerCase().includes(n) || p.slug.includes(n))
       .sort((a, b) => b.count - a.count || a.placeTh.localeCompare(b.placeTh, 'th'))
       .slice(0, 300)
-  }, [pages, filter, typeFilter, q])
+  }, [pages, kind, filter, typeFilter, q])
 
-  const indexedCount = pages.filter(p => p.indexable).length
-  const listedCount = pages.filter(p => p.count > 0).length
+  const ofKind = pages.filter(p => (kind === 'district') === (p.placeKind === 'district'))
+  const indexedCount = ofKind.filter(p => p.indexable).length
+  const listedCount = ofKind.filter(p => p.count > 0).length
   const isCustom = (k: keyof TemplateStrings) => Boolean(stored?.[lang]?.[k])
 
   return (
     <div style={{ padding: 24, maxWidth: 1200 }}>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>หน้าค้นหาตามทำเล</h1>
+      <div style={{ display: 'flex', gap: 6, margin: '8px 0 12px' }}>
+        <button onClick={() => { setKind('rent'); setEditing(null); setDraft(null) }} style={btn(kind === 'rent')}>ใกล้สถานี/สถานที่ (/rent)</button>
+        <button onClick={() => { setKind('district'); setEditing(null); setDraft(null) }} style={btn(kind === 'district')}>ตามเขต (/area)</button>
+      </div>
       <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px' }}>
-        หน้า &ldquo;ห้องเช่าใกล้…&rdquo; สำหรับทุกสถานีและสถานที่ ขึ้น Google อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในรัศมี {RADIUS_KM} กม.
-        ตอนนี้ขึ้น Google {indexedCount} หน้า · มีประกาศ {listedCount} หน้า · ทั้งหมด {pages.length} หน้า
+        {kind === 'district'
+          ? <>หน้า &ldquo;ห้องเช่า เขต…&rdquo; สำหรับทุกเขต ขึ้น Google อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในเขตนั้น</>
+          : <>หน้า &ldquo;ห้องเช่าใกล้…&rdquo; สำหรับทุกสถานีและสถานที่ ขึ้น Google อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในรัศมี {RADIUS_KM} กม.</>}
+        {' '}ตอนนี้ขึ้น Google {indexedCount} หน้า · มีประกาศ {listedCount} หน้า · ทั้งหมด {ofKind.length} หน้า
       </p>
 
       {msg && <div style={{ ...card, background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534', padding: 12 }}>{msg}</div>}
@@ -159,7 +177,7 @@ export default function RentPagesAdmin() {
       {/* Template */}
       <section style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>แม่แบบข้อความ</h2>
+          <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>แม่แบบข้อความ — {kind === 'district' ? 'หน้าเขต' : 'หน้าสถานี/สถานที่'}</h2>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['th', 'en'] as const).map(l => (
               <button key={l} onClick={() => setLang(l)} style={btn(lang === l)}>{l === 'th' ? 'ภาษาไทย' : 'English'}</button>
@@ -181,7 +199,7 @@ export default function RentPagesAdmin() {
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button onClick={saveTemplate} disabled={saving} style={btn(true)}>{saving ? 'กำลังบันทึก…' : 'บันทึกแม่แบบ'}</button>
-          <button onClick={() => setTemplate(t => ({ ...t, [lang]: { ...DEFAULT_TEMPLATE[lang] } }))} style={btn()}>คืนค่าเริ่มต้น ({lang.toUpperCase()})</button>
+          <button onClick={() => setTemplate(t => ({ ...t, [lang]: { ...defaults[lang] } }))} style={btn()}>คืนค่าเริ่มต้น ({lang.toUpperCase()})</button>
         </div>
       </section>
 
@@ -199,7 +217,7 @@ export default function RentPagesAdmin() {
             <option value="none">หน้ารวมทุกประเภท</option>
             {RENT_TYPES.map(t => <option key={t} value={t}>{TYPE_NAME.th[t]}</option>)}
           </select>
-          <input placeholder="ค้นหาสถานี/สถานที่" value={q} onChange={e => setQ(e.target.value)} style={{ ...input, width: 220 }} />
+          <input placeholder={kind === 'district' ? 'ค้นหาเขต' : 'ค้นหาสถานี/สถานที่'} value={q} onChange={e => setQ(e.target.value)} style={{ ...input, width: 220 }} />
         </div>
 
         {loading ? <p style={{ color: '#64748b' }}>กำลังโหลด…</p> : shown.length === 0 ? (
@@ -208,7 +226,7 @@ export default function RentPagesAdmin() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ textAlign: 'left', color: '#64748b', fontSize: 12 }}>
-                <th style={{ padding: 8 }}>สถานที่</th><th style={{ padding: 8 }}>ประเภท</th>
+                <th style={{ padding: 8 }}>{kind === 'district' ? 'เขต' : 'สถานที่'}</th><th style={{ padding: 8 }}>ประเภท</th>
                 <th style={{ padding: 8 }}>ประกาศ</th><th style={{ padding: 8 }}>สถานะ</th><th style={{ padding: 8 }} />
               </tr>
             </thead>
@@ -237,7 +255,7 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
       : { label: `ยังไม่ขึ้น (ต้องมี ${INDEX_MIN})`, bg: '#f1f5f9', color: '#64748b' }
   const custom = p.override && ['title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en', ...WRITEUP_KEYS]
     .some(k => (p.override as Record<string, unknown>)[k])
-  const path = `/rent/${p.slug}`
+  const path = p.path
   const set = (k: keyof Override, v: string | boolean) => draft && setDraft({ ...draft, [k]: v })
 
   return (

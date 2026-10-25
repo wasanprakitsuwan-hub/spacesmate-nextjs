@@ -1,7 +1,7 @@
 /**
  * Site chrome and home-page strings, per locale.
  *
- * Same approach as lib/area-shared and lib/property-i18n: one dictionary rather
+ * Same approach as lib/property-i18n: one dictionary rather
  * than a second copy of each component, so the Thai and English surfaces cannot
  * drift apart. Thai stays the default so every existing route renders unchanged
  * when no locale is passed.

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createServerClient } from '@/lib/supabase'
-import { getGeneratedAreas } from '@/lib/areas'
+import { listDistrictPages } from '@/lib/district-pages'
 import { listRentPages } from '@/lib/rent-pages'
 import { getBuildingsWithListings } from '@/lib/buildings'
 
@@ -74,36 +74,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ]
     })
 
-  // ── Data-driven area pages ─────────────────────────────────────────────────
-  // One per (district, property type) with live inventory. These are the pages
-  // that actually compete for "เช่าคอนโด บางนา" style queries.
-  // Both locales, since Stage G. These were Thai-only here because the English
-  // route 404'd for them; it no longer does, and an English page absent from
-  // the sitemap is discoverable only by following a link.
-  const generated = await getGeneratedAreas()
-  const generatedAlternates = (slug: string) => ({
-    languages: {
-      th: encodeURI(`${SITE}/area/${slug}`),
-      en: encodeURI(`${SITE}/en/area/${slug}`),
-      'x-default': encodeURI(`${SITE}/area/${slug}`),
-    },
-  })
-  const generatedAreaPages: MetadataRoute.Sitemap = generated.flatMap(a => ([
-    {
-      url: encodeURI(`${SITE}/area/${a.slug}`),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-      lastModified: now,
-      alternates: generatedAlternates(a.slug),
-    },
-    {
-      url: encodeURI(`${SITE}/en/area/${a.slug}`),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-      lastModified: now,
-      alternates: generatedAlternates(a.slug),
-    },
-  ]))
+  // ── District pages, Thai and English ───────────────────────────────────
+  // One all-types page per district (/area/ห้องเช่า-<district>) plus one per
+  // (district, type), the pages that compete for "เช่าคอนโด บางนา" style queries.
+  // Same rule as the rent pages: only those with INDEX_MIN or more listings.
+  const districtPages: MetadataRoute.Sitemap = (await listDistrictPages())
+    .filter(d => d.indexable)
+    .flatMap(d => {
+      const th = encodeURI(`${SITE}/area/${d.slug}`)
+      const en = encodeURI(`${SITE}/en/area/${d.slug}`)
+      const alternates = { languages: { th, en, 'x-default': th } }
+      const priority = d.type ? 0.7 : 0.8
+      return [
+        { url: th, changeFrequency: 'daily' as const, priority, lastModified: now, alternates },
+        { url: en, changeFrequency: 'daily' as const, priority: priority - 0.1, lastModified: now, alternates },
+      ]
+    })
 
   // ── Building pages ─────────────────────────────────────────────────────────
   // One per building with live inventory. Renters search by building name, so
@@ -182,5 +168,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...rentPages, ...generatedAreaPages, ...buildingPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...rentPages, ...districtPages, ...buildingPages, ...propertyPages, ...blogPages]
 }
