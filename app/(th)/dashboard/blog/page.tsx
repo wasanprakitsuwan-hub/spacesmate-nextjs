@@ -553,8 +553,9 @@ function EditDrawer({ post, onClose, onSave }: {
                   placeholder="คำอธิบายบทความ 120–160 ตัวอักษร"
                   style={{ ...inputStyle, resize: 'none' }}
                 />
-                <div style={{ fontSize: 11.5, color: (form.metaDesc?.length ?? 0) > 160 ? '#ef4444' : '#94a3b8', marginTop: 4 }}>
+                <div style={{ fontSize: 11.5, color: (form.metaDesc?.length ?? 0) > 160 ? '#ef4444' : (form.metaDesc?.length ?? 0) < 110 ? '#d97f11' : '#94a3b8', marginTop: 4 }}>
                   {(form.metaDesc ?? '').length}/160 ตัวอักษร
+                  {(form.metaDesc?.length ?? 0) > 160 ? ' — ยาวเกินไป' : (form.metaDesc?.length ?? 0) < 110 ? ' — สั้นไป ระบบจะเติมจากเนื้อหาบทความให้ครบ' : ''}
                 </div>
               </div>
 

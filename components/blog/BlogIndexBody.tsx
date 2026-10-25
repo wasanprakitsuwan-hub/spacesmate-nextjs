@@ -31,6 +31,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
 import { BLOG_T, CATEGORY_VALUES, categoryLabel, formatBlogDate } from '@/lib/blog-i18n'
 import type { Locale } from '@/lib/routes-i18n'
+import { cleanPostTitle } from '@/lib/blog-text'
 
 export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale }) {
   const t = BLOG_T[locale]
@@ -118,7 +119,7 @@ export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale
             <div className="md:w-1/2 h-56 md:h-auto overflow-hidden bg-spacemate-bgLight flex-shrink-0">
               <img
                 src={featured.thumbnail ?? '/blog/placeholder.jpg'}
-                alt={featured.thumbnail_alt ?? featured.title}
+                alt={featured.thumbnail_alt ?? cleanPostTitle(featured.title)}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
@@ -127,7 +128,7 @@ export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale
                 {categoryLabel(featured.category, locale)}
               </span>
               <h2 className="font-bold text-spacemate-textCharcoal text-xl leading-snug mb-3 group-hover:text-spacemate-brandDark transition-colors">
-                {featured.title}
+                {cleanPostTitle(featured.title)}
               </h2>
               <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{featured.meta_desc}</p>
               <div className="flex items-center justify-between">
@@ -152,7 +153,7 @@ export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale
                 <div className="h-48 overflow-hidden bg-spacemate-bgLight">
                   <img
                     src={post.thumbnail ?? '/blog/placeholder.jpg'}
-                    alt={post.thumbnail_alt ?? post.title}
+                    alt={post.thumbnail_alt ?? cleanPostTitle(post.title)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -161,7 +162,7 @@ export default async function BlogIndexBody({ locale = 'th' }: { locale?: Locale
                     {categoryLabel(post.category, locale)}
                   </span>
                   <h2 className="font-semibold text-spacemate-textCharcoal text-sm leading-snug mb-3 group-hover:text-spacemate-brandDark transition-colors line-clamp-3">
-                    {post.title}
+                    {cleanPostTitle(post.title)}
                   </h2>
                   <p className="text-gray-400 text-xs leading-relaxed mb-4 line-clamp-2">{post.meta_desc}</p>
                   <div className="flex items-center justify-between">

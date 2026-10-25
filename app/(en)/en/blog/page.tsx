@@ -6,6 +6,7 @@ export const revalidate = 300
 import BlogIndexBody from '@/components/blog/BlogIndexBody'
 import { BLOG_T } from '@/lib/blog-i18n'
 import { hreflang } from '@/lib/hreflang'
+import { hasEnglishPosts } from '@/lib/blog-links'
 
 const t = BLOG_T.en
 
@@ -25,7 +26,12 @@ export default function Page() {
   return <BlogIndexBody locale="en" />
 }
 
-/** Title, description and indexing from /dashboard/pages override the defaults above. */
+/**
+ * Title, description and indexing from /dashboard/pages override the defaults above.
+ * With no English article published the page is an empty shell, so it stays
+ * out of Google (and out of the sitemap and /blog's hreflang) until there is one.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  return withPageSeo('/blog', 'en', baseMetadata)
+  const meta = await withPageSeo('/blog', 'en', baseMetadata)
+  return (await hasEnglishPosts()) ? meta : { ...meta, robots: { index: false, follow: true } }
 }
