@@ -58,6 +58,7 @@ const ALLOWED = new Map([
   ['lib/checkout-i18n.ts',    'the th half of the dictionary'],
   ['lib/search-ui-i18n.ts',   'the th half of the dictionary'],
   ['lib/guide-content.ts',    'DEFAULT_GUIDE and GUIDE_UI hold both th and en; the page picks by locale'],
+  ['lib/guide-data.ts',       'DEFAULT_GUIDE holds both th and en; the page picks by locale'],
   ['lib/promo.ts',            'DEFAULT_PROMO holds both th and en wording; the page picks by locale'],
   ['lib/faq-data.ts',         'the th half of the dictionary'],
   ['lib/constants.ts',        'area keywords and Thai place names'],
