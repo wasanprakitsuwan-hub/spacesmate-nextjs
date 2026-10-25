@@ -14,6 +14,8 @@ const NAV = [
   { href: '/dashboard/pages',            label: 'Pages',          icon: 'web',               exact: false },
   // Property names, places, stations and their SEO pages — one menu.
   { href: '/dashboard/places',           label: 'สถานที่ค้นหา',   icon: 'travel_explore',    exact: false },
+  // Landing pages per station, university and landmark: shared template and per-page text.
+  { href: '/dashboard/rent-pages',       label: 'หน้าทำเล',       icon: 'location_city',     exact: false },
   { href: '/dashboard/revenue',          label: 'รายได้',         icon: 'bar_chart',         exact: false },
   { href: '/dashboard/blog',             label: 'บทความ',         icon: 'article',           exact: false },
   { href: '/dashboard/settings',         label: 'ตั้งค่า',        icon: 'settings',          exact: false },

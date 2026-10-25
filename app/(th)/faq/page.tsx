@@ -7,6 +7,7 @@ import FAQAccordion from '@/components/faq/FAQAccordion'
 import { faqQa } from '@/lib/faq-data'
 import { FAQ_T } from '@/lib/faq-i18n'
 import { FaqLd } from '@/components/seo/JsonLd'
+import { hreflang } from '@/lib/hreflang'
 
 const t = FAQ_T.th
 
@@ -19,10 +20,7 @@ const baseMetadata: Metadata = {
     type: 'website',
     url: 'https://spacesmate.com/faq',
   },
-  alternates: {
-    canonical: 'https://spacesmate.com/faq',
-    languages: { en: 'https://spacesmate.com/en/faq' },
-  },
+  alternates: hreflang('/faq', 'th'),
 }
 
 export default function Page() {

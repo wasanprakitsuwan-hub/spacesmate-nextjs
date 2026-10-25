@@ -5,6 +5,7 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import ServicesBody from '@/components/marketing/ServicesBody'
 import { SERVICES_T } from '@/lib/marketing-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const t = SERVICES_T.en
 
@@ -17,10 +18,7 @@ const baseMetadata: Metadata = {
     type: 'website',
     url: 'https://spacesmate.com/en/services',
   },
-  alternates: {
-    canonical: 'https://spacesmate.com/en/services',
-    languages: { th: 'https://spacesmate.com/services' },
-  },
+  alternates: hreflang('/services', 'en'),
 }
 
 export default function Page() {

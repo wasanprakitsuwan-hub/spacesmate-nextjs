@@ -5,6 +5,7 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import BlogIndexBody from '@/components/blog/BlogIndexBody'
 import { BLOG_T } from '@/lib/blog-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const t = BLOG_T.en
 
@@ -17,10 +18,7 @@ const baseMetadata: Metadata = {
     type: 'website',
     url: 'https://spacesmate.com/en/blog',
   },
-  alternates: {
-    canonical: 'https://spacesmate.com/en/blog',
-    languages: { th: 'https://spacesmate.com/blog' },
-  },
+  alternates: hreflang('/blog', 'en'),
 }
 
 export default function Page() {

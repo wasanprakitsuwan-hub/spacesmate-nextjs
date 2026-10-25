@@ -11,6 +11,7 @@ import ManagementCTA from '@/components/sections/ManagementCTA'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
 import UniversityLinks from '@/components/sections/UniversityLinks'
+import { hreflang } from '@/lib/hreflang'
 
 /**
  * English home page — the same sections as the Thai home, with locale="en".
@@ -25,8 +26,8 @@ import UniversityLinks from '@/components/sections/UniversityLinks'
  *   - blog post titles and bodies (Stage F)
  *   - owner-supplied listing titles where no English was given
  *
- * The 16 hand-written area guides do have English pages, so AreaLinks points at
- * /en/area/... when locale is 'en'.
+ * AreaLinks and UniversityLinks link to /rent pages, which have English twins,
+ * so LocaleLink sends English readers to /en/rent/....
  */
 
 const SITE = 'https://spacesmate.com'
@@ -42,7 +43,7 @@ const baseMetadata: Metadata = {
     type: 'website',
     url: `${SITE}/en`,
   },
-  alternates: { canonical: '/en', languages: { th: '/' } },
+  alternates: hreflang('/', 'en'),
 }
 
 export default function EnglishHome() {

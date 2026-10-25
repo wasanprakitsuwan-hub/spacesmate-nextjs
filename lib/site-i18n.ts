@@ -109,6 +109,7 @@ export const SITE_T = {
     // ── Footer ──
     footerExplore: 'สำรวจ',
     footerPopularAreas: 'ทำเลยอดนิยม',
+    footerRentNear: (place: string) => `ห้องเช่าใกล้ ${place}`,
     footerForOwners: 'สำหรับเจ้าของ',
     footerPricing: 'แพ็กเกจราคา',
     footerCompany: 'บริษัท & ช่วยเหลือ',
@@ -201,6 +202,7 @@ export const SITE_T = {
 
     footerExplore: 'Explore',
     footerPopularAreas: 'Popular areas',
+    footerRentNear: (place: string) => `Rentals near ${place}`,
     footerForOwners: 'For owners',
     footerPricing: 'Pricing',
     footerCompany: 'Company & help',

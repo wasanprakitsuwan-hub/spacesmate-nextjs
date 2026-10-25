@@ -5,13 +5,11 @@ import { withPageSeo } from '@/lib/page-seo'
 export const revalidate = 300
 import TermsBody from '@/components/marketing/TermsBody'
 import { LEGAL_T } from '@/lib/legal-i18n'
+import { hreflang } from '@/lib/hreflang'
 
 const baseMetadata: Metadata = {
   title: LEGAL_T.th.termsMetaTitle,
-  alternates: {
-    canonical: 'https://spacesmate.com/terms',
-    languages: { en: 'https://spacesmate.com/en/terms' },
-  },
+  alternates: hreflang('/terms', 'th'),
 }
 
 export default function Page() {

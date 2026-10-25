@@ -28,7 +28,7 @@ import { provinceLabel } from '@/lib/geo-i18n'
 import { roomTypeLabel } from '@/lib/room-types'
 import { nearbyStations, nearbyLandmarks, stationLabel, distanceLabel } from '@/lib/search-match'
 import { LANDMARK_ICON, type LandmarkKind } from '@/lib/landmarks'
-import { localeHref } from '@/lib/routes-i18n'
+import { rentPath } from '@/lib/rent-slugs'
 import { mergePlaces } from '@/lib/search-places'
 import ListingStatBeacon from '@/components/property/ListingStatBeacon'
 import { loadPlaceOverrides } from '@/lib/search-places-server'
@@ -151,13 +151,12 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
   const nearbyGroups: { kind: LandmarkKind; items: NearbyItem[] }[] = []
   if (places) {
     const landmarks = nearbyLandmarks(pinLat, pinLng, 3, places.landmarks)
-    const searchHref = localeHref('/search', locale)
     for (const kind of ['transport', 'university', 'hospital', 'mall', 'place'] as LandmarkKind[]) {
       const items: NearbyItem[] = kind === 'transport'
-        ? stations.map(({ station, km }) => ({ key: `s:${station.id}`, name: stationLabel(station, locale), km, icon: 'train', href: `${searchHref}?station=${station.id}` }))
+        ? stations.map(({ station, km }) => ({ key: `s:${station.id}`, name: stationLabel(station, locale), km, icon: 'train', href: rentPath({ kind: 'station', id: station.id, station }) }))
         : []
       for (const { landmark, km } of landmarks.filter(x => x.landmark.kind === kind)) {
-        items.push({ key: `l:${landmark.id}`, name: locale === 'en' ? landmark.en : landmark.th, km, icon: LANDMARK_ICON[kind], href: `${searchHref}?landmark=${encodeURIComponent(landmark.id)}` })
+        items.push({ key: `l:${landmark.id}`, name: locale === 'en' ? landmark.en : landmark.th, km, icon: LANDMARK_ICON[kind], href: rentPath({ kind: 'landmark', id: landmark.id, landmark }) })
       }
       items.sort((a, b) => a.km - b.km)
       if (items.length) nearbyGroups.push({ kind, items: items.slice(0, 3) })
@@ -193,8 +192,9 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
       />
       <BreadcrumbLd
         trail={[
-          { name: t.home, url: 'https://spacesmate.com/' },
-          { name: t.search, url: 'https://spacesmate.com/search' },
+          // English pages point at the English home and search, not the Thai ones.
+          { name: t.home, url: locale === 'en' ? 'https://spacesmate.com/en' : 'https://spacesmate.com/' },
+          { name: t.search, url: locale === 'en' ? 'https://spacesmate.com/en/search' : 'https://spacesmate.com/search' },
           ...(building ? [{ name: building.name, url: `https://spacesmate.com/building/${encodeURI(building.slug)}` }] : []),
           { name: p.title, url: canonicalUrl },
         ]}

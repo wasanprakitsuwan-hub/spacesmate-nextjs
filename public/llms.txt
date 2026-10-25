@@ -22,17 +22,30 @@ structured data rather than leaving a bare figure to be interpreted.
 ## Key pages
 
 - [Search listings](https://spacesmate.com/search): every active rental listing, with filters
-- [Pricing](https://spacesmate.com/pricing): listing subscription tiers
+- [List your property](https://spacesmate.com/list-your-property): listing subscription tiers and how to list
 - [Services](https://spacesmate.com/services): full property management for building owners
 - [FAQ](https://spacesmate.com/faq): listing, fees, and management questions answered
 - [Blog](https://spacesmate.com/blog): Bangkok rental market guidance
 - [About](https://spacesmate.com/about)
 - [Contact](https://spacesmate.com/contact)
 
+## Rentals near a station or place
+
+One page per BTS, MRT, ARL and SRT station, university, shopping mall,
+hospital and landmark in Bangkok, listing every active rental within 2 km,
+closest first, with the walking distance on each listing. Each place has an
+all-types page and one page per property type (condo, apartment, house,
+office, co-working). Slugs are Thai keywords and identical in both languages.
+
+- Thai: https://spacesmate.com/rent/<slug>, e.g. https://spacesmate.com/rent/คอนโด-ใกล้-bts-อโศก
+- English: https://spacesmate.com/en/rent/<slug>
+
+Prices, counts and FAQ answers on these pages are computed from live listings.
+Pages with fewer than 3 nearby listings are marked noindex until stock arrives.
+
 ## Area guides
 
-Neighbourhood rental guides organised by BTS and MRT station and by district,
-each with live inventory for that area.
+District rental guides by property type, each with live inventory.
 
 - Thai: https://spacesmate.com/area/<slug>
 - English: https://spacesmate.com/en/area/<slug>
@@ -44,7 +57,7 @@ mainEntity: geo coordinates, bedroom and bathroom counts, floor area in square
 metres (unitCode MTK), amenities, and an Offer whose UnitPriceSpecification
 gives the rent period as unitCode MON for monthly or DAY for daily.
 
-Area pages carry ItemList, BreadcrumbList and FAQPage. The organisation is
+Rent-near and area pages carry ItemList, BreadcrumbList and FAQPage. The organisation is
 described once site-wide as a RealEstateAgent entity.
 
 ## Full URL index
@@ -54,5 +67,5 @@ described once site-wide as a RealEstateAgent entity.
 ## Company
 
 Space Works Co., Ltd. (Thai: บริษัท เสปซเวิร์คส จำกัด), company registration 0105569001611.
-Registered address: 4004/856 Rama IV Road, Phra Khanong, Khlong Toei, Bangkok.
+Office: Summer Hill (unit 3026), 1106 Sukhumvit Road, Phra Khanong, Khlong Toei, Bangkok 10110.
 Contact via LINE at @spacesmate or https://spacesmate.com/contact.

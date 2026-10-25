@@ -22,8 +22,14 @@ function Ld({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-/** Site-wide identity. Render once, in the root layout. */
-export function OrganizationLd() {
+/**
+ * Site-wide identity. Render once, in the root layout.
+ * Same @id in both languages, so engines read one entity described twice.
+ * English pages get English description and address: an English answer engine
+ * quoting a Thai address is less likely to quote it at all.
+ */
+export function OrganizationLd({ locale = 'th' }: { locale?: 'th' | 'en' }) {
+  const en = locale === 'en'
   return (
     <Ld
       data={{
@@ -32,12 +38,14 @@ export function OrganizationLd() {
         '@id': `${SITE}/#organization`,
         name: 'SpacesMate',
         legalName: 'Space Works Co., Ltd.',
-        url: SITE,
+        url: en ? `${SITE}/en` : SITE,
         logo: `${SITE}/logo.png`,
         image: `${SITE}/logo.png`,
-        description:
-          'แพลตฟอร์มเช่าอสังหาริมทรัพย์และบริการรับบริหารอาคารในกรุงเทพฯ ' +
-          'ลงประกาศห้องเช่า คอนโด อพาร์ทเม้นท์ บ้าน และออฟฟิศ',
+        description: en
+          ? 'Bangkok property rental platform and building management company. ' +
+            'Rooms, condos, apartments, houses, offices and co-working space for rent, listed by owners.'
+          : 'แพลตฟอร์มเช่าอสังหาริมทรัพย์และบริการรับบริหารอาคารในกรุงเทพฯ ' +
+            'ลงประกาศห้องเช่า คอนโด อพาร์ทเม้นท์ บ้าน และออฟฟิศ',
         areaServed: { '@type': 'City', name: 'Bangkok', alternateName: 'กรุงเทพมหานคร' },
         address: {
           '@type': 'PostalAddress',
@@ -45,9 +53,11 @@ export function OrganizationLd() {
           // and dashboard settings already use, so the four agree.
           // Note this is not the registered address on the privacy page, which
           // is a separate legal value and deliberately left alone.
-          streetAddress: 'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง',
-          addressLocality: 'เขตคลองเตย',
-          addressRegion: 'กรุงเทพมหานคร',
+          streetAddress: en
+            ? 'Summer Hill (unit 3026), 1106 Sukhumvit Road, Phra Khanong'
+            : 'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง',
+          addressLocality: en ? 'Khlong Toei' : 'เขตคลองเตย',
+          addressRegion: en ? 'Bangkok' : 'กรุงเทพมหานคร',
           postalCode: '10110',
           addressCountry: 'TH',
         },
@@ -64,20 +74,21 @@ export function OrganizationLd() {
 }
 
 /** Site-wide search action — lets engines surface the search box directly. */
-export function WebSiteLd() {
+export function WebSiteLd({ locale = 'th' }: { locale?: 'th' | 'en' }) {
+  const base = locale === 'en' ? `${SITE}/en` : SITE
   return (
     <Ld
       data={{
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        '@id': `${SITE}/#website`,
-        url: SITE,
+        '@id': `${base}/#website`,
+        url: base,
         name: 'SpacesMate',
-        inLanguage: 'th-TH',
+        inLanguage: locale === 'en' ? 'en-GB' : 'th-TH',
         publisher: { '@id': `${SITE}/#organization` },
         potentialAction: {
           '@type': 'SearchAction',
-          target: { '@type': 'EntryPoint', urlTemplate: `${SITE}/search?q={search_term_string}` },
+          target: { '@type': 'EntryPoint', urlTemplate: `${base}/search?q={search_term_string}` },
           'query-input': 'required name=search_term_string',
         },
       }}

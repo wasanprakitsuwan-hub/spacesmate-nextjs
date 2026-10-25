@@ -13,6 +13,23 @@ import CookieSettingsLink from '@/components/consent/CookieSettingsLink'
 import { SITE_T } from '@/lib/site-i18n'
 import { localeHref } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
+import { rentPath, rentPlaceLabel, type RentPlace } from '@/lib/rent-slugs'
+import { STATIONS } from '@/lib/stations'
+import { LANDMARKS } from '@/lib/landmarks'
+
+// A crawlable link to a handful of the busiest rent-near pages on every page of
+// the site. Fixed rather than counted: the footer is a client component, and
+// the homepage AreaLinks already ranks pages by live stock.
+const FOOTER_PLACES: RentPlace[] = [
+  ...['E4', 'E6', 'N5', 'E9', 'S2', 'BL20', 'BL15', 'CEN'].map(id => {
+    const station = STATIONS.find(s => s.id === id)!
+    return { kind: 'station' as const, id, station }
+  }),
+  ...['chula', 'kasetsart'].map(id => {
+    const landmark = LANDMARKS.find(l => l.id === id)!
+    return { kind: 'landmark' as const, id, landmark }
+  }),
+]
 
 export default function Footer() {
   const locale = useLocale()
@@ -42,7 +59,6 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {[
                 { label: t.navSearch, href: href('/search') },
-                { label: t.footerPopularAreas, href: href('/search') },
                 { label: t.navBlog, href: '/blog' },
               ].map((item) => (
                 <li key={item.label}>
@@ -95,6 +111,20 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+        </div>
+
+        {/* Popular rent-near pages */}
+        <div className="mb-8">
+          <h4 className="font-semibold text-sm mb-3 text-white">{t.footerPopularAreas}</h4>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            {FOOTER_PLACES.map(p => (
+              <li key={p.id}>
+                <Link href={rentPath(p)} className="text-white/60 hover:text-white text-sm transition-colors">
+                  {t.footerRentNear(rentPlaceLabel(p, locale))}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Divider + bottom bar */}

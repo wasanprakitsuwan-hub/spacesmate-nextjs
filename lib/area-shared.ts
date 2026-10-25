@@ -333,7 +333,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
      */
     const thUrl = `/area/${encodeURI(gen.slug)}`
     const enUrl = `/en/area/${encodeURI(gen.slug)}`
-    const languages = { th: thUrl, en: enUrl }
+    const languages = { th: thUrl, en: enUrl, 'x-default': thUrl }
 
     if (locale === 'en') {
       const title = `${gen.labelEn} — ${gen.count} listing${gen.count === 1 ? '' : 's'}`
@@ -373,7 +373,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
       title,
       description,
       openGraph: { title, description, type: 'website' as const },
-      alternates: { canonical: `/en/area/${slug}`, languages: { th: `/area/${slug}` } },
+      alternates: { canonical: `/en/area/${slug}`, languages: { th: `/area/${slug}`, en: `/en/area/${slug}`, 'x-default': `/area/${slug}` } },
       robots,
     }
   }
@@ -386,7 +386,7 @@ export async function buildAreaMetadata(slug: string, locale: Locale) {
     title,
     description,
     openGraph: { title, description, type: 'website' as const },
-    alternates: { canonical: `/area/${slug}`, languages: { en: `/en/area/${slug}` } },
+    alternates: { canonical: `/area/${slug}`, languages: { th: `/area/${slug}`, en: `/en/area/${slug}`, 'x-default': `/area/${slug}` } },
     robots,
   }
 }

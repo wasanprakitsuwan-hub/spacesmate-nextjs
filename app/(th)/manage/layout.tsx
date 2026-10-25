@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { withPageSeo } from '@/lib/page-seo'
+import { hreflang } from '@/lib/hreflang'
 
 /**
  * The root layout sets `template: '%s | SpacesMate'`, so the title here must not
@@ -20,13 +21,7 @@ const baseMetadata: Metadata = {
     url: 'https://spacesmate.com/manage',
     locale: 'th_TH',
   },
-  alternates: {
-    canonical: 'https://spacesmate.com/manage',
-    languages: {
-      'th-TH': 'https://spacesmate.com/manage',
-      'en-US': 'https://spacesmate.com/en/manage',
-    },
-  },
+  alternates: hreflang('/manage', 'th'),
 }
 
 export default function ManageLayout({ children }: { children: React.ReactNode }) {

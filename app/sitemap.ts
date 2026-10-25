@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next'
-import { AREA_KEYWORDS } from '@/lib/constants'
 import { createServerClient } from '@/lib/supabase'
 import { getGeneratedAreas } from '@/lib/areas'
-import { areaIsEmpty } from '@/lib/area-shared'
+import { listRentPages } from '@/lib/rent-pages'
 import { getBuildingsWithListings } from '@/lib/buildings'
 
 const SITE = 'https://spacesmate.com'
@@ -28,74 +27,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   // ── Static pages ───────────────────────────────────────────────────────────
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${SITE}/`,         changeFrequency: 'daily',   priority: 1.0,  lastModified: now },
-    { url: `${SITE}/search`,   changeFrequency: 'daily',   priority: 0.9,  lastModified: now },
-    { url: `${SITE}/en`,       changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/`, en: `${SITE}/en` } } },
-    { url: `${SITE}/manage`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
-    { url: `${SITE}/en/manage`, changeFrequency: 'monthly', priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/manage`, en: `${SITE}/en/manage` } } },
-    { url: `${SITE}/list-your-property`,   changeFrequency: 'monthly', priority: 0.9,  lastModified: now },
-    { url: `${SITE}/services`, changeFrequency: 'monthly', priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
-    { url: `${SITE}/en/services`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/services`, en: `${SITE}/en/services` } } },
-    { url: `${SITE}/blog`,     changeFrequency: 'weekly',  priority: 0.7,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
-    /**
-     * /en/blog is listed even though blog_posts holds no English articles yet.
-     * The index itself is a real page with real copy, and it is the hreflang
-     * counterpart /blog now declares — a declared alternate that 404s is worse
-     * than an empty one. Article URLs (blogPages, below) stay Thai-only until
-     * there are English articles to point at.
-     */
-    { url: `${SITE}/en/blog`,  changeFrequency: 'weekly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/blog`, en: `${SITE}/en/blog` } } },
-    { url: `${SITE}/about`,    changeFrequency: 'yearly',  priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
-    { url: `${SITE}/en/about`, changeFrequency: 'yearly',  priority: 0.4,  lastModified: now, alternates: { languages: { th: `${SITE}/about`, en: `${SITE}/en/about` } } },
-    { url: `${SITE}/en/faq`,   changeFrequency: 'monthly', priority: 0.6,  lastModified: now, alternates: { languages: { th: `${SITE}/faq`, en: `${SITE}/en/faq` } } },
-    { url: `${SITE}/en/contact`, changeFrequency: 'yearly', priority: 0.4, lastModified: now, alternates: { languages: { th: `${SITE}/contact`, en: `${SITE}/en/contact` } } },
-    { url: `${SITE}/en/search`, changeFrequency: 'daily',  priority: 0.7, lastModified: now, alternates: { languages: { th: `${SITE}/search`, en: `${SITE}/en/search` } } },
-    { url: `${SITE}/en/list-your-property`, changeFrequency: 'monthly', priority: 0.6, lastModified: now, alternates: { languages: { th: `${SITE}/list-your-property`, en: `${SITE}/en/list-your-property` } } },
-    { url: `${SITE}/en/privacy`, changeFrequency: 'yearly', priority: 0.3, lastModified: now, alternates: { languages: { th: `${SITE}/privacy`, en: `${SITE}/en/privacy` } } },
-    { url: `${SITE}/en/terms`,  changeFrequency: 'yearly', priority: 0.3, lastModified: now, alternates: { languages: { th: `${SITE}/terms`, en: `${SITE}/en/terms` } } },
-    { url: `${SITE}/contact`,  changeFrequency: 'yearly',  priority: 0.5,  lastModified: now },
-    { url: `${SITE}/faq`,      changeFrequency: 'monthly', priority: 0.5,  lastModified: now, alternates: { languages: { th: `${SITE}/faq`, en: `${SITE}/en/faq` } } },
-    { url: `${SITE}/terms`,    changeFrequency: 'yearly',  priority: 0.3,  lastModified: now },
-    { url: `${SITE}/privacy`,  changeFrequency: 'yearly',  priority: 0.3,  lastModified: now },
+  // Every one has an English twin, so each yields two entries carrying the
+  // full hreflang set (th, en, x-default = th), matching lib/hreflang.
+  // /en/blog is listed although there are no English articles yet: the index
+  // is a real page and the declared twin of /blog, and a declared alternate
+  // that 404s is worse than an empty one.
+  type Freq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
+  const STATIC: [path: string, freq: Freq, thPriority: number, enPriority: number][] = [
+    ['/',                   'daily',   1.0, 0.7],
+    ['/search',             'daily',   0.9, 0.7],
+    ['/manage',             'monthly', 0.9, 0.7],
+    ['/list-your-property', 'monthly', 0.9, 0.6],
+    ['/services',           'monthly', 0.7, 0.6],
+    ['/blog',               'weekly',  0.7, 0.5],
+    ['/faq',                'monthly', 0.5, 0.6],
+    ['/about',              'yearly',  0.5, 0.4],
+    ['/contact',            'yearly',  0.5, 0.4],
+    ['/terms',              'yearly',  0.3, 0.3],
+    ['/privacy',            'yearly',  0.3, 0.3],
   ]
-
-  // ── Area landing pages, Thai and English ───────────────────────────────────
-  // Each entry names its counterpart. The <link rel="alternate"> tags are
-  // already in page metadata, but crawlers that read the sitemap instead of
-  // rendering the page only see the pairing if it is stated here too.
-  const areaAlternates = (slug: string) => ({
-    languages: {
-      th: `${SITE}/area/${slug}`,
-      en: `${SITE}/en/area/${slug}`,
-    },
+  const staticPages: MetadataRoute.Sitemap = STATIC.flatMap(([path, changeFrequency, thP, enP]) => {
+    const th = path === '/' ? `${SITE}/` : `${SITE}${path}`
+    const en = path === '/' ? `${SITE}/en` : `${SITE}/en${path}`
+    const alternates = { languages: { th, en, 'x-default': th } }
+    return [
+      { url: th, changeFrequency, priority: thP, lastModified: now, alternates },
+      { url: en, changeFrequency, priority: enP, lastModified: now, alternates },
+    ]
   })
 
-  /**
-   * Only the hand-written areas that currently have listings.
-   *
-   * 15 of the 16 have none, and submitting 30 empty near-identical pages to
-   * Google is asking it to judge the domain on them. They stay live and keep
-   * their URLs — the point of /area/condo-rent-bts-asok is to hold the search
-   * term until there is inventory for it — and their metadata carries
-   * robots:noindex while empty, so this is the same decision stated in the
-   * second place a crawler looks.
-   *
-   * Self-healing: nothing here names which areas are empty, so a page rejoins
-   * the sitemap on the next hourly regeneration after its first listing
-   * appears. The data-driven areas below need no such filter, since they only
-   * exist when they have inventory.
-   */
-  const handwrittenWithListings = (
-    await Promise.all(
-      AREA_KEYWORDS.map(async a => (await areaIsEmpty(a.slug, 'th')) ? null : a),
-    )
-  ).filter((a): a is typeof AREA_KEYWORDS[number] => a !== null)
-
-  const areaPages: MetadataRoute.Sitemap = handwrittenWithListings.flatMap(a => ([
-    { url: `${SITE}/area/${a.slug}`,    changeFrequency: 'weekly' as const, priority: 0.8, lastModified: now, alternates: areaAlternates(a.slug) },
-    { url: `${SITE}/en/area/${a.slug}`, changeFrequency: 'weekly' as const, priority: 0.6, lastModified: now, alternates: areaAlternates(a.slug) },
-  ]))
+  // ── Rent-near-a-place pages, Thai and English ───────────────────────────
+  // Station and landmark pages, all types and per type. Only those with
+  // INDEX_MIN or more listings: the rest carry robots:noindex until they have
+  // stock, and this list regenerates hourly, so a page joins by itself. The 16
+  // hand-written /area pages were folded into these and now 301 here.
+  const rentPages: MetadataRoute.Sitemap = (await listRentPages())
+    .filter(r => r.indexable)
+    .flatMap(r => {
+      const th = encodeURI(`${SITE}/rent/${r.slug}`)
+      const en = encodeURI(`${SITE}/en/rent/${r.slug}`)
+      const alternates = { languages: { th, en, 'x-default': th } }
+      const priority = r.type ? 0.7 : 0.8
+      return [
+        { url: th, changeFrequency: 'daily' as const, priority, lastModified: now, alternates },
+        { url: en, changeFrequency: 'daily' as const, priority: priority - 0.1, lastModified: now, alternates },
+      ]
+    })
 
   // ── Data-driven area pages ─────────────────────────────────────────────────
   // One per (district, property type) with live inventory. These are the pages
@@ -108,6 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     languages: {
       th: encodeURI(`${SITE}/area/${slug}`),
       en: encodeURI(`${SITE}/en/area/${slug}`),
+      'x-default': encodeURI(`${SITE}/area/${slug}`),
     },
   })
   const generatedAreaPages: MetadataRoute.Sitemap = generated.flatMap(a => ([
@@ -179,6 +157,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           languages: {
             th: encodeURI(`${SITE}/property/${p.slug}`),
             en: encodeURI(`${SITE}/en/property/${p.slug}`),
+            'x-default': encodeURI(`${SITE}/property/${p.slug}`),
           },
         },
       }))
@@ -203,5 +182,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...areaPages, ...generatedAreaPages, ...buildingPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...rentPages, ...generatedAreaPages, ...buildingPages, ...propertyPages, ...blogPages]
 }

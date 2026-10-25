@@ -23,6 +23,9 @@ export function rootMetadata(locale: Locale): Metadata {
   const isEn = locale === 'en'
 
   return {
+    // Without this, relative canonical and hreflang URLs resolve against the
+    // Vercel deployment URL instead of the real domain.
+    metadataBase: new URL(SITE),
     title: {
       default: isEn
         ? 'SpacesMate — Rent an Apartment, Condo or Office in Bangkok'

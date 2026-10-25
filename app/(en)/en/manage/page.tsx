@@ -4,6 +4,7 @@ import { withPageSeo } from '@/lib/page-seo'
 // Picks up title and description edits from /dashboard/pages.
 export const revalidate = 300
 import ManageBody from '@/components/marketing/ManageBody'
+import { hreflang } from '@/lib/hreflang'
 
 /**
  * The English Stream 2 pitch. Reachable from the navbar's "For owners" menu,
@@ -29,13 +30,7 @@ const baseMetadata: Metadata = {
     url: 'https://spacesmate.com/en/manage',
     locale: 'en_US',
   },
-  alternates: {
-    canonical: 'https://spacesmate.com/en/manage',
-    languages: {
-      'th-TH': 'https://spacesmate.com/manage',
-      'en-US': 'https://spacesmate.com/en/manage',
-    },
-  },
+  alternates: hreflang('/manage', 'en'),
 }
 
 export default function EnManagePage() {

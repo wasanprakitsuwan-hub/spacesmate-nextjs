@@ -71,6 +71,10 @@ const ALLOWED = new Map([
 
   // ── Locale-gated: the Thai is behind `locale === 'th'` ──
   ['components/area/AreaPageBody.tsx',          'fallback copy, gated on locale'],
+  ['components/rent/RentPageBody.tsx',          'th half of the page dictionary, chosen by locale'],
+  ['lib/rent-slugs.ts',                         'Thai URL slugs (same in both locales) + th half of type names and template'],
+  ['lib/rent-pages.ts',                         'th half of empty-page copy and generated FAQ, chosen by locale'],
+  ['lib/property-page.ts',                      'th half of generated listing meta descriptions, chosen by locale'],
   ['components/property/PropertyGallery.tsx',   'alt/aria text, gated on locale'],
   ['components/property/PropertyVideo.tsx',     'heading and aria text, gated on locale'],
   ['components/listing/BuildingAutocomplete.tsx', 'status lines, gated on locale'],
