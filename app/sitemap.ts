@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createServerClient } from '@/lib/supabase'
 import { listDistrictPages } from '@/lib/district-pages'
+import { hasEnglishPosts } from '@/lib/blog-links'
 import { listRentPages } from '@/lib/rent-pages'
 import { getBuildingsWithListings } from '@/lib/buildings'
 
@@ -29,9 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Static pages ───────────────────────────────────────────────────────────
   // Every one has an English twin, so each yields two entries carrying the
   // full hreflang set (th, en, x-default = th), matching lib/hreflang.
-  // /en/blog is listed although there are no English articles yet: the index
-  // is a real page and the declared twin of /blog, and a declared alternate
-  // that 404s is worse than an empty one.
+  // /en/blog joins only once an English article is published; until then it
+  // is noindex (app/(en)/en/blog/page.tsx), and a noindex URL in a sitemap is
+  // a Search Console error.
   type Freq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
   const STATIC: [path: string, freq: Freq, thPriority: number, enPriority: number][] = [
     ['/',                   'daily',   1.0, 0.7],
@@ -46,9 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/terms',              'yearly',  0.3, 0.3],
     ['/privacy',            'yearly',  0.3, 0.3],
   ]
+  const englishBlog = await hasEnglishPosts()
   const staticPages: MetadataRoute.Sitemap = STATIC.flatMap(([path, changeFrequency, thP, enP]) => {
     const th = path === '/' ? `${SITE}/` : `${SITE}${path}`
     const en = path === '/' ? `${SITE}/en` : `${SITE}/en${path}`
+    if (path === '/blog' && !englishBlog) {
+      return [{ url: th, changeFrequency, priority: thP, lastModified: now }]
+    }
     const alternates = { languages: { th, en, 'x-default': th } }
     return [
       { url: th, changeFrequency, priority: thP, lastModified: now, alternates },

@@ -6,6 +6,7 @@ export const revalidate = 300
 import BlogIndexBody from '@/components/blog/BlogIndexBody'
 import { BLOG_T } from '@/lib/blog-i18n'
 import { hreflang } from '@/lib/hreflang'
+import { hasEnglishPosts } from '@/lib/blog-links'
 
 const t = BLOG_T.th
 
@@ -25,7 +26,14 @@ export default function Page() {
   return <BlogIndexBody locale="th" />
 }
 
-/** Title, description and indexing from /dashboard/pages override the defaults above. */
+/**
+ * Title, description and indexing from /dashboard/pages override the defaults above.
+ * The English twin is declared only once it has an article: until then
+ * /en/blog is noindex, and an hreflang pointing at a noindex page is ignored
+ * at best.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  return withPageSeo('/blog', 'th', baseMetadata)
+  const meta = await withPageSeo('/blog', 'th', baseMetadata)
+  if (await hasEnglishPosts()) return meta
+  return { ...meta, alternates: { canonical: '/blog' } }
 }

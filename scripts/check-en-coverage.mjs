@@ -74,6 +74,7 @@ const ALLOWED = new Map([
   ['lib/rent-slugs.ts',                         'Thai URL slugs (same in both locales) + th half of type names and template'],
   ['lib/rent-content.ts',                       'th half of the area write-ups, chosen by locale'],
   ['lib/district-pages.ts',                     'th half of the district FAQ and empty-state copy, chosen by locale'],
+  ['lib/blog-links.ts',                         'Thai place names matched against article text, not displayed'],
   ['lib/rent-pages.ts',                         'th half of empty-page copy and generated FAQ, chosen by locale'],
   ['lib/property-page.ts',                      'th half of generated listing meta descriptions, chosen by locale'],
   ['components/property/PropertyGallery.tsx',   'alt/aria text, gated on locale'],
