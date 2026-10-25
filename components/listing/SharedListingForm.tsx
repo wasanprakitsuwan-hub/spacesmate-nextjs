@@ -1141,7 +1141,7 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType, locale =
       </button>
       <div>
         <label style={{ ...SLBL, fontSize: 12 }}>{t.orPasteVideoLink}</label>
-        <input value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''} onChange={e => onVideoChange(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={SINP} />
+        <input value={videoUrl.startsWith('http') && !videoUrl.includes('supabase') ? videoUrl : ''} onChange={e => onVideoChange(e.target.value)} placeholder="https://youtube.com/watch?v=… / https://www.tiktok.com/@…/video/…" style={SINP} />
       </div>
       {uploadError && <p style={{ color: '#b91c1c', fontSize: 12, margin: '5px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{uploadError}</p>}
       {videoUrl && (

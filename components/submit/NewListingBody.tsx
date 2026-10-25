@@ -12,6 +12,8 @@ import Link from '@/components/ui/LocaleLink'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
 import { MAX_IMAGES_ANY_PACKAGE } from '@/lib/packages'
+import { PROPERTY_TYPE_LABELS } from '@/lib/constants'
+import { C, RADIUS, btnStyle } from '@/lib/ui'
 import { createBrowserClient } from '@/lib/supabase'
 import { SUBMIT_NEW_T, type Locale } from '@/lib/submit-new-i18n'
 import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
@@ -25,14 +27,6 @@ import {
 // allowance. It does neither now: packages are a display entitlement decided by
 // the slot the owner buys, and this page only writes the listing. Prices live
 // in lib/packages and are shown on /list-your-property and at /checkout.
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-const SINP: React.CSSProperties = {
-  width: '100%', padding: '11px 14px', borderRadius: 10,
-  border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
-  fontFamily: 'inherit', background: '#fff', color: '#231f20',
-  boxSizing: 'border-box',
-}
 
 // ── Inner Form ────────────────────────────────────────────────────────────────
 function SubmitNewForm({ locale }: { locale: Locale }) {
@@ -48,9 +42,8 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
   const urlPkg       = searchParams.get('package') || 'basic'
   const initialPkg   = ['basic','standard','premium'].includes(urlPkg) ? urlPkg : 'basic'
 
-  // Two steps: the listing, then contact details and save. There is no package
-  // step any more — see the note where PACKAGES used to be.
-  const [step, setStep] = useState(1) // 1=listing, 2=contact+save
+  // One page: the listing, contact and consent, then save. Payment is the next
+  // page (/checkout), so the form never asks for a package (Founder, 25 Oct 2026).
 
   // Denominator for the funnel. Without this we can see who finishes but not who
   // arrived, which is exactly the gap in the Facebook-ads question.
@@ -75,7 +68,6 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
       const parsed = JSON.parse(saved) as Partial<FormState>
       if (parsed && typeof parsed === 'object' && parsed.title_th) {
         setForm(f => ({ ...f, ...parsed }))
-        setStep(1)   // back to the listing step
       }
     } catch {
       // A malformed stash is not worth blocking the form for.
@@ -130,14 +122,25 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     return null
   }
 
-  // ── Save the listing as a draft ────────────────────────────────────────────
-  async function handleSubmit() {
-    if (!form.contact_name.trim() || !form.contact_phone.trim()) {
-      trackEvent('listing_validation_error', { step: 2, reason: 'missing_contact' })
-      setError(t.needContact); return
+  // ── Save the listing ───────────────────────────────────────────────────────
+  // 'pay' validates everything and goes on to /checkout (or publishes straight
+  // away into a free slot). 'draft' needs only a title, keeps it a draft even
+  // when a slot is free, and goes to the dashboard.
+  async function handleSubmit(mode: 'pay' | 'draft') {
+    const err = mode === 'draft'
+      ? (form.title_th.trim() ? null : t.needTitleTh)
+      : validateStep1() ?? (!form.contact_name.trim() || !form.contact_phone.trim() ? t.needContact : null)
+    if (err) {
+      // The single most useful signal we can collect: which field stops
+      // people. Photo upload is the prime suspect.
+      trackEvent('listing_validation_error', {
+        mode, reason: err, property_type: form.property_type,
+        has_images: form.images.length > 0, image_count: form.images.length,
+      })
+      setError(err); return
     }
     if (!consent) {
-      trackEvent('listing_validation_error', { step: 2, reason: 'no_consent' })
+      trackEvent('listing_validation_error', { mode, reason: 'no_consent' })
       setError(t.needConsent); return
     }
     setError(null); setLoading(true)
@@ -223,6 +226,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
           // Which package this listing is intended for. It does not buy
           // anything here — it preselects the package on the slot purchase.
           package_type:  form.package_type,
+          draft_only:    mode === 'draft',
         }),
       })
       const json = await res.json()
@@ -232,7 +236,13 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
         package_id:    form.package_type,
         property_type: form.property_type,
         published:     json.published === true,
+        mode,
       })
+
+      if (mode === 'draft') {
+        window.location.href = '/owner-dashboard'
+        return
+      }
 
       // If a slot was already free, the API published it — nothing left to buy.
       if (json.published === true) {
@@ -253,79 +263,50 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     }
   }
 
-  // ── Selected package helper ────────────────────────────────────────────────
+  // ── Card preview and completeness, from what is typed so far ──────────────
+  const price = prepareSubmitData(form).price_from
+  const typeLabel = PROPERTY_TYPE_LABELS[form.property_type as keyof typeof PROPERTY_TYPE_LABELS]?.[locale] ?? ''
+  const fmt = (n: number) => n.toLocaleString(locale === 'en' ? 'en-GB' : 'th-TH')
+  const checks: Array<[boolean, string]> = [
+    [!!form.title_th.trim(), t.itemTitle],
+    [!!price, t.itemPrice],
+    [!!(form.lat && form.lng), t.itemPin],
+    [form.images.length > 0, t.itemPhotos],
+    [!!(form.contact_name.trim() && form.contact_phone.trim()), t.itemContact],
+    [!!form.title_en?.trim(), t.itemTitleEn],
+    [!!form.description_en?.trim(), t.itemDescEn],
+  ]
+  const done = checks.filter(c => c[0]).length
+  const missing = checks.filter(c => !c[0]).map(c => c[1])
+
+  const card: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 20, marginBottom: 14 }
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', background: C.paper, padding: '24px 16px 80px' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        .sm-nl-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+        .sm-nl-aside { position: sticky; top: 88px; }
+        @media (max-width: 960px) { .sm-nl-grid { grid-template-columns: minmax(0, 1fr); } .sm-nl-aside { position: static; order: -1; } .sm-nl-hide-m { display: none; } }
+      `}</style>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <p style={{ fontSize: 13, color: C.muted, margin: '0 0 8px' }}>
+          <Link href="/owner-dashboard" style={{ color: C.teal, textDecoration: 'none' }}>{t.crumbMine}</Link>
+          <span style={{ margin: '0 6px', color: C.faint }}>/</span>{t.crumbNew}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 600, color: C.green, margin: 0 }}>{t.pageTitle}</h1>
+          <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+            <span style={{ color: C.green, fontWeight: 600 }}>1 {t.stepFill}</span>
+            <span style={{ margin: '0 8px', color: C.faint }}>/</span>
+            <span>2 {t.stepPay}</span>
+          </p>
+        </div>
 
-      {/* ── Top bar ── */}
-      <div style={{ background: '#02402e', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href={lp('/')} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <span style={{ color: '#d97f11', fontWeight: 800, fontSize: 18, letterSpacing: '-0.5px' }}>SpacesMate</span>
-        </Link>
-        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{t.topBar}</span>
-      </div>
-
-      {/* ── Step indicator ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #eef0ef', padding: '12px 20px', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'center', overflowX: 'auto' }}>
-        {[
-          // Package selection is no longer a step. It used to be step 1 because
-          // this page charged, so the package had to be settled before payment.
-          // It does not charge any more: the package belongs to the slot, which
-          // is bought afterwards. Opening with a price list ahead of a form the
-          // visitor has not filled in asks them to choose before they have any
-          // reason to care. Step 0 still exists and is reachable from the
-          // listing step, for changing the intended package and with it the
-          // image allowance — it is just not the front door.
-          { num: 1, label: t.step1, s: 1 },
-          { num: 2, label: t.step2, s: 2 },
-        ].map((item, idx) => {
-          const done    = step > item.s
-          const current = step === item.s
-          return (
-            <div key={item.num} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              {idx > 0 && <div style={{ width: 28, height: 2, background: done ? '#048c73' : '#eef0ef', flexShrink: 0 }} />}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 6px' }}>
-                <div style={{
-                  width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: done ? '#048c73' : current ? '#02402e' : '#eef0ef',
-                  color: done || current ? '#fff' : '#94a3b8',
-                  fontSize: 11, fontWeight: 700, flexShrink: 0,
-                }}>
-                  {done ? <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1" }}>check</span> : item.num}
-                </div>
-                <span style={{ fontSize: 12, fontWeight: current ? 700 : 400, color: current ? '#02402e' : done ? '#048c73' : '#94a3b8', whiteSpace: 'nowrap' }}>{item.label}</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '28px 16px 0' }}>
-
-        {/* The package-selection step was removed on 3 Sep 2026.
-            Packages became a display entitlement rather than an input
-            restriction: everyone may upload the largest allowance and add a
-            video, and the slot the owner buys decides how much of that the
-            public sees. So there is nothing to pick here, and asking would
-            only put a price list in front of someone who came to write a
-            listing. Prices live on /list-your-property and /checkout. */}
-
-        {/* ═══════════════════════════════════════════════════
-            STEP 1 — Full Listing Form
-        ═══════════════════════════════════════════════════ */}
-        {step === 1 && (
-          <div>
-            {/* No package badge any more.
-                Packages decide what the public sees, not what may be entered,
-                so there is nothing to choose here and nothing this form needs
-                to know. Prices live on /list-your-property and /checkout; this page is only about
-                writing the listing. */}
-
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 20px' }}>{t.listingInfo}</h2>
-
-            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #eef0ef', padding: '20px 20px 24px' }}>
+        <div className="sm-nl-grid">
+          <div style={{ minWidth: 0 }}>
+            <div style={{ ...card, padding: '20px 20px 24px' }}>
               <ListingFormFields
                 form={form}
                 onChange={onChange}
@@ -336,138 +317,81 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
               />
             </div>
 
-            {error && (
-              <div style={{ marginTop: 14, padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#b91c1c', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}
-              </div>
-            )}
-
-            {/* No "back" from here any more — this is the first step now, and a
-                back button that lands on a package picker the visitor never saw
-                would be disorienting. Changing the package is the link above. */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button type="button"
-                onClick={() => {
-                  const err = validateStep1()
-                  if (err) {
-                    // The single most useful signal we can collect: which field
-                    // stops people. Photo upload is the prime suspect.
-                    trackEvent('listing_validation_error', {
-                      step: 1,
-                      reason: err,
-                      property_type: form.property_type,
-                      has_images: form.images.length > 0,
-                      image_count: form.images.length,
-                    })
-                  }
-                  if (err) { setError(err); return }
-                  trackEvent('listing_step', { step: 2, from: 1, property_type: form.property_type, image_count: form.images.length })
-                  setError(null); setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {t.nextContact}
-                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>arrow_forward</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════
-            STEP 2 — Contact + Promo + Payment
-        ═══════════════════════════════════════════════════ */}
-        {step === 2 && (
-          <div>
-            {/* Summary card */}
-            <div style={{ background: '#02402e', color: '#fff', borderRadius: 14, padding: '16px 20px', marginBottom: 24 }}>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginBottom: 4 }}>{t.listingToPublish}</div>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{form.title_th || t.untitled}</div>
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>{t.photosN(form.images.length)}
-                </span>
-                {form.video_url && (
-                  <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span>{t.oneVideo}
-                  </span>
-                )}
-                {form.province && (
-                  <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,.75)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>location_on</span>{form.province}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Contact info is collected once, in the listing form itself
-                (section 10). It used to be asked again here, so a landlord filled
-                the same three fields twice. */}
-            {/* The promo box and order summary lived here and were removed when
-                this page stopped charging. Both would now lie: a discount code
-                validated here applies to nothing, and an order summary implies
-                a purchase that does not happen on this page. The code belongs
-                at slot checkout, where Stripe's own promo field already sits. */}
-
-            {/* What happens next */}
-            <div style={{ background: '#fafffe', borderRadius: 14, border: '1px solid #b2d8c9', padding: '18px 20px', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#02402e', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>save</span>{t.whatNext}
-              </h2>
-              <p style={{ margin: 0, fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
-                {t.draftLine1a}<strong style={{ color: '#02402e' }}>{t.draftLine1b}</strong>{t.draftLine1c}
-              </p>
-              <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
-                {t.draftLine2}
-              </p>
-              <p style={{ margin: '10px 0 0', fontSize: 12.5, color: '#8a6234', background: '#fffaf2', border: '1px solid #f0d5ad', borderRadius: 8, padding: '9px 11px', lineHeight: 1.6 }}>
-                <strong>{t.fillFreely}</strong>{t.fillFreelyBody(MAX_IMAGES_ANY_PACKAGE)}
-              </p>
-              <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
-                {t.draftsNeverExpire}
-              </p>
-            </div>
-
             {/* Consent */}
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '14px', background: '#fff', border: '1.5px solid ' + (consent ? '#048c73' : '#eef0ef'), borderRadius: 12, marginBottom: 16, transition: 'border-color .15s' }}>
-              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#048c73', marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+            <label style={{ ...card, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', borderColor: consent ? C.teal : C.line }}>
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ width: 18, height: 18, accentColor: C.teal, marginTop: 2, flexShrink: 0 }} />
+              <span style={{ fontSize: 14, color: C.ink, lineHeight: 1.6 }}>
                 {t.consentLead}{' '}
-                <Link href={lp('/terms')} style={{ color: '#048c73', fontWeight: 600 }}>{t.terms}</Link>
+                <Link href={lp('/terms')} style={{ color: C.teal }}>{t.terms}</Link>
                 {' '}{t.and}{' '}
-                <Link href={lp('/privacy')} style={{ color: '#048c73', fontWeight: 600 }}>{t.privacy}</Link>
+                <Link href={lp('/privacy')} style={{ color: C.teal }}>{t.privacy}</Link>
                 {' '}{t.consentTail}
               </span>
             </label>
 
             {error && (
-              <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}
-              </div>
+              <div role="alert" style={{ padding: '12px 14px', background: '#fef3f2', border: '1px solid #fecdca', borderRadius: RADIUS, color: '#b42318', fontSize: 13.5, marginBottom: 14 }}>{error}</div>
             )}
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="button" onClick={() => { trackEvent('listing_step_back', { from: 2, to: 1 }); setError(null); setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                {t.back}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => handleSubmit('draft')} disabled={loading} className="sm-btn-ghost" style={{ ...btnStyle('ghost'), opacity: loading ? 0.6 : 1 }}>
+                {t.saveDraft}
               </button>
-              <button type="button" onClick={handleSubmit} disabled={loading}
-                style={{ flex: 2, padding: '14px', borderRadius: 12, border: 'none', background: loading ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'background .15s' }}>
+              <button type="button" onClick={() => handleSubmit('pay')} disabled={loading} className="sm-btn-primary"
+                style={{ ...btnStyle('primary'), minWidth: 240, opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}>
                 {loading
-                  ? <><span style={{ width: 17, height: 17, border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</>
-                  : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>save</span>{t.saveListing}</>
-                }
+                  ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</>
+                  : t.saveAndPay}
               </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
-              <span className="msym" style={{ fontSize: 16, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>lock</span>
-              <span style={{ fontSize: 12, color: '#94a3b8' }}>{t.savedAsDraftNote}</span>
-            </div>
+
+            <OwnerHelpLinks locale={locale} />
           </div>
-        )}
 
-        <OwnerHelpLinks locale={locale} />
+          <aside className="sm-nl-aside">
+            <div style={card}>
+              <p style={{ fontSize: 13, color: C.muted, margin: '0 0 10px' }}>{t.previewTitle}</p>
+              <div style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS, overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '4 / 3', background: C.line2 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {form.images[0] && <img src={form.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                </div>
+                <div style={{ padding: '10px 12px 12px' }}>
+                  <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, color: form.title_th ? C.ink : C.faint, lineHeight: 1.4 }}>{form.title_th || t.previewUntitled}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: C.muted }}>{[typeLabel, form.district].filter(Boolean).join(' · ')}</p>
+                  {price > 0 && (
+                    <p style={{ margin: '6px 0 0', fontSize: 16, fontWeight: 600, color: C.amber }}>฿{fmt(price)}<span style={{ fontSize: 12.5, color: C.muted, fontWeight: 400 }}> {t.perMonth}</span></p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={card} className="sm-nl-hide-m">
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 8 }}>
+                <span style={{ fontWeight: 600, color: C.green }}>{t.completeness}</span>
+                <span style={{ color: C.muted }}>{done}/{checks.length}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: C.line2, overflow: 'hidden' }}>
+                <div style={{ width: `${(done / checks.length) * 100}%`, height: '100%', background: C.teal }} />
+              </div>
+              <p style={{ margin: '8px 0 0', fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
+                {missing.length ? t.missing + missing.join(', ') : t.complete}
+              </p>
+            </div>
+
+            <div style={card} className="sm-nl-hide-m">
+              <p style={{ fontSize: 14, fontWeight: 600, color: C.green, margin: '0 0 8px' }}>{t.nextHeading}</p>
+              {[t.next1, t.next2, t.next3].map(x => (
+                <p key={x} style={{ margin: '0 0 6px', fontSize: 13, color: C.ink, lineHeight: 1.6 }}>{x}</p>
+              ))}
+              <p style={{ margin: '10px 0 0', fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
+                <strong style={{ color: C.ink, fontWeight: 600 }}>{t.fillFreely}</strong>{t.fillFreelyBody(MAX_IMAGES_ANY_PACKAGE)}
+              </p>
+              <Link href="/guide" style={{ display: 'inline-block', marginTop: 10, fontSize: 13.5, color: C.teal, textDecoration: 'none' }}>{t.guideLink}</Link>
+            </div>
+          </aside>
+        </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
@@ -481,7 +405,7 @@ export default function NewListingBody({ locale = 'th' }: { locale?: Locale }) {
   const t = SUBMIT_NEW_T[locale]
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: C.paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', color: '#64748b' }}>
           <div style={{ width: 32, height: 32, border: '3px solid #eef0ef', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ margin: 0, fontSize: 14 }}>{t.loading}</p>

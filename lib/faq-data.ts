@@ -86,7 +86,7 @@ const TH: Category[] = [
     faqs: [
       {
         q: 'วิธีเริ่มต้นลงประกาศทรัพย์สินบน SpacesMate?',
-        a: 'กดปุ่ม "ลงประกาศ" แล้วสมัครบัญชีฟรี (ยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว) → กรอกรายละเอียดและอัปโหลดรูปภาพ → บันทึก บัญชีใหม่ได้แพ็กเกจ Basic ฟรี 1 แพ็กเกจ ประกาศแรกจึงเผยแพร่ทันที 30 วัน ส่วนประกาศถัดไปหรือเมื่อครบกำหนด เลือกแพ็กเกจและชำระเงินในหน้าชำระเงิน (พร้อมเพย์หรือบัตร) ประกาศเผยแพร่ทันทีหลังชำระสำเร็จ ไม่ต้องรออนุมัติ',
+        a: 'กดปุ่ม "ลงประกาศ" แล้วสมัครบัญชีฟรี (ยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว) → กรอกรายละเอียดและอัปโหลดรูปภาพ → บันทึก → เลือกแพ็กเกจและชำระเงินในหน้าชำระเงิน (พร้อมเพย์หรือบัตร) ถ้ามีโค้ดส่วนลดกรอกในขั้นส่วนลด ประกาศเผยแพร่ทันทีหลังชำระสำเร็จ ไม่ต้องรออนุมัติ',
       },
       {
         q: 'ค่าบริการลงประกาศบน SpacesMate เป็นเท่าไร?',
@@ -189,7 +189,7 @@ const EN: Category[] = [
     faqs: [
       {
         q: 'How do I start listing a property on SpacesMate?',
-        a: 'Press "List your property" and create a free account (accepting the Terms of Use and Privacy Policy) → enter the details and upload photos → save. A new account gets one free Basic package, so the first listing goes live straight away for 30 days. For further listings, or when that period ends, choose a package and pay at checkout (PromptPay or card); the listing goes live as soon as payment succeeds, with no approval to wait for.',
+        a: 'Press "List your property" and create a free account (accepting the Terms of Use and Privacy Policy) → enter the details and upload photos → save. → choose a package and pay at checkout (PromptPay or card), entering any promo code in the discount step; the listing goes live as soon as payment succeeds, with no approval to wait for.',
       },
       {
         q: 'What does listing on SpacesMate cost?',

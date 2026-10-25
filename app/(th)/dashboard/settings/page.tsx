@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES as SHARED_DEFAULT_AMENITIES, normaliseAmenity, type Amenity, type AmenitySection } from '@/lib/amenities'
 import { createBrowserClient } from '@/lib/supabase'
+import { DEFAULT_PROMO, normalisePromo, type CheckoutPromo } from '@/lib/promo'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -818,9 +819,87 @@ function SeoAeoSettings() {
   )
 }
 
+// ── Section 6: การชำระเงิน (โค้ดส่วนลดหน้าชำระเงิน) ─────────────────────────────
+
+function PaymentSettings() {
+  const [form, setForm]           = useState<CheckoutPromo>(DEFAULT_PROMO)
+  const [saved, setSaved]         = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    loadSetting<CheckoutPromo>('checkout_promo')
+      .then(data => { if (data && typeof data === 'object') setForm(normalisePromo(data)) })
+      .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
+  }, [])
+
+  function set<K extends keyof CheckoutPromo>(k: K, v: CheckoutPromo[K]) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function handleSave() {
+    setSaving(true); setSaveError('')
+    try {
+      await saveSetting('checkout_promo', { ...form, code: form.code.trim().toUpperCase() })
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
+    }
+    setSaving(false)
+  }
+
+  const card = { background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, marginBottom: 16 }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>การชำระเงิน</h2>
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ข้อความโปรโมชันและโค้ดส่วนลดที่แสดงในขั้น “ส่วนลด” ของหน้าชำระเงิน</p>
+      </div>
+
+      <div style={{ ...card, background: '#fbf0e1', borderColor: '#f1dcbc' }}>
+        <div style={{ fontSize: 13.5, color: '#5c3a06', lineHeight: 1.65 }}>
+          <strong>สร้างโค้ดใน Stripe ก่อน</strong> ที่ Stripe Dashboard › Products › Coupons สร้างคูปอง (เช่น ลด ฿299 ใช้ได้ครั้งแรกเท่านั้น)
+          แล้วเพิ่ม Promotion code ให้ตรงกับโค้ดด้านล่าง ระบบจะตรวจโค้ดกับ Stripe ทุกครั้งที่ผู้ใช้กด “ใช้โค้ด”
+          ถ้าโค้ดใน Stripe หมดอายุหรือถูกปิด ผู้ใช้จะเห็นว่าโค้ดใช้ไม่ได้
+        </div>
+      </div>
+
+      <div style={card}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#334155', cursor: 'pointer', marginBottom: 18 }}>
+          <input type="checkbox" checked={form.enabled} onChange={e => set('enabled', e.target.checked)} />
+          แสดงโปรโมชันในหน้าชำระเงิน
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ gridColumn: '1 / -1', maxWidth: 260 }}>
+            <label style={labelStyle}>โค้ด (ตรงกับ Promotion code ใน Stripe)</label>
+            <input value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} placeholder="SM299" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>หัวข้อ (ไทย)</label>
+            <input value={form.title_th} onChange={e => set('title_th', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Title (English)</label>
+            <input value={form.title_en} onChange={e => set('title_en', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>คำอธิบาย (ไทย)</label>
+            <input value={form.note_th} onChange={e => set('note_th', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Note (English)</label>
+            <input value={form.note_en} onChange={e => set('note_en', e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+      </div>
+
+      <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type SettingsTab = 'locations' | 'emails' | 'types' | 'company' | 'seo'
+type SettingsTab = 'locations' | 'emails' | 'types' | 'company' | 'seo' | 'payments'
 
 const SIDEBAR_NAV: Array<{ k: SettingsTab; label: string; icon: string; desc: string }> = [
   { k: 'locations', label: 'คำขอเพิ่มทำเล',      icon: 'add_location',  desc: 'อนุมัติทำเล / โครงการ' },
@@ -828,6 +907,7 @@ const SIDEBAR_NAV: Array<{ k: SettingsTab; label: string; icon: string; desc: st
   { k: 'types',     label: 'ประเภทและสิ่งอำนวยฯ', icon: 'tune',          desc: 'ตัวเลือกในฟอร์ม' },
   { k: 'company',   label: 'ข้อมูลบริษัท',         icon: 'business',      desc: 'โลโก้ ที่อยู่ โซเชียล' },
   { k: 'seo',       label: 'SEO & AEO เริ่มต้น',  icon: 'manage_search', desc: 'Meta, Schema, Robots' },
+  { k: 'payments',  label: 'การชำระเงิน',         icon: 'payments',      desc: 'โค้ดส่วนลด โปรโมชัน' },
 ]
 
 export default function SettingsPage() {
@@ -875,6 +955,7 @@ export default function SettingsPage() {
           {active === 'types'     && <TypesAndAmenities />}
           {active === 'company'   && <CompanyInfo />}
           {active === 'seo'       && <SeoAeoSettings />}
+          {active === 'payments'  && <PaymentSettings />}
         </div>
       </div>
     </div>

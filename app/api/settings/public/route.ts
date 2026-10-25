@@ -26,6 +26,7 @@ import { createServerClient } from '@/lib/supabase'
 
 const PUBLIC_KEYS = new Set([
   'amenities',      // rendered in the listing form by non-admin users
+  'checkout_promo', // the advertised promo code and its wording, shown on /checkout (lib/promo)
 ])
 
 export const revalidate = 60

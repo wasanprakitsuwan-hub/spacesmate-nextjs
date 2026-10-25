@@ -146,7 +146,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   th: [
     {
       q: 'สมัครใหม่ลงประกาศฟรีไหม?',
-      a: 'ฟรี บัญชีใหม่ได้แพ็กเกจ Basic ฟรี 1 แพ็กเกจ ประกาศแรกที่บันทึกจะเผยแพร่ทันทีและแสดงได้ 30 วัน นับจากวันที่เผยแพร่ ประกาศถัดไปหรือเมื่อครบ 30 วัน เลือกแพ็กเกจและชำระเงินได้จากแดชบอร์ด',
+      a: 'สมัครบัญชีฟรี และช่วงที่มีโปรโมชัน ผู้ซื้อครั้งแรกใช้โค้ดส่วนลดที่แสดงในหน้าชำระเงินได้ เช่น ลงประกาศแรกฟรี 1 เดือน กรอกโค้ดในขั้น "ส่วนลด" แล้วยอดจะลดก่อนชำระ',
     },
     {
       q: 'แพ็กเกจคืออะไร? ต่างจากประกาศอย่างไร?',
@@ -185,7 +185,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   en: [
     {
       q: 'Is my first listing free?',
-      a: 'Yes. A new account gets one free Basic package: the first listing you save is published straight away and shows for 30 days from that day. For further listings, or after the 30 days, choose a package and pay from your dashboard.',
+      a: 'The account is free, and while a promotion runs, first-time buyers can use the code shown on the checkout page, for example a free first month. Enter it in the "Discount" step and the total drops before you pay.',
     },
     {
       q: 'What is a package? How is it different from a listing?',

@@ -196,9 +196,11 @@ export async function POST(req: NextRequest) {
 
     // Created as a draft above. If a slot is free, use it now — an owner who
     // already paid should never have to press publish as a second step.
+    // Except when they pressed "save as draft" (draft_only): then it stays a
+    // draft and the slot stays free.
     let published = false
     let expiresAt: string | null = null
-    if (data?.id) {
+    if (data?.id && fields.draft_only !== true) {
       const slot = await claimSlot(supabase, userId, data.id as string)
       if (slot) {
         await syncListingFromSlot(supabase, slot)

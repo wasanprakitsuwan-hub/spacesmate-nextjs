@@ -428,6 +428,10 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
     setFreeSlots(ld.free_slots ?? 0)
     setSubscriptions(sd.subscriptions ?? [])
     setLoading(false)
+    // ?edit=<id> opens that listing's editor: the "edit listing" link on /checkout.
+    const editId = new URLSearchParams(window.location.search).get('edit')
+    const toEdit = editId ? (ld.listings ?? []).find((l: OwnerListing) => l.id === editId) : null
+    if (toEdit) setEditTarget(toEdit)
   }, [])
 
   /**
