@@ -3,10 +3,12 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 import { listRentPages, loadRentPlaces, mergeTemplate, rentPlaceKey, rentSlug, RENT_TYPES, TEMPLATE_KEY } from '@/lib/rent-pages'
+import { DEFAULT_DISTRICT_TEMPLATE } from '@/lib/rent-slugs'
+import { DISTRICT_TEMPLATE_KEY, districtSlug, listDistrictPages, loadDistricts } from '@/lib/district-pages'
 
-// GET   /api/dashboard/rent-pages — the template and every page with its count
-// PATCH /api/dashboard/rent-pages — { template } saves the template
-// PUT   /api/dashboard/rent-pages — { slug, ...fields } saves one page's override
+// GET   /api/dashboard/rent-pages — both templates and every page with its count
+// PATCH /api/dashboard/rent-pages — { template, kind } saves the station/place ('rent') or district template
+// PUT   /api/dashboard/rent-pages — { slug, ...fields } saves one page's override (/rent or /area)
 
 /** seo_pages.area_type for a place key. */
 async function areaTypeFor(placeKey: string): Promise<string> {
@@ -21,11 +23,19 @@ export async function GET(req: NextRequest) {
   if (isErr(auth)) return auth
   try {
     const supabase = createServerClient()
-    const [{ data: setting }, pages] = await Promise.all([
+    const [{ data: setting }, { data: districtSetting }, rentPages, districtPages] = await Promise.all([
       supabase.from('site_settings').select('value').eq('key', TEMPLATE_KEY).maybeSingle(),
+      supabase.from('site_settings').select('value').eq('key', DISTRICT_TEMPLATE_KEY).maybeSingle(),
       listRentPages(),
+      listDistrictPages(),
     ])
-    return NextResponse.json({ template: mergeTemplate(setting?.value), stored: setting?.value ?? null, pages })
+    return NextResponse.json({
+      template: mergeTemplate(setting?.value),
+      stored: setting?.value ?? null,
+      districtTemplate: mergeTemplate(districtSetting?.value, DEFAULT_DISTRICT_TEMPLATE),
+      districtStored: districtSetting?.value ?? null,
+      pages: [...rentPages, ...districtPages],
+    })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
@@ -35,7 +45,8 @@ export async function PATCH(req: NextRequest) {
   const auth = await requireAdmin(req)
   if (isErr(auth)) return auth
   try {
-    const { template } = await req.json()
+    const { template, kind } = await req.json()
+    const isDistrict = kind === 'district'
     // Stored as typed; empty fields fall back to the code defaults at render.
     const value = mergeTemplate(null)
     for (const locale of ['th', 'en'] as const) {
@@ -46,10 +57,11 @@ export async function PATCH(req: NextRequest) {
     }
     const { error } = await createServerClient()
       .from('site_settings')
-      .upsert({ key: TEMPLATE_KEY, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+      .upsert({ key: isDistrict ? DISTRICT_TEMPLATE_KEY : TEMPLATE_KEY, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
     if (error) throw error
-    revalidatePath('/rent/[slug]', 'page')
-    revalidatePath('/en/rent/[slug]', 'page')
+    const base = isDistrict ? 'area' : 'rent'
+    revalidatePath(`/${base}/[slug]`, 'page')
+    revalidatePath(`/en/${base}/[slug]`, 'page')
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err) }, { status: 500 })
@@ -69,14 +81,26 @@ export async function PUT(req: NextRequest) {
     const slug = String(body.slug ?? '')
 
     // Only slugs the site actually serves, so a typo cannot create a stray row.
-    const places = await loadRentPlaces()
-    const place = places.find(p => [null, ...RENT_TYPES].some(t => rentSlug(p, t) === slug))
-    if (!place) return NextResponse.json({ error: 'Unknown page' }, { status: 400 })
+    let base: 'rent' | 'area'
+    let placeKey: string
+    let areaType: string
+    const place = (await loadRentPlaces()).find(p => [null, ...RENT_TYPES].some(t => rentSlug(p, t) === slug))
+    if (place) {
+      base = 'rent'
+      placeKey = rentPlaceKey(place)
+      areaType = await areaTypeFor(placeKey)
+    } else {
+      const district = (await loadDistricts()).find(d => [null, ...RENT_TYPES].some(t => districtSlug(d, t) === slug))
+      if (!district) return NextResponse.json({ error: 'Unknown page' }, { status: 400 })
+      base = 'area'
+      placeKey = `district:${district.key}`
+      areaType = 'district'
+    }
 
     const row: Record<string, unknown> = {
       slug,
-      place_key: rentPlaceKey(place),
-      area_type: await areaTypeFor(rentPlaceKey(place)),
+      place_key: placeKey,
+      area_type: areaType,
       noindex: body.noindex === true,
       status: 'published',
       has_content: true,
@@ -95,8 +119,8 @@ export async function PUT(req: NextRequest) {
       }
       throw error
     }
-    revalidatePath(`/rent/${slug}`)
-    revalidatePath(`/en/rent/${slug}`)
+    revalidatePath(`/${base}/${slug}`)
+    revalidatePath(`/en/${base}/${slug}`)
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err) }, { status: 500 })

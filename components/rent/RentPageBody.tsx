@@ -1,27 +1,27 @@
 /**
- * The "rent near a place" landing page, either locale. Data and wording come
- * from loadRentPage in lib/rent-pages; this file is layout only, and matches
- * the area page's look so the two families read as one site.
+ * The landing page layout for both families, either locale: "rent near a
+ * place" (/rent, loadRentPage in lib/rent-pages) and districts (/area,
+ * loadDistrictPage in lib/district-pages). Layout only; data and wording come
+ * from the loaders.
  */
 // Link here is LocaleLink: write the Thai path, the reader's language is kept.
 import Link from '@/components/ui/LocaleLink'
 import { ItemListLd, BreadcrumbLd, FaqLd } from '@/components/seo/JsonLd'
 import { distanceLabel } from '@/lib/search-match'
-import { SITE, TYPE_NAME, type RentView, type Locale, type RentType } from '@/lib/rent-pages'
+import { SITE, TYPE_NAME, type LandingView, type Locale, type RentType } from '@/lib/rent-pages'
 
 const T = {
   th: {
     home: 'หน้าแรก', homeUrl: `${SITE}/`,
     search: 'ค้นหาที่พัก', searchUrl: `${SITE}/search`,
-    rentBase: `${SITE}/rent`,
     count: (n: number) => `${n} ประกาศ`,
     from: (n: number) => `เริ่มต้น ฿${n.toLocaleString('en-US')}/เดือน`,
     perMonth: (n: number) => `฿${n.toLocaleString('en-US')}/เดือน`,
     away: (d: string) => `ห่าง ${d}`,
     beds: (n: number) => `${n} ห้องนอน`,
     sqm: (n: number) => `${n} ตร.ม.`,
-    empty: 'ยังไม่มีประกาศในระยะนี้',
-    searchWider: 'ค้นหาด้วยระยะที่กว้างขึ้น',
+    empty: 'ยังไม่มีประกาศในทำเลนี้',
+    searchWider: 'ค้นหาในพื้นที่ที่กว้างขึ้น',
     whyRent: 'ทำไมถึงนิยมเช่าในย่านนี้?',
     about: 'ข้อมูลเพิ่มเติมเกี่ยวกับทำเลนี้',
     faq: 'คำถามที่พบบ่อย',
@@ -34,15 +34,14 @@ const T = {
   en: {
     home: 'Home', homeUrl: `${SITE}/en`,
     search: 'Search', searchUrl: `${SITE}/en/search`,
-    rentBase: `${SITE}/en/rent`,
     count: (n: number) => `${n} listing${n === 1 ? '' : 's'}`,
     from: (n: number) => `From ฿${n.toLocaleString('en-US')}/mo`,
     perMonth: (n: number) => `฿${n.toLocaleString('en-US')}/mo`,
     away: (d: string) => `${d} away`,
     beds: (n: number) => `${n} bed${n === 1 ? '' : 's'}`,
     sqm: (n: number) => `${n} m²`,
-    empty: 'Nothing listed within this radius yet',
-    searchWider: 'Search a wider radius',
+    empty: 'Nothing listed here yet',
+    searchWider: 'Search a wider area',
     whyRent: 'Why rent in this area?',
     about: 'About this area',
     faq: 'Frequently asked questions',
@@ -54,15 +53,9 @@ const T = {
   },
 } as const
 
-/** /search pre-set to this place, for the empty state. Not a canonical page. */
-function searchHref(view: RentView): string {
-  const q = view.place.kind === 'station' ? `station=${view.place.id}` : `landmark=${encodeURIComponent(view.place.id)}`
-  return `/search?${q}&r=5`
-}
-
-export default function RentPageBody({ view, locale }: { view: RentView; locale: Locale }) {
+export default function RentPageBody({ view, locale }: { view: LandingView; locale: Locale }) {
   const t = T[locale]
-  const pageUrl = `${t.rentBase}/${encodeURI(view.slug)}`
+  const pageUrl = `${SITE}${locale === 'en' ? '/en' : ''}${view.basePath}/${encodeURI(view.slug)}`
   const { highlights, body, faq } = view
 
   return (
@@ -143,7 +136,7 @@ export default function RentPageBody({ view, locale }: { view: RentView; locale:
                   </div>
                   <div style={{ padding: '14px 16px' }}>
                     <p style={{ color: '#048c73', fontSize: 12, margin: '0 0 4px', fontWeight: 500 }}>
-                      {t.away(distanceLabel(l.km, locale))}{l.district ? ` · ${l.district}` : ''}
+                      {[l.km !== null ? t.away(distanceLabel(l.km, locale)) : null, l.district].filter(Boolean).join(' · ')}
                     </p>
                     <h2 style={{ fontSize: 14, fontWeight: 600, color: '#231f20', margin: '0 0 6px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{title}</h2>
                     <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>
@@ -158,7 +151,7 @@ export default function RentPageBody({ view, locale }: { view: RentView; locale:
         ) : (
           <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f7f9f8', borderRadius: 20, marginBottom: 48 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 18px' }}>{t.empty}</h2>
-            <Link href={searchHref(view)} style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '12px 28px', borderRadius: 24, textDecoration: 'none', display: 'inline-block' }}>
+            <Link href={view.searchHref} style={{ background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 14, padding: '12px 28px', borderRadius: 24, textDecoration: 'none', display: 'inline-block' }}>
               {t.searchWider}
             </Link>
           </div>

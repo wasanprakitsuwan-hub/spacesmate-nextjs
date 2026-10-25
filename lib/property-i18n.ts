@@ -1,7 +1,7 @@
 /**
  * Every string the property page renders, per locale.
  *
- * Same approach as lib/area-shared: one dictionary rather than two copies of
+ * Same approach as lib/site-i18n: one dictionary rather than two copies of
  * the template, so the Thai and English pages cannot drift apart.
  *
  * Scope note: this covers the page's own chrome. Owner-supplied values —

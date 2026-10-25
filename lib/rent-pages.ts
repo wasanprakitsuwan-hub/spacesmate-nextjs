@@ -18,7 +18,7 @@
  * INDEXING
  *   Every slug resolves, so a link never 404s as inventory comes and goes. A
  *   page is indexed, and listed in the sitemap, only with INDEX_MIN or more
- *   listings — the same reasoning as areaIsEmpty in lib/area-shared: a cluster
+ *   listings (district pages in lib/district-pages follow the same rule): a cluster
  *   of empty near-identical pages drags the whole domain down. A page crosses
  *   the line by itself the moment it has stock, and an admin can still force
  *   noindex per page.
@@ -36,7 +36,7 @@ import { haversineKm } from '@/lib/search-match'
 import {
   RADIUS_KM, INDEX_MIN, RENT_TYPES, TYPE_PHRASE, TYPE_NAME, FOLDED_AREAS,
   rentPlaceKey, rentPlacePoint, rentPlaceLabel, rentSlug, rentPath, rentPlaces, slugIndex, decodeSlug,
-  DEFAULT_TEMPLATE,
+  DEFAULT_TEMPLATE, TYPE_ALT_TH,
   type Locale, type RentPlace, type RentType, type RentTemplate, type TemplateStrings, type RentOverride, type RentPageSummary,
 } from '@/lib/rent-slugs'
 
@@ -118,8 +118,8 @@ const EMPTY_COPY: Record<Locale, { desc: string; intro: string }> = {
   },
 }
 
-export function mergeTemplate(stored: unknown): RentTemplate {
-  const out: RentTemplate = { th: { ...DEFAULT_TEMPLATE.th }, en: { ...DEFAULT_TEMPLATE.en } }
+export function mergeTemplate(stored: unknown, defaults: RentTemplate = DEFAULT_TEMPLATE): RentTemplate {
+  const out: RentTemplate = { th: { ...defaults.th }, en: { ...defaults.en } }
   if (!stored || typeof stored !== 'object') return out
   for (const locale of ['th', 'en'] as Locale[]) {
     const s = (stored as Record<string, unknown>)[locale]
@@ -136,17 +136,19 @@ export function fillTemplate(text: string, vars: Record<string, string>): string
   return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? vars[k] : m)).replace(/\s{2,}/g, ' ').trim()
 }
 
-const loadTemplate = cache(async (): Promise<RentTemplate> => {
+/** A stored template (site_settings key) merged over its defaults. */
+export const loadTemplateFor = cache(async (key: string, defaults: RentTemplate): Promise<RentTemplate> => {
   try {
     const { data, error } = await createServerClient()
-      .from('site_settings').select('value').eq('key', TEMPLATE_KEY).maybeSingle()
+      .from('site_settings').select('value').eq('key', key).maybeSingle()
     if (error) throw error
-    return mergeTemplate(data?.value)
+    return mergeTemplate(data?.value, defaults)
   } catch (err) {
     console.error('[rent-pages] template —', err instanceof Error ? err.message : String(err))
-    return mergeTemplate(null)
+    return mergeTemplate(null, defaults)
   }
 })
+const loadTemplate = () => loadTemplateFor(TEMPLATE_KEY, DEFAULT_TEMPLATE)
 
 /**
  * Per-page overrides: the seo_pages row whose slug is the page slug. Read with
@@ -154,7 +156,7 @@ const loadTemplate = cache(async (): Promise<RentTemplate> => {
  * added by the 20261025a migration are not there yet.
  */
 
-const loadOverrides = cache(async (): Promise<Map<string, RentOverride>> => {
+export const loadOverrides = cache(async (): Promise<Map<string, RentOverride>> => {
   try {
     const { data, error } = await createServerClient()
       .from('seo_pages').select('*').not('place_key', 'is', null)
@@ -170,15 +172,32 @@ const loadOverrides = cache(async (): Promise<Map<string, RentOverride>> => {
 
 export type RentLink = { path: string; label: string; count: number }
 
-export type RentView = {
+/** A listing as a landing page shows it; km is null on district pages. */
+export type LandingListing = {
   slug: string
-  place: RentPlace
+  title_th: string
+  title_en: string | null
+  property_type: string
+  price_from: number
+  district: string | null
+  images: string[] | null
+  bedrooms: number | null
+  area_sqm: number | null
+  km: number | null
+}
+
+/** What RentPageBody renders: a rent-near page or a district page. */
+export type LandingView = {
+  slug: string
+  /** '/rent' or '/area' — the Thai path prefix. */
+  basePath: '/rent' | '/area'
+  /** /search pre-set to this page's place, for the empty state. */
+  searchHref: string
   type: RentType | null
   placeLabel: string
   title: string
   description: string
   intro: string
-  listings: NearListing[]
   priceFrom: number | null
   indexable: boolean
   /** Type pages for this place with listings, for the chips under the h1. */
@@ -190,15 +209,19 @@ export type RentView = {
   /** "Why people rent here" points and the area write-up; empty when none. */
   highlights: string[]
   body: string[]
+  listings: LandingListing[]
 }
+
+export type RentView = LandingView & { place: RentPlace; listings: NearListing[] }
 
 function typeLower(type: RentType): string {
   return TYPE_PHRASE.en[type].toLowerCase()
 }
 
-function vars(place: RentPlace, type: RentType | null, locale: Locale, count: number, priceFrom: number | null) {
+export function vars(placeLabel: string, type: RentType | null, locale: Locale, count: number, priceFrom: number | null) {
   return {
-    place: rentPlaceLabel(place, locale),
+    place: placeLabel,
+    type_short: type ? TYPE_NAME[locale][type] : '',
     type: type ? TYPE_PHRASE[locale][type] : '',
     type_lower: type ? typeLower(type) : '',
     count: String(count),
@@ -235,7 +258,7 @@ function buildFaq(view: { listings: NearListing[]; placeLabel: string; type: Ren
   } else {
     if (prices.length) out.push({
       q: `ค่าเช่าใกล้${placeLabel} เริ่มต้นเท่าไหร่?`,
-      a: `${what}บน SpacesMate ในระยะ ${RADIUS_KM} กม. จาก${placeLabel} เริ่มต้น ฿${fmt(prices[0])}/เดือน ราคากลางอยู่ที่ ฿${fmt(median)}/เดือน จากทั้งหมด ${listings.length} ประกาศ`,
+      a: `${what}${type ? ` (${TYPE_ALT_TH[type]})` : ''}บน SpacesMate ในระยะ ${RADIUS_KM} กม. จาก${placeLabel} เริ่มต้น ฿${fmt(prices[0])}/เดือน ราคากลางอยู่ที่ ฿${fmt(median)}/เดือน จากทั้งหมด ${listings.length} ประกาศ`,
     })
     out.push({
       q: `ที่พักที่ใกล้${placeLabel}ที่สุดคือที่ไหน?`,
@@ -272,7 +295,7 @@ export const loadRentPage = cache(async (rawSlug: string, locale: Locale): Promi
   const prices = listings.map(l => l.price_from).filter(p => p > 0)
   const priceFrom = prices.length ? Math.min(...prices) : null
 
-  const v = vars(place, type, locale, listings.length, priceFrom)
+  const v = vars(rentPlaceLabel(place, locale), type, locale, listings.length, priceFrom)
   const t = template[locale]
   const o = overrides.get(slug) ?? {}
   const pick = (s: string | null | undefined) => (typeof s === 'string' && s.trim() ? s.trim() : '')
@@ -315,7 +338,8 @@ export const loadRentPage = cache(async (rawSlug: string, locale: Locale): Promi
 
   const placeLabel = rentPlaceLabel(place, locale)
   return {
-    slug, place, type, placeLabel, title, description, intro, listings, priceFrom,
+    slug, basePath: '/rent' as const, place, type, placeLabel, title, description, intro, listings, priceFrom,
+    searchHref: `/search?${place.kind === 'station' ? `station=${place.id}` : `landmark=${encodeURIComponent(place.id)}`}&r=5`,
     indexable: listings.length >= INDEX_MIN && o.noindex !== true,
     typeLinks, nearby,
     faq: [...buildFaq({ listings, placeLabel, type }, locale), ...(fallback?.faq[locale] ?? [])],
@@ -341,7 +365,7 @@ export async function listRentPages(): Promise<RentPageSummary[]> {
       const count = type ? byType[type] : near.length
       const o = overrides.get(slug) ?? null
       out.push({
-        slug, placeKey: rentPlaceKey(place), placeKind: place.kind,
+        slug, path: `/rent/${slug}`, placeKey: rentPlaceKey(place), placeKind: place.kind,
         placeTh: rentPlaceLabel(place, 'th'), placeEn: rentPlaceLabel(place, 'en'),
         type, count, indexable: count >= INDEX_MIN && o?.noindex !== true, override: o,
       })

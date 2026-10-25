@@ -189,12 +189,49 @@ export type RentOverride = {
 
 export type RentPageSummary = {
   slug: string
+  /** Thai path: /rent/<slug> for places, /area/<slug> for districts. */
+  path: string
   placeKey: string
-  placeKind: 'station' | 'landmark'
+  placeKind: 'station' | 'landmark' | 'district'
   placeTh: string
   placeEn: string
   type: RentType | null
   count: number
   indexable: boolean
   override: RentOverride | null
+}
+
+/**
+ * District pages (/area/<slug>) say "in", not "near", so they have their own
+ * template. Same fields and placeholders; {radius} is unused.
+ */
+export const DEFAULT_DISTRICT_TEMPLATE: RentTemplate = {
+  th: {
+    title_all: 'ห้องเช่า คอนโด อพาร์ทเม้นท์ เขต{place}',
+    title_type: 'เช่า{type_short} {place}',
+    desc_all: 'รวม {count} ประกาศห้องเช่า คอนโด และอพาร์ทเม้นท์ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
+    desc_type: 'รวม {count} ประกาศ{type}ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
+    intro_all: 'ที่พักให้เช่าทุกประเภทในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
+    intro_type: '{type}ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
+  },
+  en: {
+    title_all: 'Rooms, condos and apartments for rent in {place}',
+    title_type: '{type_short} for rent in {place}',
+    desc_all: '{count} rentals in {place}, Bangkok, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
+    desc_type: '{count} {type_lower} in {place}, Bangkok, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
+    intro_all: 'Every rental in {place}, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
+    intro_type: '{type} in {place}, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
+  },
+}
+
+/**
+ * The other spelling people search with. Google treats อพาร์ทเม้นท์ and
+ * อพาร์ตเมนต์ as partly different words, so the FAQ text carries both.
+ */
+export const TYPE_ALT_TH: Record<RentType, string> = {
+  condo: 'คอนโดมิเนียม',
+  apartment: 'อพาร์ตเมนต์',
+  house: 'บ้านเดี่ยวและทาวน์โฮม',
+  office: 'สำนักงาน',
+  coworking: 'co-working space',
 }

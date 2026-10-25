@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createServerClient } from '@/lib/supabase'
-import { getGeneratedAreas } from '@/lib/areas'
+import { listDistrictPages } from '@/lib/district-pages'
+import { hasEnglishPosts } from '@/lib/blog-links'
 import { listRentPages } from '@/lib/rent-pages'
 import { getBuildingsWithListings } from '@/lib/buildings'
 
@@ -29,9 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Static pages ───────────────────────────────────────────────────────────
   // Every one has an English twin, so each yields two entries carrying the
   // full hreflang set (th, en, x-default = th), matching lib/hreflang.
-  // /en/blog is listed although there are no English articles yet: the index
-  // is a real page and the declared twin of /blog, and a declared alternate
-  // that 404s is worse than an empty one.
+  // /en/blog joins only once an English article is published; until then it
+  // is noindex (app/(en)/en/blog/page.tsx), and a noindex URL in a sitemap is
+  // a Search Console error.
   type Freq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
   const STATIC: [path: string, freq: Freq, thPriority: number, enPriority: number][] = [
     ['/',                   'daily',   1.0, 0.7],
@@ -46,9 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/terms',              'yearly',  0.3, 0.3],
     ['/privacy',            'yearly',  0.3, 0.3],
   ]
+  const englishBlog = await hasEnglishPosts()
   const staticPages: MetadataRoute.Sitemap = STATIC.flatMap(([path, changeFrequency, thP, enP]) => {
     const th = path === '/' ? `${SITE}/` : `${SITE}${path}`
     const en = path === '/' ? `${SITE}/en` : `${SITE}/en${path}`
+    if (path === '/blog' && !englishBlog) {
+      return [{ url: th, changeFrequency, priority: thP, lastModified: now }]
+    }
     const alternates = { languages: { th, en, 'x-default': th } }
     return [
       { url: th, changeFrequency, priority: thP, lastModified: now, alternates },
@@ -74,36 +79,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ]
     })
 
-  // ── Data-driven area pages ─────────────────────────────────────────────────
-  // One per (district, property type) with live inventory. These are the pages
-  // that actually compete for "เช่าคอนโด บางนา" style queries.
-  // Both locales, since Stage G. These were Thai-only here because the English
-  // route 404'd for them; it no longer does, and an English page absent from
-  // the sitemap is discoverable only by following a link.
-  const generated = await getGeneratedAreas()
-  const generatedAlternates = (slug: string) => ({
-    languages: {
-      th: encodeURI(`${SITE}/area/${slug}`),
-      en: encodeURI(`${SITE}/en/area/${slug}`),
-      'x-default': encodeURI(`${SITE}/area/${slug}`),
-    },
-  })
-  const generatedAreaPages: MetadataRoute.Sitemap = generated.flatMap(a => ([
-    {
-      url: encodeURI(`${SITE}/area/${a.slug}`),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-      lastModified: now,
-      alternates: generatedAlternates(a.slug),
-    },
-    {
-      url: encodeURI(`${SITE}/en/area/${a.slug}`),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-      lastModified: now,
-      alternates: generatedAlternates(a.slug),
-    },
-  ]))
+  // ── District pages, Thai and English ───────────────────────────────────
+  // One all-types page per district (/area/ห้องเช่า-<district>) plus one per
+  // (district, type), the pages that compete for "เช่าคอนโด บางนา" style queries.
+  // Same rule as the rent pages: only those with INDEX_MIN or more listings.
+  const districtPages: MetadataRoute.Sitemap = (await listDistrictPages())
+    .filter(d => d.indexable)
+    .flatMap(d => {
+      const th = encodeURI(`${SITE}/area/${d.slug}`)
+      const en = encodeURI(`${SITE}/en/area/${d.slug}`)
+      const alternates = { languages: { th, en, 'x-default': th } }
+      const priority = d.type ? 0.7 : 0.8
+      return [
+        { url: th, changeFrequency: 'daily' as const, priority, lastModified: now, alternates },
+        { url: en, changeFrequency: 'daily' as const, priority: priority - 0.1, lastModified: now, alternates },
+      ]
+    })
 
   // ── Building pages ─────────────────────────────────────────────────────────
   // One per building with live inventory. Renters search by building name, so
@@ -182,5 +173,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...rentPages, ...generatedAreaPages, ...buildingPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...rentPages, ...districtPages, ...buildingPages, ...propertyPages, ...blogPages]
 }
