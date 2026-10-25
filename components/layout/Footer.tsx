@@ -71,6 +71,7 @@ export default function Footer() {
         {col(t.footerOwners, [
           { label: t.footerListCta, href: href('/list-your-property') },
           { label: t.footerPricing, href: href('/list-your-property') + '#packages' },
+          { label: t.footerGuide, href: href('/guide') },
           { label: t.footerManage, href: '/manage' },
           { label: t.footerOwnerLogin, href: href('/login') },
         ])}

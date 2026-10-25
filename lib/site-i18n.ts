@@ -253,7 +253,7 @@ export const SITE_T = {
     footerTenants: 'Renters',
     footerOwners: 'Owners',
     footerOwnerLogin: 'Owner sign-in',
-    footerGuide: 'How to list',
+    footerGuide: 'Listing guide',
     footerAddress: 'Summer Hill, Room 3026, 1106 Sukhumvit Road, Phra Khanong, Khlong Toei, Bangkok 10110',
   },
 } as const

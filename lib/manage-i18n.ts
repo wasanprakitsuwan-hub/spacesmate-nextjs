@@ -17,10 +17,10 @@
  *   three times — in the steps, the form subtitle and the thank-you. All three
  *   move together or none do.
  *
- *   The fee is described as performance-based with nothing upfront, which is
- *   true: SpacesMate charges a share of rent collected, so an empty building
- *   earns no fee. No percentage is quoted here deliberately — the apartment and
- *   condominium rates differ, and /pricing is where numbers belong.
+ *   The fee is described as a share of the building's net revenue (rent
+ *   collected minus electricity and water), with no fixed monthly fee. No
+ *   percentage is quoted deliberately (Founder, 25 Oct 2026): the rate is set
+ *   after the building is assessed.
  */
 export type Locale = 'th' | 'en'
 
@@ -28,7 +28,7 @@ export type Locale = 'th' | 'en'
  * The option values submitted to the API. Thai in both locales, by design.
  * The first is the default, and the reset button depends on that.
  */
-export const PROPERTY_TYPE_VALUES = ['คอนโด', 'อพาร์ทเม้นท์', 'บ้าน', 'ออฟฟิศ'] as const
+export const PROPERTY_TYPE_VALUES = ['อพาร์ทเม้นท์ / หอพัก', 'คอนโดทั้งตึก', 'อาคารพาณิชย์', 'ออฟฟิศ', 'บ้าน'] as const
 export const CHANNEL_VALUES = ['โทร', 'LINE'] as const
 export type PropertyTypeValue = (typeof PROPERTY_TYPE_VALUES)[number]
 export type ChannelValue = (typeof CHANNEL_VALUES)[number]
@@ -37,10 +37,11 @@ export type ChannelValue = (typeof CHANNEL_VALUES)[number]
 export function propertyTypeLabel(value: string, locale: Locale): string {
   if (locale === 'th') return value
   return ({
-    'คอนโด': 'Condominium',
-    'อพาร์ทเม้นท์': 'Apartment building',
-    'บ้าน': 'House',
+    'อพาร์ทเม้นท์ / หอพัก': 'Apartment / dormitory',
+    'คอนโดทั้งตึก': 'Whole condominium building',
+    'อาคารพาณิชย์': 'Shophouse / commercial building',
     'ออฟฟิศ': 'Office',
+    'บ้าน': 'House',
   } as Record<string, string>)[value] ?? value
 }
 
@@ -52,57 +53,75 @@ export function channelLabel(value: string, locale: Locale): string {
 export const MANAGE_T = {
   th: {
     // ── Hero ──
-    eyebrow: 'บริการรับฝากบริหาร',
-    heroLine1: 'ให้ SpacesMate ดูแล',
-    heroLine2: 'ทรัพย์สินของคุณแบบครบวงจร',
-    heroSub: 'หาผู้เช่า · คัดกรอง · ทำสัญญา · เก็บค่าเช่า · ดูแลซ่อมบำรุง — ทั้งเรื่องยุ่งยากไว้กับเรา',
+    eyebrow: 'บริการรับบริหารอาคาร',
+    heroTitle: 'เราดูแลอาคารของคุณ เหมือนเป็นอาคารของเราเอง',
+    heroSub: 'ค่าบริการคิดตามรายได้จริงของอาคาร ไม่มีค่าบริหารตายตัว เมื่ออาคารของคุณได้มากขึ้น เราถึงได้มากขึ้น เป้าหมายของเราจึงเป็นเป้าหมายเดียวกับคุณ',
+    heroCta: 'ให้ทีมงานประเมินอาคารฟรี ↓',
+    heroLine: 'ทัก LINE @spacesmate',
+    facts: [
+      { title: 'ไม่มีค่าบริหารรายเดือนตายตัว', sub: 'คิดเป็น % ของรายได้สุทธิ' },
+      { title: 'เป้าหมายเดียวกับเจ้าของ', sub: 'ห้องเต็มขึ้น เราได้มากขึ้น' },
+      { title: 'รายงานทุกเดือน', sub: 'รายได้ ค่าใช้จ่าย อัตราเข้าพัก' },
+    ],
 
     // ── Why ──
-    whyTitle: 'ทำไมต้องใช้บริการรับฝากบริหาร',
-    whySub: 'ปล่อยให้มืออาชีพดูแล คุณแค่รอรับรายได้',
+    whyTitle: 'ทำไมเจ้าของอาคารเลือก SpacesMate',
     why: [
-      { icon: 'schedule',      title: 'ประหยัดเวลา',    desc: 'ไม่ต้องรับสายผู้เช่า นัดห้อง หรือตามเก็บค่าเช่าเอง' },
-      { icon: 'verified_user', title: 'ผู้เช่าคุณภาพ',  desc: 'เราคัดกรองและตรวจสอบประวัติผู้เช่าก่อนทุกครั้ง' },
-      { icon: 'savings',       title: 'รายได้สม่ำเสมอ', desc: 'โอนค่าเช่าตรงเวลา พร้อมรายงานผลทุกเดือน' },
-      { icon: 'handyman',      title: 'ดูแลครบวงจร',    desc: 'ประสานงานซ่อมบำรุงและดูแลทรัพย์สินตลอดสัญญา' },
+      { title: 'เราดูแลอาคารเหมือนเป็นของเราเอง', desc: 'ค่าบริการคิดจากรายได้จริง ไม่มีค่าบริหารรายเดือนแบบตายตัว อาคารของคุณได้มากขึ้น เราจึงได้มากขึ้น' },
+      { title: 'เพิ่มรายได้ด้วยมืออาชีพ', desc: 'ตั้งราคาจากข้อมูลตลาด ทำการตลาดทุกช่องทาง ลดห้องว่างและระยะเวลาว่างระหว่างผู้เช่า' },
+      { title: 'ผู้เช่าคุณภาพ ความเสี่ยงต่ำ', desc: 'คัดกรองผู้เช่า ทำสัญญาที่รัดกุม เก็บค่าเช่าตรงเวลา' },
+      { title: 'โปร่งใส ตรวจสอบได้', desc: 'รายงานรายได้ ค่าใช้จ่าย และอัตราการเข้าพักทุกเดือน' },
     ],
+
+    // ── Fee ──
+    feeTitle: 'ค่าบริการคิดอย่างไร',
+    feeSub: 'คิดจากผลงานจริงเท่านั้น เดือนไหนรายได้น้อย ค่าบริการก็น้อยตาม',
+    fee: [
+      { title: 'รายได้ค่าเช่าที่เก็บได้', sub: 'ทุกห้องที่มีผู้เช่า' },
+      { title: 'หักค่าไฟและค่าน้ำ', sub: 'ตามที่ใช้จริง' },
+      { title: 'รายได้สุทธิ', sub: 'ฐานคิดค่าบริการ' },
+      { title: 'ค่าบริการ SpacesMate', sub: '% ของรายได้สุทธิ ตามสัญญา' },
+    ],
+    feeNote: 'ค่าใช้จ่ายของอาคาร เช่น พนักงาน การตลาด ซ่อมบำรุง และอินเทอร์เน็ต หักก่อนตามจริง อัตราค่าบริการแจ้งหลังประเมินอาคาร',
 
     // ── Services ──
     servicesTitle: 'บริการของเราครอบคลุม',
-    servicesSub: 'ตั้งแต่หาผู้เช่าจนถึงดูแลตลอดสัญญา — เราจัดการให้ครบ',
     services: [
-      { icon: 'campaign',     title: 'การตลาด & ลงประกาศ', desc: 'ถ่ายภาพ เขียนประกาศ และโปรโมทบนทุกช่องทาง' },
-      { icon: 'fact_check',   title: 'คัดกรองผู้เช่า',      desc: 'ตรวจสอบประวัติและความสามารถในการชำระ' },
-      { icon: 'description',  title: 'จัดทำสัญญา',          desc: 'ทำสัญญาเช่าที่รัดกุมและถูกต้องตามกฎหมาย' },
-      { icon: 'payments',     title: 'เก็บค่าเช่า',         desc: 'เรียกเก็บและโอนเข้าบัญชีคุณตรงเวลาทุกเดือน' },
-      { icon: 'construction', title: 'ซ่อมบำรุง',           desc: 'ประสานงานช่างและดูแลทรัพย์สินตลอดสัญญา' },
-      { icon: 'bar_chart',    title: 'รายงานผล',            desc: 'สรุปรายได้และสถานะทรัพย์สินให้ทุกเดือน' },
+      { title: 'การตลาด & ลงประกาศ', desc: 'ถ่ายภาพ เขียนประกาศ โปรโมททุกช่องทาง' },
+      { title: 'คัดกรองผู้เช่า',      desc: 'ตรวจสอบประวัติและความสามารถในการชำระ' },
+      { title: 'จัดทำสัญญา',          desc: 'สัญญาเช่าที่รัดกุม ถูกต้องตามกฎหมาย' },
+      { title: 'เก็บค่าเช่า',         desc: 'เรียกเก็บและโอนเข้าบัญชีคุณตรงเวลา' },
+      { title: 'ซ่อมบำรุง',           desc: 'ประสานงานช่างตลอดสัญญา' },
+      { title: 'ดูแลพนักงานอาคาร',    desc: 'วางระบบงานและดูแลทีมหน้างาน' },
     ],
 
     // ── Steps ──
-    stepsTitle: 'ขั้นตอนง่ายๆ',
+    stepsTitle: 'ขั้นตอนเริ่มต้น',
     steps: [
-      { n: '1', title: 'กรอกฟอร์ม',               desc: 'บอกประเภทและรายละเอียดทรัพย์สินของคุณ ใช้เวลาไม่ถึง 2 นาที' },
-      { n: '2', title: 'ทีมงานติดต่อกลับ',        desc: 'เจ้าหน้าที่โทรกลับภายใน 24 ชม. เพื่อสอบถามรายละเอียด' },
-      { n: '3', title: 'ตรวจสอบ & ประเมินทรัพย์', desc: 'เราเข้าดูทรัพย์สิน ตรวจสอบเอกสาร และประเมินค่าเช่าที่เหมาะสม' },
-      { n: '4', title: 'เซ็นสัญญาบริหาร',         desc: 'ตกลงเงื่อนไขที่โปร่งใส แล้วเราเริ่มหาผู้เช่าและคัดกรองให้' },
-      { n: '5', title: 'รับรายได้สบายใจ',         desc: 'เราดูแลเก็บค่าเช่า ซ่อมบำรุง และรายงานผลให้คุณทุกเดือน' },
+      { n: '1', title: 'กรอกฟอร์ม',        desc: 'ไม่ถึง 2 นาที' },
+      { n: '2', title: 'ทีมงานติดต่อกลับ', desc: 'ภายใน 24 ชม.' },
+      { n: '3', title: 'ประเมินอาคาร',     desc: 'ดูอาคาร ตรวจเอกสาร ประเมินรายได้' },
+      { n: '4', title: 'เซ็นสัญญาบริหาร',  desc: 'เงื่อนไขโปร่งใส' },
+      { n: '5', title: 'รับรายได้',        desc: 'รายงานผลทุกเดือน' },
     ],
-    socialNote: 'สนใจจากเพจหรือโซเชียลของเรา? กรอกฟอร์มนี้ได้เลย — ทีมงานจะโทรกลับเพื่อสอบถามรายละเอียดเพิ่มเติม',
 
     // ── Form ──
-    formTitle: 'ให้เราติดต่อกลับ',
-    formSub: 'กรอกข้อมูลสั้นๆ ทีมงานติดต่อกลับภายใน 24 ชม.',
+    formTitle: 'ให้ทีมงานประเมินอาคารของคุณ',
+    formSub: 'กรอกข้อมูลสั้นๆ ทีมงานจะโทรกลับภายใน 24 ชม. เพื่อนัดดูอาคาร และบอกว่าอาคารของคุณทำรายได้เพิ่มได้อีกแค่ไหน ยังไม่ต้องตัดสินใจอะไร',
+    formPoints: ['ติดต่อกลับภายใน 24 ชม.', 'ข้อมูลของคุณเป็นความลับ', 'กรุงเทพฯ และปริมณฑล'],
     name: 'ชื่อ-นามสกุล',
     namePlaceholder: 'ชื่อของคุณ',
     phone: 'เบอร์โทรศัพท์',
-    propertyType: 'ประเภททรัพย์สิน',
+    building: 'ชื่ออาคาร / โครงการ',
+    buildingPlaceholder: 'เช่น บ้านสุขใจ อพาร์ทเม้นท์',
+    propertyType: 'ประเภทอาคาร',
     location: 'ทำเล',
-    locationPlaceholder: 'เช่น สุขุมวิท',
+    locationPlaceholder: 'เช่น สุขุมวิท 101',
+    rooms: 'จำนวนห้องโดยประมาณ',
+    roomsPlaceholder: 'เช่น 40',
     channel: 'ช่องทางติดต่อที่สะดวก',
-    submit: 'ส่งข้อมูล — ให้เราติดต่อกลับ',
+    submit: 'ส่งข้อมูล ให้ทีมงานติดต่อกลับ',
     submitting: 'กำลังส่ง...',
-    confidential: 'ข้อมูลของคุณจะถูกเก็บเป็นความลับ',
 
     // ── Validation ──
     needName: 'กรุณากรอกชื่อ-นามสกุล',
@@ -113,60 +132,77 @@ export const MANAGE_T = {
     sendFailed: 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือทักเราทาง LINE',
 
     // ── Thank you ──
-    sentTitle: 'ได้รับข้อมูลแล้ว!',
+    sentTitle: 'ได้รับข้อมูลแล้ว',
     sentBodyA: 'ทีมงาน SpacesMate จะโทรกลับ',
     sentBodyB: 'ภายใน 24 ชั่วโมง',
     sendAnother: 'ส่งข้อมูลอีกรายการ',
   },
 
   en: {
-    eyebrow: 'Full property management',
-    heroLine1: 'Let SpacesMate run',
-    heroLine2: 'your property end to end',
-    heroSub: 'Finding tenants · screening · contracts · rent collection · maintenance — we take the whole job off your hands',
-
-    whyTitle: 'Why hand your property to a manager',
-    whySub: 'Leave it to professionals and simply collect the income',
-    why: [
-      { icon: 'schedule',      title: 'Your time back',     desc: 'No tenant calls, no viewings to run, no chasing rent yourself' },
-      { icon: 'verified_user', title: 'Tenants we vet',     desc: 'We screen and background-check every tenant before they sign' },
-      { icon: 'savings',       title: 'Income you can plan on', desc: 'Rent transferred on time, with a report every month' },
-      { icon: 'handyman',      title: 'Looked after throughout', desc: 'We coordinate repairs and care for the property for the whole tenancy' },
+    eyebrow: 'Building management',
+    heroTitle: 'We look after your building as if it were our own',
+    heroSub: 'Our fee follows what your building actually earns, with no fixed management fee. When your building earns more, so do we, so your goal and ours are the same.',
+    heroCta: 'Get a free building assessment ↓',
+    heroLine: 'Message LINE @spacesmate',
+    facts: [
+      { title: 'No fixed monthly fee', sub: 'A share of net revenue' },
+      { title: 'The same goal as you', sub: 'Fuller building, bigger fee' },
+      { title: 'Monthly reports', sub: 'Income, costs, occupancy' },
     ],
+
+    whyTitle: 'Why building owners choose SpacesMate',
+    why: [
+      { title: 'We run it like our own', desc: 'Our fee comes from real revenue, not a fixed monthly charge. Your building earns more, so we earn more.' },
+      { title: 'More income, professionally', desc: 'Market-based pricing, marketing on every channel, fewer empty rooms and shorter gaps between tenants.' },
+      { title: 'Good tenants, lower risk', desc: 'Tenant screening, watertight contracts, rent collected on time.' },
+      { title: 'Transparent and checkable', desc: 'Income, costs and occupancy reported every month.' },
+    ],
+
+    feeTitle: 'How the fee works',
+    feeSub: 'Based on results only. In a slower month, the fee is smaller too.',
+    fee: [
+      { title: 'Rent collected', sub: 'Every occupied room' },
+      { title: 'Minus electricity and water', sub: 'As actually used' },
+      { title: 'Net revenue', sub: 'What the fee is based on' },
+      { title: 'SpacesMate fee', sub: '% of net revenue, per contract' },
+    ],
+    feeNote: 'Building costs such as staff, marketing, maintenance and internet are paid first at cost. The fee rate is quoted after we assess the building.',
 
     servicesTitle: 'What the service covers',
-    servicesSub: 'From finding a tenant to the end of the contract — all of it handled',
     services: [
-      { icon: 'campaign',     title: 'Marketing & listings', desc: 'Photography, listing copy, and promotion across every channel' },
-      { icon: 'fact_check',   title: 'Tenant screening',     desc: 'Background checks and a real look at ability to pay' },
-      { icon: 'description',  title: 'Contracts',            desc: 'Tenancy agreements that are watertight and compliant with Thai law' },
-      { icon: 'payments',     title: 'Rent collection',      desc: 'Collected and transferred to your account on time, every month' },
-      { icon: 'construction', title: 'Maintenance',          desc: 'We coordinate the trades and look after the property throughout' },
-      { icon: 'bar_chart',    title: 'Monthly reporting',    desc: 'Income and the state of your property, summarised every month' },
+      { title: 'Marketing & listings', desc: 'Photography, listing copy, promotion on every channel' },
+      { title: 'Tenant screening',     desc: 'Background and ability-to-pay checks' },
+      { title: 'Contracts',            desc: 'Watertight tenancy agreements under Thai law' },
+      { title: 'Rent collection',      desc: 'Collected and paid into your account on time' },
+      { title: 'Maintenance',          desc: 'Trades coordinated for the whole tenancy' },
+      { title: 'Building staff',       desc: 'Working routines set up and the on-site team managed' },
     ],
 
-    stepsTitle: 'How it works',
+    stepsTitle: 'Getting started',
     steps: [
-      { n: '1', title: 'Fill in the form',        desc: 'Tell us the type of property and a few details — under two minutes' },
-      { n: '2', title: 'We call you back',        desc: 'Someone from the team calls within 24 hours to go through it' },
-      { n: '3', title: 'Inspection & valuation',  desc: 'We visit the property, check the documents, and work out a realistic rent' },
-      { n: '4', title: 'Sign the agreement',      desc: 'Transparent terms agreed, then we start marketing and screening tenants' },
-      { n: '5', title: 'Collect your income',     desc: 'We handle rent, maintenance and reporting, and you hear from us monthly' },
+      { n: '1', title: 'Fill in the form',   desc: 'Under 2 minutes' },
+      { n: '2', title: 'We call you back',   desc: 'Within 24 hours' },
+      { n: '3', title: 'Building assessment', desc: 'Visit, documents, income estimate' },
+      { n: '4', title: 'Sign the agreement', desc: 'Transparent terms' },
+      { n: '5', title: 'Collect your income', desc: 'Monthly reporting' },
     ],
-    socialNote: 'Found us on Facebook or Instagram? Fill in this form — the team will call to go through the details with you.',
 
-    formTitle: 'Ask us to call you',
-    formSub: 'A few details, and the team calls back within 24 hours.',
+    formTitle: 'Have our team assess your building',
+    formSub: 'A few details and the team calls back within 24 hours to arrange a visit and tell you how much more your building could earn. Nothing to decide yet.',
+    formPoints: ['Call back within 24 hours', 'Your details stay confidential', 'Bangkok and surrounding provinces'],
     name: 'Full name',
     namePlaceholder: 'Your name',
     phone: 'Phone number',
-    propertyType: 'Type of property',
+    building: 'Building / project name',
+    buildingPlaceholder: 'e.g. Baan Sukjai Apartment',
+    propertyType: 'Type of building',
     location: 'Area',
-    locationPlaceholder: 'e.g. Sukhumvit',
+    locationPlaceholder: 'e.g. Sukhumvit 101',
+    rooms: 'Approximate number of rooms',
+    roomsPlaceholder: 'e.g. 40',
     channel: 'How you prefer to be contacted',
-    submit: 'Send — ask us to call back',
+    submit: 'Send, and have the team call me',
     submitting: 'Sending…',
-    confidential: 'Your details are kept confidential.',
 
     needName: 'Please enter your full name',
     needPhone: 'Please enter a phone number',
@@ -176,7 +212,7 @@ export const MANAGE_T = {
     genericError: 'Something went wrong. Please try again.',
     sendFailed: 'We could not send your details. Please try again, or message us on LINE',
 
-    sentTitle: 'Got it — thank you',
+    sentTitle: 'Got it, thank you',
     sentBodyA: 'A member of the SpacesMate team will call you',
     sentBodyB: 'within 24 hours',
     sendAnother: 'Send another enquiry',

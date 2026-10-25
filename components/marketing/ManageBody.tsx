@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { trackEvent } from '@/lib/analytics'
+import { C, RADIUS, WRAP, btnStyle, h2Style } from '@/lib/ui'
 import {
   MANAGE_T, PROPERTY_TYPE_VALUES, CHANNEL_VALUES,
   propertyTypeLabel, channelLabel,
@@ -9,9 +10,11 @@ import {
 } from '@/lib/manage-i18n'
 
 /**
- * The WHY / SERVICES / STEPS arrays that used to sit here are in lib/manage-i18n
- * now, one copy per locale. They were data, not markup, so they translate like
- * every other string on the page.
+ * The page copy lives in lib/manage-i18n, one copy per locale.
+ *
+ * Order (approved mockup, 25 Oct 2026): pitch, why owners choose us, how the
+ * fee works (no percentage shown), services, steps, then the enquiry form at
+ * #enquiry, which the home page's management band links to.
  */
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -33,6 +36,8 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
   // founder's notification email. Thai in both locales — see lib/manage-i18n.
   const [type,     setType]     = useState<string>(PROPERTY_TYPE_VALUES[0])
   const [location, setLocation] = useState('')
+  const [building, setBuilding] = useState('')
+  const [rooms,    setRooms]    = useState('')
   const [channel,  setChannel]  = useState<ChannelValue>(CHANNEL_VALUES[0])
 
   const handleSubmit = useCallback(async () => {
@@ -49,7 +54,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
       const res = await fetch('/api/manage-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone: digits, type, location, channel }),
+        body: JSON.stringify({ name, phone: digits, type, location, channel, building, rooms }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -66,180 +71,166 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
     } finally {
       setLoading(false)
     }
-  }, [name, phone, type, location, channel, t])
+  }, [name, phone, type, location, channel, building, rooms, t])
+
+  const input: React.CSSProperties = {
+    width: '100%', border: `1px solid ${C.border}`, borderRadius: RADIUS, padding: '11px 12px', fontSize: 15,
+    fontFamily: 'inherit', background: C.white, color: C.ink, boxSizing: 'border-box',
+  }
+  const label: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: C.ink, display: 'block', marginBottom: 6 }
+  const section = (bg: string): React.CSSProperties => ({ background: bg, padding: '56px 16px', borderTop: `1px solid ${C.line}` })
+  const wrap: React.CSSProperties = { maxWidth: WRAP, margin: '0 auto' }
 
   return (
-    <div>
+    <div style={{ background: C.paper }}>
 
-      {/* ── 1. HERO ──────────────────────────────────────────────────────── */}
-      <section style={{ background: '#02402e', padding: '52px 24px 56px' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#d97f11', margin: '0 0 14px' }}>
-            {t.eyebrow}
-          </p>
-          <h1 style={{ fontSize: 'clamp(28px,3.8vw,42px)', fontWeight: 700, color: '#fff', margin: '0 0 14px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>
-            {t.heroLine1}<br />{t.heroLine2}
-          </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.78)', fontWeight: 300, lineHeight: 1.65, margin: 0 }}>
-            {t.heroSub}
-          </p>
-        </div>
-      </section>
-
-      {/* ── 2. WHY ───────────────────────────────────────────────────────── */}
-      <section style={{ background: '#fff', padding: '60px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(20px,2.8vw,28px)', fontWeight: 700, color: '#1a1a1a', textAlign: 'center', margin: '0 0 8px' }}>
-            {t.whyTitle}
-          </h2>
-          <p style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', fontWeight: 300, margin: '0 0 40px' }}>
-            {t.whySub}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }} className="sm-why4">
-            {t.why.map(w => (
-              <div key={w.icon} style={{ border: '1px solid #e8edeb', borderRadius: 16, padding: '26px 20px', background: '#fff' }}>
-                {/* teal solid circle icon */}
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#048c73', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  <span className="msym" style={{ fontSize: 26, color: '#fff', lineHeight: 1 }}>{w.icon}</span>
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>{w.title}</h3>
-                <p style={{ fontSize: 13.5, color: '#6b7280', lineHeight: 1.6, margin: 0, fontWeight: 300 }}>{w.desc}</p>
+      {/* ── 1. Pitch ── */}
+      <section style={{ padding: '56px 16px 48px' }}>
+        <div style={wrap}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: C.teal, margin: '0 0 12px' }}>{t.eyebrow}</p>
+          <h1 style={{ fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 600, color: C.green, margin: '0 0 16px', lineHeight: 1.25, maxWidth: 760 }}>{t.heroTitle}</h1>
+          <p style={{ fontSize: 17, color: C.ink, lineHeight: 1.7, margin: '0 0 26px', maxWidth: 680 }}>{t.heroSub}</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a href="#enquiry" className="sm-btn-primary" style={btnStyle('primary')}>{t.heroCta}</a>
+            <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" className="sm-btn-ghost" style={btnStyle('ghost')}>{t.heroLine}</a>
+          </div>
+          <div className="sm-mg-facts" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 40, borderTop: `1px solid ${C.line}` }}>
+            {t.facts.map((f, i) => (
+              <div key={f.title} style={{ padding: '18px 20px 0 0', paddingLeft: i ? 20 : 0, borderLeft: i ? `1px solid ${C.line}` : 'none' }}>
+                <p style={{ margin: 0, fontSize: 15.5, fontWeight: 600, color: C.green }}>{f.title}</p>
+                <p style={{ margin: '3px 0 0', fontSize: 14, color: C.muted }}>{f.sub}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 3. SERVICES ──────────────────────────────────────────────────── */}
-      <section style={{ background: '#f5f8f6', padding: '60px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(20px,2.8vw,28px)', fontWeight: 700, color: '#1a1a1a', textAlign: 'center', margin: '0 0 8px' }}>
-            {t.servicesTitle}
-          </h2>
-          <p style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', fontWeight: 300, margin: '0 0 40px' }}>
-            {t.servicesSub}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }} className="sm-svc3">
-            {t.services.map(s => (
-              <div key={s.icon} style={{ background: '#fff', border: '1px solid #e8edeb', borderRadius: 14, padding: '18px 20px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                {/* teal light-bg rounded square */}
-                <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 10, background: '#e6f4ee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span className="msym" style={{ fontSize: 22, color: '#048c73', lineHeight: 1 }}>{s.icon}</span>
-                </div>
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>{s.title}</p>
-                  <p style={{ fontSize: 13.5, color: '#6b7280', lineHeight: 1.55, margin: 0, fontWeight: 300 }}>{s.desc}</p>
-                </div>
+      {/* ── 2. Why ── */}
+      <section style={section(C.white)}>
+        <div style={wrap}>
+          <h2 style={{ ...h2Style(26), margin: '0 0 28px' }}>{t.whyTitle}</h2>
+          <div className="sm-mg-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 28 }}>
+            {t.why.map((w, i) => (
+              <div key={w.title} style={{ borderTop: `2px solid ${i === 0 ? C.green : C.line}`, paddingTop: 14 }}>
+                <h3 style={{ fontSize: 16.5, fontWeight: 600, color: C.green, margin: '0 0 8px', lineHeight: 1.4 }}>{w.title}</h3>
+                <p style={{ fontSize: 14.5, color: C.ink, lineHeight: 1.7, margin: 0 }}>{w.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 4. STEPS + FORM ──────────────────────────────────────────────── */}
-      <section style={{ background: '#fff', padding: '60px 24px 72px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 52, alignItems: 'start' }} className="sm-2col">
+      {/* ── 3. How the fee works. No percentage: the rate follows the assessment. ── */}
+      <section style={section(C.paper)}>
+        <div style={wrap}>
+          <h2 style={{ ...h2Style(26), margin: '0 0 6px' }}>{t.feeTitle}</h2>
+          <p style={{ fontSize: 15.5, color: C.muted, margin: '0 0 24px' }}>{t.feeSub}</p>
+          <div className="sm-mg-fee" style={{ display: 'flex', alignItems: 'stretch', gap: 10 }}>
+            {t.fee.map((f, i) => (
+              <div key={f.title} style={{ display: 'contents' }}>
+                {i > 0 && <span aria-hidden className="sm-mg-op" style={{ alignSelf: 'center', fontSize: 22, color: C.muted, flexShrink: 0 }}>{['−', '=', '→'][i - 1]}</span>}
+                <div style={{
+                  flex: 1, minWidth: 0, borderRadius: RADIUS, padding: '16px 16px',
+                  background: i === 3 ? C.green : C.white, border: `1px solid ${i === 3 ? C.green : i === 2 ? C.teal : C.line}`,
+                }}>
+                  <p style={{ margin: 0, fontSize: 15.5, fontWeight: 600, color: i === 3 ? C.white : C.green }}>{f.title}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 13.5, color: i === 3 ? 'rgba(255,255,255,.75)' : C.muted }}>{f.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 14, color: C.muted, margin: '16px 0 0', lineHeight: 1.65, maxWidth: 760 }}>{t.feeNote}</p>
+        </div>
+      </section>
 
-          {/* LEFT — Steps */}
+      {/* ── 4. Services ── */}
+      <section style={section(C.white)}>
+        <div style={wrap}>
+          <h2 style={{ ...h2Style(26), margin: '0 0 22px' }}>{t.servicesTitle}</h2>
+          <div className="sm-mg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `1px solid ${C.line}` }}>
+            {t.services.map(sv => (
+              <div key={sv.title} style={{ padding: '16px 20px 16px 0', borderBottom: `1px solid ${C.line2}` }}>
+                <p style={{ margin: 0, fontSize: 15.5, fontWeight: 600, color: C.green }}>{sv.title}</p>
+                <p style={{ margin: '3px 0 0', fontSize: 14, color: C.muted, lineHeight: 1.6 }}>{sv.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. Steps ── */}
+      <section style={section(C.paper)}>
+        <div style={wrap}>
+          <h2 style={{ ...h2Style(26), margin: '0 0 22px' }}>{t.stepsTitle}</h2>
+          <ol className="sm-mg-5" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
+            {t.steps.map(st => (
+              <li key={st.n}>
+                <span style={{ display: 'inline-flex', width: 28, height: 28, borderRadius: '50%', background: C.green, color: C.white, fontSize: 14, fontWeight: 600, alignItems: 'center', justifyContent: 'center' }}>{st.n}</span>
+                <p style={{ margin: '10px 0 0', fontSize: 15.5, fontWeight: 600, color: C.green }}>{st.title}</p>
+                <p style={{ margin: '3px 0 0', fontSize: 14, color: C.muted, lineHeight: 1.55 }}>{st.desc}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── 6. Enquiry form ── */}
+      <section id="enquiry" style={{ ...section(C.white), scrollMarginTop: 72, paddingBottom: 72 }}>
+        <div className="sm-mg-form" style={{ ...wrap, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 520px)', gap: 48, alignItems: 'start' }}>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', margin: '0 0 28px' }}>{t.stepsTitle}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-              {t.steps.map(s => (
-                <div key={s.n} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                  {/* dark green rounded-square number */}
-                  <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 10, background: '#048c73', color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {s.n}
-                  </div>
-                  <div style={{ paddingTop: 7 }}>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>{s.title}</p>
-                    <p style={{ fontSize: 14, color: '#6b7280', fontWeight: 300, lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
-                  </div>
-                </div>
+            <h2 style={{ ...h2Style(28), margin: '0 0 12px' }}>{t.formTitle}</h2>
+            <p style={{ fontSize: 16, color: C.ink, lineHeight: 1.7, margin: '0 0 18px', maxWidth: 520 }}>{t.formSub}</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+              {t.formPoints.map(pt => (
+                <li key={pt} style={{ fontSize: 14.5, color: C.ink, display: 'flex', gap: 8 }}><span style={{ color: C.teal }}>✓</span>{pt}</li>
               ))}
-            </div>
-
-            {/* speech-bubble note */}
-            <div style={{ marginTop: 30, background: '#f5f8f6', border: '1px solid #e8edeb', borderRadius: 14, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <span className="msym" style={{ fontSize: 22, flexShrink: 0, marginTop: 1, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>chat_bubble</span>
-              <p style={{ fontSize: 13.5, color: '#6b7280', margin: 0, fontWeight: 300, lineHeight: 1.65 }}>
-                {t.socialNote}
-              </p>
-            </div>
+            </ul>
           </div>
 
-          {/* RIGHT — Lead form */}
-          <div style={{ background: '#fff', border: '1px solid #e8edeb', borderRadius: 20, padding: '28px 24px', boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+          <div style={{ background: C.paper, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 24 }}>
             {!sent ? (
               <>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>{t.formTitle}</h3>
-                <p style={{ fontSize: 14, color: '#6b7280', fontWeight: 300, margin: '0 0 22px', lineHeight: 1.55 }}>
-                  {t.formSub}
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                  {/* Name */}
-                  <div>
-                    <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>{t.name}</label>
-                    <input
-                      value={name}
-                      onChange={e => { setName(e.target.value); setError('') }}
-                      placeholder={t.namePlaceholder}
-                      style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
-                      onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
-                      onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>{t.phone}</label>
-                    <input
-                      value={phone}
-                      onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError('') }}
-                      placeholder="0XXXXXXXXX"
-                      inputMode="numeric"
-                      style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
-                      onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
-                      onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
-                  </div>
-
-                  {/* Type + Location */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gap: 14 }}>
+                  <div className="sm-mg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
-                      <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>{t.propertyType}</label>
-                      <select
-                        value={type}
-                        onChange={e => setType(e.target.value)}
-                        style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 12px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' as const }}
-                        onFocus={e => { e.target.style.borderColor = '#048c73' }}
-                        onBlur={e => { e.target.style.borderColor = '#dde3e0' }}>
+                      <label htmlFor="mg-name" style={label}>{t.name}</label>
+                      <input id="mg-name" value={name} onChange={e => { setName(e.target.value); setError('') }} placeholder={t.namePlaceholder} style={input} />
+                    </div>
+                    <div>
+                      <label htmlFor="mg-phone" style={label}>{t.phone}</label>
+                      <input id="mg-phone" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError('') }} placeholder="0XXXXXXXXX" inputMode="numeric" style={input} />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="mg-building" style={label}>{t.building}</label>
+                    <input id="mg-building" value={building} onChange={e => setBuilding(e.target.value)} placeholder={t.buildingPlaceholder} style={input} />
+                  </div>
+                  <div className="sm-mg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label htmlFor="mg-type" style={label}>{t.propertyType}</label>
+                      <select id="mg-type" value={type} onChange={e => setType(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
                         {PROPERTY_TYPE_VALUES.map(v => <option key={v} value={v}>{propertyTypeLabel(v, locale)}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>{t.location}</label>
-                      <input
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        placeholder={t.locationPlaceholder}
-                        style={{ width: '100%', border: '1px solid #dde3e0', borderRadius: 10, padding: '11px 14px', fontSize: 15, outline: 'none', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' as const }}
-                        onFocus={e => { e.target.style.borderColor = '#048c73'; e.target.style.boxShadow = '0 0 0 3px rgba(4,140,115,0.1)' }}
-                        onBlur={e => { e.target.style.borderColor = '#dde3e0'; e.target.style.boxShadow = 'none' }} />
+                      <label htmlFor="mg-rooms" style={label}>{t.rooms}</label>
+                      <input id="mg-rooms" value={rooms} onChange={e => setRooms(e.target.value.replace(/\D/g, '').slice(0, 5))} placeholder={t.roomsPlaceholder} inputMode="numeric" style={input} />
                     </div>
                   </div>
-
-                  {/* Channel */}
                   <div>
-                    <label style={{ fontSize: 13.5, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 8 }}>{t.channel}</label>
+                    <label htmlFor="mg-location" style={label}>{t.location}</label>
+                    <input id="mg-location" value={location} onChange={e => setLocation(e.target.value)} placeholder={t.locationPlaceholder} style={input} />
+                  </div>
+                  <div>
+                    <span style={label}>{t.channel}</span>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {CHANNEL_VALUES.map((ch) => {
-                        const icons: Record<string, string> = { โทร: 'call', LINE: 'chat' }
+                      {CHANNEL_VALUES.map(ch => {
                         const active = channel === ch
                         return (
-                          <button key={ch} onClick={() => setChannel(ch)} type="button"
-                            style={{ flex: 1, padding: '10px 6px', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'all .15s', border: `1.5px solid ${active ? '#02402e' : '#dde3e0'}`, background: active ? '#02402e' : '#fff', color: active ? '#fff' : '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                            <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{icons[ch]}</span>{channelLabel(ch, locale)}
+                          <button key={ch} onClick={() => setChannel(ch)} type="button" aria-pressed={active}
+                            style={{ flex: 1, padding: '10px 6px', borderRadius: RADIUS, fontSize: 14.5, cursor: 'pointer', fontFamily: 'inherit',
+                              border: `1px solid ${active ? C.teal : C.border}`, background: active ? C.tint : C.white, color: active ? C.green : C.ink, fontWeight: active ? 600 : 400 }}>
+                            {channelLabel(ch, locale)}
                           </button>
                         )
                       })}
@@ -247,44 +238,29 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
                   </div>
                 </div>
 
-                {/* Error message */}
                 {error && (
-                  <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13.5, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontWeight: 400 }}>
+                  <p role="alert" style={{ margin: '14px 0 0', fontSize: 13.5, color: '#b42318', background: '#fef3f2', border: '1px solid #fecdca', borderRadius: RADIUS, padding: '10px 12px' }}>
                     {error}{sendFailed && (
-                    <>
-                      {' '}
-                      <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer"
-                        style={{ color: '#06C755', fontWeight: 700, textDecoration: 'underline' }}>@spacesmate</a>
-                    </>
-                  )}
+                      <>{' '}<a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>@spacesmate</a></>
+                    )}
                   </p>
                 )}
 
-                {/* Submit */}
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  style={{ width: '100%', marginTop: 18, background: loading ? '#b5c9c3' : '#d97f11', color: '#fff', fontWeight: 700, fontSize: 15.5, border: 'none', borderRadius: 28, padding: '14px 0', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  {loading && (
-                    <span style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
-                  )}
+                <button onClick={handleSubmit} disabled={loading} className="sm-btn-primary"
+                  style={{ ...btnStyle('primary'), width: '100%', marginTop: 18, padding: '13px 16px', opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}>
+                  {loading && <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />}
                   {loading ? t.submitting : t.submit}
                 </button>
-                <p style={{ textAlign: 'center', fontSize: 12.5, color: '#9ca3af', margin: '10px 0 0', fontWeight: 300 }}>
-                  {t.confidential}
-                </p>
               </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#e6f4ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <span className="msym" style={{ fontSize: 32, color: '#048c73' }}>check_circle</span>
-                </div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#02402e', margin: '0 0 10px' }}>{t.sentTitle}</h3>
-                <p style={{ fontSize: 14.5, color: '#6b7280', margin: '0 0 22px', fontWeight: 300, lineHeight: 1.65 }}>
-                  {t.sentBodyA}<br /><strong style={{ color: '#02402e' }}>{t.sentBodyB}</strong>
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <p style={{ fontSize: 30, color: C.teal, margin: '0 0 8px' }}>✓</p>
+                <h3 style={{ fontSize: 20, fontWeight: 600, color: C.green, margin: '0 0 8px' }}>{t.sentTitle}</h3>
+                <p style={{ fontSize: 15, color: C.ink, margin: '0 0 20px', lineHeight: 1.65 }}>
+                  {t.sentBodyA} <strong style={{ color: C.green }}>{t.sentBodyB}</strong>
                 </p>
-                <button onClick={() => { setSent(false); setName(''); setPhone(''); setType(PROPERTY_TYPE_VALUES[0]); setLocation(''); setChannel(CHANNEL_VALUES[0]) }}
-                  style={{ background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, border: '1px solid #dde3e0', borderRadius: 24, padding: '11px 24px', cursor: 'pointer' }}>
+                <button onClick={() => { setSent(false); setName(''); setPhone(''); setBuilding(''); setRooms(''); setType(PROPERTY_TYPE_VALUES[0]); setLocation(''); setChannel(CHANNEL_VALUES[0]) }}
+                  className="sm-btn-ghost" style={btnStyle('ghost')}>
                   {t.sendAnother}
                 </button>
               </div>
@@ -295,13 +271,16 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
 
       <style>{`
         @media (max-width: 960px) {
-          .sm-why4  { grid-template-columns: repeat(2,1fr) !important; }
-          .sm-svc3  { grid-template-columns: repeat(2,1fr) !important; }
-          .sm-2col  { grid-template-columns: 1fr !important; }
+          .sm-mg-4 { grid-template-columns: repeat(2, 1fr) !important; }
+          .sm-mg-3 { grid-template-columns: repeat(2, 1fr) !important; }
+          .sm-mg-5 { grid-template-columns: repeat(3, 1fr) !important; }
+          .sm-mg-form { grid-template-columns: 1fr !important; gap: 24px !important; }
+          .sm-mg-fee { flex-direction: column; }
         }
         @media (max-width: 580px) {
-          .sm-why4  { grid-template-columns: 1fr !important; }
-          .sm-svc3  { grid-template-columns: 1fr !important; }
+          .sm-mg-facts, .sm-mg-4, .sm-mg-3, .sm-mg-2 { grid-template-columns: 1fr !important; }
+          .sm-mg-facts > div { border-left: none !important; padding-left: 0 !important; }
+          .sm-mg-5 { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
