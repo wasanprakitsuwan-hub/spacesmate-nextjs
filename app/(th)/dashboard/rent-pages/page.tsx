@@ -167,9 +167,9 @@ export default function RentPagesAdmin() {
       </div>
       <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px' }}>
         {kind === 'district'
-          ? <>หน้า &ldquo;ห้องเช่า เขต…&rdquo; สำหรับทุกเขต ขึ้น Google อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในเขตนั้น</>
-          : <>หน้า &ldquo;ห้องเช่าใกล้…&rdquo; สำหรับทุกสถานีและสถานที่ ขึ้น Google อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในรัศมี {RADIUS_KM} กม.</>}
-        {' '}ตอนนี้ขึ้น Google {indexedCount} หน้า · มีประกาศ {listedCount} หน้า · ทั้งหมด {ofKind.length} หน้า
+          ? <>หน้า &ldquo;ห้องเช่า เขต…&rdquo; สำหรับทุกเขต เปิดให้ Google index อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในเขตนั้น</>
+          : <>หน้า &ldquo;ห้องเช่าใกล้…&rdquo; สำหรับทุกสถานีและสถานที่ เปิดให้ Google index อัตโนมัติเมื่อมีอย่างน้อย {INDEX_MIN} ประกาศในรัศมี {RADIUS_KM} กม.</>}
+        {' '}Indexable {indexedCount} หน้า · มีประกาศ {listedCount} หน้า · ทั้งหมด {ofKind.length} หน้า
       </p>
 
       {msg && <div style={{ ...card, background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534', padding: 12 }}>{msg}</div>}
@@ -208,7 +208,7 @@ export default function RentPagesAdmin() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 12px 0 0' }}>รายการหน้า</h2>
           <select value={filter} onChange={e => setFilter(e.target.value as typeof filter)} style={{ ...input, width: 'auto' }}>
-            <option value="indexed">ขึ้น Google แล้ว</option>
+            <option value="indexed">Indexable</option>
             <option value="listed">มีประกาศ</option>
             <option value="all">ทั้งหมด</option>
           </select>
@@ -250,9 +250,9 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
 }) {
   const forced = p.override?.noindex === true
   const status = p.indexable
-    ? { label: 'ขึ้น Google', bg: '#dcfce7', color: '#15803d' }
-    : forced ? { label: 'ปิดไม่ให้ขึ้น Google', bg: '#fee2e2', color: '#b91c1c' }
-      : { label: `ยังไม่ขึ้น (ต้องมี ${INDEX_MIN})`, bg: '#f1f5f9', color: '#64748b' }
+    ? { label: 'Indexable', bg: '#dcfce7', color: '#15803d' }
+    : forced ? { label: 'Noindex (ปิดเอง)', bg: '#fee2e2', color: '#b91c1c' }
+      : { label: `Noindex (ต้องมี ${INDEX_MIN})`, bg: '#f1f5f9', color: '#64748b' }
   const custom = p.override && ['title_th', 'title_en', 'meta_description', 'meta_description_en', 'intro_th', 'intro_en', ...WRITEUP_KEYS]
     .some(k => (p.override as Record<string, unknown>)[k])
   const path = p.path
@@ -297,7 +297,7 @@ function Row({ p, editing, draft, setDraft, onEdit, onCancel, onSave, saving }: 
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, margin: '10px 0' }}>
               <input type="checkbox" checked={draft.noindex} onChange={e => set('noindex', e.target.checked)} />
-              ไม่ให้หน้านี้ขึ้น Google แม้จะมีประกาศครบ
+              Noindex: ไม่ให้ Google index หน้านี้ แม้จะมีประกาศครบ
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={onSave} disabled={saving} style={btn(true)}>{saving ? 'กำลังบันทึก…' : 'บันทึก'}</button>
