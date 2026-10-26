@@ -21,7 +21,7 @@
  */
 import { buildPlans, PRICING_T } from '@/lib/pricing-i18n'
 import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
@@ -147,6 +147,17 @@ function Checkout({ locale }: { locale: Locale }) {
     }
     setChecking(false)
   }, [pkg, qty, token, t])
+
+  // ?promo=CODE (the owner dashboard's suggested-code card) fills the box and
+  // checks it once the session token is in.
+  const promoParam = sp?.get('promo')?.trim().toUpperCase() ?? ''
+  const promoTried = useRef(false)
+  useEffect(() => {
+    if (!promoParam || !token || promoTried.current) return
+    promoTried.current = true
+    setCodeInput(promoParam)
+    checkCode(promoParam)
+  }, [promoParam, token, checkCode])
 
   // The discount depends on the package and quantity, so re-check on a change.
   const appliedCode = applied?.code
@@ -373,6 +384,17 @@ function Checkout({ locale }: { locale: Locale }) {
                     {checking ? '…' : t.applyCode}
                   </button>
                 </form>
+              )}
+              {!applied && promoCfg?.enabled && promoCfg.code && (
+                <p style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '10px 0 0', fontSize: 13 }}>
+                  <span style={{ color: C.muted }}>{t.suggested}</span>
+                  <button type="button" disabled={checking || !token}
+                    onClick={() => { setCodeInput(promoCfg.code); checkCode(promoCfg.code) }}
+                    style={{ border: '1px dashed #d9b98a', background: '#fbf6ee', color: C.amber, padding: '2px 10px', borderRadius: 999, fontWeight: 600, letterSpacing: '0.5px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {promoCfg.code}
+                  </button>
+                  <span style={{ color: C.muted }}>{locale === 'en' ? promoCfg.title_en : promoCfg.title_th}</span>
+                </p>
               )}
               {codeMsg && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#b42318' }}>{codeMsg}</p>}
             </section>

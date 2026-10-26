@@ -7,19 +7,19 @@ import { createBrowserClient } from '@/lib/supabase'
 import { C, RADIUS } from '@/lib/ui'
 
 const NAV = [
-  { href: '/dashboard',                  label: 'ภาพรวมระบบ',    icon: 'grid_view',        exact: true },
-  { href: '/dashboard/listings',         label: 'จัดการประกาศ',  icon: 'apartment',         exact: false },
+  { href: '/dashboard',                  label: 'ภาพรวมระบบ',        exact: true },
+  { href: '/dashboard/listings',         label: 'จัดการประกาศ',         exact: false },
   // superAdminOnly: admin and super_admin are otherwise equivalent — control of
   // user accounts is the one capability reserved to super_admin.
-  { href: '/dashboard/users',            label: 'ผู้ใช้งาน',      icon: 'manage_accounts',  exact: false, superAdminOnly: true },
-  { href: '/dashboard/pages',            label: 'หน้าเว็บ (Pages)', icon: 'web',             exact: false },
+  { href: '/dashboard/users',            label: 'ผู้ใช้งาน',  exact: false, superAdminOnly: true },
+  { href: '/dashboard/pages',            label: 'หน้าเว็บ (Pages)',             exact: false },
   // Property names, places, stations and their SEO pages — one menu.
-  { href: '/dashboard/places',           label: 'สถานที่ค้นหา',   icon: 'travel_explore',    exact: false },
+  { href: '/dashboard/places',           label: 'สถานที่ค้นหา',    exact: false },
   // Landing pages per station, university and landmark: shared template and per-page text.
-  { href: '/dashboard/rent-pages',       label: 'หน้าทำเล',       icon: 'location_city',     exact: false },
-  { href: '/dashboard/revenue',          label: 'รายได้',         icon: 'bar_chart',         exact: false },
-  { href: '/dashboard/blog',             label: 'บทความ',         icon: 'article',           exact: false },
-  { href: '/dashboard/settings',         label: 'ตั้งค่า',        icon: 'settings',          exact: false },
+  { href: '/dashboard/rent-pages',       label: 'หน้าทำเล',     exact: false },
+  { href: '/dashboard/revenue',          label: 'รายได้',         exact: false },
+  { href: '/dashboard/blog',             label: 'บทความ',           exact: false },
+  { href: '/dashboard/settings',         label: 'ตั้งค่า',          exact: false },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -102,8 +102,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const displayName = userEmail.split('@')[0] || 'Admin'
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: C.paper, fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+    <div className="sm-adm" style={{ display: 'flex', minHeight: '100vh', background: C.paper, fontFamily: "'Prompt', -apple-system, sans-serif" }}>
 
+      {/* Below 860px the rail becomes a bar across the top; it had no phone layout. */}
+      <style>{`
+        @media (max-width: 860px) {
+          .sm-adm { flex-direction: column; }
+          .sm-adm-side { width: auto !important; height: auto !important; position: static !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; padding: 12px 14px !important; }
+          .sm-adm-side .sm-adm-foot { margin-top: 0 !important; border-top: none !important; padding: 0 !important; display: flex !important; flex-wrap: wrap; align-items: center; }
+          .sm-adm-side .sm-adm-who { display: none; }
+          .sm-adm-main { padding: 20px 16px 56px !important; }
+        }
+      `}</style>
       {/* ── SIDEBAR ── calm green rail, as in the approved admin mockups */}
       <aside className="sm-adm-side" style={{
         width: 232, flexShrink: 0, background: C.green,
@@ -129,7 +139,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
               fontWeight: isActive ? 500 : 400,
             }}>
-              <span className="msym" style={{ fontSize: 19, lineHeight: 1, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{n.icon}</span>
               <span style={{ flex: 1 }}>{n.label}</span>
               {badge > 0 && (
                 <span style={{ background: C.white, color: C.green, fontSize: 11.5, fontWeight: 600, minWidth: 20, height: 20, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>{badge}</span>
@@ -138,22 +147,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )
         })}
 
-        <div style={{ marginTop: 'auto', padding: '14px 11px 2px', borderTop: '1px solid rgba(255,255,255,0.12)', display: 'grid', gap: 10 }}>
-          <Link href="/" style={{ fontSize: 13.5, color: 'rgba(255,255,255,.75)', textDecoration: 'none' }}>← ดูเว็บไซต์</Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ lineHeight: 1.3, minWidth: 0, flex: 1 }}>
-              <div style={{ color: C.white, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{userRole === 'super_admin' ? 'Super admin' : 'Admin'}</div>
-            </div>
-            <button onClick={handleLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: 2, lineHeight: 1 }}>
-              <span className="msym" style={{ fontSize: 19, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>logout</span>
-            </button>
+        <div className="sm-adm-foot" style={{ marginTop: 'auto', padding: '14px 11px 2px', borderTop: '1px solid rgba(255,255,255,0.12)', display: 'grid', gap: 10 }}>
+          <Link href="/" style={{ fontSize: 13.5, color: 'rgba(255,255,255,.75)', textDecoration: 'none' }}>ดูเว็บไซต์</Link>
+          <div className="sm-adm-who" style={{ lineHeight: 1.3, minWidth: 0 }}>
+            <div style={{ color: C.white, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{userRole === 'super_admin' ? 'Super admin' : 'Admin'}</div>
           </div>
+          <button onClick={handleLogout} style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: C.white,
+            cursor: 'pointer', fontSize: 13.5, padding: '8px 12px', borderRadius: RADIUS, fontFamily: 'inherit',
+          }}>
+            ออกจากระบบ
+          </button>
         </div>
       </aside>
 
       {/* ── MAIN ── (the old top bar's search box and bell did nothing, so they are gone) */}
-      <main style={{ flex: 1, minWidth: 0, padding: '28px 32px 56px' }} data-caller-role={userRole}>
+      <main className="sm-adm-main" style={{ flex: 1, minWidth: 0, padding: '28px 32px 56px' }} data-caller-role={userRole}>
         {children}
       </main>
     </div>

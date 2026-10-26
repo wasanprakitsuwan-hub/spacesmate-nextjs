@@ -153,7 +153,7 @@ export function SuspendModal({ user, onClose, onDone }: { user: UserRow; onClose
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             {loading ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .8s linear infinite', display: 'inline-block' }} />กำลังดำเนินการ...</>
-              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{isSuspending ? 'block' : 'check_circle'}</span>{isSuspending ? 'ระงับบัญชี' : 'เปิดใช้งาน'}</>}
+              : <>{isSuspending ? 'ระงับบัญชี' : 'เปิดใช้งาน'}</>}
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@ export function DeleteConfirmModal({ user, onClose, onDeleted }: { user: UserRow
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             {deleting ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .8s linear infinite', display: 'inline-block' }} />กำลังลบ...</>
-              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>delete_forever</span>ยืนยันการลบ</>}
+              : <>ยืนยันการลบ</>}
           </button>
         </div>
       </div>

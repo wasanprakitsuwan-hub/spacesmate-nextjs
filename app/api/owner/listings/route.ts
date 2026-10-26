@@ -77,7 +77,24 @@ export async function GET(req: NextRequest) {
     // A draft can still hold its slot (taken down mid-term), and then it goes
     // back up without paying again.
     const held = await heldSlotsByListing(supabase, userId)
-    const listings = (data ?? []).map(l => ({ ...l, holds_slot: held.has(l.id as string), slot_expires_at: held.get(l.id as string) ?? null }))
+    // Visitors over the last 30 Bangkok days per listing, for the list column.
+    // A stats failure shows a dash, not an empty dashboard.
+    const views = new Map<string, number>()
+    const ids = (data ?? []).map(l => l.id as string)
+    let statsOk = true
+    if (ids.length) {
+      const since = new Date(Date.now() + 7 * 3600_000 - 29 * 86400_000).toISOString().slice(0, 10)
+      const { data: rows, error: statsErr } = await supabase
+        .from('listing_stats_daily').select('property_id, views').in('property_id', ids).gte('day', since)
+      if (statsErr) { statsOk = false; console.error('[owner listings] stats:', statsErr.message) }
+      for (const r of rows ?? []) views.set(r.property_id, (views.get(r.property_id) ?? 0) + (r.views ?? 0))
+    }
+    const listings = (data ?? []).map(l => ({
+      ...l,
+      holds_slot: held.has(l.id as string),
+      slot_expires_at: held.get(l.id as string) ?? null,
+      views_30d: statsOk ? views.get(l.id as string) ?? 0 : null,
+    }))
     return NextResponse.json({ listings, free_slots: freeSlots })
   } catch (err: any) {
     console.error('owner GET error:', err)

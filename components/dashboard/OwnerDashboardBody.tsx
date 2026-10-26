@@ -13,6 +13,8 @@ import {
 import { DASH_T, type DashStrings, type Locale } from '@/lib/dashboard-i18n'
 import { localeHref } from '@/lib/routes-i18n'
 import ListingStatsModal from '@/components/dashboard/ListingStatsModal'
+import { C, RADIUS } from '@/lib/ui'
+import { normalisePromo, type CheckoutPromo } from '@/lib/promo'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SubscriptionItem {
@@ -27,6 +29,7 @@ interface SubscriptionItem {
   slot_count?: number
   slots_used?: number
   listing_titles?: string[]
+  listing_ids?: string[]
 }
 
 interface OwnerListing {
@@ -47,6 +50,8 @@ interface OwnerListing {
   listing_status: string
   /** Holds a live slot: a draft taken down mid-term goes back up without paying. */
   holds_slot?: boolean
+  /** Visitors over the last 30 days; null when stats failed to load. */
+  views_30d?: number | null
   package_type: string | null
   expires_at: string | null
   created_at: string
@@ -111,7 +116,7 @@ function useIsNarrow(breakpoint = 780) {
 }
 
 // ── Drawer Wrapper ────────────────────────────────────────────────────────────
-function Drawer({ title, subtitle, onClose, children }: { title: string; subtitle?: string; onClose: () => void; children: React.ReactNode }) {
+function Drawer({ title, subtitle, closeLabel, onClose, children }: { title: string; subtitle?: string; closeLabel: string; onClose: () => void; children: React.ReactNode }) {
   const isNarrow = useIsNarrow()
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} onClick={onClose}>
@@ -126,7 +131,7 @@ function Drawer({ title, subtitle, onClose, children }: { title: string; subtitl
             <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: '#02402e' }}>{title}</h2>
             {subtitle && <p style={{ margin: '3px 0 0', fontSize: 13, color: '#94a3b8' }}>{subtitle}</p>}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#94a3b8', lineHeight: 1, padding: '2px 4px' }}>×</button>
+          <button type="button" onClick={onClose} style={{ background: '#fff', border: '1px solid #dcd8ce', borderRadius: 6, fontSize: 13.5, cursor: 'pointer', color: '#231f20', padding: '6px 14px', fontFamily: 'inherit' }}>{closeLabel}</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: isNarrow ? '18px 16px 32px' : '24px 28px', minWidth: 0 }}>{children}</div>
       </div>
@@ -202,14 +207,14 @@ function CreateDrawer({ userId, userEmail, onClose, onCreated, locale }: { userI
   }
 
   return (
-    <Drawer title={t.addListing} subtitle={t.publishNow} onClose={onClose}>
+    <Drawer title={t.addListing} subtitle={t.publishNow} closeLabel={t.close} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <ListingFormFields locale={locale} isMobile={isNarrow} form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}</div>}
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t.cancel}</button>
           <button type="submit" disabled={saving} style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</> : <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>publish</span>{t.publishListing}</>}
+            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</> : <>{t.publishListing}</>}
           </button>
         </div>
       </form>
@@ -357,14 +362,14 @@ function EditDrawer({ listing, userId, onClose, onSaved, locale }: { listing: Ow
   }
 
   return (
-    <Drawer title={t.editListing} subtitle={listing.title_th} onClose={onClose}>
+    <Drawer title={t.editListing} subtitle={listing.title_th} closeLabel={t.close} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <ListingFormFields locale={locale} isMobile={isNarrow} form={form} onChange={onChange} onAmenityToggle={onAmenityToggle} onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', color: '#b91c1c', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>{error}</div>}
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t.cancel}</button>
           <button type="submit" disabled={saving} style={{ flex: 2, padding: '13px', borderRadius: 12, border: 'none', background: saving ? '#94a3b8' : '#02402e', color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</> : <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>save</span>{t.saveChanges}</>}
+            {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.saving}</> : <>{t.saveChanges}</>}
           </button>
         </div>
       </form>
@@ -389,9 +394,6 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
   const [selectedUpgradePkg,  setSelectedUpgradePkg]  = useState<string>('')
   const [upgradingSubId,      setUpgradingSubId]      = useState<string | null>(null)
   const [upgradeError,        setUpgradeError]        = useState('')
-  const [confirmCancelListingPkgId, setConfirmCancelListingPkgId] = useState<string | null>(null)
-  const [cancellingListingPkgId,    setCancellingListingPkgId]    = useState<string | null>(null)
-  const [cancelListingPkgError,     setCancelListingPkgError]     = useState('')
   const [showCreate,         setShowCreate]         = useState(false)
   const [editTarget,         setEditTarget]         = useState<OwnerListing | null>(null)
   const [statsTarget, setStatsTarget] = useState<OwnerListing | null>(null)
@@ -399,6 +401,16 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
   const [freeSlots,          setFreeSlots]          = useState(0)
   const [publishing,         setPublishing]         = useState<string | null>(null)
   const [publishError,       setPublishError]       = useState('')
+  const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'expired'>('all')
+  const [promo, setPromo] = useState<CheckoutPromo | null>(null)
+
+  // The suggested code card: only an enabled code with a value is offered.
+  useEffect(() => {
+    fetch('/api/settings/public?key=checkout_promo')
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { const p = j?.data ? normalisePromo(j.data) : null; setPromo(p?.enabled && p.code ? p : null) })
+      .catch(() => {})
+  }, [])
 
   // Still used by the subscriptions panel to show a package held without a
   // Stripe subscription behind it.
@@ -547,30 +559,6 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
     return `${localeHref('/checkout', locale)}?${mode}=${encodeURIComponent(id)}`
   }
 
-  async function cancelListingPackage(listingId: string) {
-    setCancellingListingPkgId(listingId)
-    setCancelListingPkgError('')
-    try {
-      const { data: { session } } = await createBrowserClient().auth.getSession()
-      const r = await fetch('/api/owner/listings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ id: listingId, cancel_package: true }),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error ?? t.cancelFailed)
-      // Update listing state immediately — mark as expired, clear package
-      setListings(prev => prev.map(l =>
-        l.id === listingId ? { ...l, package_type: null, expires_at: null, listing_status: 'expired' } : l
-      ))
-      setConfirmCancelListingPkgId(null)
-    } catch (err: any) {
-      setCancelListingPkgError(err.message ?? t.error)
-    } finally {
-      setCancellingListingPkgId(null)
-    }
-  }
-
   async function deleteListing(id: string) {
     if (!confirm(t.deleteConfirm)) return
     setDeleting(id)
@@ -619,13 +607,29 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
 
   const drafts   = listings.filter(l => l.listing_status === 'draft').length
   const active   = listings.filter(l => l.listing_status === 'active').length
-  const expiring = listings.filter(l => { const d = daysLeft(l.expires_at); return d !== null && d > 0 && d <= 7 }).length
+  const expired  = listings.filter(l => l.listing_status === 'expired').length
+  const views30  = listings.some(l => typeof l.views_30d === 'number')
+    ? listings.reduce((n, l) => n + (l.views_30d ?? 0), 0)
+    : null
+  const soonest  = listings
+    .filter(l => l.listing_status === 'active')
+    .map(l => ({ l, d: daysLeft(l.expires_at) }))
+    .filter((x): x is { l: OwnerListing; d: number } => x.d !== null && x.d > 0 && x.d <= 7)
+    .sort((a, b) => a.d - b.d)[0]
+  const shown = listings.filter(l => filter === 'all' || l.listing_status === filter)
+  /** The Stripe subscription paying for this listing, if there is one. */
+  const subFor = (id: string) => subscriptions.find(s => s.listing_ids?.includes(id))
+
+  const TABS: { key: typeof filter; label: string; n: number }[] = [
+    { key: 'all', label: t.allListings, n: listings.length },
+    { key: 'active', label: t.statusPublished, n: active },
+    { key: 'draft', label: t.statusDraft, n: drafts },
+    { key: 'expired', label: t.statusExpired, n: expired },
+  ]
 
   return (
-    // minWidth:0 stops a wide child (the listings table) forcing the whole
-    // document wider than the viewport, which is what caused the sideways scroll
-    // and the clipped header on mobile.
-    <div style={{ minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
+    // minWidth:0 stops the wide list forcing the document wider than the viewport.
+    <div style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
       {showCreate && userId && (
         <CreateDrawer locale={locale} userId={userId} userEmail={userEmail} onClose={() => setShowCreate(false)} onCreated={() => load()} />
       )}
@@ -636,234 +640,167 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
         <EditDrawer locale={locale} listing={editTarget} userId={userId} onClose={() => setEditTarget(null)} onSaved={() => load()} />
       )}
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#02402e', margin: '0 0 4px', letterSpacing: '-0.3px' }}>{t.myListings}</h1>
-          <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>{userEmail}</p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          {/* Always enabled.
-              Blocking the button here meant someone who came from an ad hit a
-              dead end before ever seeing the form, and we could not tell whether
-              they left because of the form or because of the price. Now the
-              listing is always writable; only publishing needs a slot. */}
-          <button
-            onClick={() => setShowCreate(true)}
-            style={{
-              background: '#02402e', color: '#fff',
-              border: 'none', borderRadius: 24, padding: '12px 22px',
-              fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
-              transition: 'all .2s',
-            }}
-          >
-            + {t.addListing}
-          </button>
-          {!canPublishMore && (
-            <p style={{ fontSize: 12, color: '#d97f11', margin: 0, textAlign: 'right', maxWidth: 260 }}>
-              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 4, verticalAlign: 'middle' }}>info</span>
-              {/* Slots, not packages: the wall is capacity, and the listing is
-                  never lost — it waits as a draft until one is free. */}
-              <>{t.slotsFull}{' '}
-              <a href={localeHref('/checkout', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buyMoreSlots}</a>{' '}{t.toPublish}</>
-            </p>
-          )}
-        </div>
+      <div>
+        <h1 style={{ fontSize: 26, fontWeight: 600, color: C.green, margin: 0 }}>{t.myListings}</h1>
+        <span style={{ fontSize: 13, color: C.muted }}>{userEmail}</span>
       </div>
 
       {/* Google-registered owners have no phone number; ask once, here. */}
       <PhonePrompt locale={locale} />
 
       {publishError && (
-        <div style={{ background: '#fdf3e3', border: '1px solid #f3d9ae', color: '#8a5a10', borderRadius: 12, padding: '12px 16px', marginBottom: 18, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="msym" style={{ fontSize: 18, color: '#d97f11', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>info</span>
-          <span style={{ flex: 1, minWidth: 0 }}>{publishError}</span>
-          <a href={localeHref('/checkout', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>{t.viewPackages}</a>
-          <button onClick={() => setPublishError('')} style={{ border: 'none', background: 'transparent', color: '#8a5a10', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+        <div role="alert" style={{ background: C.amberTint, border: '1px solid #f0d9b5', borderRadius: RADIUS, padding: '12px 18px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ flex: 1, minWidth: 200 }}>{publishError}</span>
+          <a href={localeHref('/checkout', locale)} style={PRIMARY_SM}>{t.viewPackages}</a>
+          <button type="button" onClick={() => setPublishError('')} style={SECONDARY_SM}>{t.dismiss}</button>
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: 14, marginBottom: 28 }}>
+      {/* Numbers */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {[
-          { label: t.allListings,       value: listings.length, color: '#02402e', bg: '#f0f7f4' },
-          { label: t.statusPublished,           value: active,          color: '#048c73', bg: '#eaf6f1' },
-          { label: t.expiringSoon, value: expiring,        color: '#d97f11', bg: '#fdf3e3' },
-          ...(drafts > 0 ? [{ label: t.statusDraft, value: drafts, color: '#4338ca', bg: '#e0e7ff' }] : []),
-          { label: t.freeSlots, value: freeSlots, color: freeSlots > 0 ? '#048c73' : '#94a3b8', bg: '#eaf6f1' },
-        ].map(s => (
-          <div key={s.label} style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, padding: '18px 20px', boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: s.color, letterSpacing: '-1px' }}>{s.value}</div>
-            <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 3 }}>{s.label}</div>
+          { label: t.statusPublished, value: active, sub: t.onWebsiteNow },
+          { label: t.statusDraft, value: drafts, sub: t.waitingForPackage },
+          { label: t.visitors30, value: views30, sub: t.allTogether },
+          { label: t.expiringSoon.replace(/\s*\(.*\)$/, ''), value: listings.filter(l => { const d = daysLeft(l.expires_at); return l.listing_status === 'active' && d !== null && d > 0 && d <= 7 }).length, sub: t.within7 },
+        ].map(c => (
+          <div key={c.label} style={{ ...CARD, flex: '1 1 160px', display: 'flex', flexDirection: 'column', gap: 2, padding: '16px 20px' }}>
+            <span style={{ fontSize: 13, color: C.muted }}>{c.label}</span>
+            <span style={{ fontSize: 26, fontWeight: 600, fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 }}>{c.value ?? '—'}</span>
+            <span style={{ fontSize: 12, color: C.muted }}>{c.sub}</span>
           </div>
         ))}
       </div>
 
-      {/* แพ็กเกจของฉัน — always visible */}
-      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 16, overflow: 'hidden', marginBottom: 24, boxShadow: '0 2px 12px -6px rgba(2,64,46,0.08)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef0ef', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="msym" style={{ fontSize: 18, color: '#02402e', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>workspace_premium</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#02402e' }}>{t.myPackages}</span>
-          {subscriptions.length > 0 && (
-            <span style={{ fontSize: 12, color: '#94a3b8', background: '#f1f5f9', borderRadius: 10, padding: '2px 8px', marginLeft: 2 }}>
-              {subscriptions.filter(s => s.stripe_status === 'active' || s.stripe_status === 'trialing').length} active
-            </span>
-          )}
+      {soonest && (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', background: C.amberTint, border: '1px solid #f0d9b5', borderRadius: RADIUS, padding: '12px 18px', fontSize: 14, flexWrap: 'wrap' }}>
+          <span style={{ flex: 1, minWidth: 200 }}>{t.expiringBanner(soonest.l.title_th, soonest.d)}</span>
+          <a href={checkoutFor('extend', soonest.l.id)} style={PRIMARY_SM}>{t.renew}</a>
+        </div>
+      )}
+
+      {/* Listings */}
+      <section style={{ ...CARD, padding: '6px 22px 12px' }}>
+        <div role="tablist" style={{ display: 'flex', gap: 24, borderBottom: `1px solid ${C.line}`, overflowX: 'auto' }}>
+          {TABS.map(tab => (
+            <button key={tab.key} type="button" role="tab" aria-selected={filter === tab.key} onClick={() => setFilter(tab.key)} style={{
+              padding: '12px 0', background: 'none', border: 'none', marginBottom: -1, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14,
+              borderBottom: `2px solid ${filter === tab.key ? C.green : 'transparent'}`,
+              color: filter === tab.key ? C.green : C.muted, fontWeight: filter === tab.key ? 500 : 400,
+            }}>
+              {tab.label} {tab.n}
+            </button>
+          ))}
         </div>
 
-        {/* State 1: Has Stripe subscriptions */}
-        {subscriptions.length > 0 ? subscriptions.map((sub, i) => {
-          const pkgLabel  = sub.package_type === 'basic' ? 'Basic' : sub.package_type === 'standard' ? 'Standard' : sub.package_type === 'premium' ? 'Premium' : sub.package_type
-          const isActive  = sub.stripe_status === 'active' || sub.stripe_status === 'trialing'
-          const isCancelled = sub.cancel_at_period_end
-          return (
-            <div key={sub.stripe_subscription_id} style={{
-              padding: '16px 20px',
-              borderBottom: i < subscriptions.length - 1 ? '1px solid #f1f5f4' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 12,
-              background: i % 2 === 0 ? '#fff' : '#fafffe',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ background: isActive ? '#eaf6f1' : '#f1f5f9', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span className="msym" style={{ fontSize: 18, color: isActive ? '#048c73' : '#94a3b8', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>receipt_long</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                    {t.packageNamed(pkgLabel)}
-                    {isCancelled && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#d97f11', background: '#fdf3e3', borderRadius: 6, padding: '2px 7px' }}>{t.cancelled}</span>
-                    )}
-                    {!isActive && !isCancelled && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c', background: '#fee2e2', borderRadius: 6, padding: '2px 7px' }}>{sub.stripe_status}</span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {/* What this package is actually paying for. A subscription
-                        buys N slots; each may or may not hold a listing today. */}
-                    {(() => {
-                      const total  = sub.slot_count ?? 0
-                      const used   = sub.slots_used ?? 0
-                      const titles = sub.listing_titles ?? []
-                      const icon = (
-                        <span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>
-                      )
-
-                      // No slot rows — an older submission-era subscription.
-                      if (total === 0) {
-                        return sub.listing_title
-                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{icon}{sub.listing_title}</span>
-                          : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{t.noListingNamed}</span>
-                      }
-
-                      // Paid for, nothing published into it yet — actionable, so
-                      // say it in amber rather than grey.
-                      if (used === 0) {
-                        return (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d97f11' }}>
-                            {icon}{total === 1 ? t.unusedSlot : t.unusedN(total)}
-                          </span>
-                        )
-                      }
-
-                      return (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          {icon}
-                          {titles.join(', ')}
-                          {total > 1 && (
-                            <span style={{ color: '#94a3b8' }}>&nbsp;{t.usedOfTotal(used, total)}</span>
-                          )}
-                        </span>
-                      )
-                    })()}
-                    {sub.expires_at && <span style={{ color: '#94a3b8' }}>·</span>}
-                    {sub.expires_at && (
-                      <span>{isCancelled ? t.expires : t.renew}: {new Date(sub.expires_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {isActive && !isCancelled && (
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-                  {sub.package_type !== 'premium' && (
-                    <button onClick={() => { setUpgradeError(''); setSelectedUpgradePkg(''); setConfirmUpgradeSubId(sub.stripe_subscription_id) }}
-                      style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>{t.upgrade}
-                    </button>
-                  )}
-                  <button onClick={() => { setCancelError(''); setConfirmCancelSubId(sub.stripe_subscription_id) }}
-                    style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>{t.cancel}
-                  </button>
-                </div>
-              )}
-            </div>
-          )
-        }) : hasActiveListing ? (
-          /* State 2: No Stripe sub but has active listing with package */
-          <div style={{ padding: '8px 0' }}>
-            {listings.filter(l => l.expires_at && new Date(l.expires_at) > new Date() && l.listing_status !== 'expired').map((l, i, arr) => {
-              const days = daysLeft(l.expires_at)
-              const soonExp = days !== null && days <= 7 && days > 0
-              return (
-                <div key={l.id} style={{
-                  padding: '16px 20px',
-                  borderBottom: i < arr.length - 1 ? '1px solid #f1f5f4' : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  flexWrap: 'wrap', gap: 12,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ background: '#eaf6f1', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span className="msym" style={{ fontSize: 18, color: '#048c73', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>verified</span>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                        {t.packageNamed(pkgLabelFor(l.package_type ?? 'basic', locale))}
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#15803d', background: '#dcfce7', borderRadius: 6, padding: '2px 7px' }}>{t.active}</span>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          <span className="msym" style={{ fontSize: 13, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span>{l.title_th}
-                        </span>
-                        {l.expires_at && <span style={{ color: '#94a3b8' }}>·</span>}
-                        {l.expires_at && (
-                          <span style={{ color: soonExp ? '#d97f11' : '#64748b', fontWeight: soonExp ? 700 : 400 }}>
-                            {t.expiresWithDays(fmtDate(l.expires_at), soonExp ? days : null)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-                    <a href={checkoutFor('extend', l.id)} style={{ background: '#d97f11', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>more_time</span>{t.extend}
-                    </a>
-                    <a href={localeHref('/checkout', locale)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>upgrade</span>{t.upgrade}
-                    </a>
-                    <button
-                      onClick={() => { setCancelListingPkgError(''); setConfirmCancelListingPkgId(l.id) }}
-                      style={{ background: '#fff', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 10, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>cancel</span>{t.cancel}
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+        {loading ? (
+          <p style={{ padding: '48px 0', textAlign: 'center', color: C.muted, fontSize: 14, margin: 0 }}>{t.loading}</p>
+        ) : listings.length === 0 ? (
+          <div style={{ padding: '56px 16px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: C.green, margin: '0 0 6px' }}>{t.noListings}</h3>
+            <p style={{ fontSize: 14, color: C.muted, margin: '0 0 20px' }}>{t.startFirst}</p>
+            {/* Always creatable: with no free slot the listing saves as a draft. */}
+            <button type="button" onClick={() => setShowCreate(true)} style={{ ...PRIMARY_SM, padding: '10px 20px', fontSize: 14 }}>{t.addListing}</button>
+            {!canPublishMore && (
+              <p style={{ fontSize: 13, color: C.muted, margin: '14px 0 0' }}>
+                {t.noFreeSlotDraft}{' '}
+                <a href={localeHref('/checkout', locale)} style={{ color: C.teal }}>{t.buySlots}</a>{' '}{t.whenReady}
+              </p>
+            )}
           </div>
         ) : (
-          /* State 3: No package at all */
-          <div style={{ padding: '32px 20px', textAlign: 'center' }}>
-            <span className="msym" style={{ fontSize: 40, color: '#c7d2d0', display: 'block', marginBottom: 10, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>workspace_premium</span>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>{t.noActivePackage}</p>
-            <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 18px' }}>{t.buyToStart}</p>
-            <a href={localeHref('/checkout', locale)} style={{ background: '#d97f11', color: '#fff', borderRadius: 20, padding: '10px 22px', fontSize: 13.5, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>shopping_cart</span>{t.viewPackages}
-            </a>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ minWidth: 860 }}>
+              <div style={{ ...OWN_GRID, fontSize: 12, color: C.muted, padding: '12px 0 8px', borderBottom: `1px solid ${C.line}` }}>
+                <span /><span>{t.colProperty}</span><span>{t.colStatus}</span><span>{t.colPackage}</span>
+                <span style={{ textAlign: 'right' }}>{t.visitors}</span><span />
+              </div>
+              {shown.map(l => {
+                const days    = daysLeft(l.expires_at)
+                const soonExp = l.listing_status === 'active' && days !== null && days <= 7 && days > 0
+                const sub     = subFor(l.id)
+                const subLive = sub && (sub.stripe_status === 'active' || sub.stripe_status === 'trialing')
+                const busy    = publishing === l.id
+                const hasPkg  = !!l.expires_at && l.listing_status !== 'expired'
+                return (
+                  <div key={l.id} style={{ ...OWN_GRID, alignItems: 'center', padding: '14px 0', borderBottom: `1px solid ${C.line2}`, fontSize: 14 }}>
+                    {(l.images ?? [])[0]
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={l.images![0]} alt="" style={{ width: 72, height: 54, objectFit: 'cover', borderRadius: 4, display: 'block' }} />
+                      : <span style={{ width: 72, height: 54, borderRadius: 4, background: C.tint, display: 'block' }} />}
+                    <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      {l.listing_status === 'active'
+                        ? <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" title={t.viewListing} style={{ fontWeight: 500, color: C.ink, textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title_th}</a>
+                        : <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title_th}</span>}
+                      <span style={{ fontSize: 13, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {typeLabelFor(l.property_type, locale) ?? l.property_type} · ฿{l.price_from.toLocaleString()}{l.price_to ? `–฿${l.price_to.toLocaleString()}` : ''}
+                      </span>
+                    </span>
+                    <span><StatusChip status={l.listing_status} soon={soonExp} t={t} /></span>
+                    <span style={{ display: 'flex', flexDirection: 'column', fontSize: 13, color: C.muted, lineHeight: 1.45, minWidth: 0 }}>
+                      {hasPkg
+                        ? <span>{t.pkgUntil(pkgLabelFor(l.package_type ?? 'basic', locale) ?? '', fmtDate(l.expires_at))}</span>
+                        : l.listing_status === 'expired' && l.expires_at
+                          ? <span>{t.pkgUntil(pkgLabelFor(l.package_type ?? 'basic', locale) ?? '', fmtDate(l.expires_at))}</span>
+                          : <span>{t.noPackage}</span>}
+                      {/* The package belongs to this listing, so its controls live here too. */}
+                      {subLive && sub!.cancel_at_period_end && <span style={{ color: C.amber }}>{t.autoRenewOff}</span>}
+                      {subLive && !sub!.cancel_at_period_end && (
+                        <span style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          {sub!.package_type !== 'premium' && (
+                            <button type="button" onClick={() => { setUpgradeError(''); setSelectedUpgradePkg(''); setConfirmUpgradeSubId(sub!.stripe_subscription_id) }} style={LINK_BTN}>{t.upgrade}</button>
+                          )}
+                          <button type="button" onClick={() => { setCancelError(''); setConfirmCancelSubId(sub!.stripe_subscription_id) }} style={LINK_BTN}>{t.stopAutoRenew}</button>
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{l.listing_status === 'draft' ? '—' : l.views_30d ?? '—'}</span>
+                    <span style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      {l.listing_status === 'draft' && (
+                        <button type="button"
+                          onClick={() => {
+                            if (canPublishMore || l.holds_slot) { publishListing(l.id); return }
+                            // The clearest churn signal there is: written, only payment left.
+                            trackEvent('listing_publish_blocked', { reason: 'no_slot', source: 'draft_row' })
+                            window.location.href = checkoutFor('listing', l.id)
+                          }}
+                          disabled={busy}
+                          title={canPublishMore || l.holds_slot ? t.publishNow : t.noFreeSlot}
+                          style={{ ...PRIMARY_SM, opacity: busy ? 0.6 : 1 }}>
+                          {busy ? t.saving : canPublishMore || l.holds_slot ? t.publish : t.choosePackagePublish}
+                        </button>
+                      )}
+                      {l.listing_status === 'expired' && (
+                        // A free slot republishes it at once; otherwise checkout buys one.
+                        <button type="button"
+                          onClick={() => { if (canPublishMore) { publishListing(l.id); return } window.location.href = checkoutFor('listing', l.id) }}
+                          disabled={busy} style={{ ...PRIMARY_SM, opacity: busy ? 0.6 : 1 }}>
+                          {busy ? t.saving : canPublishMore ? t.publish : t.buySlots}
+                        </button>
+                      )}
+                      {l.listing_status === 'active' && soonExp && <a href={checkoutFor('extend', l.id)} style={PRIMARY_SM}>{t.renew}</a>}
+                      <button type="button" onClick={() => setEditTarget(l)} style={SECONDARY_SM}>{t.edit}</button>
+                      {l.listing_status === 'active' && l.expires_at && !soonExp && <a href={checkoutFor('extend', l.id)} style={SECONDARY_SM}>{t.renew}</a>}
+                      {l.listing_status !== 'draft' && (
+                        <button type="button" onClick={() => setStatsTarget(l)} style={LINK_BTN}>{t.stats}</button>
+                      )}
+                      {l.listing_status === 'active' && (
+                        <button type="button" onClick={() => unpublishListing(l.id)} disabled={busy} title={t.unpublish} style={LINK_BTN}>{t.takeDown}</button>
+                      )}
+                      <button type="button" onClick={() => deleteListing(l.id)} disabled={deleting === l.id} style={{ ...LINK_BTN, color: DANGER, opacity: deleting === l.id ? 0.5 : 1 }}>
+                        {deleting === l.id ? t.saving : t.delete}
+                      </button>
+                    </span>
+                  </div>
+                )
+              })}
+              {shown.length === 0 && <p style={{ padding: '40px 0', textAlign: 'center', color: C.muted, fontSize: 14, margin: 0 }}>{t.noListings}</p>}
+            </div>
           </div>
         )}
-      </div>
+      </section>
+
+      {promo && <SuggestedCode promo={promo} locale={locale} t={t} />}
 
       {/* Per-subscription cancel confirm modal */}
       {confirmCancelSubId && (() => {
@@ -918,48 +855,6 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                   {t.back}
                 </button>
                 <button onClick={() => cancelSubscription(confirmCancelSubId)} disabled={isCancelling}
-                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: isCancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: isCancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  {isCancelling
-                    ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.cancelling}</>
-                    : t.confirmCancelBtn}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* Listing package cancel confirm modal (State 2 — non-Stripe packages) */}
-      {confirmCancelListingPkgId && (() => {
-        const targetListing = listings.find(l => l.id === confirmCancelListingPkgId)
-        const isCancelling  = cancellingListingPkgId === confirmCancelListingPkgId
-        return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px -10px rgba(0,0,0,0.25)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <div style={{ background: '#fef2f2', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span className="msym" style={{ fontSize: 20, color: '#dc2626', fontVariationSettings: "'wght' 400, 'FILL' 1" }}>warning</span>
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t.confirmCancelPackage}</h3>
-              </div>
-              {targetListing && (
-                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13, color: '#334155' }}>
-                  <div style={{ fontWeight: 600 }}>{t.packageNamed(pkgLabelFor(targetListing.package_type ?? 'basic', locale))}</div>
-                  <div style={{ color: '#64748b', marginTop: 2 }}>{t.listingNamed(targetListing.title_th)}</div>
-                </div>
-              )}
-              <p style={{ fontSize: 13.5, color: '#475569', margin: '0 0 20px', lineHeight: 1.6 }}>
-                {t.cancelImmediate}
-              </p>
-              {cancelListingPkgError && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px', color: '#b91c1c', fontSize: 13, marginBottom: 16 }}>{cancelListingPkgError}</div>
-              )}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setConfirmCancelListingPkgId(null); setCancelListingPkgError('') }} disabled={isCancelling}
-                  style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {t.back}
-                </button>
-                <button onClick={() => cancelListingPackage(confirmCancelListingPkgId)} disabled={isCancelling}
                   style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: isCancelling ? '#94a3b8' : '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, cursor: isCancelling ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {isCancelling
                     ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.cancelling}</>
@@ -1033,163 +928,68 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
         )
       })()}
 
-      {/* Listings table */}
-      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -10px rgba(2,64,46,0.08)' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#02402e' }}>{t.listingTable}</span>
-          {loading && <span style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 13, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>{t.loading}</span>}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-            <div style={{ width: 30, height: 30, border: '3px solid #048c73', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite', margin: '0 auto 12px' }} />
-            <p style={{ color: '#94a3b8', fontSize: 14 }}>{t.loading}</p>
-          </div>
-        ) : listings.length === 0 ? (
-          <div style={{ padding: '72px 24px', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px' }}><span className="msym" style={{ fontSize: 44, color: '#c7d2d0', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span></p>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#02402e', margin: '0 0 8px' }}>{t.noListings}</h3>
-            <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 24px' }}>{t.startFirst}</p>
-            {/* Always creatable. Writing a listing and buying a slot are two
-                separate steps now — gating creation on a package sent a first-time
-                owner to the pricing page before they had seen the product, which
-                is the same dead end the header button used to have. With no free
-                slot the listing simply saves as a draft. */}
-            <button onClick={() => setShowCreate(true)} style={{ background: '#02402e', color: '#fff', border: 'none', borderRadius: 24, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              + {t.addListing}
-            </button>
-            {!canPublishMore && (
-              <p style={{ fontSize: 13, color: '#64748b', margin: '14px 0 0' }}>
-                {t.noFreeSlotDraft}{' '}
-                <a href={localeHref('/checkout', locale)} style={{ color: '#d97f11', fontWeight: 700, textDecoration: 'underline' }}>{t.buySlots}</a>{' '}{t.whenReady}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto', minWidth: 0, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', fontSize: 13.5, tableLayout: 'fixed' }}>
-              <thead>
-                <tr style={{ background: '#f8faf9', borderBottom: '1px solid #eef0ef' }}>
-                  {[t.colProperty, t.colType, t.colPrice, t.colPackage, t.expires, t.colStatus, ''].map(h => (
-                    <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {listings.map((l, i) => {
-                  const days    = daysLeft(l.expires_at)
-                  const soonExp = days !== null && days <= 7 && days > 0
-                  const ss      = statusStyle(t)[l.listing_status] ?? statusStyle(t).pending
-                  return (
-                    <tr key={l.id} style={{ borderBottom: i < listings.length - 1 ? '1px solid #f1f5f4' : 'none', background: i % 2 === 0 ? '#fff' : '#fafffe' }}>
-                      <td style={{ padding: '14px 16px', minWidth: 220 }}>
-                        {/* minWidth:0 lets the text shrink; without it a flex item
-                            refuses to go below its content width and spills into
-                            the next column. */}
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
-                          {(l.images ?? [])[0]
-                            ? <img src={l.images![0]} alt="" style={{ width: 42, height: 34, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />
-                            : <div style={{ width: 42, height: 34, borderRadius: 7, background: '#eaf6f1', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 18, color: '#048c73', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>home</span></div>
-                          }
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            {/* was maxWidth:200 — wider than the space left after the
-                                42px thumbnail and gap, so it overflowed rather than
-                                truncating. Now it fits whatever the column allows. */}
-                            <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title_th}</div>
-                            {l.district && <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.district}</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '14px 16px', color: '#64748b', fontSize: 12.5 }}>{typeLabelFor(l.property_type, locale) ?? l.property_type}</td>
-                      <td style={{ padding: '14px 16px', fontWeight: 700, color: '#02402e' }}>
-                        ฿{l.price_from.toLocaleString()}
-                        {l.price_to ? `–${l.price_to.toLocaleString()}` : ''}
-                      </td>
-                      <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748b' }}>{pkgLabelFor(l.package_type ?? 'basic', locale) ?? l.package_type}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 12 }}>
-                        {l.expires_at ? (
-                          <span style={{ color: soonExp ? '#d97f11' : days === 0 ? '#b91c1c' : '#334155', fontWeight: soonExp || days === 0 ? 700 : 400 }}>
-                            {fmtDate(l.expires_at)}
-                            {soonExp && <span style={{ display: 'block', fontSize: 10, color: '#d97f11' }}>{t.daysLeft(days!)}</span>}
-                            {days === 0 && <span style={{ display: 'block', fontSize: 10, color: '#b91c1c' }}>{t.statusExpired}</span>}
-                          </span>
-                        ) : <span style={{ color: '#94a3b8' }}>{t.unlimited}</span>}
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, background: ss.bg, color: ss.color, fontWeight: 600 }}>{ss.label}</span>
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                          {l.listing_status === 'draft' ? (
-                            <button
-                              onClick={() => {
-                                // A slot is capacity, not a purchase of this
-                                // listing — with none free the answer is to buy
-                                // capacity, not to check out against this row.
-                                if (canPublishMore || l.holds_slot) { publishListing(l.id); return }
-                                // The clearest churn signal there is: the
-                                // listing is written and the only thing left is
-                                // to pay.
-                                trackEvent('listing_publish_blocked', { reason: 'no_slot', source: 'draft_row' })
-                                window.location.href = checkoutFor('listing', l.id)
-                              }}
-                              disabled={publishing === l.id}
-                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canPublishMore || l.holds_slot ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
-                              title={canPublishMore || l.holds_slot ? t.publishNow : t.noFreeSlot}
-                            >
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{canPublishMore || l.holds_slot ? 'publish' : 'shopping_cart'}</span>
-                              {publishing === l.id ? '…' : canPublishMore || l.holds_slot ? t.publish : t.buySlots}
-                            </button>
-                          ) : l.listing_status === 'expired' ? (
-                            // Expired: a free slot republishes it at once;
-                            // otherwise checkout buys one and auto-publishes.
-                            <button
-                              onClick={() => {
-                                if (canPublishMore) { publishListing(l.id); return }
-                                window.location.href = checkoutFor('listing', l.id)
-                              }}
-                              disabled={publishing === l.id}
-                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>autorenew</span>{t.renew}
-                            </button>
-                          ) : (
-                            <a href={`/property/${l.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                          )}
-                          {l.listing_status !== 'draft' && (
-                            <button onClick={() => setStatsTarget(l)} title={t.stats}
-                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#048c73', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                              <span className="msym" style={{ fontSize: 14 }}>bar_chart</span>
-                            </button>
-                          )}
-                          <button onClick={() => setEditTarget(l)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14 }}>edit</span></button>
-                          {l.listing_status === 'active' && l.expires_at && (
-                            <a href={checkoutFor('extend', l.id)} title={t.extend}
-                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #f3d3a8', background: '#fff', color: '#d97f11', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                              <span className="msym" style={{ fontSize: 14 }}>more_time</span>
-                            </a>
-                          )}
-                          {l.listing_status === 'active' && (
-                            <button onClick={() => unpublishListing(l.id)} disabled={publishing === l.id}
-                              title={t.unpublish}
-                              style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                              <span className="msym" style={{ fontSize: 14 }}>visibility_off</span>
-                            </button>
-                          )}
-                          <button onClick={() => deleteListing(l.id)} disabled={deleting === l.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === l.id ? 0.5 : 1 }}>
-                            {deleting === l.id ? '…' : t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+  )
+}
+
+// ── Round 7 pieces ────────────────────────────────────────────────────────────
+const OWN_GRID: React.CSSProperties = {
+  display: 'grid', gap: 16,
+  gridTemplateColumns: '72px minmax(0, 1fr) 110px minmax(0, 0.9fr) 80px 320px',
+}
+const CARD: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS }
+const DANGER = '#b42318'
+const SECONDARY_SM: React.CSSProperties = {
+  display: 'inline-block', background: C.white, color: C.ink, border: `1px solid ${C.border}`, padding: '5px 12px',
+  borderRadius: RADIUS, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap',
+}
+const PRIMARY_SM: React.CSSProperties = { ...SECONDARY_SM, background: C.teal, color: C.white, borderColor: C.teal }
+const LINK_BTN: React.CSSProperties = {
+  background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: C.teal, whiteSpace: 'nowrap', textAlign: 'left',
+}
+
+function StatusChip({ status, soon, t }: { status: string; soon: boolean; t: DashStrings }) {
+  const [bg, color, label] =
+    status === 'active' && soon ? [C.amberTint, C.amber, t.expiringSoon.replace(/\s*\(.*\)$/, '')]
+    : status === 'active' ? ['#e6f2ec', C.green, t.statusPublished]
+    : status === 'expired' ? ['#fbe9e7', DANGER, t.statusExpired]
+    : status === 'pending' ? [C.amberTint, C.amber, t.statusPending]
+    : status === 'draft' ? ['#f0eee8', C.muted, t.statusDraft]
+    : ['#f0eee8', C.muted, t.statusDisabled]
+  return <span style={{ background: bg, color, fontSize: 12, padding: '2px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>{label}</span>
+}
+
+/**
+ * The promo code switched on in Dashboard › Settings › การชำระเงิน, offered to
+ * the owner here. Hidden whenever no code is enabled, so it never advertises a
+ * code Stripe would reject.
+ */
+function SuggestedCode({ promo, locale, t }: { promo: CheckoutPromo; locale: Locale; t: DashStrings }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <section style={{ ...CARD, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 560 }}>
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.green }}>{t.suggestedCode}</h2>
+      <div style={{ border: '1px dashed #d9b98a', background: '#fbf6ee', borderRadius: RADIUS, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 12, color: C.amber }}>{t.availableNow}</span>
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 600, letterSpacing: 1, color: C.amber }}>{promo.code}</span>
+          <span style={{ fontSize: 14, fontWeight: 500 }}>{locale === 'en' ? promo.title_en : promo.title_th}</span>
+        </span>
+        <span style={{ fontSize: 13, color: C.muted }}>{locale === 'en' ? promo.note_en : promo.note_th}</span>
+        <span style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <a href={`${localeHref('/checkout', locale)}?promo=${encodeURIComponent(promo.code)}`} style={PRIMARY_SM}>{t.useCodeToBuy}</a>
+          <button type="button" aria-live="polite" style={SECONDARY_SM}
+            onClick={() => {
+              navigator.clipboard?.writeText(promo.code).then(() => {
+                setCopied(true)
+                setTimeout(() => setCopied(false), 2000)
+              }).catch(() => {})
+            }}>
+            {copied ? t.copied : t.copyCode}
+          </button>
+        </span>
+      </div>
+      <span style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>{t.otherCodeNote}</span>
+    </section>
   )
 }

@@ -613,7 +613,7 @@ export default function SearchPlacesAdmin() {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', border: 'none', borderBottom: tab === t.id ? '2.5px solid #048c73' : '2.5px solid transparent', background: 'none', color: tab === t.id ? '#02402e' : '#64748b', fontWeight: tab === t.id ? 700 : 500, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-            <span className="msym" style={{ fontSize: 18 }}>{t.icon}</span>{t.label}
+            {t.label}
             <span style={{ fontSize: 11.5, background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', color: '#64748b' }}>{t.count}</span>
           </button>
         ))}
@@ -632,7 +632,7 @@ export default function SearchPlacesAdmin() {
             <div style={{ flex: 1 }} />
             <button onClick={() => setEditing({ row: null, kind: tab === 'names' ? 'name' : tab === 'places' ? 'landmark' : 'station' })}
               style={{ ...btn(true), display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="msym" style={{ fontSize: 18 }}>add</span>เพิ่ม
+              เพิ่ม
             </button>
           </div>
 
@@ -692,18 +692,18 @@ export default function SearchPlacesAdmin() {
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                         <button onClick={() => setEditing({ row: r, kind: r.kind })} title="แก้ไข"
                           style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', cursor: 'pointer' }}>
-                          <span className="msym" style={{ fontSize: 15 }}>edit</span>
+                          แก้ไข
                         </button>
                         {(r.source === 'edited' || r.source === 'added') && (
                           <button onClick={() => resetPlace(r)} title={r.source === 'added' ? 'ลบ' : 'คืนค่าตั้งต้น'}
                             style={{ marginLeft: 5, padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                            <span className="msym" style={{ fontSize: 15 }}>{r.source === 'added' ? 'delete' : 'undo'}</span>
+                            {r.source === 'added' ? 'ลบ' : 'คืนค่าเดิม'}
                           </button>
                         )}
                         {r.kind === 'name' && role === 'super_admin' && (
                           <button onClick={() => deleteName(r)} title="ลบ"
                             style={{ marginLeft: 5, padding: '5px 9px', borderRadius: 7, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer' }}>
-                            <span className="msym" style={{ fontSize: 15 }}>delete</span>
+                            ลบ
                           </button>
                         )}
                       </td>
@@ -724,7 +724,7 @@ export default function SearchPlacesAdmin() {
               <button onClick={linkAllSuggested} style={btn(false)}>ผูกตามที่แนะนำทั้งหมด ({suggestions.length})</button>
             )}
             <button onClick={() => setSeoEditing({ page: null, row: null })} style={{ ...btn(true), display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="msym" style={{ fontSize: 18 }}>add</span>เพิ่มหน้า SEO
+              เพิ่มหน้า SEO
             </button>
           </div>
 
@@ -768,7 +768,7 @@ export default function SearchPlacesAdmin() {
                       <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                         <button onClick={() => setSeoEditing({ page: p, row: null })} title="แก้ไข"
                           style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', cursor: 'pointer' }}>
-                          <span className="msym" style={{ fontSize: 15 }}>edit</span>
+                          แก้ไข
                         </button>
                       </td>
                     </tr>
