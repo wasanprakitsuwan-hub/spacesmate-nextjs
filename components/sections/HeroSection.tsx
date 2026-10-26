@@ -63,9 +63,8 @@ export default function HeroSection({ locale = 'th' }: { locale?: Locale }) {
         <h1 style={{ margin: 0, fontSize: 42, lineHeight: 1.35, fontWeight: 600, color: C.green }} className="sm-hero-h1">
           {t.heroTitle}
         </h1>
-        <p style={{ margin: 0, fontSize: 17, lineHeight: 1.65, color: C.muted }}>
-          {t.heroSub}<br className="sm-hide-mobile" />
-          <span style={{ fontSize: 15 }}> {t.heroSubMeta}</span>
+        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: C.muted }}>
+          {t.heroSubMeta}
         </p>
 
         <form onSubmit={handleSearch} role="search"
