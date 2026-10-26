@@ -22,8 +22,6 @@ export const SITE_T = {
   th: {
     // ── Hero ──
     heroTitle: 'หาห้องเช่า คอนโด อพาร์ทเม้นท์ ในกรุงเทพฯ',
-    // Why the listings can be trusted: owners must renew, or the listing closes.
-    heroSub: 'ประกาศอัปเดตล่าสุดเสมอ เพราะเจ้าของต้องต่ออายุประกาศเอง ถ้าไม่ต่ออายุ ประกาศจะปิดอัตโนมัติ',
     heroSubMeta: 'คอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ ทั่วกรุงเทพฯ · ไม่มีค่านายหน้า',
     heroAllTypes: 'ทั้งหมด',
     heroTry: 'ลองค้นหา',
@@ -145,7 +143,6 @@ export const SITE_T = {
 
   en: {
     heroTitle: 'Rooms, condos and apartments for rent in Bangkok',
-    heroSub: 'Listings stay current: owners must renew them, and a listing that is not renewed closes on its own',
     heroSubMeta: 'Condos, apartments, houses and offices across Bangkok · No agent fees',
     heroAllTypes: 'All',
     heroTry: 'Try',
