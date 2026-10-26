@@ -45,6 +45,8 @@ interface OwnerListing {
   postcode: string | null
   images: string[] | null
   listing_status: string
+  /** Holds a live slot: a draft taken down mid-term goes back up without paying. */
+  holds_slot?: boolean
   package_type: string | null
   expires_at: string | null
   created_at: string
@@ -1124,7 +1126,7 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                                 // A slot is capacity, not a purchase of this
                                 // listing — with none free the answer is to buy
                                 // capacity, not to check out against this row.
-                                if (canPublishMore) { publishListing(l.id); return }
+                                if (canPublishMore || l.holds_slot) { publishListing(l.id); return }
                                 // The clearest churn signal there is: the
                                 // listing is written and the only thing left is
                                 // to pay.
@@ -1132,11 +1134,11 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
                                 window.location.href = checkoutFor('listing', l.id)
                               }}
                               disabled={publishing === l.id}
-                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canPublishMore ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
-                              title={canPublishMore ? t.publishNow : t.noFreeSlot}
+                              style={{ padding: '5px 12px', borderRadius: 7, border: 'none', background: canPublishMore || l.holds_slot ? '#048c73' : '#d97f11', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, opacity: publishing === l.id ? 0.5 : 1 }}
+                              title={canPublishMore || l.holds_slot ? t.publishNow : t.noFreeSlot}
                             >
-                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{canPublishMore ? 'publish' : 'shopping_cart'}</span>
-                              {publishing === l.id ? '…' : canPublishMore ? t.publish : t.buySlots}
+                              <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>{canPublishMore || l.holds_slot ? 'publish' : 'shopping_cart'}</span>
+                              {publishing === l.id ? '…' : canPublishMore || l.holds_slot ? t.publish : t.buySlots}
                             </button>
                           ) : l.listing_status === 'expired' ? (
                             // Expired: a free slot republishes it at once;

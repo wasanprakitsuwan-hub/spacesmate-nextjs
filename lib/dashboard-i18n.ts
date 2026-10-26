@@ -16,9 +16,11 @@
  *       billing behaviour changes, these change in both languages in the same
  *       commit — same rule as the consent line in lib/auth-i18n.
  *
- *   3 · Slot mechanics. A slot is capacity, not a listing: one slot publishes
- *       one listing, and swapping which listing occupies it is free and
- *       instant. Owners get this wrong and open support tickets, so the
+ *   3 · Slot mechanics. One slot publishes one listing, and since 26 Oct
+ *       2026 it stays with that listing for its whole term: taking the
+ *       listing down does not free the slot for another one, the days keep
+ *       counting, and the listing can go back up on the same slot until it
+ *       expires. Owners get this wrong and open support tickets, so the
  *       English has to carry the whole idea, not a literal rendering of it.
  *
  * NOTHING HERE IS A STORED VALUE
@@ -77,10 +79,10 @@ export const DASH_T = {
     publishListing: 'เผยแพร่ประกาศ',
     publishNow: 'ประกาศจะเผยแพร่บนเว็บไซต์ทันที',
     publishFailed: 'เผยแพร่ไม่สำเร็จ',
-    unpublish: 'นำประกาศลง — แพ็กเกจจะว่างและใช้กับประกาศอื่นได้ตามวันที่เหลือ',
+    unpublish: 'นำประกาศลง — แพ็กเกจยังผูกกับประกาศนี้ วันยังนับต่อ เผยแพร่กลับได้จนครบกำหนด',
     /** confirm(). States the consequence and what happens to the slot. */
-    unpublishConfirm: 'นำประกาศนี้ลงจากเว็บไซต์?\n\nประกาศจะกลับไปเป็นฉบับร่าง และแพ็กเกจจะว่างพร้อมวันที่เหลือ — ใช้กับประกาศอื่นได้ทันที',
-    deleteConfirm: 'ลบประกาศนี้?',
+    unpublishConfirm: 'นำประกาศนี้ลงจากเว็บไซต์?\n\nประกาศจะกลับไปเป็นฉบับร่าง แพ็กเกจยังผูกกับประกาศนี้และวันยังนับต่อ กดเผยแพร่กลับได้จนครบกำหนด แพ็กเกจใช้กับประกาศอื่นไม่ได้',
+    deleteConfirm: 'ลบประกาศนี้?\n\nถ้าประกาศนี้มีแพ็กเกจอยู่ แพ็กเกจจะสิ้นสุดพร้อมกัน วันที่เหลือใช้กับประกาศอื่นไม่ได้ และการต่ออายุอัตโนมัติจะถูกยกเลิก',
     delete: 'ลบ',
 
     // ── Slots ──
@@ -242,13 +244,13 @@ export const DASH_T = {
     publishListing: 'Publish listing',
     publishNow: 'The listing goes live on the website immediately',
     publishFailed: 'Could not publish',
-    unpublish: 'Take it down — the package frees up, keeping its remaining days, for another listing',
+    unpublish: 'Take it down — the package stays with this listing and keeps counting; you can put it back up until it ends',
     /**
      * confirm(). Says what happens and what becomes of the slot, because the
      * owner is about to remove a live listing and cannot undo the click.
      */
-    unpublishConfirm: 'Take this listing off the website?\n\nIt goes back to being a draft, and the package frees up with its remaining days — you can use it for another listing straight away.',
-    deleteConfirm: 'Delete this listing?',
+    unpublishConfirm: 'Take this listing off the website?\n\nIt goes back to being a draft. The package stays tied to this listing and its days keep counting, so you can publish it again until the package ends. It cannot be used for another listing.',
+    deleteConfirm: 'Delete this listing?\n\nIf it holds a package, the package ends with it: the remaining days cannot move to another listing, and auto-renewal is cancelled.',
     delete: 'Delete',
 
     noFreeSlot: 'No unused package — buy one to publish',

@@ -20,20 +20,22 @@ export type Locale = 'th' | 'en'
 export const PRICING_T = {
   th: {
     metaTitle: 'ราคาและแพ็กเกจ',
-    metaDesc: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/ประกาศ/เดือน — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ซื้อหลายแพ็กเกจพร้อมกันได้ ยกเลิกได้ทุกเมื่อ ไม่มีค่าคอมมิชชัน',
+    metaDesc: 'ลงประกาศเช่าอสังหาริมทรัพย์ เริ่มต้น ฿299/ประกาศ/เดือน — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ยกเลิกการต่ออายุได้ทุกเมื่อ ไม่มีค่าคอมมิชชัน',
     ogTitle: 'ราคาลงประกาศ | SpacesMate — เริ่มต้น ฿299/เดือน',
     ogDesc: 'เลือก Basic, Standard หรือ Premium — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ เผยแพร่ทันที ไม่มีค่าคอมมิชชันซ่อน',
 
     heading: 'ราคาและแพ็กเกจ',
-    subhead: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · สลับประกาศได้ตลอดอายุ · ยกเลิกได้ทุกเมื่อ',
+    subhead: '1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ · ผูกกับประกาศนั้นตลอดอายุ · ยกเลิกการต่ออายุได้ทุกเมื่อ',
 
     promoTitle: 'ลงประกาศฟรีเดือนแรก!',
     promoUseCode: 'ใช้โค้ด',
     promoDetail: 'ขั้นตอนสุดท้าย — ลด ฿299 สำหรับการซื้อครั้งแรก (แพ็กเกจ Basic แรกจึงฟรี)',
 
     includesTitle: 'ทุกแพ็กเกจได้',
-    // What every package gets. Only what is true today (24 Oct 2026); the
+    // What every package gets. Only what is true today (26 Oct 2026); the
     // cards above carry the differences: duration, price, photos, video.
+    // The "swap listings" line went with the no-swap rule (Founder, 26 Oct
+    // 2026). SubmitBody pairs an icon with each line by position.
     includes: [
       'ไม่จำกัดจำนวนผู้เข้าชม',
       'แสดงเบอร์โทรและ LINE ให้ผู้เช่าติดต่อคุณได้โดยตรง',
@@ -42,7 +44,6 @@ export const PRICING_T = {
       'มีหน้าประกาศภาษาอังกฤษสำหรับผู้เช่าชาวต่างชาติ',
       'ข้อมูลประกาศพร้อมให้ Google และ AI ค้นเจอ (SEO/AEO)',
       'Fair Rotation — ไม่มีการจ่ายเงินเพื่อขึ้นอันดับ',
-      'สลับประกาศในแพ็กเกจได้ตลอดอายุ เมื่อห้องปล่อยเช่าได้แล้ว',
       'ไม่มีค่าคอมมิชชัน',
     ],
     featNoVideo: 'ไม่รวมวิดีโอ (มีใน Premium)',
@@ -71,7 +72,7 @@ export const PRICING_T = {
     premiumBadge: 'คุ้มที่สุดต่อเดือน',
 
     featImages: (n: number) => `รูปภาพสูงสุด ${n} รูป`,
-    featVideo: 'เพิ่มวิดีโอได้ — อัปโหลด หรือลิงก์ YouTube/Vimeo',
+    featVideo: 'เพิ่มวิดีโอได้ — อัปโหลด หรือลิงก์ YouTube/TikTok',
 
     helpTitle: 'ไม่สะดวกกรอกเอง? ให้ทีมงานช่วยลงประกาศให้',
     helpBody: 'ส่งรายละเอียดห้องและรูปภาพมาที่หน้าติดต่อ ทีมงาน SpacesMate จะจัดทำประกาศให้เรียบร้อย พร้อมเผยแพร่',
@@ -82,12 +83,12 @@ export const PRICING_T = {
 
   en: {
     metaTitle: 'Pricing and packages',
-    metaDesc: 'List a rental property from ฿299 per listing per month — one package = one live listing. Buy several packages at once, cancel any time, no commission.',
+    metaDesc: 'List a rental property from ฿299 per listing per month — one package = one live listing. Cancel auto-renewal any time, no commission.',
     ogTitle: 'Listing prices | SpacesMate — from ฿299/month',
     ogDesc: 'Basic, Standard or Premium — one package = one live listing, published immediately, with no hidden commission.',
 
     heading: 'Pricing and packages',
-    subhead: 'One package = one live listing · swap listings any time during the term · cancel whenever you like',
+    subhead: 'One package = one live listing · tied to that listing for its whole term · cancel auto-renewal whenever you like',
 
     promoTitle: 'First month free',
     promoUseCode: 'Use code',
@@ -102,7 +103,6 @@ export const PRICING_T = {
       'An English listing page for international renters',
       'Listing data ready for Google and AI search (SEO/AEO)',
       'Fair Rotation — no paying to rank higher',
-      'Swap another listing into the package any time during its term, once a room is let',
       'No commission',
     ],
     featNoVideo: 'No video (Premium only)',
@@ -131,7 +131,7 @@ export const PRICING_T = {
     premiumBadge: 'Best value per month',
 
     featImages: (n: number) => `Up to ${n} photos`,
-    featVideo: 'Video — upload a file, or link YouTube/Vimeo',
+    featVideo: 'Video — upload a file, or link YouTube/TikTok',
 
     helpTitle: 'Would rather not fill it in yourself? Our team can list it for you',
     helpBody: 'Send the room details and photos through the contact page and the SpacesMate team will prepare the listing, ready to publish.',
@@ -141,7 +141,11 @@ export const PRICING_T = {
   },
 } as const
 
-/** The eight pricing questions, per locale. */
+/**
+ * The eight pricing questions, per locale (round 6, Founder 26 Oct 2026: the
+ * listing is chosen at purchase, one room per payment, no swapping, and
+ * cancelling only stops auto-renewal).
+ */
 export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
   th: [
     {
@@ -150,19 +154,15 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'แพ็กเกจคืออะไร? ต่างจากประกาศอย่างไร?',
-      a: 'ประกาศคือข้อมูลห้องที่คุณกรอกไว้ — เก็บอยู่ในบัญชีของคุณตลอด ไม่มีวันหาย ส่วนแพ็กเกจคือสิทธิ์ในการนำประกาศขึ้นแสดงบนเว็บไซต์ 1 รายการ ตามระยะเวลาที่ซื้อ พูดง่าย ๆ คือ 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ',
+      a: 'ประกาศคือข้อมูลห้องที่คุณกรอกไว้ เก็บอยู่ในบัญชีของคุณตลอด ไม่มีวันหาย ส่วนแพ็กเกจคือสิทธิ์ในการแสดงประกาศนั้นบนเว็บไซต์ตามระยะเวลาที่ซื้อ พูดง่ายๆ คือ 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ และผูกกับประกาศนั้นตลอดอายุแพ็กเกจ',
     },
     {
-      q: 'ต้องเลือกประกาศตอนซื้อไหม?',
-      a: 'ไม่ต้อง ซื้อแพ็กเกจได้เลยโดยยังไม่ต้องมีประกาศ แล้วค่อยเลือกทีหลังในแดชบอร์ดว่าจะเผยแพร่ประกาศไหน หรือจะกรอกประกาศเก็บเป็นฉบับร่างไว้ก่อนแล้วค่อยซื้อแพ็กเกจก็ได้เช่นกัน',
+      q: 'เลือกประกาศตอนไหน?',
+      a: 'เลือกตอนซื้อแพ็กเกจ สร้างประกาศเก็บเป็นฉบับร่างไว้ก่อน แล้วกด "เผยแพร่" ที่ประกาศนั้นเพื่อเลือกแพ็กเกจและชำระเงิน แพ็กเกจจะผูกกับประกาศนั้นตลอดอายุแพ็กเกจ',
     },
     {
-      q: 'มีหลายห้อง ต้องซื้อทีละครั้งไหม?',
-      a: 'ไม่ต้อง เลือกจำนวนประกาศที่ต้องการในหน้าชำระเงินได้เลย เช่น อพาร์ตเมนต์ 8 ห้อง ซื้อ 8 แพ็กเกจในครั้งเดียว จ่ายรอบเดียว จัดการรวมกันในแดชบอร์ด',
-    },
-    {
-      q: 'ห้องปล่อยเช่าได้แล้ว ทำอย่างไรกับแพ็กเกจ?',
-      a: 'นำประกาศลงจากแดชบอร์ด แพ็กเกจจะว่างทันทีพร้อมจำนวนวันที่เหลือ แล้วนำประกาศห้องอื่นขึ้นแทนได้เลย ไม่เสียวันที่ชำระไปแล้ว',
+      q: 'มีหลายห้อง ซื้ออย่างไร?',
+      a: 'ซื้อทีละห้อง 1 การชำระเงิน = 1 ประกาศ เช่น อพาร์ตเมนต์ 8 ห้อง ให้สร้าง 8 ประกาศ แล้วเลือกแพ็กเกจและชำระแยกทีละประกาศ จะเห็นชัดว่าแพ็กเกจไหนเป็นของห้องไหน และวันหมดอายุของแต่ละห้องในแดชบอร์ด',
     },
     {
       q: 'แพ็กเกจหมดอายุแล้วประกาศหายไหม?',
@@ -170,7 +170,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'ยกเลิกได้ไหม?',
-      a: 'ยกเลิกได้ทุกเมื่อจากแดชบอร์ด ไม่มีสัญญาผูกมัด เมื่อยกเลิกแล้วแพ็กเกจยังใช้งานได้จนครบรอบที่ชำระเงินไว้ และจะไม่มีการเรียกเก็บเงินรอบถัดไป',
+      a: 'ยกเลิกการต่ออายุอัตโนมัติได้ทุกเมื่อจากแดชบอร์ด ไม่มีสัญญาผูกมัด การยกเลิกคือการหยุดต่ออายุรอบถัดไปเท่านั้น วันที่เหลือยังนับต่อ ประกาศยังแสดงตามปกติจนครบระยะเวลา แล้วจะปิดโดยอัตโนมัติ และไม่มีการเรียกเก็บเงินรอบถัดไป',
     },
     {
       q: 'ชำระเงินอย่างไร?',
@@ -189,19 +189,15 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'What is a package? How is it different from a listing?',
-      a: 'A listing is the room details you fill in — it stays on your account permanently and is never lost. A package is the right to show one listing on the website, for the period you bought. Put simply: one package = one live listing.',
+      a: 'A listing is the room details you fill in — it stays on your account permanently and is never lost. A package is the right to show that listing on the website for the period you bought. Put simply: one package = one live listing, tied to that listing for the whole term.',
     },
     {
-      q: 'Do I have to choose a listing when I buy?',
-      a: 'No. You can buy a package before you have a listing and choose later, from the dashboard, which listing to publish. Equally, you can write a listing as a draft first and buy the package afterwards.',
+      q: 'When do I choose the listing?',
+      a: 'When you buy the package. Write the listing and keep it as a draft, then press "Publish" on it to choose a package and pay. The package stays tied to that listing for its whole term.',
     },
     {
-      q: 'I have several rooms — do I have to buy one at a time?',
-      a: 'No. Choose how many packages you want at checkout. An 8-room apartment building, for example, buys 8 packages in one go, pays once, and manages them together in the dashboard.',
-    },
-    {
-      q: 'The room is let — what do I do with the package?',
-      a: 'Take the listing down from the dashboard. The package frees up immediately with its remaining days intact, and you can put another room’s listing in it straight away. You do not lose the days you have paid for.',
+      q: 'I have several rooms — how do I buy?',
+      a: 'One room at a time: one payment = one listing. An 8-room apartment building, for example, creates 8 listings, then chooses a package and pays for each one separately. The dashboard then shows clearly which package belongs to which room, and when each one expires.',
     },
     {
       q: 'When the package expires, do I lose the listing?',
@@ -209,7 +205,7 @@ export const PRICING_FAQ_T: Record<Locale, { q: string; a: string }[]> = {
     },
     {
       q: 'Can I cancel?',
-      a: 'Any time, from the dashboard. There is no lock-in. After you cancel, the package keeps working until the end of the period you have already paid for, and you will not be charged for the next one.',
+      a: 'You can cancel auto-renewal any time from the dashboard. There is no lock-in. Cancelling only stops the next renewal: the remaining days keep counting, the listing stays live until the end of the period, then closes automatically, and you are not charged again.',
     },
     {
       q: 'How do I pay?',

@@ -53,6 +53,11 @@ export async function listSlots(
 /**
  * A free slot is live and unoccupied.
  *
+ * New purchases are always bound to a listing by the webhook, so a free slot
+ * now only exists from before the no-swap rule (bought several at once, or a
+ * welcome slot not yet used). Those stay usable once; the first listing to
+ * claim one keeps it.
+ *
  * Returns the one expiring soonest, so the term closest to being wasted is the
  * one that gets used. A never-expiring admin slot is therefore only handed out
  * when nothing paid-for is available.
@@ -66,6 +71,24 @@ export async function findFreeSlot(
 
   const dated = live.filter(s => s.expires_at !== null)
   return (dated[0] ?? live[0]) as Slot
+}
+
+/**
+ * The listings that hold a live slot, with that slot's expiry.
+ *
+ * A listing taken down mid-term is a draft that still holds its slot, so the
+ * dashboard uses this to offer "publish" on it straight away instead of
+ * sending the owner to buy another package.
+ */
+export async function heldSlotsByListing(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Map<string, string | null>> {
+  const held = new Map<string, string | null>()
+  for (const s of await listSlots(supabase, userId)) {
+    if (s.property_id && isLive(s)) held.set(s.property_id, s.expires_at)
+  }
+  return held
 }
 
 export async function countFreeSlots(
@@ -91,6 +114,8 @@ export async function claimSlot(
   propertyId: string,
 ): Promise<Slot | null> {
   // Already in a slot? Publishing twice should be harmless, not double-charged.
+  // This is also what re-publishing after a take-down hits: the slot stayed
+  // bound, so the listing goes back up on it with the days that are left.
   // Only an ACTIVE slot counts as already holding this listing. Filtering on
   // status also keeps this to one row: a listing that has lapsed and been
   // republished several times leaves an expired slot behind each time, and an
@@ -123,8 +148,8 @@ export async function claimSlot(
 
   // The welcome slot's 30 days start on first publish, not on sign-up: an
   // owner who registers and takes a week to write the listing keeps the full
-  // term. After that it behaves like any paid slot — unpublishing keeps the
-  // remaining days, it does not restart them.
+  // term. After that it behaves like any paid slot: bound to this listing,
+  // and unpublishing does not pause or restart the days.
   if (claimed && claimed.source === 'welcome' && claimed.expires_at === null) {
     const expires = new Date()
     expires.setDate(expires.getDate() + (PACKAGE_DAYS.basic ?? 30))
@@ -199,22 +224,51 @@ export async function ensureWelcomeSlot(
 }
 
 /**
- * Take a listing out of its slot, leaving the slot free with its term intact.
+ * Retire the slot a listing holds, when the listing is deleted.
  *
- * This is the Founder's decision made concrete: an owner whose unit rents out
- * takes the listing down and puts another one up on the days they already paid
- * for. Forfeiting the term would punish exactly the moment the product worked.
+ * A slot stays with its listing for the whole term (Founder, 26 Oct 2026), so
+ * it is never freed for another listing. Taking a listing down leaves the slot
+ * bound and counting, and claimSlot hands the same slot back on re-publish.
+ * Deleting the listing ends the slot instead: without this the foreign key's
+ * ON DELETE SET NULL would leave it free, which is a swap by another route.
+ *
+ * Also stops auto-renewal when the slot is the only live one on its
+ * subscription, so nobody is charged again for a listing that no longer
+ * exists. A subscription shared with other slots (bought several at once
+ * before the rule) is left running for those.
  */
-export async function releaseSlot(
+export async function retireListingSlot(
   supabase: SupabaseClient,
   propertyId: string,
 ): Promise<void> {
+  const { data: held } = await supabase
+    .from('listing_slots')
+    .select(SLOT_COLUMNS)
+    .eq('property_id', propertyId)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!held) return
+  const slot = held as Slot
+
   const { error } = await supabase
     .from('listing_slots')
-    .update({ property_id: null, updated_at: new Date().toISOString() })
-    .eq('property_id', propertyId)
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('id', slot.id)
+  if (error) console.error('[slots] retireListingSlot failed —', error.message)
 
-  if (error) console.error('[slots] releaseSlot failed —', error.message)
+  if (!slot.stripe_subscription_id) return
+  const { data: siblings } = await supabase
+    .from('listing_slots')
+    .select('id')
+    .eq('stripe_subscription_id', slot.stripe_subscription_id)
+    .eq('status', 'active')
+  if (siblings?.length) return
+  try {
+    const { stripe } = await import('@/lib/stripe')
+    await stripe.subscriptions.update(slot.stripe_subscription_id, { cancel_at_period_end: true })
+  } catch (err) {
+    console.error('[slots] retireListingSlot: could not stop auto-renew —', err)
+  }
 }
 
 /**

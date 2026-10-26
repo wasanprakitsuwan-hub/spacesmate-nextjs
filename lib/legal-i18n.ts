@@ -47,7 +47,18 @@ export const LEGAL_T = {
     privacyIntro1b: ') ทะเบียนเลขที่ 0105569001611 ซึ่งดำเนินธุรกิจในนาม ',
     privacyIntro1c: ' เป็นผู้ควบคุมข้อมูลส่วนบุคคลตาม พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)',
     privacyIntro2: 'นโยบายนี้อธิบายว่าเราเก็บข้อมูลอะไร ใช้เพื่ออะไร อาศัยฐานทางกฎหมายใด เปิดเผยให้ใคร เก็บไว้นานเท่าใด และคุณมีสิทธิอะไรบ้าง',
-    cookiePrompt: 'ต้องการเปลี่ยนหรือถอนความยินยอมเรื่องคุกกี้?',
+    // Round 6 layout (26 Oct 2026). The summary cards restate sections 1, 3
+    // and 7 in a line each; they add no terms of their own.
+    docsNav: 'เอกสารทางกฎหมาย',
+    toc: 'สารบัญ',
+    privacySummary: [
+      { title: 'เก็บเท่าที่จำเป็น', desc: 'ข้อมูลบัญชี ประกาศ และการติดต่อ' },
+      { title: 'ไม่ขายข้อมูลของคุณ', desc: 'ส่งต่อเฉพาะผู้ให้บริการที่จำเป็น' },
+      { title: 'สิทธิของคุณตาม PDPA', desc: 'ขอดู แก้ไข ลบ หรือถอนความยินยอม' },
+    ],
+    cookieBox: 'ต้องการเปลี่ยนความยินยอมเรื่องคุกกี้ เปิดหรือปิดคุกกี้วิเคราะห์และการตลาดได้ทุกเมื่อ',
+    privacyQuestions: 'มีคำถามเรื่องข้อมูลส่วนบุคคล ติดต่อ ',
+    termsQuestions: 'มีคำถามเรื่องเงื่อนไขการใช้งาน ติดต่อ ',
   },
   en: {
     privacyMetaTitle: 'Privacy policy',
@@ -62,7 +73,16 @@ export const LEGAL_T = {
     privacyIntro1b: '), registration no. 0105569001611, trading as ',
     privacyIntro1c: ', is the data controller under the Personal Data Protection Act B.E. 2562 (PDPA).',
     privacyIntro2: 'This policy explains what we collect, what we use it for, on what lawful basis, who we disclose it to, how long we keep it, and what rights you have.',
-    cookiePrompt: 'Want to change or withdraw your cookie consent?',
+    docsNav: 'Legal documents',
+    toc: 'Contents',
+    privacySummary: [
+      { title: 'Only what is needed', desc: 'Account, listing and contact details' },
+      { title: 'We never sell your data', desc: 'Shared only with the providers we need' },
+      { title: 'Your rights under the PDPA', desc: 'See, correct, delete, or withdraw consent' },
+    ],
+    cookieBox: 'Change your cookie consent and turn analytics and marketing cookies on or off at any time.',
+    privacyQuestions: 'Questions about your personal data? Contact ',
+    termsQuestions: 'Questions about these terms? Contact ',
   },
 } as const
 

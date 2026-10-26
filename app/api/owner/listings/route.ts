@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildListingSlug } from '@/lib/slug'
 import { createServerClient } from '@/lib/supabase'
-import { claimSlot, countFreeSlots, ensureWelcomeSlot, releaseSlot, syncListingFromSlot } from '@/lib/slots'
+import { claimSlot, countFreeSlots, ensureWelcomeSlot, heldSlotsByListing, retireListingSlot, syncListingFromSlot } from '@/lib/slots'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 import { sendNewListingAlert, sendListingConfirmation } from '@/lib/email'
 
@@ -74,7 +74,11 @@ export async function GET(req: NextRequest) {
     // number now, counted where the slots actually live.
     await ensureWelcomeSlot(supabase, userId)
     const freeSlots = await countFreeSlots(supabase, userId)
-    return NextResponse.json({ listings: data ?? [], free_slots: freeSlots })
+    // A draft can still hold its slot (taken down mid-term), and then it goes
+    // back up without paying again.
+    const held = await heldSlotsByListing(supabase, userId)
+    const listings = (data ?? []).map(l => ({ ...l, holds_slot: held.has(l.id as string), slot_expires_at: held.get(l.id as string) ?? null }))
+    return NextResponse.json({ listings, free_slots: freeSlots })
   } catch (err: any) {
     console.error('owner GET error:', err)
     return NextResponse.json({ listings: [], free_slots: 0 })
@@ -299,14 +303,15 @@ export async function PATCH(req: NextRequest) {
 
     // Special action: take a listing down without deleting it.
     //
-    // The slot keeps its remaining days and becomes available for a different
-    // listing. An owner whose unit just rented should not lose the term — that
-    // is the moment the product worked.
+    // The slot stays bound to this listing and keeps counting (Founder, 26 Oct
+    // 2026: no swapping a paid slot to another listing). Publishing again
+    // before it expires puts the listing back on the same slot; see claimSlot.
     if (body.unpublish === true) {
-      await releaseSlot(supabase, id)
       const { error: unErr } = await supabase
         .from('properties')
-        .update({ listing_status: 'draft', expires_at: null, updated_at: new Date().toISOString() })
+        // expires_at is kept: it is the slot's end date, which still applies,
+        // and the dashboard shows it on the draft row.
+        .update({ listing_status: 'draft', updated_at: new Date().toISOString() })
         .eq('id', id)
       if (unErr) throw unErr
       return NextResponse.json({ success: true, unpublished: true })
@@ -397,6 +402,10 @@ export async function DELETE(req: NextRequest) {
       // Non-fatal — log and continue with property deletion
       console.error('[delete] Stripe cancel error (non-fatal):', stripeErr)
     }
+
+    // End the listing's slot with it rather than letting the foreign key free
+    // it for another listing. See retireListingSlot.
+    await retireListingSlot(supabase, id)
 
     const { error } = await supabase.from('properties').delete().eq('id', id)
     if (error) throw error

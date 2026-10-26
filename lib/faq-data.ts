@@ -110,7 +110,7 @@ const TH: Category[] = [
       },
       {
         q: 'ถ้าต้องการลงประกาศหลายรายการต้องซื้อแพ็กเกจแยกสำหรับแต่ละประกาศหรือไม่?',
-        a: 'ใช่ แต่ละประกาศที่แสดงอยู่บนเว็บไซต์ต้องมีแพ็กเกจของตัวเอง — 1 แพ็กเกจ = ประกาศออนไลน์ 1 รายการ ตัวอย่างเช่น ถ้าคุณมีคอนโด 3 ห้องที่ต้องการลงประกาศพร้อมกัน ก็ต้องซื้อ 3 แพ็กเกจ แต่แพ็กเกจไม่ได้ผูกกับประกาศใดประกาศหนึ่งถาวร — ถ้าห้องหนึ่งปล่อยเช่าได้แล้ว คุณสลับประกาศอื่นเข้ามาในแพ็กเกจเดิมได้ตลอดอายุแพ็กเกจ เจ้าของจัดการประกาศและแพ็กเกจทั้งหมดได้ในหน้า Owner Dashboard เดียว ซึ่งจะแสดงทุก subscription พร้อมสถานะและวันหมดอายุแยกตามแต่ละรายการ',
+        a: 'ใช่ แต่ละประกาศที่แสดงอยู่บนเว็บไซต์ต้องมีแพ็กเกจของตัวเอง และซื้อทีละห้อง 1 การชำระเงิน = 1 ประกาศ ตัวอย่างเช่น ถ้าคุณมีคอนโด 3 ห้อง ให้สร้าง 3 ประกาศ แล้วเลือกแพ็กเกจและชำระแยกทีละประกาศ แพ็กเกจผูกกับประกาศนั้นตลอดอายุ สลับไปใช้กับประกาศอื่นไม่ได้ เจ้าของจัดการประกาศและแพ็กเกจทั้งหมดได้ในหน้า Owner Dashboard เดียว ซึ่งแสดงสถานะและวันหมดอายุแยกตามแต่ละประกาศ',
       },
       {
         q: 'สามารถอัปเกรดแพ็กเกจได้หรือไม่ และจะถูกเรียกเก็บเงินอย่างไร?',
@@ -213,7 +213,7 @@ const EN: Category[] = [
       },
       {
         q: 'If I want several listings, do I need a separate package for each?',
-        a: 'Yes — each listing showing on the website needs its own package: one package = one live listing. If you have 3 condo units to list at the same time, for example, you buy 3 packages. But a package is not tied permanently to one listing — once a room is let, you can swap another listing into the same package for the rest of its term. Owners manage every listing and package from a single Owner Dashboard, which shows each subscription with its own status and expiry date.',
+        a: 'Yes — each listing showing on the website needs its own package, bought one room at a time: one payment = one listing. With 3 condo units, for example, you create 3 listings, then choose a package and pay for each one separately. A package stays tied to its listing for the whole term and cannot be moved to another listing. Owners manage every listing and package from a single Owner Dashboard, which shows each listing’s status and expiry date.',
       },
       {
         q: 'Can I upgrade a package, and how is it charged?',

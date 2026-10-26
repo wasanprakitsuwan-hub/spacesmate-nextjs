@@ -5,12 +5,12 @@ import { requireAuth, isErr } from '@/lib/auth-guard'
 import { promoSessionParams } from '@/lib/stripe-promo'
 
 /**
- * Buy publishing slots.
+ * Buy a publishing slot, by card on auto-renew, for one named listing.
  *
- * Deliberately knows nothing about any listing. That is the whole point of the
- * change: previously every payment route needed a property_id or created a
- * submissions row first, so /pricing had nothing it could sell to someone who
- * had not already filled in the form.
+ * Every purchase names its listing (Founder, 26 Oct 2026: the listing is chosen
+ * with the package, one room per payment, and a paid slot stays with that
+ * listing for its whole term). Slots bought in advance before this rule keep
+ * working; nothing new is sold that way.
  *
  * The slots are created by the webhook on checkout.session.completed, never
  * here — a redirect the customer abandons must not grant anything.
@@ -27,23 +27,29 @@ export async function POST(req: NextRequest) {
 
     // Bound it. A typo in a quantity field should not create a 10,000-unit
     // subscription, and Stripe will happily take the order.
-    const qty = Math.max(1, Math.min(Math.floor(Number(quantity) || 1), 50))
+    // One payment = one listing. `quantity` is still read so an old client
+    // does not error, but it no longer buys more than one.
+    void quantity
+    const qty = 1
 
     const supabase = createServerClient()
 
-    // Optional: publish this listing into the slot as soon as it exists, so
-    // "renew" is one step for the customer rather than pay-then-go-find-it.
-    // Ownership is checked HERE, not in the webhook, where a forged metadata
-    // value would arrive with no session to verify it against.
-    let publishId: string | null = null
-    if (publish_property_id) {
-      const { data: owned } = await supabase
-        .from('properties')
-        .select('id, landlord_id')
-        .eq('id', publish_property_id)
-        .maybeSingle()
-      if (owned?.landlord_id === auth.id) publishId = owned.id as string
+    // The listing this slot is for; the webhook publishes it into the slot as
+    // soon as payment succeeds. Ownership is checked HERE, not in the webhook,
+    // where a forged metadata value would arrive with no session to verify it
+    // against.
+    if (!publish_property_id) {
+      return NextResponse.json({ error: 'listing_required' }, { status: 400 })
     }
+    const { data: owned } = await supabase
+      .from('properties')
+      .select('id, landlord_id')
+      .eq('id', publish_property_id)
+      .maybeSingle()
+    if (!owned || owned.landlord_id !== auth.id) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+    const publishId = owned.id as string
 
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -92,9 +98,7 @@ export async function POST(req: NextRequest) {
       locale: 'auto',
       custom_text: {
         submit: {
-          message: qty > 1
-            ? `ซื้อ ${qty} แพ็กเกจ — เผยแพร่ประกาศได้ ${qty} รายการ นาน ${days} วัน`
-            : `ซื้อ 1 แพ็กเกจ — เผยแพร่ประกาศได้ 1 รายการ นาน ${days} วัน`,
+          message: `ซื้อ 1 แพ็กเกจ — เผยแพร่ประกาศนี้ นาน ${days} วัน`,
         },
       },
     })
