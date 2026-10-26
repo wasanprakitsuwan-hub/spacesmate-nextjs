@@ -34,6 +34,7 @@ import { rentPath } from '@/lib/rent-slugs'
 import { mergePlaces } from '@/lib/search-places'
 import ListingStatBeacon from '@/components/property/ListingStatBeacon'
 import { loadPlaceOverrides } from '@/lib/search-places-server'
+import { bangkokDate } from '@/lib/bangkok-date'
 import {
   PROPERTY_T, TYPE_LABELS, OTHER_CHARGE_LABELS,
   localiseAmenity, amenitySectionLabel, type Locale,
@@ -173,11 +174,11 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
     ? `฿${priceFrom.toLocaleString('en-US')}${priceTo > priceFrom ? ` – ${priceTo.toLocaleString('en-US')}` : ''}`
     : t.askForPrice
   const fullDate = (iso?: string | null) => {
-    const d = iso ? new Date(iso) : null
-    if (!d || isNaN(d.getTime())) return ''
+    const d = iso ? bangkokDate(iso) : null
+    if (!d) return ''
     return locale === 'en'
-      ? `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-      : `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
+      ? `${d.day} ${EN_MONTHS[d.month]} ${d.year}`
+      : `${d.day} ${TH_MONTHS[d.month]} ${d.year + 543}`
   }
   const nearest = stations[0]
   const lineColor = (sys: string) => sys === 'BTS' ? C.bts : sys === 'MRT' ? C.mrt : '#C8102E'

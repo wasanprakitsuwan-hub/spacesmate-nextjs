@@ -16,6 +16,7 @@
  *   posts yet. When there are, map it through CATEGORY_LABEL below.
  */
 import type { Locale } from '@/lib/routes-i18n'
+import { bangkokDate } from '@/lib/bangkok-date'
 
 export const CATEGORY_VALUES = [
   '',
@@ -94,14 +95,16 @@ export const BLOG_T = {
 } as const
 
 const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+const EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 /**
  * Thai dates carry the Buddhist year, English dates the Gregorian one.
  * Printing 2569 to an English reader reads as a typo, not as a calendar.
  */
 export function formatBlogDate(iso: string, locale: Locale): string {
-  const d = new Date(iso)
+  const d = bangkokDate(iso)
+  if (!d) return ''
   return locale === 'en'
-    ? d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-    : `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
+    ? `${EN_MONTHS[d.month]} ${d.day}, ${d.year}`
+    : `${d.day} ${TH_MONTHS[d.month]} ${d.year + 543}`
 }

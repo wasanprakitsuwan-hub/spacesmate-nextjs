@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { withPageSeo } from '@/lib/page-seo'
 
 // Picks up title and description edits from /dashboard/pages.
@@ -18,6 +19,7 @@ const baseMetadata: Metadata = {
     title: t.ogTitle,
     description: t.ogDesc,
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
     url: 'https://spacesmate.com/en/faq',
   },
   alternates: hreflang('/faq', 'en'),

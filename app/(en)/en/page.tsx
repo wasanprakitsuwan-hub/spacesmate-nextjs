@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { Suspense } from 'react'
 import SectionPlaceholder from '@/components/sections/SectionPlaceholder'
 import { withPageSeo } from '@/lib/page-seo'
@@ -44,6 +45,7 @@ const baseMetadata: Metadata = {
     description:
       'Apartments, condos, houses, offices and co-working to rent across Bangkok — search by BTS or MRT station.',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
     url: `${SITE}/en`,
   },
   alternates: hreflang('/', 'en'),

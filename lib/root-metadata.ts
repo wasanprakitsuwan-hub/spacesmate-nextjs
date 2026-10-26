@@ -19,6 +19,15 @@ export type Locale = 'th' | 'en'
 
 const SITE = 'https://spacesmate.com'
 
+/**
+ * The share image for any page without one of its own.
+ *
+ * A page that sets its own `openGraph` replaces the root one whole (Next does
+ * not merge it), so a page that leaves out `images` shares with no picture on
+ * LINE and Facebook. Every such page spreads this in.
+ */
+export const DEFAULT_OG_IMAGE = { url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: 'SpacesMate' }
+
 export function rootMetadata(locale: Locale): Metadata {
   const isEn = locale === 'en'
 
@@ -43,7 +52,7 @@ export function rootMetadata(locale: Locale): Metadata {
       locale: isEn ? 'en_US' : 'th_TH',
       url: isEn ? `${SITE}/en` : SITE,
       siteName: 'SpacesMate',
-      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630 }],
+      images: [DEFAULT_OG_IMAGE],
     },
     twitter: { card: 'summary_large_image' },
     robots: { index: true, follow: true },

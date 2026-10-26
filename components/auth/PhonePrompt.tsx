@@ -60,12 +60,15 @@ export default function PhonePrompt({ locale = 'th' }: { locale?: Locale }) {
           }
         }
 
-        // Only ask when the number is genuinely missing.
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('phone')
-          .eq('id', user.id)
-          .maybeSingle()
+        // Only ask when the number is genuinely missing. Read through the
+        // server: the browser has no read access to user_profiles, so a direct
+        // select came back empty and the prompt showed to owners who already
+        // had a number.
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        const res = await fetch('/api/auth/role', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        if (!res.ok) return
+        const profile = await res.json()
 
         const missing = !profile?.phone || String(profile.phone).trim() === ''
         if (missing && !sessionStorage.getItem('sm_phone_prompt_dismissed')) {

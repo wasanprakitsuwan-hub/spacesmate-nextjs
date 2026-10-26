@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { withPageSeo } from '@/lib/page-seo'
 
 // Picks up title and description edits from /dashboard/pages.
@@ -27,6 +28,7 @@ const baseMetadata: Metadata = {
     title: 'Property management in Bangkok | SpacesMate',
     description: 'End-to-end management for your Bangkok apartment or condominium. Performance-based fee, nothing upfront.',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
     url: 'https://spacesmate.com/en/manage',
     locale: 'en_US',
   },
