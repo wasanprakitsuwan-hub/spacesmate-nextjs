@@ -125,7 +125,7 @@ function EditDrawer({
             <code style={{ fontSize: 12, color: '#64748b', background: '#f8fafc', padding: '2px 7px', borderRadius: 5, marginTop: 4, display: 'inline-block' }}>{page.path}</code>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
-            <span className="msym" style={{ fontSize: 22, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>close</span>
+            ปิด
           </button>
         </div>
 
@@ -385,7 +385,7 @@ export default function PagesPage() {
           padding: '9px 16px', borderRadius: 10, border: '1px solid #e2e8f0',
           background: '#fff', color: '#64748b', fontSize: 13, cursor: 'pointer',
         }}>
-          <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>refresh</span>
+          
           รีเฟรช
         </button>
       </div>
@@ -542,7 +542,7 @@ export default function PagesPage() {
                             }}
                             title="แก้ไข"
                           >
-                            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span>
+                            
                             แก้ไข
                           </button>
 
@@ -561,9 +561,7 @@ export default function PagesPage() {
                               opacity: togglingId === page.id ? 0.5 : 1,
                             }}
                           >
-                            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>
-                              {isUnpub ? 'visibility' : 'visibility_off'}
-                            </span>
+                            
                             {isUnpub ? 'เผยแพร่' : 'ซ่อน'}
                           </button>
 
@@ -597,7 +595,7 @@ export default function PagesPage() {
                               color: '#ef4444', cursor: 'pointer',
                             }}
                           >
-                            <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>delete</span>
+                            ลบ
                           </button>
                         </div>
                       </td>

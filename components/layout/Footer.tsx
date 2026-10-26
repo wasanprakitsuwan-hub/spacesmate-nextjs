@@ -79,12 +79,7 @@ export default function Footer() {
           { label: t.footerAbout, href: href('/about') },
           { label: t.footerContact, href: href('/contact') },
           { label: t.footerFaq, href: href('/faq') },
-          { label: t.footerPrivacy, href: href('/privacy') },
-          { label: t.footerTerms, href: href('/terms') },
-        ],
-          // Withdrawing consent must be as easy as giving it (PDPA s.19).
-          <CookieSettingsLink className="text-left text-[#cfe3d9] hover:text-white" />,
-        )}
+        ])}
       </div>
 
       {/* Popular rent-near pages: a crawlable link to the busiest areas from every page. */}
@@ -100,7 +95,17 @@ export default function Footer() {
       </div>
 
       <div style={{ maxWidth: WRAP, margin: '0 auto', padding: '0 24px 28px', fontSize: 13 }}>
-        <div style={{ paddingTop: 18, borderTop: '1px solid rgba(207,227,217,0.2)' }}>{t.footerRights} · {t.footerAddress}</div>
+        {/* Legal links and cookie settings sit on the bottom line, as most sites
+            do (Founder, 25 Oct 2026). The cookie link stays on every page:
+            withdrawing consent must be as easy as giving it (PDPA s.19). */}
+        <div style={{ paddingTop: 18, borderTop: '1px solid rgba(207,227,217,0.2)', display: 'flex', flexWrap: 'wrap', gap: '10px 24px', justifyContent: 'space-between' }}>
+          <span>{t.footerRights} · {t.footerAddress}</span>
+          <span style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            <Link href={href('/privacy')} style={{ color: MUTED }}>{t.footerPrivacy}</Link>
+            <Link href={href('/terms')} style={{ color: MUTED }}>{t.footerTerms}</Link>
+            <CookieSettingsLink className="text-left text-[#cfe3d9] hover:text-white" style={{ fontSize: 13, background: 'none', border: 0, padding: 0, cursor: 'pointer', fontFamily: 'inherit' }} />
+          </span>
+        </div>
       </div>
     </footer>
   )

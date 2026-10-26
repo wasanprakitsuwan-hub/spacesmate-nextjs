@@ -13,6 +13,7 @@ import {
 } from '@/components/listing/SharedListingForm'
 import { slugify } from '@/lib/slug'
 import { createBrowserClient } from '@/lib/supabase'
+import { C, RADIUS } from '@/lib/ui'
 
 import RichEditor from '@/components/RichEditor'
 
@@ -61,13 +62,18 @@ interface DbListing {
   created_at: string
   images: string[] | null
   video_url: string | null
+  contact_email?: string | null
+  landlord_id?: string | null
+  /** Last 30 days, added by GET /api/dashboard/listings; null when stats failed to load. */
+  views_30d?: number | null
+  contacts_30d?: number | null
 }
 
 interface Submission {
   id: string
   title: string
   type: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'pending_payment' | 'approved' | 'rejected'
   contact_name: string | null
   contact_email: string | null
   contact_phone: string | null
@@ -102,6 +108,66 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   Apartment:  { bg: '#e8f5f0', color: '#048c73' },
   'Co-Working': { bg: '#fee2e2', color: '#b91c1c' },
 }
+
+
+// ── List styles (round 7 redesign: every action is a text button) ────────────
+type ListingState = 'active' | 'hidden' | 'soon' | 'expired'
+type StateFilter = '' | ListingState
+const PAGE_SIZE = 20
+const DANGER = '#b42318'
+
+/** One state per row for the chip and the filter pills. "soon" = live and expiring within 7 days. */
+function listingState(p: DbListing, now: number): ListingState {
+  const exp = p.expires_at ? new Date(p.expires_at).getTime() : null
+  if (p.listing_status === 'expired' || (exp !== null && exp < now)) return 'expired'
+  if (p.listing_status !== 'active') return 'hidden'
+  if (exp !== null && exp - now < 7 * 86400000) return 'soon'
+  return 'active'
+}
+const STATE_FILTERS: { value: StateFilter; label: string }[] = [
+  { value: '', label: 'ทั้งหมด' },
+  { value: 'active', label: 'เผยแพร่' },
+  { value: 'hidden', label: 'ซ่อนอยู่' },
+  { value: 'soon', label: 'ใกล้หมดอายุ' },
+  { value: 'expired', label: 'หมดอายุ' },
+]
+const CHIP: Record<'ok' | 'warn' | 'mute' | 'bad', { bg: string; color: string }> = {
+  ok:   { bg: '#e6f2ec', color: C.green },
+  warn: { bg: C.amberTint, color: C.amber },
+  mute: { bg: '#f0eee8', color: C.muted },
+  bad:  { bg: '#fbe9e7', color: DANGER },
+}
+function Chip({ kind, children }: { kind: keyof typeof CHIP; children: React.ReactNode }) {
+  return <span style={{ background: CHIP[kind].bg, color: CHIP[kind].color, fontSize: 12, padding: '2px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>{children}</span>
+}
+function StateChip({ state, draft }: { state: ListingState; draft?: boolean }) {
+  if (state === 'expired') return <Chip kind="bad">หมดอายุ</Chip>
+  if (state === 'hidden') return <Chip kind="mute">{draft ? 'ฉบับร่าง' : 'ซ่อนอยู่'}</Chip>
+  if (state === 'soon') return <Chip kind="warn">ใกล้หมดอายุ</Chip>
+  return <Chip kind="ok">เผยแพร่</Chip>
+}
+function pillStyle(on: boolean): React.CSSProperties {
+  return {
+    padding: '6px 14px', borderRadius: 999, border: `1px solid ${on ? C.green : C.border}`, cursor: 'pointer',
+    fontSize: 13, fontFamily: 'inherit', background: on ? C.green : C.white, color: on ? C.white : C.ink,
+  }
+}
+const FIELD: React.CSSProperties = {
+  padding: '7px 12px', border: `1px solid ${C.border}`, borderRadius: RADIUS, fontSize: 13,
+  fontFamily: 'inherit', background: C.white, color: C.ink, outline: 'none', boxSizing: 'border-box',
+}
+const ROW_GRID: React.CSSProperties = {
+  display: 'grid', gap: 16,
+  gridTemplateColumns: '64px minmax(0, 1fr) 120px 110px 90px 70px 96px 260px',
+}
+const LINK: React.CSSProperties = { fontSize: 13, color: C.teal, textDecoration: 'none', whiteSpace: 'nowrap' }
+const LINK_BTN: React.CSSProperties = { ...LINK, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }
+const SMALL_BTN: React.CSSProperties = {
+  background: C.white, color: C.ink, border: `1px solid ${C.border}`, padding: '4px 12px', borderRadius: RADIUS,
+  fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+}
+const PRIMARY_SMALL: React.CSSProperties = { ...SMALL_BTN, background: C.teal, color: C.white, borderColor: C.teal }
+const CARD: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
 function slugifyText(text: string): string {
@@ -233,7 +299,7 @@ function RoomTypePricingGrid({ rows, onChange, termLabel, isDaily, roomTypeOptio
               {!isDaily && (
                 <input type="number" value={row.price_to} onChange={e => updateRow(row.id, 'price_to', e.target.value)} placeholder="16000" style={{ ...SINP, padding: '7px 10px' }} />
               )}
-              <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
+              <button type="button" onClick={() => removeRow(row.id)} style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>ลบ</button>
             </div>
           ))}
         </div>
@@ -461,7 +527,7 @@ function MapPicker({ lat, lng, onLatLng }: {
           >
             {urlParsing
               ? <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
-              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>location_on</span>ดึงพิกัด</>
+              : <>ดึงพิกัด</>
             }
           </button>
         </div>
@@ -489,7 +555,7 @@ function MapPicker({ lat, lng, onLatLng }: {
           >
             {searching
               ? <><span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />ค้นหา</>
-              : <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>map</span>ค้นหา</>
+              : <>ค้นหา</>
             }
           </button>
         </div>
@@ -498,7 +564,7 @@ function MapPicker({ lat, lng, onLatLng }: {
             {results.map((r, i) => (
               <button key={i} type="button" onClick={() => selectResult(r)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 12.5, color: '#334155', borderBottom: i < results.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
-                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle', marginRight: 4 }}>location_on</span>{r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
+                {r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
               </button>
             ))}
             <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>ปิด</button>
@@ -737,7 +803,7 @@ function VideoUploadZone({ videoUrl, onVideoChange, packageType }: { videoUrl: s
       <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
         style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
-        {uploading ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</> : <><span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span> อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)</>}
+        {uploading ? <><span style={{ width: 14, height: 14, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังอัปโหลด...</> : <> อัปโหลดวิดีโอ (MP4 · QuickTime · WebM  •  สูงสุด 50 MB)</>}
       </button>
       <div>
         <label style={{ ...SLBL, fontSize: 12 }}>หรือวางลิงก์วิดีโอ (YouTube / Vimeo)</label>
@@ -838,7 +904,7 @@ function CreateDrawer({ onClose, onCreated, initialData }: { onClose: () => void
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
       saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
-      submitLabel="เผยแพร่ประกาศ" submitIcon="publish"
+      submitLabel="เผยแพร่ประกาศ"
     />
   )
 }
@@ -993,26 +1059,26 @@ function EditDrawer({ listing, onClose, onSaved }: { listing: DbListing; onClose
 
   return (
     <ListingDrawer
-      title="แก้ไขประกาศ" subtitle={`ID: ${listing.id.slice(0, 8)}…`}
+      title="แก้ไขประกาศ" subtitle={listing.title_th}
       form={form} setF={setF} toggleAmenity={toggleAmenity}
       onImagesChange={imgs => setForm(f => ({ ...f, images: imgs }))}
       onRoomTypesChange={rows => setForm(f => ({ ...f, room_types: rows }))}
       saving={saving} error={error} isAdmin={true}
       onClose={onClose} onSubmit={handleSubmit}
-      submitLabel="บันทึกการแก้ไข" submitIcon="save"
+      submitLabel="บันทึกการแก้ไข"
     />
   )
 }
 
 // ── Drawer Shell ──────────────────────────────────────────────────────────────
 const DRAWER_TABS = [
-  { id: 'lf-s1', label: '1 ข้อมูล' },
-  { id: 'lf-s2', label: '2 ราคา' },
-  { id: 'lf-s4', label: '3 ที่อยู่' },
-  { id: 'lf-s8', label: '4 รูปภาพ' },
+  { id: 'lf-s1', label: 'ข้อมูล' },
+  { id: 'lf-s2', label: 'ราคา' },
+  { id: 'lf-s4', label: 'ที่อยู่' },
+  { id: 'lf-s8', label: 'รูปภาพ' },
 ]
 
-function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel, submitIcon }: {
+function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesChange, onRoomTypesChange, saving, error, isAdmin, onClose, onSubmit, submitLabel }: {
   title: string; subtitle: string
   form: ListingFormState
   setF: (k: string, v: any) => void
@@ -1024,13 +1090,12 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   submitLabel: string
-  submitIcon?: string
 }) {
   const w        = useWindowWidth()
   const isMobile = w < 768
-  const isSmall  = w < 1024   // tablet + mobile → full-screen from left: 0
-  // Desktop: fill content area after the 248px sidebar. No overlay.
-  const SIDEBAR  = 248
+  const isSmall  = w < 1024   // tablet + mobile: covers the sidebar too
+  // Desktop: a full page over the content area, beside the 232px admin sidebar.
+  const SIDEBAR  = 232
   const formRef  = useRef<HTMLFormElement>(null)
   const [activeTab, setActiveTab] = useState('lf-s1')
 
@@ -1043,116 +1108,78 @@ function ListingDrawer({ title, subtitle, form, setF, toggleAmenity, onImagesCha
     }
   }
 
-  const drawerPad = isMobile ? '20px 16px' : '28px 40px'
+  const padX = isMobile ? 16 : 36
 
   return (
-    <>
-      {/* Backdrop for tablet/mobile only */}
-      {isSmall && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.35)' }}
-          onClick={onClose}
-        />
-      )}
-
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: isSmall ? 0 : SIDEBAR,
-          right: 0,
-          bottom: 0,
-          zIndex: 200,
-          background: '#fff',
-          boxShadow: isSmall ? 'none' : '-4px 0 32px rgba(0,0,0,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ padding: isMobile ? '14px 16px' : '22px 40px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {isSmall && (
-              <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>arrow_back</span></button>
-            )}
-            <div>
-              <h2 style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, margin: '0 0 2px', color: '#02402e' }}>{title}</h2>
-              <p style={{ fontSize: isMobile ? 11.5 : 13, color: '#94a3b8', margin: 0 }}>{subtitle}</p>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: '#f4f6f5', border: 'none', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>close</span></button>
+    <div
+      role="dialog"
+      aria-label={title}
+      style={{
+        position: 'fixed', top: 0, left: isSmall ? 0 : SIDEBAR, right: 0, bottom: 0, zIndex: 200,
+        background: C.paper, display: 'flex', flexDirection: 'column',
+      }}
+    >
+      {/* Header: back link, title, section links */}
+      <div style={{ padding: `20px ${padX}px 0`, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button type="button" onClick={onClose} style={{ ...LINK_BTN, alignSelf: 'flex-start' }}>กลับไปจัดการประกาศ</button>
+        <div>
+          <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, margin: 0, color: C.green }}>{title}</h1>
+          <span style={{ fontSize: 13, color: C.muted }}>{subtitle}</span>
         </div>
-
-        {/* Section tab strip — all sizes */}
-        <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #eef0ef', background: '#fafbfa', flexShrink: 0, scrollbarWidth: 'none', padding: isSmall ? '0' : '0 40px' }}>
+        <div style={{ display: 'flex', gap: 22, overflowX: 'auto', borderBottom: `1px solid ${C.line}`, scrollbarWidth: 'none' }}>
           {DRAWER_TABS.map(tab => (
             <button key={tab.id} type="button" onClick={() => scrollToSection(tab.id)}
               style={{
-                padding: isMobile ? '8px 12px' : '10px 20px',
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: activeTab === tab.id ? 700 : 500,
-                color: activeTab === tab.id ? '#02402e' : '#94a3b8',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: `2px solid ${activeTab === tab.id ? '#02402e' : 'transparent'}`,
-                whiteSpace: 'nowrap', transition: 'all .15s',
+                padding: '10px 0', fontSize: 14, fontFamily: 'inherit', whiteSpace: 'nowrap', cursor: 'pointer',
+                background: 'none', border: 'none', marginBottom: -1,
+                borderBottom: `2px solid ${activeTab === tab.id ? C.green : 'transparent'}`,
+                color: activeTab === tab.id ? C.green : C.muted, fontWeight: activeTab === tab.id ? 500 : 400,
               }}>
               {tab.label}
             </button>
           ))}
         </div>
-
-        {/* Form body — centred content column on desktop */}
-        <form ref={formRef} onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: drawerPad }}>
-          <div style={{ maxWidth: isSmall ? 'none' : 860, margin: '0 auto' }}>
-            <SharedListingFormFields
-              form={form} onChange={setF} onAmenityToggle={toggleAmenity}
-              onImagesChange={onImagesChange}
-              isAdmin={isAdmin} isMobile={isMobile}
-            />
-            {error && (
-              <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#b91c1c', whiteSpace: 'pre-wrap' }}>
-                <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1", marginRight: 6, flexShrink: 0 }}>warning</span>{error}
-              </div>
-            )}
-          </div>
-        </form>
-
-        {/* Footer */}
-        <div style={{
-          padding: isMobile ? '12px 14px 20px' : '18px 40px',
-          borderTop: '1px solid #eef0ef',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: isSmall ? 'stretch' : 'flex-end',
-          gap: 12,
-          flexShrink: 0,
-        }}>
-          {isMobile ? (
-            <>
-              <button onClick={onSubmit as any} disabled={saving} style={{ padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : <>{submitIcon && <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{submitIcon}</span>}{submitLabel}</>}
-              </button>
-              <button onClick={onClose} style={{ padding: '11px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
-            </>
-          ) : (
-            // Desktop / Tablet: right-aligned fixed-width buttons
-            <>
-              <button onClick={onClose} style={{ width: 140, padding: '13px 0', borderRadius: 12, border: '1px solid #eef0ef', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>ยกเลิก</button>
-              <button onClick={onSubmit as any} disabled={saving} style={{ width: 220, padding: '13px 0', borderRadius: 12, border: 'none', background: saving ? '#64748b' : '#02402e', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {saving ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />กำลังบันทึก…</> : <>{submitIcon && <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{submitIcon}</span>}{submitLabel}</>}
-              </button>
-            </>
-          )}
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
       </div>
-    </>
+
+      {/* Form body */}
+      <form ref={formRef} onSubmit={onSubmit} style={{ flex: 1, overflowY: 'auto', padding: `20px ${padX}px 28px` }}>
+        <div style={{ ...CARD, maxWidth: 900, padding: isMobile ? '18px 16px' : '24px 28px' }}>
+          <SharedListingFormFields
+            form={form} onChange={setF} onAmenityToggle={toggleAmenity}
+            onImagesChange={onImagesChange}
+            isAdmin={isAdmin} isMobile={isMobile}
+          />
+          {error && (
+            <div role="alert" style={{ background: '#fbe9e7', border: '1px solid #f1c4bd', borderRadius: RADIUS, padding: '10px 14px', marginTop: 8, fontSize: 13, color: DANGER, whiteSpace: 'pre-wrap' }}>
+              {error}
+            </div>
+          )}
+        </div>
+      </form>
+
+      {/* Save bar */}
+      <div style={{
+        padding: `14px ${padX}px`, background: C.white, borderTop: `1px solid ${C.line}`, flexShrink: 0,
+        display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap',
+      }}>
+        <button type="button" onClick={onClose} style={{ ...SMALL_BTN, padding: '9px 18px', fontSize: 14 }}>ยกเลิก</button>
+        <button type="button" onClick={onSubmit as any} disabled={saving} style={{ ...PRIMARY_SMALL, padding: '9px 18px', fontSize: 14, opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+          {saving ? 'กำลังบันทึก…' : submitLabel}
+        </button>
+      </div>
+    </div>
   )
 }
 
 // ── Published Tab ─────────────────────────────────────────────────────────────
-function PublishedTab({ refreshKey }: { refreshKey: number }) {
+function PublishedTab({ refreshKey, statusFilter, onStatusFilter, counts, onCounts }: {
+  refreshKey: number
+  statusFilter: StateFilter
+  onStatusFilter: (f: StateFilter) => void
+  counts: Record<ListingState | 'all', number>
+  onCounts: (c: Record<ListingState | 'all', number>) => void
+}) {
+  const [page,             setPage]             = useState(1)
   const [dbListings,       setDbListings]       = useState<DbListing[]>([])
   const [loadingDb,        setLoadingDb]        = useState(true)
   const [search,           setSearch]           = useState('')
@@ -1216,106 +1243,126 @@ function PublishedTab({ refreshKey }: { refreshKey: number }) {
   }
 
   const allTypes = Array.from(new Set(dbListings.map(p => p.property_type)))
-  const ok = (title: string, type: string, loc: string) => {
-    if (typeFilter && type !== typeFilter) return false
-    if (search) { const q = search.toLowerCase(); return title.toLowerCase().includes(q) || loc.toLowerCase().includes(q) }
-    return true
+  const now = Date.now()
+  const matchesSearch = (p: DbListing) => {
+    if (typeFilter && p.property_type !== typeFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return [p.title_th, p.title_en, p.district, p.address_th, p.contact_email]
+      .some(v => (v ?? '').toLowerCase().includes(q))
   }
-  const filteredDb = dbListings.filter(p => ok(p.title_th, p.property_type, (p.district ?? '') + (p.address_th ?? '')))
+  const byStatus = (p: DbListing) => statusFilter === '' || listingState(p, now) === statusFilter
+  const filteredDb = dbListings.filter(p => matchesSearch(p) && byStatus(p))
+  const pages = Math.max(1, Math.ceil(filteredDb.length / PAGE_SIZE))
+  const shown = filteredDb.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => {
+    const counts: Record<ListingState | 'all', number> = { all: dbListings.length, active: 0, hidden: 0, soon: 0, expired: 0 }
+    for (const p of dbListings) counts[listingState(p, now)]++
+    // "soon" listings are also live; the published count includes them.
+    counts.active += counts.soon
+    onCounts(counts)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbListings])
+  useEffect(() => { setPage(1) }, [search, typeFilter, statusFilter])
 
   return (
     <div>
       {editTarget && <EditDrawer listing={editTarget} onClose={() => setEditTarget(null)} onSaved={loadDb} />}
-      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 14, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '14px 0 6px' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <button onClick={() => setTypeFilter('')} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: !typeFilter ? '#02402e' : '#f4f6f5', color: !typeFilter ? '#fff' : '#334155' }}>ทั้งหมด</button>
-          {allTypes.map(t => (
-            <button key={t} onClick={() => setTypeFilter(t === typeFilter ? '' : t)} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: typeFilter === t ? '#02402e' : '#f4f6f5', color: typeFilter === t ? '#fff' : '#334155' }}>
-              {TYPE_LABELS[t] ?? t}
+          {STATE_FILTERS.map(f => (
+            <button key={f.value} type="button" onClick={() => onStatusFilter(f.value)} style={pillStyle(statusFilter === f.value)}>
+              {f.label} {f.value === '' ? counts.all : f.value === 'active' ? counts.active : counts[f.value]}
             </button>
           ))}
         </div>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาชื่อ / ทำเล" style={{ flex: 1, minWidth: 180, padding: '7px 14px', borderRadius: 10, border: '1px solid #eef0ef', fontSize: 13, outline: 'none' }} />
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} aria-label="ประเภท" style={{ ...FIELD, width: 'auto' }}>
+            <option value="">ทุกประเภท</option>
+            {allTypes.map(t => <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>)}
+          </select>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาชื่อ ทำเล หรืออีเมลเจ้าของ" aria-label="ค้นหา" style={{ ...FIELD, width: 260 }} />
+        </span>
       </div>
-      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 20px -12px rgba(2,64,46,0.08)' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #eef0ef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: '#64748b' }}>แสดง {filteredDb.length} จาก {dbListings.length} รายการ</span>
-          {loadingDb && <span style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="msym" style={{ fontSize: 14, display: 'inline-block', animation: 'spin .8s linear infinite' }}>sync</span>กำลังโหลด…</span>}
-        </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #eef0ef' }}>
-              {['ชื่อประกาศ', 'ประเภท', 'ทำเล', 'ราคา', 'ห้องนอน', 'ช่วงเช่า', 'หมดอายุ', 'แหล่งข้อมูล', ''].map(h => (
-                <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDb.map(p => (
-              <tr key={`d-${p.id}`} style={{ borderBottom: '1px solid #f1f5f4', background: '#fafffe' }}>
-                <td style={{ padding: '12px 14px', maxWidth: 240 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {(p.images ?? [])[0] ? (
-                      <img src={(p.images ?? [])[0]} alt="" style={{ width: 38, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: 38, height: 32, borderRadius: 6, background: '#eaf6f1', flexShrink: 0 }} />
-                    )}
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#02402e', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{p.title_th}</div>
-                      {p.title_en && <div style={{ fontSize: 11, color: '#94a3b8' }}>{p.title_en}</div>}
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '12px 14px' }}><TypeChip type={p.property_type} /></td>
-                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12.5 }}>{p.district || p.address_th || '—'}</td>
-                <td style={{ padding: '12px 14px', fontWeight: 700, color: '#02402e' }}>
-                  {p.price_from ? `฿${p.price_from.toLocaleString()}` : '—'}
-                  {p.price_to   ? `–฿${p.price_to.toLocaleString()}` : ''}
-                </td>
-                <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.bedrooms === 0 ? 'Studio' : `${p.bedrooms} ห้อง`}</td>
-                <td style={{ padding: '12px 14px', color: '#64748b', fontSize: 12 }}>
-                  {RENTAL_TERM_OPTIONS.find(o => o.value === p.rental_term)?.label ?? 'รายเดือน'}
-                </td>
-                <td style={{ padding: '12px 14px', fontSize: 12 }}>
+
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ minWidth: 980 }}>
+          <div style={{ ...ROW_GRID, fontSize: 12, color: C.muted, padding: '10px 0 8px', borderBottom: `1px solid ${C.line}` }}>
+            <span /><span>ประกาศ</span><span style={{ textAlign: 'right' }}>ราคา/เดือน</span><span>หมดอายุ</span>
+            <span style={{ textAlign: 'right' }}>ยอดผู้เข้าชม</span><span style={{ textAlign: 'right' }}>กดติดต่อ</span><span>สถานะ</span><span />
+          </div>
+          {loadingDb && dbListings.length === 0 && (
+            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>กำลังโหลด…</div>
+          )}
+          {shown.map(p => {
+            const state = listingState(p, now)
+            const left = p.expires_at ? Math.ceil((new Date(p.expires_at).getTime() - now) / 86400000) : null
+            const busy = toggling.has(p.id)
+            const owner = p.contact_email || (p.landlord_id ? '' : 'SpacesMate (แอดมิน)')
+            return (
+              <div key={p.id} style={{ ...ROW_GRID, alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${C.line2}`, fontSize: 14 }}>
+                {(p.images ?? [])[0]
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={(p.images ?? [])[0]} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 4, display: 'block' }} />
+                  : <span style={{ width: 64, height: 48, borderRadius: 4, background: C.tint, display: 'block' }} />}
+                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title_th}</span>
+                  <span style={{ fontSize: 12, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {[TYPE_LABELS[p.property_type] ?? p.property_type, p.district, owner].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+                <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                  {p.price_from ? `฿${p.price_from.toLocaleString()}` : '—'}{p.price_to ? `–฿${p.price_to.toLocaleString()}` : ''}
+                </span>
+                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
                   {p.expires_at ? (
-                    <span style={{ color: new Date(p.expires_at) < new Date() ? '#b91c1c' : '#15803d', fontWeight: 600 }}>
-                      {new Date(p.expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
-                      {new Date(p.expires_at) < new Date() && <span style={{ display: 'block', fontSize: 10, color: '#b91c1c' }}>หมดอายุแล้ว</span>}
-                    </span>
-                  ) : <span style={{ color: '#94a3b8' }}>ไม่จำกัด</span>}
-                </td>
-                <td style={{ padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#dcfce7', color: '#15803d', fontWeight: 600, alignSelf: 'flex-start' }}>Dashboard</span>
-                    {p.listing_status === 'inactive'
-                      ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 7, background: '#fef3c7', color: '#92400e', fontWeight: 600, alignSelf: 'flex-start' }}>ซ่อนอยู่</span>
-                      : <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 7, background: '#dcfce7', color: '#15803d', fontWeight: 600, alignSelf: 'flex-start' }}>เผยแพร่</span>
-                    }
-                  </div>
-                </td>
-                <td style={{ padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 9px', borderRadius: 7, background: '#e8f5f0', color: '#048c73', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>↗</a>
-                    <button onClick={() => setEditTarget(p)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #c7d2d0', background: '#fff', color: '#334155', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span></button>
-                    <button
-                      onClick={() => togglePublish(p.id, p.listing_status)}
-                      disabled={toggling.has(p.id)}
-                      title={p.listing_status === 'active' ? 'ซ่อนประกาศ' : 'เผยแพร่ประกาศ'}
-                      style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${p.listing_status === 'active' ? '#c7d2d0' : '#86efac'}`, background: '#fff', color: p.listing_status === 'active' ? '#334155' : '#15803d', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: toggling.has(p.id) ? 0.5 : 1 }}>
-                      <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{toggling.has(p.id) ? 'sync' : p.listing_status === 'active' ? 'visibility_off' : 'visibility'}</span>
+                    <>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{new Date(p.expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+                      <span style={{ fontSize: 12, color: state === 'expired' ? '#b42318' : state === 'soon' ? C.amber : C.muted }}>
+                        {left !== null && left < 0 ? 'หมดอายุแล้ว' : `อีก ${left} วัน`}
+                      </span>
+                    </>
+                  ) : <span>ไม่จำกัด</span>}
+                </span>
+                <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.views_30d ?? '—'}</span>
+                <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.contacts_30d ?? '—'}</span>
+                <span><StateChip state={state} draft={p.listing_status === 'draft'} /></span>
+                <span style={{ display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <a href={`/property/${p.slug}`} target="_blank" rel="noopener noreferrer" style={LINK}>ดูหน้า</a>
+                  <button type="button" onClick={() => setEditTarget(p)} style={SMALL_BTN}>แก้ไข</button>
+                  {state === 'expired' ? (
+                    <button type="button" onClick={() => setEditTarget(p)} style={LINK_BTN}>ต่ออายุ</button>
+                  ) : (
+                    <button type="button" onClick={() => togglePublish(p.id, p.listing_status)} disabled={busy} style={{ ...LINK_BTN, opacity: busy ? 0.5 : 1 }}>
+                      {busy ? 'กำลังบันทึก…' : p.listing_status === 'active' ? 'ซ่อน' : 'เผยแพร่'}
                     </button>
-                    <button onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: deleting === p.id ? 0.5 : 1 }}>
-                      {deleting === p.id ? '…' : 'ลบ'}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredDb.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>ไม่พบรายการ</td></tr>
-            )}
-          </tbody>
-        </table>
+                  )}
+                  <button type="button" onClick={() => deleteListing(p.id)} disabled={deleting === p.id} style={{ ...LINK_BTN, color: DANGER, opacity: deleting === p.id ? 0.5 : 1 }}>
+                    {deleting === p.id ? 'กำลังลบ…' : 'ลบ'}
+                  </button>
+                </span>
+              </div>
+            )
+          })}
+          {!loadingDb && filteredDb.length === 0 && (
+            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>ไม่พบรายการ</div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingTop: 14, fontSize: 13, color: C.muted, flexWrap: 'wrap' }}>
+        <span>
+          {filteredDb.length === 0 ? 'ไม่มีรายการ' : `แสดง ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filteredDb.length)} จาก ${filteredDb.length}`}
+          {' · '}ยอดผู้เข้าชมและกดติดต่อนับ 30 วันล่าสุด
+        </span>
+        {pages > 1 && (
+          <span style={{ display: 'flex', gap: 8 }}>
+            <button type="button" disabled={page <= 1} onClick={() => setPage(n => n - 1)} style={{ ...SMALL_BTN, opacity: page <= 1 ? 0.5 : 1 }}>ก่อนหน้า</button>
+            <button type="button" disabled={page >= pages} onClick={() => setPage(n => n + 1)} style={{ ...SMALL_BTN, opacity: page >= pages ? 0.5 : 1 }}>ถัดไป</button>
+          </span>
+        )}
       </div>
     </div>
   )
@@ -1371,98 +1418,76 @@ function SubmissionsTab() {
   }
 
   const STATUS_OPTS = [
-    { value: '', label: 'ทั้งหมด' }, { value: 'pending_payment', label: 'รอชำระ' },
-    { value: 'pending', label: 'รออนุมัติ' },
+    { value: '', label: 'ทั้งหมด' }, { value: 'pending', label: 'รออนุมัติ' },
+    { value: 'pending_payment', label: 'รอชำระ' },
     { value: 'approved', label: 'อนุมัติแล้ว' }, { value: 'rejected', label: 'ปฏิเสธ' },
   ]
-  const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> = {
-    pending_payment: { bg: '#dbeafe', color: '#1d4ed8', label: 'รอชำระ' },
-    pending:  { bg: '#fef9c3', color: '#a16207', label: 'รออนุมัติ' },
-    approved: { bg: '#dcfce7', color: '#15803d', label: 'อนุมัติแล้ว' },
-    rejected: { bg: '#fee2e2', color: '#b91c1c', label: 'ปฏิเสธ' },
+  const STATUS_CHIP: Record<string, { kind: keyof typeof CHIP; label: string }> = {
+    pending_payment: { kind: 'mute', label: 'รอชำระ' },
+    pending:  { kind: 'warn', label: 'รออนุมัติ' },
+    approved: { kind: 'ok',   label: 'อนุมัติแล้ว' },
+    rejected: { kind: 'bad',  label: 'ปฏิเสธ' },
   }
   const PKG_LABEL: Record<string, string> = {
     free_trial: 'ทดลองฟรี', basic: 'Basic', standard: 'Standard', premium: 'Premium',
   }
+  const grid: React.CSSProperties = { display: 'grid', gap: 16, gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr) 120px 110px 110px 300px' }
 
   return (
     <div>
-      <div style={{ background: '#fff6e9', border: '1px solid #fed7aa', borderRadius: 12, padding: '11px 15px', marginBottom: 14, fontSize: 13, color: '#92400e' }}>
-        <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 6, flexShrink: 0 }}>mail</span>ประกาศที่ส่งมาจากฟอร์ม <strong>/ลงประกาศ</strong> — แพ็กเกจที่ชำระแล้วจะเผยแพร่อัตโนมัติ ฟรีทดลองต้องอนุมัติ
-      </div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '14px 0 6px' }}>
         {STATUS_OPTS.map(o => (
-          <button key={o.value} onClick={() => setFilter(o.value)} style={{ padding: '7px 15px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, background: filter === o.value ? '#02402e' : '#f4f6f5', color: filter === o.value ? '#fff' : '#334155' }}>{o.label}</button>
+          <button key={o.value} type="button" onClick={() => setFilter(o.value)} style={pillStyle(filter === o.value)}>{o.label}</button>
         ))}
       </div>
-      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ width: 26, height: 26, border: '3px solid #eef0ef', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 10px' }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            กำลังโหลด…
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ minWidth: 900 }}>
+          <div style={{ ...grid, fontSize: 12, color: C.muted, padding: '10px 0 8px', borderBottom: `1px solid ${C.line}` }}>
+            <span>ประกาศ</span><span>ผู้ส่ง</span><span>แพ็กเกจ</span><span>ส่งเมื่อ</span><span>สถานะ</span><span />
           </div>
-        ) : items.length === 0 ? (
-          <div style={{ padding: '50px 40px', textAlign: 'center' }}>
-            <div style={{ marginBottom: 10 }}><span className="msym" style={{ fontSize: 36, color: '#94a3b8', fontVariationSettings: "'wght' 300, 'FILL' 0" }}>inbox</span></div>
-            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>ยังไม่มีคำขอใหม่</div>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #eef0ef' }}>
-                {['ชื่อ', 'ประเภท', 'ทำเล', 'ราคา', 'ช่วงเช่า', 'แพ็กเกจ', 'หมดอายุ', 'ผู้ส่ง', 'สถานะ', ''].map(h => (
-                  <th key={h} style={{ padding: '11px 12px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: 11.5 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => {
-                const s = STATUS_CHIP[item.status] ?? STATUS_CHIP.pending
-                const expired = item.expires_at ? new Date(item.expires_at) < new Date() : false
-                return (
-                  <tr key={item.id} style={{ borderBottom: i < items.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
-                    <td style={{ padding: '12px 12px', fontWeight: 600, color: '#02402e', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '—'}</td>
-                    <td style={{ padding: '12px 12px' }}><TypeChip type={item.type} /></td>
-                    <td style={{ padding: '12px 12px', color: '#64748b', fontSize: 12 }}>{[item.district, item.province].filter(Boolean).join(', ') || '—'}</td>
-                    <td style={{ padding: '12px 12px', fontWeight: 600, color: '#02402e' }}>{item.price ? `฿${item.price.toLocaleString()}` : '—'}</td>
-                    <td style={{ padding: '12px 12px', fontSize: 12, color: '#64748b' }}>{RENTAL_TERM_OPTIONS.find(o => o.value === item.rental_term)?.label ?? 'รายเดือน'}</td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: item.package_type === 'free_trial' ? '#fef9c3' : '#dcfce7', color: item.package_type === 'free_trial' ? '#a16207' : '#15803d', fontWeight: 600 }}>
-                        {PKG_LABEL[item.package_type ?? 'free_trial'] ?? item.package_type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 12px', fontSize: 11.5, color: expired ? '#b91c1c' : '#64748b' }}>
-                      {item.expires_at ? new Date(item.expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
-                      {expired && <span style={{ display: 'block', fontSize: 10, color: '#b91c1c' }}>หมดอายุแล้ว</span>}
-                    </td>
-                    <td style={{ padding: '12px 12px', fontSize: 12.5 }}>
-                      <div style={{ fontWeight: 500 }}>{item.contact_name || '—'}</div>
-                      <div style={{ color: '#94a3b8', fontSize: 11 }}>{item.contact_email}</div>
-                    </td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: s.bg, color: s.color }}>{s.label}</span>
-                    </td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <div style={{ display: 'flex', gap: 5 }}>
-                        {item.status !== 'approved' && (
-                          <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: 'none', background: '#02402e', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>อนุมัติ</button>
-                        )}
-                        {item.status === 'approved' && (
-                          <button onClick={() => updateStatus(item.id, 'approved')} disabled={!!actionLoading} title="สร้าง/อัปเดต property row บนเว็บไซต์" style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #02402e', background: '#fff', color: '#02402e', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>เผยแพร่</button>
-                        )}
-                        {item.status !== 'rejected' && (
-                          <button onClick={() => updateStatus(item.id, 'rejected')} disabled={!!actionLoading} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>ปฏิเสธ</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
+          {loading ? (
+            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>กำลังโหลด…</div>
+          ) : items.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>ยังไม่มีคำขอใหม่</div>
+          ) : items.map(item => {
+            const st = STATUS_CHIP[item.status] ?? STATUS_CHIP.pending
+            const busy = !!actionLoading
+            return (
+              <div key={item.id} style={{ ...grid, alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${C.line2}`, fontSize: 14 }}>
+                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title || '—'}</span>
+                  <span style={{ fontSize: 12, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {[TYPE_LABELS[item.type] ?? item.type, item.district, item.price ? `฿${item.price.toLocaleString()}` : ''].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+                <span style={{ fontSize: 13, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {[item.contact_name, item.contact_email].filter(Boolean).join(' · ') || '—'}
+                </span>
+                <span style={{ fontSize: 13 }}>{PKG_LABEL[item.package_type ?? 'free_trial'] ?? item.package_type}</span>
+                <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+                <span><Chip kind={st.kind}>{st.label}</Chip></span>
+                <span style={{ display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'flex-end' }}>
+                  {item.status === 'pending_payment' ? (
+                    <span style={{ fontSize: 13, color: C.faint, whiteSpace: 'nowrap' }}>รอเจ้าของชำระ</span>
+                  ) : item.status === 'approved' ? (
+                    <button type="button" onClick={() => updateStatus(item.id, 'approved')} disabled={busy} title="สร้างหรืออัปเดตประกาศบนเว็บไซต์อีกครั้ง" style={SMALL_BTN}>เผยแพร่อีกครั้ง</button>
+                  ) : (
+                    <button type="button" onClick={() => updateStatus(item.id, 'approved')} disabled={busy} style={PRIMARY_SMALL}>
+                      {actionLoading === item.id + 'approved' ? 'กำลังบันทึก…' : 'อนุมัติและเผยแพร่'}
+                    </button>
+                  )}
+                  {item.status !== 'rejected' && (
+                    <button type="button" onClick={() => updateStatus(item.id, 'rejected')} disabled={busy} style={{ ...LINK_BTN, color: DANGER }}>ปฏิเสธ</button>
+                  )}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
+      <p style={{ margin: '14px 0 0', fontSize: 13, color: C.muted }}>
+        ประกาศที่ส่งจากฟอร์ม /ลงประกาศ และชำระแพ็กเกจแล้วจะเผยแพร่อัตโนมัติ รายการที่อยู่ตรงนี้คือรายการที่แอดมินต้องตรวจก่อน เช่น ทดลองฟรี
+      </p>
     </div>
   )
 }
@@ -1472,29 +1497,62 @@ export default function ListingsPage() {
   const [tab,        setTab]        = useState<'published' | 'queue'>('published')
   const [showCreate, setShowCreate] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [statusFilter, setStatusFilter] = useState<StateFilter>('')
+  const [counts, setCounts] = useState<Record<ListingState | 'all', number>>({ all: 0, active: 0, hidden: 0, soon: 0, expired: 0 })
+  const [pending, setPending] = useState<number | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data: { session } } = await createBrowserClient().auth.getSession()
+        const r = await fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` } })
+        if (r.ok) setPending((await r.json()).pending ?? 0)
+      } catch { /* the card shows a dash */ }
+    })()
+  }, [refreshKey])
+
+  const cards: { label: string; num: number | null; sub: string; go: () => void }[] = [
+    { label: 'เผยแพร่อยู่', num: counts.active, sub: 'แสดงบนเว็บตอนนี้', go: () => { setTab('published'); setStatusFilter('active') } },
+    { label: 'ซ่อนอยู่', num: counts.hidden, sub: 'ฉบับร่างหรือถูกซ่อนไว้', go: () => { setTab('published'); setStatusFilter('hidden') } },
+    { label: 'ใกล้หมดอายุ', num: counts.soon, sub: 'ภายใน 7 วัน', go: () => { setTab('published'); setStatusFilter('soon') } },
+    { label: 'รอตรวจสอบ', num: pending, sub: 'คำขอจากฟอร์ม', go: () => setTab('queue') },
+  ]
+  const tabStyle = (on: boolean): React.CSSProperties => ({
+    padding: '12px 0', background: 'none', border: 'none', borderBottom: `2px solid ${on ? C.green : 'transparent'}`,
+    color: on ? C.green : C.muted, fontWeight: on ? 500 : 400, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
+  })
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 3px', color: '#02402e' }}>จัดการประกาศ</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>ประกาศจาก Dashboard</p>
+          <h1 style={{ fontSize: 26, fontWeight: 600, margin: 0, color: C.green }}>จัดการประกาศ</h1>
+          <span style={{ fontSize: 13, color: C.muted }}>ประกาศทั้งหมดบนเว็บ และคำขอลงประกาศที่ส่งมาจากฟอร์ม</span>
         </div>
-        <button onClick={() => setShowCreate(true)} style={{ padding: '11px 22px', borderRadius: 12, border: 'none', background: '#02402e', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-          + เพิ่มประกาศใหม่
+        <button type="button" onClick={() => setShowCreate(true)} style={{ ...PRIMARY_SMALL, padding: '9px 16px', fontSize: 14 }}>
+          เพิ่มประกาศใหม่
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button onClick={() => setTab('published')} style={{ padding: '9px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, background: tab === 'published' ? '#02402e' : '#f4f6f5', color: tab === 'published' ? '#fff' : '#64748b' }}>
-          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>home</span>เผยแพร่แล้ว
-        </button>
-        <button onClick={() => setTab('queue')} style={{ padding: '9px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, background: tab === 'queue' ? '#02402e' : '#f4f6f5', color: tab === 'queue' ? '#fff' : '#64748b' }}>
-          <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0", marginRight: 5 }}>mail</span>คำขอจากฟอร์ม
-        </button>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {cards.map(c => (
+          <button key={c.label} type="button" onClick={c.go} style={{ ...CARD, flex: '1 1 180px', display: 'flex', flexDirection: 'column', gap: 2, padding: '16px 20px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', color: C.ink }}>
+            <span style={{ fontSize: 13, color: C.muted }}>{c.label}</span>
+            <span style={{ fontSize: 26, fontWeight: 600, fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 }}>{c.num ?? '—'}</span>
+            <span style={{ fontSize: 12, color: C.muted }}>{c.sub}</span>
+          </button>
+        ))}
       </div>
 
-      {tab === 'published' ? <PublishedTab refreshKey={refreshKey} /> : <SubmissionsTab />}
+      <section style={{ ...CARD, padding: '6px 22px 18px' }}>
+        <div role="tablist" style={{ display: 'flex', gap: 24, borderBottom: `1px solid ${C.line}` }}>
+          <button type="button" role="tab" aria-selected={tab === 'published'} onClick={() => setTab('published')} style={tabStyle(tab === 'published')}>ประกาศ {counts.all}</button>
+          <button type="button" role="tab" aria-selected={tab === 'queue'} onClick={() => setTab('queue')} style={tabStyle(tab === 'queue')}>คำขอจากฟอร์ม{pending ? ` ${pending}` : ''}</button>
+        </div>
+        {tab === 'published'
+          ? <PublishedTab refreshKey={refreshKey} statusFilter={statusFilter} onStatusFilter={setStatusFilter} counts={counts} onCounts={setCounts} />
+          : <SubmissionsTab />}
+      </section>
 
       {showCreate && (
         <CreateDrawer

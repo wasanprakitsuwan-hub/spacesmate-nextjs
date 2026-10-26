@@ -19,6 +19,7 @@ export interface SubscriptionItem {
   slot_count: number          // active slots this subscription pays for
   slots_used: number          // how many currently hold a listing
   listing_titles: string[]    // titles of the listings occupying them
+  listing_ids: string[]       // and their ids, so the dashboard can show each package on its listing
 }
 
 // GET — return ALL subscriptions for the logged-in owner
@@ -151,7 +152,7 @@ export async function GET(req: NextRequest) {
   //     purchases that none of the paths above can see: those create no
   //     submission row at all, so a customer whose stripe_customer_id was never
   //     stamped would otherwise have an invisible subscription.
-  const slotInfo = new Map<string, { total: number; used: number; titles: string[] }>()
+  const slotInfo = new Map<string, { total: number; used: number; titles: string[]; ids: string[] }>()
   {
     const { data: slotRows, error: slotErr } = await supabase
       .from('listing_slots')
@@ -170,11 +171,12 @@ export async function GET(req: NextRequest) {
       const subId = row.stripe_subscription_id as string
       if (!subId) continue
 
-      const entry = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [] }
+      const entry = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [], ids: [] }
       entry.total += 1
 
       if (row.property_id) {
         entry.used += 1
+        entry.ids.push(row.property_id as string)
         // PostgREST returns the embedded row as an object, or an array if it
         // resolves the relationship as one-to-many. Handle both.
         const prop = Array.isArray(row.properties) ? row.properties[0] : row.properties
@@ -202,7 +204,7 @@ export async function GET(req: NextRequest) {
   const results: SubscriptionItem[] = []
 
   for (const [subId, meta] of Array.from(subMap.entries())) {
-    const slots = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [] }
+    const slots = slotInfo.get(subId) ?? { total: 0, used: 0, titles: [], ids: [] }
     // Prefer a slot-derived title: it reflects what is published right now,
     // whereas the submission title is whatever the listing was called when it
     // was first paid for.
@@ -224,6 +226,7 @@ export async function GET(req: NextRequest) {
         slot_count:              slots.total,
         slots_used:              slots.used,
         listing_titles:          slots.titles,
+        listing_ids:             slots.ids,
       })
     } catch {
       // Subscription was deleted in Stripe — include as cancelled so owner can see it
@@ -239,6 +242,7 @@ export async function GET(req: NextRequest) {
         slot_count:             slots.total,
         slots_used:             slots.used,
         listing_titles:         slots.titles,
+        listing_ids:            slots.ids,
       })
     }
   }

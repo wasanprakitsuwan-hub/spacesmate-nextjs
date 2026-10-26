@@ -149,12 +149,7 @@ function SaveButton({ onSave, saved, saving, error }: {
         display: 'flex', alignItems: 'center', gap: 8, transition: 'background .25s',
         opacity: saving ? 0.7 : 1,
       }}>
-        <span className="msym" style={{
-          fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 0",
-          ...(saving ? { animation: 'spin .8s linear infinite', display: 'inline-block' } : {}),
-        }}>
-          {saving ? 'progress_activity' : saved ? 'check' : 'save'}
-        </span>
+        
         {saving ? 'กำลังบันทึก...' : saved ? 'บันทึกแล้ว' : 'บันทึกการตั้งค่า'}
       </button>
     </div>
@@ -245,7 +240,7 @@ function LocationRequests() {
                   <button onClick={() => update(req.id, 'approved')} style={{
                     padding: '7px 16px', borderRadius: 9, border: 'none',
                     background: '#02402e', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  }}>อนุมัติ<span className="msym" style={{ fontSize: 14, margin: '0 3px', fontVariationSettings: "'wght' 300, 'FILL' 0", verticalAlign: 'middle' }}>arrow_forward</span>สร้างหน้า SEO</button>
+                  }}>อนุมัติสร้างหน้า SEO</button>
                 </div>
               </div>
             ))}
@@ -357,7 +352,7 @@ function EmailNotifications() {
                 background: '#fff', color: '#64748b', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', gap: 5,
               }}>
-                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>edit</span>
+                
                 แก้ไข
               </button>
             </div>
@@ -475,7 +470,7 @@ function TypesAndAmenities() {
               <button onClick={() => setPropTypes(t => t.filter(x => x.id !== pt.id))} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#cbd5e1',
               }}>
-                <span className="msym" style={{ fontSize: 17, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>delete</span>
+                
               </button>
             </div>
           ))}
@@ -494,7 +489,7 @@ function TypesAndAmenities() {
             fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>add</span>
+            
             เพิ่ม
           </button>
         </div>
@@ -534,7 +529,7 @@ function TypesAndAmenities() {
                       style={{
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, color: '#94a3b8',
                     }}>
-                      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span>
+                      ลบ
                     </button>
                   </span>
                 ))}
@@ -563,7 +558,7 @@ function TypesAndAmenities() {
             fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>add</span>
+            
             เพิ่ม
           </button>
         </div>
@@ -654,7 +649,7 @@ function CompanyInfo() {
               background: '#f0f7f4', color: '#048c73', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
               display: 'flex', alignItems: 'center', gap: 7,
             }}>
-              <span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>upload</span>
+              
               อัปโหลดโลโก้ใหม่
             </button>
             <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 6 }}>PNG หรือ SVG · พื้นหลังโปร่งใส · แนะนำ 400×200px</div>
@@ -934,11 +929,7 @@ export default function SettingsPage() {
                 background: isActive ? '#02402e' : 'transparent', textAlign: 'left', fontFamily: 'inherit',
                 marginBottom: 2, transition: 'background .15s',
               }}>
-                <span className="msym" style={{
-                  fontSize: 20, flexShrink: 0, lineHeight: 1,
-                  color: isActive ? '#d97f11' : '#94a3b8',
-                  fontVariationSettings: "'wght' 300, 'FILL' 0",
-                }}>{n.icon}</span>
+                
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? '#fff' : '#334155', lineHeight: 1.2 }}>{n.label}</div>
                   <div style={{ fontSize: 11, color: isActive ? 'rgba(255,255,255,0.55)' : '#94a3b8', marginTop: 2 }}>{n.desc}</div>

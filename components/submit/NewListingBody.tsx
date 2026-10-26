@@ -173,9 +173,9 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
     // status 'pending_payment' and went straight to Stripe, so the only way to
     // get a listing into the system was to buy at the same moment.
     //
-    // That contradicted the product. A slot is capacity, not a listing — you
-    // can hold several, swap which listing occupies one, and buy before you
-    // have written anything. The pricing FAQ says exactly that.
+    // That put payment before the listing existed. The listing is written
+    // first and free; the package is then bought for that listing at
+    // /checkout and stays with it for its term (Founder, 26 Oct 2026).
     //
     // POST /api/owner/listings already does the right thing: it creates the
     // property as a draft and separately decides whether to publish it, based

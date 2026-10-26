@@ -49,7 +49,13 @@ export async function POST(req: NextRequest) {
     // Same bound as the card route. A typo in a quantity field should not
     // create a 10,000-slot order, and Stripe will happily take it.
     // Extending buys exactly one term for one listing.
-    const qty = extend_property_id ? 1 : Math.max(1, Math.min(Math.floor(Number(quantity) || 1), 50))
+    // One payment = one listing (Founder, 26 Oct 2026). `quantity` is still
+    // read so an old client does not error, but it no longer buys more.
+    void quantity
+    const qty = 1
+    if (!publish_property_id && !extend_property_id) {
+      return NextResponse.json({ error: 'listing_required' }, { status: 400 })
+    }
 
     const supabase = createServerClient()
 
@@ -62,7 +68,10 @@ export async function POST(req: NextRequest) {
         .select('id, landlord_id')
         .eq('id', publish_property_id)
         .maybeSingle()
-      if (owned && owned.landlord_id === auth.id) publishId = owned.id as string
+      if (!owned || owned.landlord_id !== auth.id) {
+        return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+      }
+      publishId = owned.id as string
     }
 
     // Same check for an extension: the term is added to this listing's slot.

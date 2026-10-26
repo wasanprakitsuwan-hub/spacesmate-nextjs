@@ -7,6 +7,7 @@ import { createBrowserClient } from '@/lib/supabase'
 import { DASH_T } from '@/lib/dashboard-i18n'
 import { localeHref, enPath, thPath } from '@/lib/routes-i18n'
 import { useLocale } from '@/lib/use-locale'
+import { C, RADIUS } from '@/lib/ui'
 
 /**
  * Chrome for both /owner-dashboard and /en/owner-dashboard.
@@ -60,105 +61,78 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
 
   if (!authReady) {
     return (
-      <div style={{ minHeight: '100vh', background: '#02402e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 36, height: 36, border: '3px solid #d97f11', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ minHeight: '100vh', background: C.paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: `3px solid ${C.teal}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
-  const initial = (userEmail.charAt(0) || 'O').toUpperCase()
   const displayName = userEmail.split('@')[0] || 'Owner'
+  const listingsHref = localeHref('/owner-dashboard', locale)
+  const profileHref = localeHref('/owner-dashboard/profile', locale)
+  // Round 7: a side menu with two pages, every control a text button.
+  const NAV = [
+    { href: listingsHref, label: t.myListings, active: !pathname.includes('/owner-dashboard/profile') },
+    { href: profileHref, label: t.profileTitle, active: pathname.includes('/owner-dashboard/profile') },
+  ]
+  const otherLang = locale === 'en'
+    ? { href: thPath(pathname), lang: 'th', label: 'ภาษาไทย' }
+    : { href: enPath(pathname) ?? '/en/owner-dashboard', lang: 'en', label: 'English' }
+  const smallBtn: React.CSSProperties = {
+    display: 'block', textAlign: 'center', padding: '7px 12px', border: `1px solid ${C.border}`, borderRadius: RADIUS,
+    background: C.white, color: C.ink, fontSize: 13.5, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none',
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f6f5', fontFamily: "'Prompt', -apple-system, sans-serif" }}>
-
-      {/* Top Navigation */}
-      <header style={{
-        background: '#02402e',
-        padding: '8px clamp(12px, 4vw, 32px)',
-        minHeight: 64,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        // Five items in a fixed-height row do not fit a phone. Wrapping keeps
-        // them on screen instead of pushing the document wider than the viewport.
-        flexWrap: 'wrap',
-        rowGap: 6,
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        maxWidth: '100%',
+    <div className="sm-own" style={{ display: 'flex', minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: "'Prompt', -apple-system, sans-serif" }}>
+      {/* Below 860px the rail becomes a bar across the top. */}
+      <style>{`
+        @media (max-width: 860px) {
+          .sm-own { flex-direction: column; }
+          .sm-own-side { width: auto !important; height: auto !important; position: static !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; gap: 8px !important; border-right: none !important; border-bottom: 1px solid ${C.line}; padding: 12px 16px !important; }
+          .sm-own-side .sm-own-logo { margin: 0 8px 0 0 !important; }
+          .sm-own-side .sm-own-foot { margin-top: 0 !important; border-top: none !important; padding: 0 !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; }
+          .sm-own-side .sm-own-who { display: none; }
+          .sm-own-main { padding: 20px 16px 56px !important; }
+        }
+      `}</style>
+      <aside className="sm-own-side" style={{
+        width: 220, flexShrink: 0, background: C.white, borderRight: `1px solid ${C.line}`,
+        padding: '22px 14px', display: 'flex', flexDirection: 'column', gap: 2,
+        position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box',
       }}>
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            width: 32, height: 32, borderRadius: 10, background: '#d97f11',
-            color: '#02402e', fontWeight: 700, fontSize: 17,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>S</span>
-          <div style={{ lineHeight: 1.1 }}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>SpacesMate</div>
-            <div style={{ color: '#d97f11', fontSize: 10, fontWeight: 600, letterSpacing: 1.5 }}>OWNER PORTAL</div>
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', whiteSpace: 'nowrap' }}>
-          <Link href={localeHref('/owner-dashboard', locale)} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.1)' }}>
-            {t.myListings}
-          </Link>
-          <Link href={localeHref('/list-your-property/new', locale)} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
-            + {t.newListing}
-          </Link>
-          <Link href={localeHref('/', locale)} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 9 }}>
-            {t.website}
-          </Link>
-        </div>
-
-        {/* User */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            width: 34, height: 34, borderRadius: '50%', background: '#048c73',
-            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 600, fontSize: 14,
-          }}>{initial}</span>
-          <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
-          {/*
-            The portal's own language switch.
-
-            The owner dashboard suppresses the public navbar, so until now it
-            had no way to change language at all — the toggle the Founder saw
-            on the English dashboard was the public navbar leaking through a
-            layout bug, which is why the Thai one did not have it.
-
-            Links to the same page in the other language rather than to a home
-            page, so an owner mid-task stays where they are.
-          */}
-          <Link
-            href={locale === 'en' ? thPath(pathname) : (enPath(pathname) ?? '/en/owner-dashboard')}
-            hrefLang={locale === 'en' ? 'th' : 'en'}
-            title={locale === 'en' ? 'ดูเป็นภาษาไทย' : 'View in English'}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)',
-              fontSize: 13, fontWeight: 500, padding: '7px 12px', borderRadius: 9,
-              textDecoration: 'none', whiteSpace: 'nowrap',
-            }}
-          >
-            <span aria-hidden="true">{locale === 'en' ? '🇹🇭' : '🇬🇧'}</span>
-            {locale === 'en' ? 'ไทย' : 'EN'}
-          </Link>
-          <button onClick={handleLogout} style={{
-            background: 'rgba(255,255,255,0.1)', border: 'none', color: 'rgba(255,255,255,0.6)',
-            cursor: 'pointer', fontSize: 13, padding: '7px 14px', borderRadius: 9, fontFamily: 'inherit', fontWeight: 500,
+        <Link href={localeHref('/', locale)} className="sm-own-logo" aria-label="SpacesMate" style={{ margin: '0 8px 22px', display: 'block' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="SpacesMate" style={{ height: 32, width: 'auto', display: 'block' }} />
+        </Link>
+        <Link href={localeHref('/list-your-property/new', locale)} style={{
+          display: 'block', textAlign: 'center', background: C.teal, color: C.white, borderRadius: RADIUS,
+          padding: '9px 14px', fontSize: 14, fontWeight: 500, textDecoration: 'none', marginBottom: 14,
+        }}>
+          {t.newListing}
+        </Link>
+        {NAV.map(n => (
+          <Link key={n.href} href={n.href} aria-current={n.active ? 'page' : undefined} style={{
+            display: 'block', padding: '9px 12px', borderRadius: RADIUS, fontSize: 14, textDecoration: 'none',
+            background: n.active ? C.tint : 'transparent', color: n.active ? C.green : C.ink, fontWeight: n.active ? 500 : 400,
           }}>
-            {t.signOut}
-          </button>
+            {n.label}
+          </Link>
+        ))}
+        <div className="sm-own-foot" style={{ marginTop: 'auto', padding: '14px 8px 2px', borderTop: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Link href={localeHref('/', locale)} style={{ fontSize: 13.5, color: C.muted, textDecoration: 'none' }}>{t.website}</Link>
+          {/* The portal's own language switch: same page, other language. */}
+          <Link href={otherLang.href} hrefLang={otherLang.lang} style={{ fontSize: 13.5, color: C.muted, textDecoration: 'none' }}>{otherLang.label}</Link>
+          <div className="sm-own-who" style={{ lineHeight: 1.35, minWidth: 0 }}>
+            <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+            <div style={{ fontSize: 12, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</div>
+          </div>
+          <button type="button" onClick={handleLogout} style={smallBtn}>{t.signOut}</button>
         </div>
-      </header>
+      </aside>
 
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px clamp(12px, 4vw, 24px) 72px', minWidth: 0 }}>
+      <main className="sm-own-main" style={{ flex: 1, minWidth: 0, padding: '28px 36px 56px' }}>
         {children}
       </main>
     </div>

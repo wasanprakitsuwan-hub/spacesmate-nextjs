@@ -143,7 +143,7 @@ function ThumbnailUploader({
               background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 8, padding: '5px 10px',
               color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
             }}>
-              <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>delete</span>
+              
               เปลี่ยนรูป
             </button>
           </div>
@@ -275,9 +275,7 @@ function AiGenButton({ label, loading, onClick }: { label: string; loading: bool
         opacity: loading ? 0.7 : 1,
       }}
     >
-      <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>
-        {loading ? 'progress_activity' : 'auto_awesome'}
-      </span>
+      
       {loading ? 'กำลังสร้าง...' : label}
     </button>
   )

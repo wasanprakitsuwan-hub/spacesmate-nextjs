@@ -17,10 +17,10 @@
  *   three times — in the steps, the form subtitle and the thank-you. All three
  *   move together or none do.
  *
- *   The fee is described as a share of the building's net revenue (rent
- *   collected minus electricity and water), with no fixed monthly fee. No
- *   percentage is quoted deliberately (Founder, 25 Oct 2026): the rate is set
- *   after the building is assessed.
+ *   The fee is described as a share of the building's net revenue, with no
+ *   fixed monthly fee. No percentage is quoted deliberately (Founder, 25 Oct
+ *   2026): the rate is set after the building is assessed. The "how the fee
+ *   works" section was removed (Founder, 26 Oct 2026).
  */
 export type Locale = 'th' | 'en'
 
@@ -56,8 +56,11 @@ export const MANAGE_T = {
     eyebrow: 'บริการรับบริหารอาคาร',
     heroTitle: 'เราดูแลอาคารของคุณ เหมือนเป็นอาคารของเราเอง',
     heroSub: 'ค่าบริการคิดตามรายได้จริงของอาคาร ไม่มีค่าบริหารตายตัว เมื่ออาคารของคุณได้มากขึ้น เราถึงได้มากขึ้น เป้าหมายของเราจึงเป็นเป้าหมายเดียวกับคุณ',
-    heroCta: 'ให้ทีมงานประเมินอาคารฟรี ↓',
+    heroCta: 'ให้ทีมงานประเมินอาคารฟรี',
     heroLine: 'ทัก LINE @spacesmate',
+    heroPhotoAlt: 'อาคารอพาร์ทเม้นท์ในกรุงเทพฯ',
+    heroPhotoCaption: 'ดูแลอาคารในกรุงเทพฯ และปริมณฑล',
+    photoAlts: ['ห้องพักพร้อมให้เช่า', 'ครัวในห้องพัก', 'ห้องนอนพร้อมเฟอร์นิเจอร์', 'ห้องนอนในอาคารให้เช่า'],
     facts: [
       { title: 'ไม่มีค่าบริหารรายเดือนตายตัว', sub: 'คิดเป็น % ของรายได้สุทธิ' },
       { title: 'เป้าหมายเดียวกับเจ้าของ', sub: 'ห้องเต็มขึ้น เราได้มากขึ้น' },
@@ -69,23 +72,14 @@ export const MANAGE_T = {
     why: [
       { title: 'เราดูแลอาคารเหมือนเป็นของเราเอง', desc: 'ค่าบริการคิดจากรายได้จริง ไม่มีค่าบริหารรายเดือนแบบตายตัว อาคารของคุณได้มากขึ้น เราจึงได้มากขึ้น' },
       { title: 'เพิ่มรายได้ด้วยมืออาชีพ', desc: 'ตั้งราคาจากข้อมูลตลาด ทำการตลาดทุกช่องทาง ลดห้องว่างและระยะเวลาว่างระหว่างผู้เช่า' },
-      { title: 'ผู้เช่าคุณภาพ ความเสี่ยงต่ำ', desc: 'คัดกรองผู้เช่า ทำสัญญาที่รัดกุม เก็บค่าเช่าตรงเวลา' },
+      { title: 'แก้ปัญหาหน้างานให้เรียบร้อย', desc: 'ทีมงานรับเรื่อง ประสานช่าง และตามงานจนจบ เจ้าของไม่ต้องลงไปจัดการเอง' },
       { title: 'โปร่งใส ตรวจสอบได้', desc: 'รายงานรายได้ ค่าใช้จ่าย และอัตราการเข้าพักทุกเดือน' },
     ],
 
-    // ── Fee ──
-    feeTitle: 'ค่าบริการคิดอย่างไร',
-    feeSub: 'คิดจากผลงานจริงเท่านั้น เดือนไหนรายได้น้อย ค่าบริการก็น้อยตาม',
-    fee: [
-      { title: 'รายได้ค่าเช่าที่เก็บได้', sub: 'ทุกห้องที่มีผู้เช่า' },
-      { title: 'หักค่าไฟและค่าน้ำ', sub: 'ตามที่ใช้จริง' },
-      { title: 'รายได้สุทธิ', sub: 'ฐานคิดค่าบริการ' },
-      { title: 'ค่าบริการ SpacesMate', sub: '% ของรายได้สุทธิ ตามสัญญา' },
-    ],
-    feeNote: 'ค่าใช้จ่ายของอาคาร เช่น พนักงาน การตลาด ซ่อมบำรุง และอินเทอร์เน็ต หักก่อนตามจริง อัตราค่าบริการแจ้งหลังประเมินอาคาร',
 
     // ── Services ──
     servicesTitle: 'บริการของเราครอบคลุม',
+    servicesSub: 'ตั้งแต่หาผู้เช่าจนถึงรายงานผล ทีมเดียวดูแลทั้งหมด',
     services: [
       { title: 'การตลาด & ลงประกาศ', desc: 'ถ่ายภาพ เขียนประกาศ โปรโมททุกช่องทาง' },
       { title: 'คัดกรองผู้เช่า',      desc: 'ตรวจสอบประวัติและความสามารถในการชำระ' },
@@ -93,6 +87,7 @@ export const MANAGE_T = {
       { title: 'เก็บค่าเช่า',         desc: 'เรียกเก็บและโอนเข้าบัญชีคุณตรงเวลา' },
       { title: 'ซ่อมบำรุง',           desc: 'ประสานงานช่างตลอดสัญญา' },
       { title: 'ดูแลพนักงานอาคาร',    desc: 'วางระบบงานและดูแลทีมหน้างาน' },
+      { title: 'การเพิ่มรายได้',       desc: 'ตั้งราคาตามตลาด ลดห้องว่าง และหารายได้เสริมให้อาคาร' },
     ],
 
     // ── Steps ──
@@ -148,8 +143,11 @@ export const MANAGE_T = {
     eyebrow: 'Building management',
     heroTitle: 'We look after your building as if it were our own',
     heroSub: 'Our fee follows what your building actually earns, with no fixed management fee. When your building earns more, so do we, so your goal and ours are the same.',
-    heroCta: 'Get a free building assessment ↓',
+    heroCta: 'Get a free building assessment',
     heroLine: 'Message LINE @spacesmate',
+    heroPhotoAlt: 'An apartment building in Bangkok',
+    heroPhotoCaption: 'Managing buildings in Bangkok and nearby provinces',
+    photoAlts: ['A room ready to let', 'Kitchen in a rental room', 'Furnished bedroom', 'Bedroom in a rental building'],
     facts: [
       { title: 'No fixed monthly fee', sub: 'A share of net revenue' },
       { title: 'The same goal as you', sub: 'Fuller building, bigger fee' },
@@ -160,21 +158,13 @@ export const MANAGE_T = {
     why: [
       { title: 'We run it like our own', desc: 'Our fee comes from real revenue, not a fixed monthly charge. Your building earns more, so we earn more.' },
       { title: 'More income, professionally', desc: 'Market-based pricing, marketing on every channel, fewer empty rooms and shorter gaps between tenants.' },
-      { title: 'Good tenants, lower risk', desc: 'Tenant screening, watertight contracts, rent collected on time.' },
+      { title: 'On-site problems sorted', desc: 'The team takes the report, brings in the trades and follows the job through. You never have to go on site yourself.' },
       { title: 'Transparent and checkable', desc: 'Income, costs and occupancy reported every month.' },
     ],
 
-    feeTitle: 'How the fee works',
-    feeSub: 'Based on results only. In a slower month, the fee is smaller too.',
-    fee: [
-      { title: 'Rent collected', sub: 'Every occupied room' },
-      { title: 'Minus electricity and water', sub: 'As actually used' },
-      { title: 'Net revenue', sub: 'What the fee is based on' },
-      { title: 'SpacesMate fee', sub: '% of net revenue, per contract' },
-    ],
-    feeNote: 'Building costs such as staff, marketing, maintenance and internet are paid first at cost. The fee rate is quoted after we assess the building.',
 
     servicesTitle: 'What the service covers',
+    servicesSub: 'From finding tenants to the monthly report, one team handles it all.',
     services: [
       { title: 'Marketing & listings', desc: 'Photography, listing copy, promotion on every channel' },
       { title: 'Tenant screening',     desc: 'Background and ability-to-pay checks' },
@@ -182,6 +172,7 @@ export const MANAGE_T = {
       { title: 'Rent collection',      desc: 'Collected and paid into your account on time' },
       { title: 'Maintenance',          desc: 'Trades coordinated for the whole tenancy' },
       { title: 'Building staff',       desc: 'Working routines set up and the on-site team managed' },
+      { title: 'Revenue growth',       desc: 'Market-based pricing, fewer empty rooms and extra income for the building' },
     ],
 
     stepsTitle: 'Getting started',

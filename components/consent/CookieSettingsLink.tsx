@@ -23,12 +23,13 @@ import { resetConsent } from '@/lib/consent'
  *   listens for the same event and unloads tags immediately — withdrawal that
  *   only takes effect on the next page load is not withdrawal.
  */
-export default function CookieSettingsLink({ className }: { className?: string }) {
+export default function CookieSettingsLink({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <button
       type="button"
       onClick={() => resetConsent()}
       className={className}
+      style={style}
       // A button, not a link: it performs an action rather than navigating.
       // Screen readers should not announce it as a destination.
     >

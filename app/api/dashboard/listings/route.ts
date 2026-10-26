@@ -24,7 +24,29 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return NextResponse.json({ listings: data ?? [] })
+
+    // Views and contact clicks over the last 30 Bangkok days, per listing, for
+    // the admin list. A stats failure leaves the numbers out, not the list.
+    const since = new Date(Date.now() + 7 * 3600_000 - 29 * 86400_000).toISOString().slice(0, 10)
+    const totals = new Map<string, { views: number; contacts: number }>()
+    const { data: stats, error: statsErr } = await supabase
+      .from('listing_stats_daily')
+      .select('property_id, views, line_clicks, phone_clicks')
+      .gte('day', since)
+    if (statsErr) console.error('listings GET stats:', statsErr)
+    for (const r of stats ?? []) {
+      const t = totals.get(r.property_id) ?? { views: 0, contacts: 0 }
+      t.views += r.views ?? 0
+      t.contacts += (r.line_clicks ?? 0) + (r.phone_clicks ?? 0)
+      totals.set(r.property_id, t)
+    }
+
+    const listings = (data ?? []).map(p => ({
+      ...p,
+      views_30d: statsErr ? null : totals.get(p.id)?.views ?? 0,
+      contacts_30d: statsErr ? null : totals.get(p.id)?.contacts ?? 0,
+    }))
+    return NextResponse.json({ listings })
   } catch (err) {
     console.error('listings GET error:', err)
     return NextResponse.json({ listings: [] }, { status: 500 })

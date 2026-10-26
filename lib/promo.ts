@@ -8,6 +8,9 @@
  * (Dashboard › Settings › การชำระเงิน). Stored in site_settings under
  * 'checkout_promo' and readable through /api/settings/public, because it is
  * shown to every buyer anyway.
+ *
+ * The same switch shows the promo pill and banner on /list-your-property
+ * (lib/promo-server reads it there), so turning it off hides it everywhere.
  */
 export type CheckoutPromo = {
   enabled: boolean

@@ -3,7 +3,8 @@
 /**
  * /checkout — the one page every purchase goes through.
  *
- *   /checkout?pkg=standard&qty=2    buy slots (from the pricing page)
+ *   /checkout                       choose which listing to buy for (no
+ *                                   buying in advance, Founder 26 Oct 2026)
  *   /checkout?listing=<id>          buy a slot for this listing; the webhook
  *                                   publishes it as soon as payment succeeds
  *   /checkout?extend=<id>           add a term to a live listing's slot
@@ -20,7 +21,7 @@
  */
 import { buildPlans, PRICING_T } from '@/lib/pricing-i18n'
 import OwnerHelpLinks from '@/components/owner/OwnerHelpLinks'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { trackEvent } from '@/lib/analytics'
@@ -64,12 +65,16 @@ function Checkout({ locale }: { locale: Locale }) {
 
   const initialPkg = PACKAGES.some(p => p.id === sp.get('pkg')) ? sp.get('pkg')! : 'basic'
   const [pkg, setPkg]         = useState<string>(initialPkg)
-  const [qty, setQty]         = useState(() => mode === 'slots' ? Math.max(1, Math.min(50, Number(sp.get('qty')) || 1)) : 1)
+  // One payment = one listing, so the quantity is always 1. Kept as a value so
+  // the promo check and the summary still read it.
+  const qty = 1
   const [method, setMethod]   = useState<Method>('promptpay')
   const [token, setToken]     = useState<string | null>(null)
   const [target, setTarget]   = useState<OwnerListing | null>(null)
   const [targetMissing, setTargetMissing] = useState(false)
   const [freeSlots, setFreeSlots] = useState(0)
+  /** Listings that can be published, for the picker when no listing was named. */
+  const [drafts, setDrafts]   = useState<OwnerListing[] | null>(null)
   const [busy, setBusy]       = useState(false)
   const [error, setError]     = useState('')
 
@@ -89,9 +94,12 @@ function Checkout({ locale }: { locale: Locale }) {
         return
       }
       setToken(session.access_token)
-      if (!targetId) return
       const r = await fetch('/api/owner/listings', { headers: { Authorization: `Bearer ${session.access_token}` } })
       const d = await r.json().catch(() => ({}))
+      if (!targetId) {
+        setDrafts((d.listings ?? []).filter((l: OwnerListing) => l.listing_status !== 'active'))
+        return
+      }
       const found = (d.listings ?? []).find((l: OwnerListing) => l.id === targetId) ?? null
       setTarget(found)
       setTargetMissing(!found)
@@ -139,6 +147,17 @@ function Checkout({ locale }: { locale: Locale }) {
     }
     setChecking(false)
   }, [pkg, qty, token, t])
+
+  // ?promo=CODE (the owner dashboard's suggested-code card) fills the box and
+  // checks it once the session token is in.
+  const promoParam = sp?.get('promo')?.trim().toUpperCase() ?? ''
+  const promoTried = useRef(false)
+  useEffect(() => {
+    if (!promoParam || !token || promoTried.current) return
+    promoTried.current = true
+    setCodeInput(promoParam)
+    checkCode(promoParam)
+  }, [promoParam, token, checkCode])
 
   // The discount depends on the package and quantity, so re-check on a change.
   const appliedCode = applied?.code
@@ -196,7 +215,7 @@ function Checkout({ locale }: { locale: Locale }) {
   const payLabel = mode === 'publish' && total === 0 ? t.payFree
     : mode === 'publish' ? t.payPublish(fmt(total))
     : mode === 'extend' ? t.payExtend(fmt(total))
-    : t.pay(fmt(total))
+    : t.chooseListingFirst
   const methodLabel = effectiveMethod === 'promptpay' ? t.promptpay : effectiveMethod === 'card' ? t.cardOnce : t.cardSub
 
   const card: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 22, marginBottom: 16 }
@@ -256,6 +275,33 @@ function Checkout({ locale }: { locale: Locale }) {
               </div>
             )}
 
+            {/* No listing named: pick one first. Each choice reloads this page as
+                ?listing=<id>, which is the only mode that can pay. */}
+            {mode === 'slots' && (
+              <section style={card}>
+                <h2 style={{ fontSize: 17, fontWeight: 600, color: C.green, margin: '0 0 4px' }}>{t.chooseListingTitle}</h2>
+                <p style={{ fontSize: 13.5, color: C.muted, margin: '0 0 14px' }}>{t.chooseListingBody}</p>
+                {drafts === null ? (
+                  <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>{t.loading}</p>
+                ) : drafts.length === 0 ? (
+                  <>
+                    <p style={{ fontSize: 14.5, color: C.ink, margin: '0 0 12px' }}>{t.noDraftsBody}</p>
+                    <a href={localeHref('/list-your-property/new', locale)} className="sm-btn-primary" style={btnStyle('primary')}>{t.createListing}</a>
+                  </>
+                ) : (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {drafts.map(l => (
+                      <a key={l.id} href={`${localeHref('/checkout', locale)}?listing=${encodeURIComponent(l.id)}&pkg=${encodeURIComponent(pkg)}`}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1px solid ${C.border}`, borderRadius: RADIUS, padding: '10px 14px', textDecoration: 'none', color: C.ink, background: C.white }}>
+                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{locale === 'en' && l.title_en ? l.title_en : l.title_th}</span>
+                        <span aria-hidden style={{ color: C.teal, flexShrink: 0 }}>→</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* 1 · Package */}
             <section style={card}>
               <SectionHead n={1} title={t.choosePackage} note={t.pricePerListing} />
@@ -293,19 +339,7 @@ function Checkout({ locale }: { locale: Locale }) {
                 })}
               </div>
 
-              {mode === 'slots' && (
-                <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: '8px 12px' }}>
-                  <span style={{ fontSize: 14, color: C.ink }}>{t.quantity}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1} aria-label={t.decrease}
-                      style={{ width: 30, height: 30, borderRadius: RADIUS, border: `1px solid ${C.border}`, background: C.white, cursor: 'pointer', opacity: qty <= 1 ? 0.4 : 1 }}>−</button>
-                    <span style={{ minWidth: 20, textAlign: 'center', fontWeight: 600, color: C.green }}>{qty}</span>
-                    <button type="button" onClick={() => setQty(q => Math.min(50, q + 1))} aria-label={t.increase}
-                      style={{ width: 30, height: 30, borderRadius: RADIUS, border: `1px solid ${C.border}`, background: C.white, cursor: 'pointer' }}>+</button>
-                  </span>
-                </div>
-              )}
-              {mode === 'slots' && <p style={{ fontSize: 13, color: C.muted, margin: '10px 0 0', lineHeight: 1.55 }}>{t.slotExplainer}</p>}
+              <p style={{ fontSize: 13, color: C.muted, margin: '10px 0 0', lineHeight: 1.55 }}>{t.slotExplainer}</p>
               {plan && <p style={{ fontSize: 13, color: C.muted, margin: '12px 0 0', lineHeight: 1.55 }}>{plan.description}</p>}
 
               {/* Shared by all three packages, so it sits outside the choices. */}
@@ -350,6 +384,17 @@ function Checkout({ locale }: { locale: Locale }) {
                     {checking ? '…' : t.applyCode}
                   </button>
                 </form>
+              )}
+              {!applied && promoCfg?.enabled && promoCfg.code && (
+                <p style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '10px 0 0', fontSize: 13 }}>
+                  <span style={{ color: C.muted }}>{t.suggested}</span>
+                  <button type="button" disabled={checking || !token}
+                    onClick={() => { setCodeInput(promoCfg.code); checkCode(promoCfg.code) }}
+                    style={{ border: '1px dashed #d9b98a', background: '#fbf6ee', color: C.amber, padding: '2px 10px', borderRadius: 999, fontWeight: 600, letterSpacing: '0.5px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {promoCfg.code}
+                  </button>
+                  <span style={{ color: C.muted }}>{locale === 'en' ? promoCfg.title_en : promoCfg.title_th}</span>
+                </p>
               )}
               {codeMsg && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#b42318' }}>{codeMsg}</p>}
             </section>
@@ -398,7 +443,7 @@ function Checkout({ locale }: { locale: Locale }) {
               {error && (
                 <div role="alert" style={{ background: '#fef3f2', border: '1px solid #fecdca', borderRadius: RADIUS, padding: '10px 12px', color: '#b42318', fontSize: 13, margin: '14px 0 0' }}>{error}</div>
               )}
-              <button onClick={pay} disabled={busy || !token || (!!targetId && !target && !targetMissing)} className="sm-btn-primary"
+              <button onClick={pay} disabled={busy || !token || mode === 'slots' || (!!targetId && !target && !targetMissing)} className="sm-btn-primary"
                 style={{ ...btnStyle('primary'), width: '100%', marginTop: 16, padding: '13px 16px', fontSize: 15.5, opacity: busy ? 0.7 : 1, cursor: busy ? 'wait' : 'pointer' }}>
                 {busy ? t.loading : payLabel}
               </button>

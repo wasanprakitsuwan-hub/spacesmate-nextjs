@@ -310,7 +310,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 't
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
                   <input type="number" value={row.price_daily} onChange={e => upd(row.id, 'price_daily', e.target.value)} placeholder="900" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
                 </div>
-                <button type="button" onClick={() => removeRow(row.id)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 0" }}>close</span></button>
+                <button type="button" onClick={() => removeRow(row.id)} style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{t.remove}</button>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
                 <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.shorterTerms}</span>
@@ -584,7 +584,7 @@ export function RentalChargesSection({ charges, onChange, locale = 'th' }: {
                     background: on ? '#02402e' : '#f8fafc',
                     color: on ? '#fff' : '#64748b',
                     fontWeight: on ? 600 : 400 }}>
-                  {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{o.label}
+                  {o.label}
                 </button>
                 {on && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -747,7 +747,7 @@ export function MapPicker({ lat, lng, onLatLng, locale = 'th' }: {
             style={{ padding: '9px 14px', borderRadius: 10, border: 'none', background: '#048c73', color: '#fff', fontWeight: 600, fontSize: 13, cursor: urlParsing || !urlInput.trim() ? 'not-allowed' : 'pointer', opacity: urlParsing || !urlInput.trim() ? 0.6 : 1, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
             {urlParsing
               ? <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
-              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>location_on</span>{t.getCoords}</>}
+              : <>{t.getCoords}</>}
           </button>
         </div>
         {urlError
@@ -765,8 +765,8 @@ export function MapPicker({ lat, lng, onLatLng, locale = 'th' }: {
           <button type="button" onClick={doSearch} disabled={searching}
             style={{ padding: '9px 14px', borderRadius: 10, border: 'none', background: '#02402e', color: '#fff', fontWeight: 600, fontSize: 13, cursor: searching ? 'not-allowed' : 'pointer', opacity: searching ? 0.7 : 1, whiteSpace: 'nowrap' }}>
             {searching
-              ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>{t.search}</>
-              : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>map</span>{t.search}</>}
+              ? <>{t.search}</>
+              : <>{t.search}</>}
           </button>
         </div>
         {results.length > 0 && (
@@ -774,7 +774,7 @@ export function MapPicker({ lat, lng, onLatLng, locale = 'th' }: {
             {results.map((r, i) => (
               <button key={i} type="button" onClick={() => selectResult(r)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 12.5, color: '#334155', borderBottom: i < results.length - 1 ? '1px solid #f1f5f4' : 'none' }}>
-                <span className="msym" style={{ fontSize: 14, fontVariationSettings: "'wght' 400, 'FILL' 1", color: '#048c73', marginRight: 6 }}>location_on</span>{r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
+                {r.display_name.length > 85 ? r.display_name.slice(0, 85) + '…' : r.display_name}
               </button>
             ))}
             <button type="button" onClick={() => setResults([])} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: 'none', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#94a3b8' }}>{t.close}</button>
@@ -1016,8 +1016,8 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
         {uploading
           ? <><span style={{ width: 16, height: 16, border: '2px solid #d1fae5', borderTopColor: '#048c73', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />{t.uploading}{uploadStatus ? ` ${uploadStatus}` : ''}…</>
           : atLimit
-            ? <><span className="msym" style={{ fontSize: 16, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>check_circle</span>{t.uploadedMax(imageLimit)}</>
-            : <><span className="msym" style={{ fontSize: 20, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>photo_library</span>{t.chooseImages} (JPG · PNG · WebP)</>
+            ? <>{t.uploadedMax(imageLimit)}</>
+            : <>{t.chooseImages} (JPG · PNG · WebP)</>
         }
       </button>
       {uploading && (
@@ -1076,12 +1076,12 @@ export function ImageUploadZone({ images, onImagesChange, packageType = 'basic',
                 {i !== 0 && hoveredIdx === i && (
                   <button type="button" onClick={() => setAsCover(i)}
                     style={{ position: 'absolute', inset: 0, borderRadius: 8, border: 'none', background: 'rgba(2,64,46,.72)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-                    <span className="msym" style={{ fontSize: 18, fontVariationSettings: "'wght' 400, 'FILL' 1" }}>star</span>
+                    
                     <span>{t.setCover}</span>
                   </button>
                 )}
                 <button type="button" onClick={() => onImagesChange(images.filter((_, j) => j !== i))}
-                  style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', background: '#b91c1c', border: '2px solid #fff', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, zIndex: 2 }}><span className="msym" style={{ fontSize: 12 }}>close</span></button>
+                  style={{ position: 'absolute', top: 4, right: 4, padding: '1px 7px', borderRadius: 4, background: 'rgba(255,255,255,.92)', border: '1px solid #f1c4bd', color: '#b42318', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.6, zIndex: 2 }}>{t.remove}</button>
               </div>
               )
             })}
@@ -1136,8 +1136,8 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType, locale =
       <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
         style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1.5px dashed #048c73', background: '#f0fbf8', color: '#048c73', fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
         {uploading
-          ? <><span className="msym" style={{ fontSize: 15, animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>{t.uploadingEllipsis}</>
-          : <><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>videocam</span>{t.uploadVideo}</>}
+          ? <>{t.uploadingEllipsis}</>
+          : <>{t.uploadVideo}</>}
       </button>
       <div>
         <label style={{ ...SLBL, fontSize: 12 }}>{t.orPasteVideoLink}</label>
@@ -1233,7 +1233,7 @@ export function ListingFormFields({
                   background: form.property_type === o.value ? '#02402e' : '#fff',
                   color: form.property_type === o.value ? '#fff' : '#64748b', transition: 'all .15s',
                   display: 'flex', alignItems: 'center', gap: 5 }}>
-                <span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>{o.icon}</span>
+                
                 {o.label}
               </button>
             ))}
@@ -1432,7 +1432,7 @@ export function ListingFormFields({
                         border: on ? 'none' : '1px solid #eef0ef',
                         background: on ? (sec.key === 'unit' ? '#02402e' : '#048c73') : '#f8fafc',
                         color: on ? '#fff' : '#64748b', fontWeight: on ? 600 : 400 }}>
-                      {on && <span className="msym" style={{ fontSize: 13, fontVariationSettings: "'wght' 500, 'FILL' 1", marginRight: 2 }}>check</span>}{locale === 'en' ? (a.name_en || a.name_th) : a.name_th}
+                      {locale === 'en' ? (a.name_en || a.name_th) : a.name_th}
                     </button>
                   )
                 })}
