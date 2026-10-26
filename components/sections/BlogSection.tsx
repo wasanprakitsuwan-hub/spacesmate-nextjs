@@ -9,16 +9,18 @@ import Link from '@/components/ui/LocaleLink'
 import { createServerClient } from '@/lib/supabase'
 import { SITE_T, TH_MONTHS, EN_MONTHS, type Locale } from '@/lib/site-i18n'
 import { C, RADIUS, WRAP, h2Style } from '@/lib/ui'
+import { bangkokDate } from '@/lib/bangkok-date'
 
 /**
  * Thai dates carry the Buddhist year, English dates the Gregorian one. Printing
  * 2569 to an English reader reads as a typo, not as a calendar.
  */
 function formatDate(iso: string, locale: Locale): string {
-  const d = new Date(iso)
+  const d = bangkokDate(iso)
+  if (!d) return ''
   return locale === 'en'
-    ? `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-    : `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
+    ? `${d.day} ${EN_MONTHS[d.month]} ${d.year}`
+    : `${d.day} ${TH_MONTHS[d.month]} ${d.year + 543}`
 }
 
 export default async function BlogSection({ locale = 'th' }: { locale?: Locale }) {

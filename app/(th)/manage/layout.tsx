@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { withPageSeo } from '@/lib/page-seo'
 import { hreflang } from '@/lib/hreflang'
 
@@ -18,6 +19,7 @@ const baseMetadata: Metadata = {
     title: 'รับบริหารทรัพย์สิน | SpacesMate',
     description: 'ให้ SpacesMate บริหารอพาร์ทเม้นท์และคอนโดของคุณ — Performance-Based ไม่มีค่าใช้จ่ายล่วงหน้า',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
     url: 'https://spacesmate.com/manage',
     locale: 'th_TH',
   },

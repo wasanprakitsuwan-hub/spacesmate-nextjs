@@ -20,6 +20,7 @@
  *   index it, from a single listing.
  */
 import { cache } from 'react'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { createServerClient } from '@/lib/supabase'
 import { slugify } from '@/lib/slug'
 import { haversineKm } from '@/lib/search-match'
@@ -281,7 +282,7 @@ export async function buildDistrictMetadata(rawSlug: string, locale: Locale) {
   return {
     title: view.title,
     description: view.description,
-    openGraph: { title: `${view.title} | SpacesMate`, description: view.description, type: 'website' as const, url: locale === 'en' ? en : th },
+    openGraph: { title: `${view.title} | SpacesMate`, description: view.description, type: 'website' as const, images: [DEFAULT_OG_IMAGE], url: locale === 'en' ? en : th },
     alternates: { canonical: locale === 'en' ? en : th, languages: { th, en, 'x-default': th } },
     robots: view.indexable ? { index: true, follow: true } : { index: false, follow: true },
   }

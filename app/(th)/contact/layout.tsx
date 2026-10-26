@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 
 export const metadata: Metadata = {
   title: 'ติดต่อเรา',
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     title: 'ติดต่อ SpacesMate',
     description: 'สอบถามบริการบริหารทรัพย์สิน ร่วมลงทุน หรือเป็นพันธมิตรธุรกิจกับ SpacesMate',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
     url: 'https://spacesmate.com/contact',
   },
   alternates: { canonical: 'https://spacesmate.com/contact' },

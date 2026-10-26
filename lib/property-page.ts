@@ -6,6 +6,7 @@
  * and generateMetadata all read from one implementation.
  */
 import type { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import type { Property } from '@/lib/property-data'
 import { getPropertyBySlug } from '@/lib/property-data'
 import { createServerClient } from '@/lib/supabase'
@@ -270,7 +271,7 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
         openGraph: {
           title: staticP.title,
           description: staticP.excerpt,
-          images: staticP.image ? [{ url: staticP.image, alt: staticP.title }] : [],
+          images: staticP.image ? [{ url: staticP.image, alt: staticP.title }] : [DEFAULT_OG_IMAGE],
           type: 'website',
         },
         alternates,
@@ -293,10 +294,13 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
     ? (raw.description_en || 'Contact the owner directly on SpacesMate, no agent fee.')
     : (raw.description_th || 'ติดต่อเจ้าของโดยตรงที่ SpacesMate ไม่มีค่านายหน้า')
   const description = plainText(facts.lead ? `${facts.lead}. ${body}` : body, 160)
+  // The listing's own cover photo, so a shared link previews the room itself.
+  const imgs: string[] = Array.isArray(raw.images) ? raw.images : []
+  const cover = imgs.find(i => i.startsWith('https://')) ?? imgs.find(i => i.startsWith('/'))
   return {
     title,
     description,
-    openGraph: { title, description, type: 'website' },
+    openGraph: { title, description, type: 'website', images: cover ? [{ url: cover, alt: title }] : [DEFAULT_OG_IMAGE] },
     alternates,
   }
 }

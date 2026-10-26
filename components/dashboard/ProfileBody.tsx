@@ -66,12 +66,20 @@ export default function ProfileBody({ locale = 'th' }: { locale?: Locale }) {
     e.preventDefault()
     setSaving(true); setError(''); setSaved(false)
     try {
+      // Through the server: the browser has no write access to user_profiles,
+      // and a direct update there can match zero rows and still report success.
       const supabase = createBrowserClient()
-      const { error: upErr } = await supabase
-        .from('user_profiles')
-        .update({ full_name: profile.full_name.trim(), phone: profile.phone.trim() })
-        .eq('id', userId)
-      if (upErr) throw new Error(upErr.message)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error(t.saveFailed)
+      const res = await fetch('/api/owner/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ full_name: profile.full_name, phone: profile.phone }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(locale === 'th' && j.error ? j.error : t.saveFailed)
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err: any) {

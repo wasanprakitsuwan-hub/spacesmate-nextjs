@@ -1,3 +1,4 @@
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: { title, description, type: 'website', images: listings[0]?.images?.[0] ? [listings[0].images[0]] : [] },
+    openGraph: { title, description, type: 'website', images: listings[0]?.images?.[0] ? [listings[0].images[0]] : [DEFAULT_OG_IMAGE] },
     alternates: { canonical: `/building/${encodeURI(building.slug)}` },
   }
 }

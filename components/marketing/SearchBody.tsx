@@ -23,6 +23,7 @@ import { TH_MONTHS, EN_MONTHS } from '@/lib/site-i18n'
 import { dailyShuffle } from '@/lib/fair-rotation'
 import { showsVideo } from '@/lib/packages'
 import { C, RADIUS, WRAP } from '@/lib/ui'
+import { bangkokDate } from '@/lib/bangkok-date'
 
 /**
  * /search, redesigned 25 Oct 2026.
@@ -120,9 +121,9 @@ function lineColor(system: RailSystem): string {
 }
 
 function shortDate(iso: string, locale: Locale): string {
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return ''
-  return `${d.getDate()} ${(locale === 'en' ? EN_MONTHS : TH_MONTHS)[d.getMonth()]}`
+  const d = bangkokDate(iso)
+  if (!d) return ''
+  return `${d.day} ${(locale === 'en' ? EN_MONTHS : TH_MONTHS)[d.month]}`
 }
 
 const list = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
@@ -759,8 +760,16 @@ function ResultRow({ r, locale, from, placeName }: { r: Row; locale: Locale; fro
 
 export default function SearchBody({ locale = 'th' }: { locale?: Locale }) {
   const t = SEARCH_T[locale]
+  const u = SEARCH_UI[locale]
+  // The results read the URL, so they only render in the browser. The heading
+  // goes in the fallback too, or the HTML search engines fetch has no <h1>.
   return (
-    <Suspense fallback={<div style={{ maxWidth: WRAP, margin: '0 auto', padding: '80px 24px', textAlign: 'center', color: C.muted }}>{t.loading}</div>}>
+    <Suspense fallback={
+      <div style={{ maxWidth: WRAP, margin: '0 auto', padding: '80px 24px', textAlign: 'center', color: C.muted }}>
+        <h1 style={{ margin: '0 0 16px', fontSize: 26, lineHeight: 1.35, fontWeight: 600, color: C.green }}>{u.heading}</h1>
+        {t.loading}
+      </div>
+    }>
       <SearchContent locale={locale} />
     </Suspense>
   )

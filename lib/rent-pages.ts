@@ -29,6 +29,7 @@
  *   which is safe because both locales resolve exactly the same slug set.
  */
 import { cache } from 'react'
+import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
 import { createServerClient } from '@/lib/supabase'
 import { mergePlaces } from '@/lib/search-places'
 import { loadPlaceOverrides } from '@/lib/search-places-server'
@@ -386,7 +387,7 @@ export async function buildRentMetadata(rawSlug: string, locale: Locale) {
   return {
     title: view.title,
     description: view.description,
-    openGraph: { title: `${view.title} | SpacesMate`, description: view.description, type: 'website' as const, url: locale === 'en' ? en : th },
+    openGraph: { title: `${view.title} | SpacesMate`, description: view.description, type: 'website' as const, images: [DEFAULT_OG_IMAGE], url: locale === 'en' ? en : th },
     alternates: { canonical: locale === 'en' ? en : th, languages: { th, en, 'x-default': th } },
     robots: view.indexable ? { index: true, follow: true } : { index: false, follow: true },
   }
