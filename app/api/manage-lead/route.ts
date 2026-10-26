@@ -7,6 +7,8 @@
 // Env vars for Google Forms (set in Vercel → Settings → Environment Variables):
 //   GOOGLE_FORM_ID          — the form ID from the URL: docs.google.com/forms/d/e/{ID}/viewform
 //   GOOGLE_ENTRY_NAME       — entry number for "ชื่อ-นามสกุล" field  (e.g. 123456789)
+//   (The form now sends firstName, lastName and email; `name` is still passed
+//   to the Sheet as "first last" so an existing script keeps working.)
 //   GOOGLE_ENTRY_PHONE      — entry number for "เบอร์โทรศัพท์" field
 //   GOOGLE_ENTRY_TYPE       — entry number for "ประเภททรัพย์สิน" field
 //   GOOGLE_ENTRY_LOCATION   — entry number for "ทำเล" field
@@ -31,19 +33,26 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let body: { name?: string; phone?: string; type?: string; location?: string; channel?: string; building?: string; rooms?: string }
+  let body: { firstName?: string; lastName?: string; email?: string; phone?: string; type?: string; location?: string; channel?: string; building?: string; rooms?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { name = '', phone = '', type = '', location = '', channel = '' } = body
+  const { phone = '', type = '', location = '', channel = '' } = body
+  const firstName = String(body.firstName ?? '').trim().slice(0, 100)
+  const lastName  = String(body.lastName ?? '').trim().slice(0, 100)
+  const email     = String(body.email ?? '').trim().slice(0, 200)
+  const name      = `${firstName} ${lastName}`.trim()
   const building = String(body.building ?? '').slice(0, 200)
   const rooms    = String(body.rooms ?? '').slice(0, 20)
 
-  if (!name.trim() || !phone.trim()) {
-    return NextResponse.json({ error: 'ชื่อและเบอร์โทรศัพท์จำเป็น' }, { status: 400 })
+  if (!firstName || !lastName || !phone.trim() || !email) {
+    return NextResponse.json({ error: 'ชื่อ นามสกุล เบอร์โทรศัพท์ และอีเมลจำเป็น' }, { status: 400 })
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' }, { status: 400 })
   }
 
   const errors: string[] = []
@@ -57,7 +66,7 @@ export async function POST(req: NextRequest) {
       const res = await fetch(scriptUrl, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, phone, type, location, channel, building, rooms }),
+        body:    JSON.stringify({ name, firstName, lastName, email, phone, type, location, channel, building, rooms }),
         redirect: 'follow',
       })
       if (!res.ok) {
@@ -80,7 +89,7 @@ export async function POST(req: NextRequest) {
   // to hear about it — otherwise they wait for a call that never comes.
   let emailed = false
   try {
-    emailed = await sendManagementEnquiry({ name, phone, type, location, channel, building, rooms })
+    emailed = await sendManagementEnquiry({ firstName, lastName, email, phone, type, location, channel, building, rooms })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     errors.push(`email: ${msg}`)

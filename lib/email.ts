@@ -486,8 +486,10 @@ export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<vo
 // ── 6. Management enquiry — /manage lead form submission ─────────────────────
 
 export interface ManagementEnquiryData {
-  name:     string
-  phone:    string
+  firstName: string
+  lastName:  string
+  email:     string
+  phone:     string
   type:     string
   location: string
   channel:  string
@@ -502,7 +504,7 @@ function escHtml(v: string): string {
 
 export async function sendManagementEnquiry(raw: ManagementEnquiryData): Promise<boolean> {
   const data = {
-    name: escHtml(raw.name), phone: escHtml(raw.phone), type: escHtml(raw.type),
+    firstName: escHtml(raw.firstName), lastName: escHtml(raw.lastName), email: escHtml(raw.email), phone: escHtml(raw.phone), type: escHtml(raw.type),
     location: escHtml(raw.location), channel: raw.channel, building: escHtml(raw.building ?? ''), rooms: escHtml(raw.rooms ?? ''),
   }
   const html = layout(`
@@ -516,8 +518,10 @@ export async function sendManagementEnquiry(raw: ManagementEnquiryData): Promise
   <!-- Lead details -->
   <div style="padding:28px 32px 0">
     <table style="width:100%;border-collapse:collapse">
-      ${tableRow('ชื่อ-นามสกุล', `<strong style="color:#02402e">${data.name}</strong>`)}
+      ${tableRow('ชื่อ', `<strong style="color:#02402e">${data.firstName}</strong>`)}
+      ${tableRow('นามสกุล', `<strong style="color:#02402e">${data.lastName}</strong>`)}
       ${tableRow('เบอร์โทรศัพท์', `<strong style="color:#d97f11">${data.phone}</strong>`)}
+      ${tableRow('อีเมล', `<a href="mailto:${data.email}" style="color:#048c73">${data.email}</a>`)}
       ${tableRow('ชื่ออาคาร / โครงการ', data.building || '—')}
       ${tableRow('ประเภทอาคาร', data.type)}
       ${tableRow('ทำเล', data.location || '—')}
@@ -544,7 +548,7 @@ export async function sendManagementEnquiry(raw: ManagementEnquiryData): Promise
 
   return sendEmail(
     [FOUNDER_EMAIL],
-    `Lead ใหม่: ${raw.name} (${raw.building ? raw.building + ' · ' : ''}${raw.type} · ${raw.location || 'ไม่ระบุทำเล'})`,
+    `Lead ใหม่: ${raw.firstName} ${raw.lastName} (${raw.building ? raw.building + ' · ' : ''}${raw.type} · ${raw.location || 'ไม่ระบุทำเล'})`,
     html
   )
 }
