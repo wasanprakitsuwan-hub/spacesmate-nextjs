@@ -22,7 +22,7 @@ export const SITE_T = {
   th: {
     // ── Hero ──
     heroTitle: 'หาห้องเช่า คอนโด อพาร์ทเม้นท์ ในกรุงเทพฯ',
-    heroSubMeta: 'คอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ ทั่วกรุงเทพฯ · ไม่มีค่านายหน้า',
+    heroSubMeta: 'คอนโด อพาร์ทเม้นท์ บ้าน ออฟฟิศ ทั่วกรุงเทพฯ',
     heroAllTypes: 'ทั้งหมด',
     heroTry: 'ลองค้นหา',
     heroTryChips: [
@@ -143,7 +143,7 @@ export const SITE_T = {
 
   en: {
     heroTitle: 'Rooms, condos and apartments for rent in Bangkok',
-    heroSubMeta: 'Condos, apartments, houses and offices across Bangkok · No agent fees',
+    heroSubMeta: 'Condos, apartments, houses and offices across Bangkok',
     heroAllTypes: 'All',
     heroTry: 'Try',
     heroTryChips: [
