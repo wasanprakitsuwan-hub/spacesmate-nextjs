@@ -291,8 +291,8 @@ export async function buildPropertyMetadata(slug: string, locale: Locale): Promi
   // Facts first, then the owner's own words. On English pages the owner's Thai
   // is left out rather than mixed in; a short English line takes its place.
   const body = locale === 'en'
-    ? (raw.description_en || 'Contact the owner directly on SpacesMate, no agent fee.')
-    : (raw.description_th || 'ติดต่อเจ้าของโดยตรงที่ SpacesMate ไม่มีค่านายหน้า')
+    ? (raw.description_en || 'Contact the owner directly on SpacesMate.')
+    : (raw.description_th || 'ติดต่อเจ้าของโดยตรงที่ SpacesMate')
   const description = plainText(facts.lead ? `${facts.lead}. ${body}` : body, 160)
   // The listing's own cover photo, so a shared link previews the room itself.
   const imgs: string[] = Array.isArray(raw.images) ? raw.images : []

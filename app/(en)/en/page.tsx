@@ -39,7 +39,7 @@ const SITE = 'https://spacesmate.com'
 const baseMetadata: Metadata = {
   title: 'Rent an Apartment, Condo or Office in Bangkok',
   description:
-    'Find apartments, condos, houses, offices and co-working space to rent across Bangkok. Verified listings, contact the owner directly, no agent fee for tenants.',
+    'Find apartments, condos, houses, offices and co-working space to rent across Bangkok. Verified listings, contact the owner directly.',
   openGraph: {
     title: 'Rent in Bangkok | SpacesMate',
     description:

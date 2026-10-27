@@ -242,7 +242,7 @@ export const AREA_CONTENT: Record<string, AreaContent> = {
     body_en: [
       'Silom is Bangkok\'s original financial district — home to the Stock Exchange of Thailand, major international banks, law firms, and the Thai headquarters of global multinationals. Renting office space in Silom signals credibility and puts your business in the heart of Bangkok\'s corporate ecosystem.',
       'The area is served by both BTS Sala Daeng and MRT Silom, giving staff excellent transit options from every direction. Office space for rent in Silom ranges from full-floor Grade A buildings to smaller serviced office suites suited to growing SMEs.',
-      'SpacesMate lists office space for rent in Silom with clear floor area, pricing per sqm, and facility details — no opaque agent fees.',
+      'SpacesMate lists office space for rent in Silom with clear floor area, pricing per sqm, and facility details.',
     ],
     highlights_th: [
       'ย่านการเงินหลักของกรุงเทพฯ',

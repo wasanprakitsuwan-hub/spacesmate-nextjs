@@ -150,7 +150,6 @@ function buildFaq(listings: DistrictListing[], label: string, type: RentType | n
       q: `Which train stations serve ${label}?`,
       a: `Stations with rentals around ${label} include ${stations.slice(0, 4).join(', ')}.`,
     })
-    out.push({ q: 'Do I pay an agent fee?', a: 'No. Listings on SpacesMate are posted by owners or their managers, and you contact them directly.' })
   } else {
     const what = type ? `${TYPE_NAME.th[type]} (${TYPE_ALT_TH[type]})` : 'ที่พักให้เช่า'
     if (prices.length) out.push({
@@ -161,7 +160,6 @@ function buildFaq(listings: DistrictListing[], label: string, type: RentType | n
       q: `เขต${label}มีรถไฟฟ้าสถานีไหนบ้าง?`,
       a: `สถานีที่มีที่พักให้เช่าในย่าน${label} เช่น ${stations.slice(0, 4).join(' ')}`,
     })
-    out.push({ q: 'ต้องเสียค่านายหน้าหรือไม่?', a: 'ไม่ต้อง ประกาศบน SpacesMate ลงโดยเจ้าของหรือผู้ดูแลอาคาร คุณติดต่อได้โดยตรง' })
   }
   return out
 }
@@ -189,8 +187,8 @@ export const loadDistrictPage = cache(async (rawSlug: string, locale: Locale): P
   const o = overrides.get(slug) ?? {}
   const pick = (s: string | null | undefined) => (typeof s === 'string' && s.trim() ? s.trim() : '')
   const empty = locale === 'en'
-    ? { desc: `Find rentals in ${label} on SpacesMate. Contact owners directly, with no agent fee.`, intro: `Nothing is listed in ${label} yet. Try the nearby areas below.` }
-    : { desc: `ค้นหาที่พักให้เช่าในเขต${label} ที่ SpacesMate ติดต่อเจ้าของโดยตรง ไม่มีค่านายหน้า`, intro: `ยังไม่มีประกาศในเขต${label} ลองดูทำเลใกล้เคียงด้านล่าง` }
+    ? { desc: `Find rentals in ${label} on SpacesMate. Contact owners directly.`, intro: `Nothing is listed in ${label} yet. Try the nearby areas below.` }
+    : { desc: `ค้นหาที่พักให้เช่าในเขต${label} ที่ SpacesMate ติดต่อเจ้าของโดยตรง`, intro: `ยังไม่มีประกาศในเขต${label} ลองดูทำเลใกล้เคียงด้านล่าง` }
 
   const title = pick(locale === 'en' ? o.title_en : o.title_th) || fillTemplate(type ? t.title_type : t.title_all, v)
   const description = pick(locale === 'en' ? o.meta_description_en : o.meta_description)
