@@ -69,28 +69,6 @@ interface DbListing {
   contacts_30d?: number | null
 }
 
-interface Submission {
-  id: string
-  title: string
-  type: string
-  status: 'pending' | 'pending_payment' | 'approved' | 'rejected'
-  contact_name: string | null
-  contact_email: string | null
-  contact_phone: string | null
-  address: string | null
-  district: string | null
-  province: string | null
-  price: number | null
-  bedrooms: number | null
-  bathrooms: number | null
-  size: number | null
-  rental_term: string | null
-  package_type: string | null
-  expires_at: string | null
-  created_at: string
-}
-
-
 // ── Constants ────────────────────────────────────────────────────────────────
 const TYPE_LABELS: Record<string, string> = {
   condo: 'คอนโด', apartment: 'อพาร์ทเม้นท์', house: 'บ้าน',
@@ -1368,166 +1346,27 @@ function PublishedTab({ refreshKey, statusFilter, onStatusFilter, counts, onCoun
   )
 }
 
-// ── Submissions Tab ───────────────────────────────────────────────────────────
-function SubmissionsTab() {
-  const [items,  setItems]  = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter,  setFilter]  = useState('')
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (filter) params.set('status', filter)
-      // /api/dashboard/submissions is behind requireAdmin. Without this header
-      // it answers 401 and the empty catch below turns that into "no
-      // submissions" — the same failure that made the overview show zeros.
-      const { data: { session } } = await createBrowserClient().auth.getSession()
-      const r = await fetch(`/api/dashboard/submissions?${params}`, {
-        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d?.error || `โหลดคำขอไม่สำเร็จ (${r.status})`)
-      setItems(d.data ?? [])
-    } catch (e) {
-      console.error('[submissions]', e)
-    }
-    setLoading(false)
-  }, [filter])
-
-  useEffect(() => { load() }, [load])
-
-  async function updateStatus(id: string, status: string) {
-    setActionLoading(id + status)
-    // Also guarded by requireAdmin. Without the token this silently did
-    // nothing: the PATCH was rejected, load() re-read unchanged data, and the
-    // row simply snapped back to its old status with no error shown.
-    const { data: { session } } = await createBrowserClient().auth.getSession()
-    const r = await fetch(`/api/dashboard/submissions/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
-      body: JSON.stringify({ status }),
-    })
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}))
-      alert(d?.error || `เปลี่ยนสถานะไม่สำเร็จ (${r.status})`)
-    }
-    await load()
-    setActionLoading(null)
-  }
-
-  const STATUS_OPTS = [
-    { value: '', label: 'ทั้งหมด' }, { value: 'pending', label: 'รออนุมัติ' },
-    { value: 'pending_payment', label: 'รอชำระ' },
-    { value: 'approved', label: 'อนุมัติแล้ว' }, { value: 'rejected', label: 'ปฏิเสธ' },
-  ]
-  const STATUS_CHIP: Record<string, { kind: keyof typeof CHIP; label: string }> = {
-    pending_payment: { kind: 'mute', label: 'รอชำระ' },
-    pending:  { kind: 'warn', label: 'รออนุมัติ' },
-    approved: { kind: 'ok',   label: 'อนุมัติแล้ว' },
-    rejected: { kind: 'bad',  label: 'ปฏิเสธ' },
-  }
-  const PKG_LABEL: Record<string, string> = {
-    free_trial: 'ทดลองฟรี', basic: 'Basic', standard: 'Standard', premium: 'Premium',
-  }
-  const grid: React.CSSProperties = { display: 'grid', gap: 16, gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr) 120px 110px 110px 300px' }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '14px 0 6px' }}>
-        {STATUS_OPTS.map(o => (
-          <button key={o.value} type="button" onClick={() => setFilter(o.value)} style={pillStyle(filter === o.value)}>{o.label}</button>
-        ))}
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ minWidth: 900 }}>
-          <div style={{ ...grid, fontSize: 12, color: C.muted, padding: '10px 0 8px', borderBottom: `1px solid ${C.line}` }}>
-            <span>ประกาศ</span><span>ผู้ส่ง</span><span>แพ็กเกจ</span><span>ส่งเมื่อ</span><span>สถานะ</span><span />
-          </div>
-          {loading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>กำลังโหลด…</div>
-          ) : items.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: C.muted, fontSize: 14 }}>ยังไม่มีคำขอใหม่</div>
-          ) : items.map(item => {
-            const st = STATUS_CHIP[item.status] ?? STATUS_CHIP.pending
-            const busy = !!actionLoading
-            return (
-              <div key={item.id} style={{ ...grid, alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${C.line2}`, fontSize: 14 }}>
-                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title || '—'}</span>
-                  <span style={{ fontSize: 12, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {[TYPE_LABELS[item.type] ?? item.type, item.district, item.price ? `฿${item.price.toLocaleString()}` : ''].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-                <span style={{ fontSize: 13, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {[item.contact_name, item.contact_email].filter(Boolean).join(' · ') || '—'}
-                </span>
-                <span style={{ fontSize: 13 }}>{PKG_LABEL[item.package_type ?? 'free_trial'] ?? item.package_type}</span>
-                <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
-                <span><Chip kind={st.kind}>{st.label}</Chip></span>
-                <span style={{ display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'flex-end' }}>
-                  {item.status === 'pending_payment' ? (
-                    <span style={{ fontSize: 13, color: C.faint, whiteSpace: 'nowrap' }}>รอเจ้าของชำระ</span>
-                  ) : item.status === 'approved' ? (
-                    <button type="button" onClick={() => updateStatus(item.id, 'approved')} disabled={busy} title="สร้างหรืออัปเดตประกาศบนเว็บไซต์อีกครั้ง" style={SMALL_BTN}>เผยแพร่อีกครั้ง</button>
-                  ) : (
-                    <button type="button" onClick={() => updateStatus(item.id, 'approved')} disabled={busy} style={PRIMARY_SMALL}>
-                      {actionLoading === item.id + 'approved' ? 'กำลังบันทึก…' : 'อนุมัติและเผยแพร่'}
-                    </button>
-                  )}
-                  {item.status !== 'rejected' && (
-                    <button type="button" onClick={() => updateStatus(item.id, 'rejected')} disabled={busy} style={{ ...LINK_BTN, color: DANGER }}>ปฏิเสธ</button>
-                  )}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-      <p style={{ margin: '14px 0 0', fontSize: 13, color: C.muted }}>
-        ประกาศที่ส่งจากฟอร์ม /ลงประกาศ และชำระแพ็กเกจแล้วจะเผยแพร่อัตโนมัติ รายการที่อยู่ตรงนี้คือรายการที่แอดมินต้องตรวจก่อน เช่น ทดลองฟรี
-      </p>
-    </div>
-  )
-}
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
-  const [tab,        setTab]        = useState<'published' | 'queue'>('published')
   const [showCreate, setShowCreate] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [statusFilter, setStatusFilter] = useState<StateFilter>('')
   const [counts, setCounts] = useState<Record<ListingState | 'all', number>>({ all: 0, active: 0, hidden: 0, soon: 0, expired: 0 })
-  const [pending, setPending] = useState<number | null>(null)
-
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { data: { session } } = await createBrowserClient().auth.getSession()
-        const r = await fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` } })
-        if (r.ok) setPending((await r.json()).pending ?? 0)
-      } catch { /* the card shows a dash */ }
-    })()
-  }, [refreshKey])
 
   const cards: { label: string; num: number | null; sub: string; go: () => void }[] = [
-    { label: 'เผยแพร่อยู่', num: counts.active, sub: 'แสดงบนเว็บตอนนี้', go: () => { setTab('published'); setStatusFilter('active') } },
-    { label: 'ซ่อนอยู่', num: counts.hidden, sub: 'ฉบับร่างหรือถูกซ่อนไว้', go: () => { setTab('published'); setStatusFilter('hidden') } },
-    { label: 'ใกล้หมดอายุ', num: counts.soon, sub: 'ภายใน 7 วัน', go: () => { setTab('published'); setStatusFilter('soon') } },
-    { label: 'รอตรวจสอบ', num: pending, sub: 'คำขอจากฟอร์ม', go: () => setTab('queue') },
+    // The old fourth card counted the submission queue from the retired
+    // public form; listings auto-publish on payment, so nothing waits there.
+    { label: 'เผยแพร่อยู่', num: counts.active, sub: 'แสดงบนเว็บตอนนี้', go: () => setStatusFilter('active') },
+    { label: 'ซ่อนอยู่', num: counts.hidden, sub: 'ฉบับร่างหรือถูกซ่อนไว้', go: () => setStatusFilter('hidden') },
+    { label: 'ใกล้หมดอายุ', num: counts.soon, sub: 'ภายใน 7 วัน', go: () => setStatusFilter('soon') },
+    { label: 'หมดอายุ', num: counts.expired, sub: 'ต่ออายุเพื่อแสดงอีกครั้ง', go: () => setStatusFilter('expired') },
   ]
-  const tabStyle = (on: boolean): React.CSSProperties => ({
-    padding: '12px 0', background: 'none', border: 'none', borderBottom: `2px solid ${on ? C.green : 'transparent'}`,
-    color: on ? C.green : C.muted, fontWeight: on ? 500 : 400, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-  })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 600, margin: 0, color: C.green }}>จัดการประกาศ</h1>
-          <span style={{ fontSize: 13, color: C.muted }}>ประกาศทั้งหมดบนเว็บ และคำขอลงประกาศที่ส่งมาจากฟอร์ม</span>
+          <span style={{ fontSize: 13, color: C.muted }}>ประกาศทั้งหมดบนเว็บ</span>
         </div>
         <button type="button" onClick={() => setShowCreate(true)} style={{ ...PRIMARY_SMALL, padding: '9px 16px', fontSize: 14 }}>
           เพิ่มประกาศใหม่
@@ -1545,19 +1384,13 @@ export default function ListingsPage() {
       </div>
 
       <section style={{ ...CARD, padding: '6px 22px 18px' }}>
-        <div role="tablist" style={{ display: 'flex', gap: 24, borderBottom: `1px solid ${C.line}` }}>
-          <button type="button" role="tab" aria-selected={tab === 'published'} onClick={() => setTab('published')} style={tabStyle(tab === 'published')}>ประกาศ {counts.all}</button>
-          <button type="button" role="tab" aria-selected={tab === 'queue'} onClick={() => setTab('queue')} style={tabStyle(tab === 'queue')}>คำขอจากฟอร์ม{pending ? ` ${pending}` : ''}</button>
-        </div>
-        {tab === 'published'
-          ? <PublishedTab refreshKey={refreshKey} statusFilter={statusFilter} onStatusFilter={setStatusFilter} counts={counts} onCounts={setCounts} />
-          : <SubmissionsTab />}
+        <PublishedTab refreshKey={refreshKey} statusFilter={statusFilter} onStatusFilter={setStatusFilter} counts={counts} onCounts={setCounts} />
       </section>
 
       {showCreate && (
         <CreateDrawer
           onClose={() => setShowCreate(false)}
-          onCreated={() => { setRefreshKey(k => k + 1); setTab('published') }}
+          onCreated={() => setRefreshKey(k => k + 1)}
         />
       )}
     </div>

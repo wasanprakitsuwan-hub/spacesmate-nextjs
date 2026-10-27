@@ -28,7 +28,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [authReady, setAuthReady] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [userRole,  setUserRole]  = useState<'admin' | 'super_admin'>('admin')
-  const [pendingBadge, setPendingBadge] = useState(0)
 
   useEffect(() => {
     const supabase = createBrowserClient()
@@ -64,25 +63,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return () => subscription.unsubscribe()
   }, [router])
-
-  useEffect(() => {
-    if (!authReady) return
-    // The sidebar's pending badge. Without the token this was a 401 and the
-    // badge silently stayed at 0 forever — so a queue of submissions waiting for
-    // review looked like an empty one.
-    ;(async () => {
-      try {
-        const { data: { session } } = await createBrowserClient().auth.getSession()
-        if (!session) return
-        const r = await fetch('/api/dashboard/stats', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-        if (!r.ok) return
-        const d = await r.json()
-        setPendingBadge(d.pending ?? 0)
-      } catch { /* a missing badge is not worth interrupting the page for */ }
-    })()
-  }, [authReady])
 
   async function handleLogout() {
     const supabase = createBrowserClient()
@@ -129,7 +109,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {NAV.filter(n => !('superAdminOnly' in n && n.superAdminOnly) || userRole === 'super_admin').map(n => {
           const isActive = n.exact ? pathname === n.href : (pathname ?? '').startsWith(n.href)
-          const badge = n.href === '/dashboard/listings' ? pendingBadge : 0
           return (
             <Link key={n.href} href={n.href} aria-current={isActive ? 'page' : undefined} style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -140,9 +119,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               fontWeight: isActive ? 500 : 400,
             }}>
               <span style={{ flex: 1 }}>{n.label}</span>
-              {badge > 0 && (
-                <span style={{ background: C.white, color: C.green, fontSize: 11.5, fontWeight: 600, minWidth: 20, height: 20, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>{badge}</span>
-              )}
             </Link>
           )
         })}

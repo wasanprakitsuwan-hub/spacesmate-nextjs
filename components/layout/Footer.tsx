@@ -17,14 +17,10 @@ import { rentPath, rentPlaceLabel, type RentPlace } from '@/lib/rent-slugs'
 import { STATIONS } from '@/lib/stations'
 import { LANDMARKS } from '@/lib/landmarks'
 import { C, WRAP } from '@/lib/ui'
+import { useCompany } from '@/components/layout/SiteInfoContext'
+import { lineUrl, companyAddress } from '@/lib/site-config'
 
 const MUTED = '#cfe3d9'   // footer text on green, 9.6:1
-const SOCIALS = [
-  { label: 'LINE @spacesmate', href: 'https://line.me/R/ti/p/@spacesmate' },
-  { label: 'Facebook', href: 'https://www.facebook.com/spacesmateTH' },
-  { label: 'Instagram', href: 'https://www.instagram.com/spacesmate/' },
-  { label: 'TikTok', href: 'https://www.tiktok.com/@spacesmate' },
-]
 
 // A crawlable link to a handful of the busiest rent-near pages on every page of
 // the site. Fixed rather than counted: the footer is a client component, and
@@ -43,6 +39,14 @@ const FOOTER_PLACES: RentPlace[] = [
 export default function Footer() {
   const locale = useLocale()
   const t = SITE_T[locale]
+  // Links and address come from Dashboard › ตั้งค่า › ข้อมูลบริษัท.
+  const company = useCompany()
+  const SOCIALS = [
+    { label: `LINE ${company.line_oa}`, href: lineUrl(company) },
+    { label: 'Facebook', href: company.facebook },
+    { label: 'Instagram', href: company.instagram },
+    { label: 'TikTok', href: company.tiktok },
+  ]
   const href = (p: string) => localeHref(p, locale)
   const col = (heading: string, items: { label: string; href: string }[], extra?: React.ReactNode) => (
     <nav style={{ flex: '1 1 150px', display: 'flex', flexDirection: 'column', gap: 6 }} aria-label={heading}>
@@ -99,7 +103,7 @@ export default function Footer() {
             do (Founder, 25 Oct 2026). The cookie link stays on every page:
             withdrawing consent must be as easy as giving it (PDPA s.19). */}
         <div style={{ paddingTop: 18, borderTop: '1px solid rgba(207,227,217,0.2)', display: 'flex', flexWrap: 'wrap', gap: '10px 24px', justifyContent: 'space-between' }}>
-          <span>{t.footerRights} · {t.footerAddress}</span>
+          <span>{t.footerRights} · {companyAddress(company, locale)}</span>
           <span style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <Link href={href('/privacy')} style={{ color: MUTED }}>{t.footerPrivacy}</Link>
             <Link href={href('/terms')} style={{ color: MUTED }}>{t.footerTerms}</Link>

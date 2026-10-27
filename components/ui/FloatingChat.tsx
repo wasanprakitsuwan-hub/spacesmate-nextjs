@@ -1,9 +1,13 @@
 'use client'
 
+import { useCompany } from '@/components/layout/SiteInfoContext'
+import { lineUrl } from '@/lib/site-config'
+
 export default function FloatingChat() {
+  const company = useCompany()
   return (
     <a
-      href="https://line.me/R/ti/p/@spacesmate"
+      href={lineUrl(company)}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#06C755] rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center"

@@ -11,6 +11,8 @@
 //   2. /api/owner/listings  → POST (owner dashboard create listing)
 //   3. /api/submit-listing  → POST (legacy direct-submit route)
 
+import { getEmailTemplates, fillSubject, type EmailKey } from '@/lib/site-settings'
+
 const RESEND_URL    = 'https://api.resend.com/emails'
 const FOUNDER_EMAIL = 'wasan.prakitsuwan@gmail.com'
 
@@ -48,6 +50,17 @@ async function sendEmail(to: string[], subject: string, html: string): Promise<b
     console.error('[email] fetch error:', err)
     return false
   }
+}
+
+/**
+ * Subject for an owner email, from Dashboard › ตั้งค่า › แจ้งเตือนอีเมล, or
+ * null when that email is switched off there. Founder alerts are not on that
+ * screen and always send.
+ */
+async function ownerSubject(id: EmailKey, vars: Record<string, string> = {}): Promise<string | null> {
+  const t = (await getEmailTemplates()).find(x => x.id === id)
+  if (!t || !t.enabled) return null
+  return fillSubject(t.subject, vars)
 }
 
 // ── Shared data shape ─────────────────────────────────────────────────────────
@@ -188,6 +201,8 @@ export async function sendNewListingAlert(data: ListingEmailData): Promise<void>
 
 export async function sendListingConfirmation(data: ListingEmailData): Promise<void> {
   if (!data.contactEmail) return
+  const subject = await ownerSubject('listing_live', { title: data.title || 'SpacesMate' })
+  if (!subject) return
 
   const html = layout(`
   <!-- Header -->
@@ -248,7 +263,7 @@ export async function sendListingConfirmation(data: ListingEmailData): Promise<v
 
   await sendEmail(
     [data.contactEmail],
-    `ประกาศของคุณเผยแพร่แล้ว — ${data.title || 'SpacesMate'}`,
+    subject,
     html
   )
 }
@@ -268,6 +283,8 @@ export async function sendPaymentConfirmation(data: PaymentEmailData): Promise<v
   if (!data.contactEmail) return
 
   const pkgLabel   = data.packageType ? (PACKAGE_LABEL[data.packageType] ?? data.packageType) : '—'
+  const subject    = await ownerSubject('payment_success', { package: pkgLabel })
+  if (!subject) return
   const amountStr  = data.amount ? `฿${data.amount.toLocaleString()}` : '—'
   const expiryStr  = data.expiresAt
     ? new Date(data.expiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -340,7 +357,7 @@ export async function sendPaymentConfirmation(data: PaymentEmailData): Promise<v
 
   await sendEmail(
     [data.contactEmail],
-    `ชำระเงินสำเร็จ — SpacesMate ${pkgLabel}`,
+    subject,
     html
   )
 }
@@ -358,6 +375,8 @@ export interface ExpiryEmailData {
 
 export async function sendPackageExpiringAlert(data: ExpiryEmailData): Promise<void> {
   if (!data.contactEmail) return
+  const subject = await ownerSubject('expiring_7d')
+  if (!subject) return
 
   const pkgLabel  = data.packageType ? (PACKAGE_LABEL[data.packageType] ?? data.packageType) : 'แพ็กเกจของคุณ'
   const expiryStr = new Date(data.expiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -413,7 +432,7 @@ export async function sendPackageExpiringAlert(data: ExpiryEmailData): Promise<v
 
   await sendEmail(
     [data.contactEmail],
-    `แพ็กเกจของคุณจะหมดอายุใน 7 วัน — SpacesMate`,
+    subject,
     html
   )
 }
@@ -422,6 +441,8 @@ export async function sendPackageExpiringAlert(data: ExpiryEmailData): Promise<v
 
 export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<void> {
   if (!data.contactEmail) return
+  const subject = await ownerSubject('expired')
+  if (!subject) return
 
   const pkgLabel  = data.packageType ? (PACKAGE_LABEL[data.packageType] ?? data.packageType) : 'แพ็กเกจของคุณ'
   const expiryStr = new Date(data.expiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -478,7 +499,7 @@ export async function sendPackageExpiredAlert(data: ExpiryEmailData): Promise<vo
 
   await sendEmail(
     [data.contactEmail],
-    `แพ็กเกจหมดอายุแล้ว — ประกาศของคุณถูกซ่อนชั่วคราว`,
+    subject,
     html
   )
 }

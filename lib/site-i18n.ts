@@ -138,7 +138,6 @@ export const SITE_T = {
     footerOwnerLogin: 'เข้าสู่ระบบเจ้าของ',
     footerGuide: 'คู่มือการลงประกาศ',
     // Public address. The registered one (Rama IV) stays on legal documents.
-    footerAddress: 'ซัมเมอร์ ฮิลล์ ห้อง 3026, 1106 ถนนสุขุมวิท แขวงพระโขนง เขตคลองเตย กรุงเทพฯ 10110',
   },
 
   en: {
@@ -251,7 +250,6 @@ export const SITE_T = {
     footerOwners: 'Owners',
     footerOwnerLogin: 'Owner sign-in',
     footerGuide: 'Listing guide',
-    footerAddress: 'Summer Hill, Room 3026, 1106 Sukhumvit Road, Phra Khanong, Khlong Toei, Bangkok 10110',
   },
 } as const
 

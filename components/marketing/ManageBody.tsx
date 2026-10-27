@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useCompany } from '@/components/layout/SiteInfoContext'
+import { lineUrl } from '@/lib/site-config'
 import { trackEvent } from '@/lib/analytics'
 import { C, RADIUS, WRAP, btnStyle, h2Style } from '@/lib/ui'
 import Icon, { type IconName } from '@/components/ui/Icon'
@@ -53,6 +55,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  */
 export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
   const t = MANAGE_T[locale]
+  const company = useCompany()
   const [sent, setSent]       = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
@@ -127,7 +130,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
           <p style={{ fontSize: 17, color: C.ink, lineHeight: 1.75, margin: '0 0 24px', maxWidth: 600 }}>{t.heroSub}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <a href="#enquiry" className="sm-btn-primary" style={{ ...btnStyle('primary'), gap: 8 }}>{t.heroCta}<Icon name="arrowDown" size={16} color={C.white} strokeWidth={2} /></a>
-            <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" className="sm-btn-ghost" style={{ ...btnStyle('ghost'), color: C.green, gap: 8 }}><Icon name="chat" size={18} color={C.green} />{t.heroLine}</a>
+            <a href={lineUrl(company)} target="_blank" rel="noopener noreferrer" className="sm-btn-ghost" style={{ ...btnStyle('ghost'), color: C.green, gap: 8 }}><Icon name="chat" size={18} color={C.green} />{t.heroLine}</a>
           </div>
         </div>
         <figure style={{ flex: '1 1 420px', minWidth: 0, margin: 0, position: 'relative' }}>
@@ -304,7 +307,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
                 {error && (
                   <p role="alert" style={{ margin: '14px 0 0', fontSize: 13.5, color: '#b42318', background: '#fef3f2', border: '1px solid #fecdca', borderRadius: RADIUS, padding: '10px 12px' }}>
                     {error}{sendFailed && (
-                      <>{' '}<a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>@spacesmate</a></>
+                      <>{' '}<a href={lineUrl(company)} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>{company.line_oa}</a></>
                     )}
                   </p>
                 )}

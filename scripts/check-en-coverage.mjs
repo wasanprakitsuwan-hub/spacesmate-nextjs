@@ -60,6 +60,7 @@ const ALLOWED = new Map([
   ['lib/guide-content.ts',    'DEFAULT_GUIDE and GUIDE_UI hold both th and en; the page picks by locale'],
   ['lib/guide-data.ts',       'DEFAULT_GUIDE holds both th and en; the page picks by locale'],
   ['lib/promo.ts',            'DEFAULT_PROMO holds both th and en wording; the page picks by locale'],
+  ['lib/site-config.ts',      'settings defaults hold both th and en values; consumers pick by locale, email/admin labels are Thai-only'],
   ['lib/faq-data.ts',         'the th half of the dictionary'],
   ['lib/constants.ts',        'area keywords and Thai place names'],
   ['components/listing/SharedListingForm.tsx', 'FACING / OTHER_CHARGES / TYPE_LABEL values + Thai-only dashboard exports'],

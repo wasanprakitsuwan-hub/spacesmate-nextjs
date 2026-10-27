@@ -7,6 +7,7 @@ import { districtLabel, provinceLabel } from '@/lib/geo-i18n'
 import { useEffect, useRef, useState } from 'react'
 import { ADMIN_PACKAGES, computeExpiry, MAX_IMAGES_ANY_PACKAGE, visibleImageCount } from '@/lib/packages'
 import { AMENITY_SECTIONS, DEFAULT_AMENITIES, bySection, fetchAmenities, type Amenity } from '@/lib/amenities'
+import { DEFAULT_PROPERTY_TYPES, fetchPropertyTypes, type SiteType } from '@/lib/site-config'
 import BuildingAutocomplete from '@/components/listing/BuildingAutocomplete'
 import { createBrowserClient } from '@/lib/supabase'
 import RichEditor from '@/components/RichEditor'
@@ -1184,6 +1185,11 @@ export function ListingFormFields({
   // Editable in Settings; defaults until it loads.
   const [amenityList, setAmenityList] = useState<Amenity[]>(DEFAULT_AMENITIES)
   useEffect(() => { fetchAmenities().then(setAmenityList) }, [])
+  // Which types are offered, and their names, come from Settings too. A
+  // listing already saved as a type that has since been turned off still
+  // shows it, so editing that listing does not silently change its type.
+  const [typeList, setTypeList] = useState<SiteType[]>(DEFAULT_PROPERTY_TYPES)
+  useEffect(() => { fetchPropertyTypes().then(setTypeList) }, [])
 
   const g2: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }
 
@@ -1220,13 +1226,10 @@ export function ListingFormFields({
         <div style={{ marginBottom: 14 }}>
           <label style={SLBL}>{t.propertyType} *</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {[
-              { value: 'condo',     icon: 'apartment',      label: t.typeCondo },
-              { value: 'apartment', icon: 'domain',         label: t.typeApartment },
-              { value: 'house',     icon: 'home',           label: t.typeHouse },
-              { value: 'office',    icon: 'corporate_fare', label: t.typeOffice },
-              { value: 'coworking', icon: 'hub',            label: 'Co-Working' },
-            ].map(o => (
+            {typeList
+              .filter(o => o.active || o.value === form.property_type)
+              .map(o => ({ value: o.value, label: locale === 'en' ? o.name_en : o.name_th }))
+              .map(o => (
               <button key={o.value} type="button" onClick={() => onChange('property_type', o.value)}
                 style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
                   border: `1.5px solid ${form.property_type === o.value ? '#02402e' : '#eef0ef'}`,
