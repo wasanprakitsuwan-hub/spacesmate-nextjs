@@ -28,6 +28,8 @@
 import Script from 'next/script'
 import { Prompt } from 'next/font/google'
 import ConditionalSiteLayout from '@/components/layout/ConditionalSiteLayout'
+import { SiteInfoProvider } from '@/components/layout/SiteInfoContext'
+import { getCompanyInfo } from '@/lib/site-settings'
 import { OrganizationLd, WebSiteLd } from '@/components/seo/JsonLd'
 import Analytics from '@/components/consent/Analytics'
 import ConsentBanner from '@/components/consent/ConsentBanner'
@@ -41,20 +43,25 @@ const prompt = Prompt({
   preload: true,
 })
 
-export default function RootShell({
+export default async function RootShell({
   lang,
   children,
 }: {
   lang: 'th' | 'en'
   children: React.ReactNode
 }) {
+  // Cached (lib/site-settings) and revalidated when Settings saves, so the
+  // prerendered pages stay static between edits.
+  const company = await getCompanyInfo()
   return (
     <html lang={lang} className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
-        <OrganizationLd locale={lang} />
+        <OrganizationLd locale={lang} company={company} />
         <WebSiteLd locale={lang} />
 
-        <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
+        <SiteInfoProvider company={company}>
+          <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
+        </SiteInfoProvider>
 
         {/* Tracking now lives behind consent.
             The GTM snippet and its <noscript> iframe used to sit here and fired

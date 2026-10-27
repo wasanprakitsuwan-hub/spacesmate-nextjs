@@ -3,6 +3,10 @@ import { createServerClient } from '@/lib/supabase'
 import { requireAdmin, isErr } from '@/lib/auth-guard'
 import { revalidateTag } from 'next/cache'
 import { LISTING_GUIDE_KEY, GUIDE_TAG } from '@/lib/guide-data'
+import { SITE_SETTINGS_TAG } from '@/lib/site-config'
+
+// Keys read through lib/site-settings, which caches them under one tag.
+const SITE_KEYS = new Set(['company_info', 'email_templates', 'property_types'])
 
 // ── GET — fetch one setting by ?key= or all settings ─────────────────────────
 /**
@@ -67,6 +71,8 @@ export async function PATCH(req: NextRequest) {
     if (error) throw error
     // The public guide caches the saved text; show an edit straight away.
     if (key === LISTING_GUIDE_KEY) revalidateTag(GUIDE_TAG)
+    // Same for the footer, contact page, emails and listing form.
+    if (SITE_KEYS.has(key)) revalidateTag(SITE_SETTINGS_TAG)
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     // Supabase PostgrestError is NOT an Error instance — it has .message/.details/.hint/.code

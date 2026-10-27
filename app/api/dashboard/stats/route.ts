@@ -3,25 +3,19 @@ import { requireAdmin, isErr } from '@/lib/auth-guard'
 import { createServerClient } from '@/lib/supabase'
 
 /**
- * Dashboard figures.
+ * Dashboard figures, all from `properties` — the live listings.
  *
- * TWO POPULATIONS, KEPT APART
- *   `properties`  — real live listings on the site. This is the business.
- *   `submissions` — the queue from the public /ลงประกาศ form, awaiting review.
- *
- *   These used to be mixed inside a single card: the "ประกาศตามประเภท" heading
- *   showed a submissions total above bars drawn from properties, so the bars
- *   never added up to the number printed beside them. Anything derived from
- *   properties now lives in `listings`, anything from the review queue in
- *   `queue`, and no card reads from both.
+ * The overview used to report a second population too: `submissions`, the
+ * review queue of the retired public /ลงประกาศ form. Listings now publish
+ * themselves on payment, so that queue only held old rejected rows and its
+ * "รออนุมัติ" counts described a process the site no longer has. Removed
+ * 27 Oct 2026 along with /dashboard/enquiries.
  *
  * ERRORS ARE NOT ZEROS
  *   supabase-js does not throw on a failed query — it returns { data, error }.
- *   The previous version destructured only `count`, so a permission error or a
- *   renamed column produced count = null, became 0 through `?? 0`, and was
- *   reported to the dashboard as fact. Every query below is checked, and one
- *   failure fails the whole response. A dashboard that cannot read its data
- *   should say so, not quietly claim the business has nothing in it.
+ *   Every query below is checked, and one failure fails the whole response. A
+ *   dashboard that cannot read its data should say so, not quietly claim the
+ *   business has nothing in it.
  */
 
 /** Unwrap a Supabase result, turning a returned error into a thrown one. */
@@ -40,91 +34,51 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+    const now = Date.now()
+    // "This month" is the Bangkok calendar month, as on the revenue page.
+    const bkk = new Date(now + 7 * 3600000)
+    const monthStart = Date.UTC(bkk.getUTCFullYear(), bkk.getUTCMonth(), 1) - 7 * 3600000
 
-    // ── The review queue (submissions) ───────────────────────────────────────
-    const [qTotal, qPending, qApproved, qRejected, qThisMonth, qTypes, qRecent] = await Promise.all([
-      supabase.from('submissions').select('*', { count: 'exact', head: true }),
-      supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-      supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'rejected'),
-      supabase.from('submissions').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
-      supabase.from('submissions').select('type'),
-      supabase.from('submissions')
-        .select('id, title, type, status, contact_name, created_at, updated_at')
-        .order('created_at', { ascending: false })
-        .limit(6),
-    ])
-
-    must('submissions total',    qTotal)
-    must('submissions pending',  qPending)
-    must('submissions approved', qApproved)
-    must('submissions rejected', qRejected)
-    must('submissions month',    qThisMonth)
-    must('submissions types',    qTypes)
-    must('submissions recent',   qRecent)
-
-    // ── The live site (properties) ───────────────────────────────────────────
-    // One read, counted in code. Three separate count queries over the same
-    // rows would be three chances for the numbers to disagree with each other.
-    const live = must('properties', await supabase
+    // One read, counted in code, so the numbers cannot disagree with each other.
+    const all = must('properties', await supabase
       .from('properties')
-      .select('id, property_type, landlord_id, updated_at, created_at')
-      .eq('listing_status', 'active'))
+      .select('id, slug, title_th, property_type, listing_status, landlord_id, expires_at, created_at')
+      .order('created_at', { ascending: false }))
 
-    const rows = (live.data ?? []) as Array<{
+    const rows = (all.data ?? []) as Array<{
+      id: string
+      slug: string | null
+      title_th: string | null
       property_type: string | null
+      listing_status: string | null
       landlord_id: string | null
-      updated_at: string | null
+      expires_at: string | null
       created_at: string | null
     }>
 
-    // DB stores lowercase; the dashboard renders capitalised keys.
-    const DISPLAY: Record<string, string> = {
-      condo: 'Condo', apartment: 'Apartment', house: 'House',
-      office: 'Office', coworking: 'Coworking',
-    }
-
     const listingsByType: Record<string, number> = {}
     const owners = new Set<string>()
-    let staleCount = 0
+    let active = 0, expiringSoon = 0, newThisMonth = 0
 
     for (const r of rows) {
-      const key = DISPLAY[String(r.property_type ?? '').toLowerCase()] ?? 'Other'
+      const exp = r.expires_at ? new Date(r.expires_at).getTime() : null
+      const live = r.listing_status === 'active' && (exp === null || exp > now)
+      if (r.created_at && new Date(r.created_at).getTime() >= monthStart) newThisMonth++
+      if (!live) continue
+      active++
+      const key = String(r.property_type ?? '').toLowerCase() || 'other'
       listingsByType[key] = (listingsByType[key] || 0) + 1
-
       if (r.landlord_id) owners.add(r.landlord_id)
-
-      // Never edited since creation still counts as stale once it is old
-      // enough — falling back to created_at stops a listing that was posted and
-      // then forgotten from looking permanently fresh.
-      const touched = r.updated_at ?? r.created_at
-      if (touched && new Date(touched) < sixMonthsAgo) staleCount++
-    }
-
-    const queueByType: Record<string, number> = {}
-    for (const r of (qTypes.data ?? []) as Array<{ type: string | null }>) {
-      const t = r.type || 'Other'
-      queueByType[t] = (queueByType[t] || 0) + 1
+      if (exp !== null && exp - now < 7 * 86400000) expiringSoon++
     }
 
     return NextResponse.json({
-      // Live listings
-      activeListings: rows.length,
+      activeListings: active,
       listingsByType,
-      staleCount,
       uniqueUsers: owners.size,
-
-      // Review queue
-      total:     qTotal.count ?? 0,
-      pending:   qPending.count ?? 0,
-      approved:  qApproved.count ?? 0,
-      rejected:  qRejected.count ?? 0,
-      thisMonth: qThisMonth.count ?? 0,
-      byType:    queueByType,
-      recentActivity: qRecent.data ?? [],
+      expiringSoon,
+      newThisMonth,
+      recentListings: rows.slice(0, 6),
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

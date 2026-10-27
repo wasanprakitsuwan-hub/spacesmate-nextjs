@@ -5,10 +5,14 @@ import { CONTACT_T, type Locale } from '@/lib/pages-i18n'
 import { trackEvent } from '@/lib/analytics'
 import Link from '@/components/ui/LocaleLink'
 import { C, RADIUS, WRAP, btnStyle, h2Style } from '@/lib/ui'
+import { useCompany } from '@/components/layout/SiteInfoContext'
+import { lineUrl, telHref, companyAddress } from '@/lib/site-config'
 
 
 export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
   const t = CONTACT_T[locale]
+  // LINE, email, phone and address from Dashboard › ตั้งค่า › ข้อมูลบริษัท.
+  const company = useCompany()
 
   // `value` is what gets submitted and what trackEvent records, so it stays the
   // Thai literal in both locales. Translating it would file English enquiries
@@ -76,10 +80,10 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
   const label: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: C.ink, display: 'block', marginBottom: 6 }
   const card: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: 22 }
   const channels: Array<{ k: string; v: React.ReactNode; note?: string }> = [
-    { k: 'LINE', v: <a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>@spacesmate</a>, note: t.lineNote },
-    { k: t.email, v: <a href="mailto:support@spacesmate.com" style={{ color: C.teal, textDecoration: 'none' }}>support@spacesmate.com</a> },
-    { k: t.phone, v: <a href="tel:020125190" style={{ color: C.teal, textDecoration: 'none' }}>02-012-5190</a> },
-    { k: t.office, v: <>{t.officeLine0}<br />{t.officeLine1} {t.officeLine2}</> },
+    { k: 'LINE', v: <a href={lineUrl(company)} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, textDecoration: 'none' }}>{company.line_oa}</a>, note: t.lineNote },
+    { k: t.email, v: <a href={`mailto:${company.email}`} style={{ color: C.teal, textDecoration: 'none' }}>{company.email}</a> },
+    { k: t.phone, v: <a href={telHref(company)} style={{ color: C.teal, textDecoration: 'none' }}>{company.phone}</a> },
+    { k: t.office, v: companyAddress(company, locale) },
     { k: t.hours, v: t.hoursValue, note: t.hoursClosed },
   ]
 
@@ -166,7 +170,7 @@ export default function ContactBody({ locale = 'th' }: { locale?: Locale }) {
                 </div>
                 {error && (
                   <p role="alert" style={{ fontSize: 13.5, color: '#b42318', margin: 0 }}>{error}{sendFailed && (
-                    <>{' '}<a href="https://line.me/R/ti/p/@spacesmate" target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>@spacesmate</a></>
+                    <>{' '}<a href={lineUrl(company)} target="_blank" rel="noopener noreferrer" style={{ color: C.teal, fontWeight: 600 }}>{company.line_oa}</a></>
                   )}</p>
                 )}
                 <button type="submit" disabled={loading} className="sm-btn-primary" style={{ ...btnStyle('primary'), width: '100%', opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}>

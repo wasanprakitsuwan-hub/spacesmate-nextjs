@@ -214,6 +214,22 @@ export async function PATCH(req: NextRequest) {
 
     // room_types passed as-is (JSONB with _type markers) — no normalisation needed
 
+    // Giving an expired listing a new package must bring it back. The daily
+    // expiry job sets listing_status = 'expired'; changing the package only
+    // rewrote expires_at, so a listing moved to the never-expiring admin
+    // package showed "ไม่จำกัด" next to a red หมดอายุ and stayed off the site.
+    // The edit form sends back the listing_status it loaded ('expired'), so
+    // that value is treated as "unchanged" here, not as a decision.
+    const newExpiry = update.expires_at
+    const renewed = 'expires_at' in update && (newExpiry === null || new Date(String(newExpiry)).getTime() > Date.now())
+    if (renewed && (update.listing_status === undefined || update.listing_status === 'expired')) {
+      const { data: current, error: readErr } = await supabase
+        .from('properties').select('listing_status').eq('id', id).single()
+      if (readErr) throw readErr
+      if (current?.listing_status === 'expired') update.listing_status = 'active'
+      else if (update.listing_status === 'expired') delete update.listing_status
+    }
+
     const { data, error } = await supabase
       .from('properties')
       .update(update)

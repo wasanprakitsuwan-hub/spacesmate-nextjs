@@ -10,6 +10,8 @@
  * read the initial HTML, and next/script may defer past that point.
  */
 
+import { DEFAULT_COMPANY_INFO, companyAddress, lineUrl, type CompanyInfo } from '@/lib/site-config'
+
 const SITE = 'https://spacesmate.com'
 
 function Ld({ data }: { data: Record<string, unknown> }) {
@@ -28,7 +30,7 @@ function Ld({ data }: { data: Record<string, unknown> }) {
  * English pages get English description and address: an English answer engine
  * quoting a Thai address is less likely to quote it at all.
  */
-export function OrganizationLd({ locale = 'th' }: { locale?: 'th' | 'en' }) {
+export function OrganizationLd({ locale = 'th', company = DEFAULT_COMPANY_INFO }: { locale?: 'th' | 'en'; company?: CompanyInfo }) {
   const en = locale === 'en'
   return (
     <Ld
@@ -37,7 +39,7 @@ export function OrganizationLd({ locale = 'th' }: { locale?: 'th' | 'en' }) {
         '@type': 'RealEstateAgent',
         '@id': `${SITE}/#organization`,
         name: 'SpacesMate',
-        legalName: 'Space Works Co., Ltd.',
+        legalName: company.name_en,
         url: en ? `${SITE}/en` : SITE,
         logo: `${SITE}/logo.png`,
         image: `${SITE}/logo.png`,
@@ -47,26 +49,19 @@ export function OrganizationLd({ locale = 'th' }: { locale?: 'th' | 'en' }) {
           : 'แพลตฟอร์มเช่าอสังหาริมทรัพย์และบริการรับบริหารอาคารในกรุงเทพฯ ' +
             'ลงประกาศห้องเช่า คอนโด อพาร์ทเม้นท์ บ้าน และออฟฟิศ',
         areaServed: { '@type': 'City', name: 'Bangkok', alternateName: 'กรุงเทพมหานคร' },
+        // Office address, email, phone and profiles from Dashboard › ตั้งค่า ›
+        // ข้อมูลบริษัท — the same values the footer and contact page show, so
+        // they cannot disagree. Not the registered address on the privacy
+        // page, which is a separate legal value.
         address: {
           '@type': 'PostalAddress',
-          // Office address. Kept in the same Thai form the contact page, terms
-          // and dashboard settings already use, so the four agree.
-          // Note this is not the registered address on the privacy page, which
-          // is a separate legal value and deliberately left alone.
-          streetAddress: en
-            ? 'Summer Hill (unit 3026), 1106 Sukhumvit Road, Phra Khanong'
-            : 'Summer Hill (unit 3026), 1106 ถนนสุขุมวิท แขวงพระโขนง',
-          addressLocality: en ? 'Khlong Toei' : 'เขตคลองเตย',
+          streetAddress: companyAddress(company, locale),
           addressRegion: en ? 'Bangkok' : 'กรุงเทพมหานคร',
-          postalCode: '10110',
           addressCountry: 'TH',
         },
-        sameAs: [
-          'https://www.facebook.com/spacesmateTH',
-          'https://www.instagram.com/spacesmate/',
-          'https://www.tiktok.com/@spacesmate',
-          'https://line.me/R/ti/p/@spacesmate',
-        ],
+        email: company.email,
+        telephone: company.phone,
+        sameAs: [company.facebook, company.instagram, company.tiktok, lineUrl(company)],
         knowsLanguage: ['th', 'en'],
       }}
     />

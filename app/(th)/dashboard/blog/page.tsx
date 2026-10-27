@@ -45,7 +45,6 @@ export default function BlogPage() {
   }
 
   const published  = posts.filter(p => p.status === 'published').length
-  const totalViews = posts.reduce((s, p) => s + p.views, 0)
   const avgSeo     = posts.length > 0 ? Math.round(posts.reduce((s, p) => s + p.seoScore, 0) / posts.length) : 0
 
   const chip = (on: boolean) => ({
@@ -64,7 +63,6 @@ export default function BlogPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 20 }}>
         <Stat value={posts.length} label="บทความทั้งหมด" />
         <Stat value={published} label="เผยแพร่แล้ว" />
-        <Stat value={totalViews.toLocaleString()} label="ยอดวิวทั้งหมด" />
         <Stat value={`${avgSeo}/100`} label="SEO เฉลี่ย" />
       </div>
 
@@ -81,7 +79,7 @@ export default function BlogPage() {
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr>{['บทความ', 'ภาษา', 'หมวดหมู่', 'สถานะ', 'SEO', 'ยอดวิว', 'วันที่', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+              <thead><tr>{['บทความ', 'ภาษา', 'หมวดหมู่', 'สถานะ', 'SEO', 'วันที่', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
               <tbody>
                 {displayed.map(post => (
                   <tr key={post.id}>
@@ -101,7 +99,6 @@ export default function BlogPage() {
                     <td style={{ ...td, color: C.muted, whiteSpace: 'nowrap' }}>{post.category}</td>
                     <td style={td}><Pill tone={STATUS_TONE[post.status]}>{STATUS_LABEL[post.status]}</Pill></td>
                     <td style={{ ...td, minWidth: 120 }}><SeoBar score={post.seoScore} /></td>
-                    <td style={{ ...td, color: C.muted }}>{post.views > 0 ? post.views.toLocaleString() : '—'}</td>
                     <td style={{ ...td, color: C.muted, fontSize: 12.5, whiteSpace: 'nowrap' }}>
                       {new Date(post.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
                     </td>

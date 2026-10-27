@@ -8,34 +8,31 @@ import { PageHead, Section, Pill, Loading } from '@/components/admin/ui'
 interface StatsData {
   activeListings: number
   listingsByType: Record<string, number>
-  total: number
-  pending: number
-  approved: number
-  rejected: number
-  thisMonth: number
-  byType: Record<string, number>
-  staleCount: number
   uniqueUsers: number
-  recentActivity: Array<{
+  expiringSoon: number
+  newThisMonth: number
+  recentListings: Array<{
     id: string
-    title: string
-    type: string
-    status: string
-    contact_name: string | null
+    slug: string | null
+    title_th: string | null
+    property_type: string | null
+    listing_status: string | null
+    expires_at: string | null
     created_at: string
-    updated_at: string | null
   }>
 }
 
+// Keys are the stored property_type values. These used to be capitalised
+// while the recent list passed raw values through, so it printed "apartment".
 const TYPE_LABELS: Record<string, string> = {
-  Apartment: 'อพาร์ทเม้นท์',
-  Condo:     'คอนโดมิเนียม',
-  House:     'บ้าน',
-  Office:    'ออฟฟิศ',
-  Coworking: 'Co-space',
+  condo:     'คอนโดมิเนียม',
+  apartment: 'อพาร์ทเม้นท์',
+  house:     'บ้าน',
+  office:    'ออฟฟิศ',
+  coworking: 'Co-Working',
 }
 
-const ALL_TYPES = ['Condo', 'Apartment', 'House', 'Office', 'Coworking']
+const ALL_TYPES = ['condo', 'apartment', 'house', 'office', 'coworking']
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -47,10 +44,13 @@ function timeAgo(iso: string) {
   return `${days} วันที่แล้ว`
 }
 
-const STATUS_COLORS: Record<string, { tone: 'amber' | 'green' | 'red'; label: string }> = {
-  pending:  { tone: 'amber', label: 'รออนุมัติ' },
-  approved: { tone: 'green', label: 'อนุมัติแล้ว' },
-  rejected: { tone: 'red',   label: 'ปฏิเสธ' },
+/** Same states as จัดการประกาศ, so a listing reads the same on both screens. */
+function stateOf(p: StatsData['recentListings'][number], now: number): { tone: 'amber' | 'green' | 'red'; label: string } {
+  const exp = p.expires_at ? new Date(p.expires_at).getTime() : null
+  if (p.listing_status === 'expired' || (exp !== null && exp < now)) return { tone: 'red', label: 'หมดอายุ' }
+  if (p.listing_status === 'draft') return { tone: 'amber', label: 'ฉบับร่าง' }
+  if (p.listing_status !== 'active') return { tone: 'amber', label: 'ซ่อนอยู่' }
+  return { tone: 'green', label: 'เผยแพร่' }
 }
 
 export default function DashboardOverview() {
@@ -98,8 +98,8 @@ export default function DashboardOverview() {
   const kpis = [
     { label: 'ประกาศที่เผยแพร่อยู่', value: stats?.activeListings ?? 0, href: '/dashboard/listings' },
     { label: 'เจ้าของที่มีประกาศ',   value: stats?.uniqueUsers ?? 0,    href: '/dashboard/users' },
-    { label: 'คำขอรอตรวจสอบ',       value: stats?.pending ?? 0,        href: '/dashboard/listings?status=pending' },
-    { label: 'คำขอเดือนนี้',          value: stats?.thisMonth ?? 0,      href: '/dashboard/listings' },
+    { label: 'ใกล้หมดอายุ (7 วัน)',   value: stats?.expiringSoon ?? 0,   href: '/dashboard/listings' },
+    { label: 'ประกาศใหม่เดือนนี้',      value: stats?.newThisMonth ?? 0,   href: '/dashboard/listings' },
   ]
   const box: React.CSSProperties = { background: C.white, border: `1px solid ${C.line}`, borderRadius: RADIUS }
 
@@ -126,7 +126,7 @@ export default function DashboardOverview() {
 
           <div className="sm-ov-2col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, marginBottom: 16 }}>
             <Section title="ประกาศตามประเภท" aside={<span style={{ fontSize: 13, color: C.muted }}>รวม {stats?.activeListings ?? 0} รายการ</span>}>
-              {/* This total must be the one the bars are drawn from (live listings, not the submissions queue). */}
+              {/* This total must be the one the bars are drawn from. */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {ALL_TYPES.map(t => {
                   const count = byType[t] ?? 0
@@ -147,15 +147,15 @@ export default function DashboardOverview() {
             </Section>
 
             <Section title="ประกาศล่าสุด" pad={false}>
-              {(stats?.recentActivity ?? []).length === 0 ? (
+              {(stats?.recentListings ?? []).length === 0 ? (
                 <p style={{ color: C.muted, fontSize: 14, margin: 0, padding: 18 }}>ยังไม่มีประกาศ</p>
-              ) : (stats?.recentActivity ?? []).slice(0, 6).map(item => {
-                const s = STATUS_COLORS[item.status] ?? STATUS_COLORS.pending
+              ) : (stats?.recentListings ?? []).map(item => {
+                const s = stateOf(item, Date.now())
                 return (
                   <div key={item.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 18px', borderBottom: `1px solid ${C.line2}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, color: C.green, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '—'}</div>
-                      <div style={{ fontSize: 12.5, color: C.muted, marginTop: 2 }}>{TYPE_LABELS[item.type] ?? item.type} · {timeAgo(item.created_at)}</div>
+                      <div style={{ fontSize: 14, color: C.green, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title_th || '—'}</div>
+                      <div style={{ fontSize: 12.5, color: C.muted, marginTop: 2 }}>{TYPE_LABELS[item.property_type ?? ''] ?? item.property_type ?? '—'} · {timeAgo(item.created_at)}</div>
                     </div>
                     <Pill tone={s.tone}>{s.label}</Pill>
                   </div>
@@ -164,20 +164,6 @@ export default function DashboardOverview() {
             </Section>
           </div>
 
-          <Section title="คิวคำขอจากฟอร์มลงประกาศ">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
-              {[
-                { label: 'รออนุมัติ',   value: stats?.pending ?? 0,  link: '/dashboard/listings?status=pending' },
-                { label: 'อนุมัติแล้ว', value: stats?.approved ?? 0, link: '/dashboard/listings?status=approved' },
-                { label: 'ปฏิเสธ',     value: stats?.rejected ?? 0, link: '/dashboard/listings?status=rejected' },
-              ].map(s => (
-                <a key={s.label} href={s.link} className="sm-card" style={{ display: 'block', border: `1px solid ${C.line}`, borderRadius: RADIUS, padding: '14px 16px', textDecoration: 'none' }}>
-                  <div style={{ fontSize: 24, fontWeight: 600, color: C.green }}>{s.value}</div>
-                  <div style={{ fontSize: 13, color: C.muted }}>{s.label}</div>
-                </a>
-              ))}
-            </div>
-          </Section>
           <style>{`@media (max-width: 900px) { .sm-ov-2col { grid-template-columns: 1fr !important; } }`}</style>
         </>
       )}
