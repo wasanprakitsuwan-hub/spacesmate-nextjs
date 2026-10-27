@@ -110,11 +110,11 @@ function listingsNear(place: RentPlace, listings: RentListing[]): NearListing[] 
 /** Wording for a page with no listings yet, where {count} and {price_from} would read as nonsense. */
 const EMPTY_COPY: Record<Locale, { desc: string; intro: string }> = {
   th: {
-    desc: 'ค้นหา{subject}ใกล้{place} ในระยะ {radius} กม. ที่ SpacesMate ติดต่อเจ้าของโดยตรง ไม่มีค่านายหน้า',
+    desc: 'ค้นหา{subject}ใกล้{place} ในระยะ {radius} กม. ที่ SpacesMate ติดต่อเจ้าของโดยตรง',
     intro: 'ยังไม่มีประกาศในระยะ {radius} กม. จาก{place} ลองดูทำเลใกล้เคียงด้านล่าง หรือค้นหาด้วยระยะที่กว้างขึ้น',
   },
   en: {
-    desc: 'Find {subject} near {place}, within {radius} km, on SpacesMate. Contact owners directly, with no agent fee.',
+    desc: 'Find {subject} near {place}, within {radius} km, on SpacesMate. Contact owners directly.',
     intro: 'Nothing is listed within {radius} km of {place} yet. Try the nearby places below, or search a wider radius.',
   },
 }
@@ -252,10 +252,6 @@ function buildFaq(view: { listings: NearListing[]; placeLabel: string; type: Ren
       q: `What is the closest rental to ${placeLabel}?`,
       a: `${nearest.title_en || nearest.title_th}, about ${nearest.km < 1 ? `${Math.round(nearest.km * 1000)} m` : `${nearest.km.toFixed(1)} km`} away, from ฿${fmt(nearest.price_from)} a month.`,
     })
-    out.push({
-      q: 'Do I pay an agent fee?',
-      a: 'No. Listings on SpacesMate are posted by owners or their managers, and you contact them directly.',
-    })
   } else {
     if (prices.length) out.push({
       q: `ค่าเช่าใกล้${placeLabel} เริ่มต้นเท่าไหร่?`,
@@ -264,10 +260,6 @@ function buildFaq(view: { listings: NearListing[]; placeLabel: string; type: Ren
     out.push({
       q: `ที่พักที่ใกล้${placeLabel}ที่สุดคือที่ไหน?`,
       a: `${nearest.title_th} ห่างประมาณ ${nearest.km < 1 ? `${Math.round(nearest.km * 1000)} ม.` : `${nearest.km.toFixed(1)} กม.`} ราคาเริ่มต้น ฿${fmt(nearest.price_from)}/เดือน`,
-    })
-    out.push({
-      q: 'ต้องเสียค่านายหน้าหรือไม่?',
-      a: 'ไม่ต้อง ประกาศบน SpacesMate ลงโดยเจ้าของหรือผู้ดูแลอาคาร คุณติดต่อได้โดยตรง',
     })
   }
   return out

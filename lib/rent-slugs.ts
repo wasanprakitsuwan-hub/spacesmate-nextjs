@@ -157,16 +157,16 @@ export const DEFAULT_TEMPLATE: RentTemplate = {
     title_type: '{type} ใกล้{place}',
     desc_all: 'รวม {count} ประกาศห้องเช่า คอนโด และอพาร์ทเม้นท์ใกล้{place} ในระยะ {radius} กม. ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
     desc_type: 'รวม {count} ประกาศ{type}ใกล้{place} ในระยะ {radius} กม. ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
-    intro_all: 'ที่พักให้เช่าทุกประเภทในระยะ {radius} กม. จาก{place} เรียงจากใกล้ที่สุด ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
-    intro_type: '{type}ในระยะ {radius} กม. จาก{place} เรียงจากใกล้ที่สุด ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
+    intro_all: 'ที่พักให้เช่าทุกประเภทในระยะ {radius} กม. จาก{place} เรียงจากใกล้ที่สุด ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง',
+    intro_type: '{type}ในระยะ {radius} กม. จาก{place} เรียงจากใกล้ที่สุด ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง',
   },
   en: {
     title_all: 'Rooms, condos and apartments for rent near {place}',
     title_type: '{type} near {place}',
     desc_all: '{count} rentals within {radius} km of {place}, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
     desc_type: '{count} {type_lower} within {radius} km of {place}, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
-    intro_all: 'Every rental within {radius} km of {place}, closest first, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
-    intro_type: '{type} within {radius} km of {place}, closest first, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
+    intro_all: 'Every rental within {radius} km of {place}, closest first, from ฿{price_from}/month. Contact owners directly.',
+    intro_type: '{type} within {radius} km of {place}, closest first, from ฿{price_from}/month. Contact owners directly.',
   },
 }
 
@@ -211,16 +211,16 @@ export const DEFAULT_DISTRICT_TEMPLATE: RentTemplate = {
     title_type: 'เช่า{type_short} {place}',
     desc_all: 'รวม {count} ประกาศห้องเช่า คอนโด และอพาร์ทเม้นท์ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
     desc_type: 'รวม {count} ประกาศ{type}ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ดูรูป ราคา และติดต่อเจ้าของโดยตรงที่ SpacesMate',
-    intro_all: 'ที่พักให้เช่าทุกประเภทในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
-    intro_type: '{type}ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง ไม่มีค่านายหน้า',
+    intro_all: 'ที่พักให้เช่าทุกประเภทในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง',
+    intro_type: '{type}ในเขต{place} ราคาเริ่มต้น ฿{price_from}/เดือน ทุกประกาศติดต่อเจ้าของได้โดยตรง',
   },
   en: {
     title_all: 'Rooms, condos and apartments for rent in {place}',
     title_type: '{type_short} for rent in {place}',
     desc_all: '{count} rentals in {place}, Bangkok, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
     desc_type: '{count} {type_lower} in {place}, Bangkok, from ฿{price_from}/month. Compare photos and prices, and contact owners directly on SpacesMate.',
-    intro_all: 'Every rental in {place}, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
-    intro_type: '{type} in {place}, from ฿{price_from}/month. Contact owners directly, with no agent fee.',
+    intro_all: 'Every rental in {place}, from ฿{price_from}/month. Contact owners directly.',
+    intro_type: '{type} in {place}, from ฿{price_from}/month. Contact owners directly.',
   },
 }
 
