@@ -7,6 +7,7 @@ import { DEFAULT_PROMO, normalisePromo, type CheckoutPromo } from '@/lib/promo'
 import {
   DEFAULT_COMPANY_INFO, normaliseCompany, type CompanyInfo,
   EMAIL_TEMPLATE_INFO, normaliseEmailTemplates, type EmailTemplate,
+  DEFAULT_ALERT_EMAIL, normaliseAlertEmail,
   normalisePropertyTypes, type SiteType,
 } from '@/lib/site-config'
 
@@ -104,6 +105,7 @@ const inputStyle: React.CSSProperties = {
 
 function EmailNotifications() {
   const [templates, setTemplates] = useState<EmailTemplate[]>(normaliseEmailTemplates(null))
+  const [alertEmail, setAlertEmail] = useState(DEFAULT_ALERT_EMAIL)
   const [saved, setSaved]         = useState(false)
   const [saving, setSaving]       = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -111,6 +113,9 @@ function EmailNotifications() {
   useEffect(() => {
     loadSetting<unknown>('email_templates')
       .then(data => setTemplates(normaliseEmailTemplates(data)))
+      .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
+    loadSetting<unknown>('alert_email')
+      .then(data => setAlertEmail(normaliseAlertEmail(data)))
       .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
@@ -121,7 +126,15 @@ function EmailNotifications() {
   async function handleSave() {
     setSaving(true); setSaveError('')
     try {
-      await saveSetting('email_templates', templates.map(t => ({ ...t, subject: t.subject.trim() })))
+      // An address that is not an email would silently send alerts nowhere.
+      const email = alertEmail.trim().toLowerCase()
+      if (email && normaliseAlertEmail(email) !== email) throw new Error('อีเมลรับแจ้งเตือนไม่ถูกต้อง')
+      const cleanEmail = normaliseAlertEmail(email)
+      await Promise.all([
+        saveSetting('email_templates', templates.map(t => ({ ...t, subject: t.subject.trim() }))),
+        saveSetting('alert_email', cleanEmail),
+      ])
+      setAlertEmail(cleanEmail)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
@@ -134,6 +147,13 @@ function EmailNotifications() {
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>การแจ้งเตือนทางอีเมล</h2>
         <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>อีเมลที่ระบบส่งให้เจ้าของประกาศ แก้หัวเรื่องหรือปิดการส่งได้ที่นี่ มีผลกับอีเมลฉบับถัดไปภายใน 5 นาที</p>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, marginBottom: 14 }}>
+        <h3 style={{ fontSize: 14.5, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>อีเมลรับแจ้งเตือนของทีม</h3>
+        <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 12px' }}>ฟอร์มติดต่อเรา lead รับบริหารอาคาร และประกาศใหม่ จะส่งมาที่อีเมลนี้ ไม่แสดงบนเว็บ</p>
+        <label style={labelStyle}>อีเมล</label>
+        <input type="email" value={alertEmail} onChange={e => setAlertEmail(e.target.value)} placeholder={DEFAULT_ALERT_EMAIL} style={inputStyle} />
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', marginBottom: 14 }}>
@@ -158,7 +178,7 @@ function EmailNotifications() {
 
       <p style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.6, margin: '0 0 18px' }}>
         อีเมลยืนยันตอนสมัครสมาชิกส่งโดย Supabase แก้ได้ที่ Supabase Dashboard › Authentication › Email Templates
-        อีเมลแจ้งเตือนถึงผู้ก่อตั้ง (ประกาศใหม่ ฟอร์มติดต่อ) ส่งทุกครั้งและไม่ได้อยู่ในหน้านี้
+        อีเมลแจ้งเตือนของทีมส่งทุกครั้ง เปลี่ยนได้แค่อีเมลปลายทาง ช่องที่เว้นว่างจะใช้ {DEFAULT_ALERT_EMAIL}
       </p>
 
       <SaveButton onSave={handleSave} saved={saved} saving={saving} error={saveError} />

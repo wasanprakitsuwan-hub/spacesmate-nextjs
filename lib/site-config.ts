@@ -75,6 +75,21 @@ export function companyAddress(c: CompanyInfo, locale: 'th' | 'en') {
   return locale === 'en' ? c.address_en : c.address
 }
 
+// ── Admin alert inbox (key: alert_email) ─────────────────────────────────────
+
+/**
+ * Where the site sends its own alerts: /contact enquiries, /manage leads and
+ * new listings. Kept out of company_info on purpose — company info is sent to
+ * every visitor's browser for the footer, and this inbox should not be public.
+ */
+export const DEFAULT_ALERT_EMAIL = 'wasan.p@spacesmate.com'
+
+/** Stored value → one address. Blank or not an email keeps the default. */
+export function normaliseAlertEmail(v: unknown): string {
+  const s = str(v).toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : DEFAULT_ALERT_EMAIL
+}
+
 // ── Owner emails (key: email_templates) ──────────────────────────────────────
 
 export type EmailKey = 'listing_live' | 'payment_success' | 'expiring_7d' | 'expired'

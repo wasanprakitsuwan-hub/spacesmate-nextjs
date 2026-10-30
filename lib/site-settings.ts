@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { createServerClient } from '@/lib/supabase'
 import {
-  SITE_SETTINGS_TAG, normaliseCompany, normaliseEmailTemplates,
+  SITE_SETTINGS_TAG, normaliseCompany, normaliseEmailTemplates, normaliseAlertEmail,
   type CompanyInfo, type EmailTemplate,
 } from '@/lib/site-config'
 
@@ -38,4 +38,8 @@ export async function getCompanyInfo(): Promise<CompanyInfo> {
 
 export async function getEmailTemplates(): Promise<EmailTemplate[]> {
   return normaliseEmailTemplates(await read('email_templates'))
+}
+
+export async function getAlertEmail(): Promise<string> {
+  return normaliseAlertEmail(await read('alert_email'))
 }

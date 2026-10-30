@@ -6,7 +6,7 @@ import { LISTING_GUIDE_KEY, GUIDE_TAG } from '@/lib/guide-data'
 import { SITE_SETTINGS_TAG } from '@/lib/site-config'
 
 // Keys read through lib/site-settings, which caches them under one tag.
-const SITE_KEYS = new Set(['company_info', 'email_templates', 'property_types'])
+const SITE_KEYS = new Set(['company_info', 'email_templates', 'property_types', 'alert_email'])
 
 // ── GET — fetch one setting by ?key= or all settings ─────────────────────────
 /**
