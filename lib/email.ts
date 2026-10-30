@@ -2,9 +2,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Env vars required:
 //   RESEND_API_KEY  — get from resend.com/api-keys
-//   RESEND_FROM     — optional override; defaults to sandbox sender
-//                     Set to 'SpacesMate <noreply@spacesmate.com>' once
-//                     spacesmate.com is verified in the Resend dashboard.
+//   RESEND_FROM     — optional override; defaults to
+//                     'SpacesMate <noreply@spacesmate.com>' (domain verified
+//                     in Resend, Oct 2026)
 //
 // Trigger points:
 //   1. /api/stripe/webhook  → checkout.session.completed (public submit + payment)
@@ -17,7 +17,7 @@ const RESEND_URL    = 'https://api.resend.com/emails'
 const FOUNDER_EMAIL = 'wasan.prakitsuwan@gmail.com'
 
 function fromAddress() {
-  return process.env.RESEND_FROM ?? 'SpacesMate <onboarding@resend.dev>'
+  return process.env.RESEND_FROM?.trim() || 'SpacesMate <noreply@spacesmate.com>'
 }
 
 /**
