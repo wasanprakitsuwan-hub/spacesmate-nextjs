@@ -11,7 +11,7 @@
 //   2. /api/owner/listings  → POST (owner dashboard create listing)
 //   3. /api/submit-listing  → POST (legacy direct-submit route)
 
-import { getEmailTemplates, getAlertEmail, fillSubject, type EmailKey } from '@/lib/site-settings'
+import { getEmailTemplates, getAlertEmails, fillSubject, type EmailKey } from '@/lib/site-settings'
 
 const RESEND_URL    = 'https://api.resend.com/emails'
 
@@ -190,7 +190,7 @@ export async function sendNewListingAlert(data: ListingEmailData): Promise<void>
   `<p style="font-size:12px;color:#94a3b8;margin:0">Listing ID: ${data.id || '—'} · SpacesMate Admin</p>`)
 
   await sendEmail(
-    [await getAlertEmail()],
+    await getAlertEmails('listing'),
     `ประกาศใหม่: ${data.title || 'ไม่ระบุชื่อ'}`,
     html
   )
@@ -567,7 +567,7 @@ export async function sendManagementEnquiry(raw: ManagementEnquiryData): Promise
   `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Management Lead · spacesmate.com/manage</p>`)
 
   return sendEmail(
-    [await getAlertEmail()],
+    await getAlertEmails('manage'),
     `Lead ใหม่: ${raw.firstName} ${raw.lastName} (${raw.building ? raw.building + ' · ' : ''}${raw.type} · ${raw.location || 'ไม่ระบุทำเล'})`,
     html
   )
@@ -619,7 +619,7 @@ export async function sendContactEnquiry(data: ContactEnquiryData): Promise<bool
   `<p style="font-size:12px;color:#94a3b8;margin:0">SpacesMate Contact · spacesmate.com/contact</p>`)
 
   return sendEmail(
-    [await getAlertEmail()],
+    await getAlertEmails('contact'),
     `Contact: ${data.name}${data.intent ? ` · ${data.intent}` : ''}`,
     html
   )

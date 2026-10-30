@@ -1,8 +1,8 @@
 import { unstable_cache } from 'next/cache'
 import { createServerClient } from '@/lib/supabase'
 import {
-  SITE_SETTINGS_TAG, normaliseCompany, normaliseEmailTemplates, normaliseAlertEmail,
-  type CompanyInfo, type EmailTemplate,
+  SITE_SETTINGS_TAG, normaliseCompany, normaliseEmailTemplates, normaliseAlertEmails, splitEmails,
+  type CompanyInfo, type EmailTemplate, type AlertKey,
 } from '@/lib/site-config'
 
 // Server side of lib/site-config: reads the values Settings saves. Server only.
@@ -40,6 +40,6 @@ export async function getEmailTemplates(): Promise<EmailTemplate[]> {
   return normaliseEmailTemplates(await read('email_templates'))
 }
 
-export async function getAlertEmail(): Promise<string> {
-  return normaliseAlertEmail(await read('alert_email'))
+export async function getAlertEmails(key: AlertKey): Promise<string[]> {
+  return splitEmails(normaliseAlertEmails(await read('alert_email'))[key])
 }

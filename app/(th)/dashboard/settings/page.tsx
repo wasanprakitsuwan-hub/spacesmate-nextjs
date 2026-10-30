@@ -7,7 +7,7 @@ import { DEFAULT_PROMO, normalisePromo, type CheckoutPromo } from '@/lib/promo'
 import {
   DEFAULT_COMPANY_INFO, normaliseCompany, type CompanyInfo,
   EMAIL_TEMPLATE_INFO, normaliseEmailTemplates, type EmailTemplate,
-  DEFAULT_ALERT_EMAIL, normaliseAlertEmail,
+  DEFAULT_ALERT_EMAIL, ALERT_INFO, normaliseAlertEmails, invalidEmails, type AlertKey, type AlertEmails,
   normalisePropertyTypes, type SiteType,
 } from '@/lib/site-config'
 
@@ -105,7 +105,7 @@ const inputStyle: React.CSSProperties = {
 
 function EmailNotifications() {
   const [templates, setTemplates] = useState<EmailTemplate[]>(normaliseEmailTemplates(null))
-  const [alertEmail, setAlertEmail] = useState(DEFAULT_ALERT_EMAIL)
+  const [alerts, setAlerts]       = useState<AlertEmails>(normaliseAlertEmails(null))
   const [saved, setSaved]         = useState(false)
   const [saving, setSaving]       = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -115,7 +115,7 @@ function EmailNotifications() {
       .then(data => setTemplates(normaliseEmailTemplates(data)))
       .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
     loadSetting<unknown>('alert_email')
-      .then(data => setAlertEmail(normaliseAlertEmail(data)))
+      .then(data => setAlerts(normaliseAlertEmails(data)))
       .catch(e => setSaveError(e instanceof Error ? e.message : 'โหลดค่าไม่สำเร็จ'))
   }, [])
 
@@ -127,14 +127,14 @@ function EmailNotifications() {
     setSaving(true); setSaveError('')
     try {
       // An address that is not an email would silently send alerts nowhere.
-      const email = alertEmail.trim().toLowerCase()
-      if (email && normaliseAlertEmail(email) !== email) throw new Error('อีเมลรับแจ้งเตือนไม่ถูกต้อง')
-      const cleanEmail = normaliseAlertEmail(email)
+      const bad = Object.values(alerts).flatMap(invalidEmails)
+      if (bad.length) throw new Error(`อีเมลรับแจ้งเตือนไม่ถูกต้อง: ${bad.join(', ')}`)
+      const cleanAlerts = normaliseAlertEmails(alerts)
       await Promise.all([
         saveSetting('email_templates', templates.map(t => ({ ...t, subject: t.subject.trim() }))),
-        saveSetting('alert_email', cleanEmail),
+        saveSetting('alert_email', cleanAlerts),
       ])
-      setAlertEmail(cleanEmail)
+      setAlerts(cleanAlerts)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ')
@@ -151,9 +151,13 @@ function EmailNotifications() {
 
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, padding: 22, marginBottom: 14 }}>
         <h3 style={{ fontSize: 14.5, fontWeight: 700, color: '#02402e', margin: '0 0 4px' }}>อีเมลรับแจ้งเตือนของทีม</h3>
-        <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 12px' }}>ฟอร์มติดต่อเรา lead รับบริหารอาคาร และประกาศใหม่ จะส่งมาที่อีเมลนี้ ไม่แสดงบนเว็บ</p>
-        <label style={labelStyle}>อีเมล</label>
-        <input type="email" value={alertEmail} onChange={e => setAlertEmail(e.target.value)} placeholder={DEFAULT_ALERT_EMAIL} style={inputStyle} />
+        <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 12px' }}>ใส่ได้หลายอีเมล คั่นด้วยเครื่องหมายจุลภาค (,) ไม่แสดงบนเว็บ</p>
+        {(Object.keys(ALERT_INFO) as AlertKey[]).map(k => (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>{ALERT_INFO[k]}</label>
+            <input value={alerts[k]} onChange={e => setAlerts(a => ({ ...a, [k]: e.target.value }))} placeholder={`${DEFAULT_ALERT_EMAIL}, another@example.com`} style={inputStyle} />
+          </div>
+        ))}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', marginBottom: 14 }}>
