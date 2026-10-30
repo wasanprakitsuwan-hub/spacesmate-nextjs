@@ -78,16 +78,48 @@ export function companyAddress(c: CompanyInfo, locale: 'th' | 'en') {
 // ── Admin alert inbox (key: alert_email) ─────────────────────────────────────
 
 /**
- * Where the site sends its own alerts: /contact enquiries, /manage leads and
- * new listings. Kept out of company_info on purpose — company info is sent to
- * every visitor's browser for the footer, and this inbox should not be public.
+ * Where the site sends its own alerts, one list of addresses per alert. Kept
+ * out of company_info on purpose — company info is sent to every visitor's
+ * browser for the footer, and these inboxes should not be public.
  */
 export const DEFAULT_ALERT_EMAIL = 'wasan.p@spacesmate.com'
 
-/** Stored value → one address. Blank or not an email keeps the default. */
-export function normaliseAlertEmail(v: unknown): string {
-  const s = str(v).toLowerCase()
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : DEFAULT_ALERT_EMAIL
+export type AlertKey = 'contact' | 'manage' | 'listing'
+
+export const ALERT_INFO: Record<AlertKey, string> = {
+  contact: 'ฟอร์มติดต่อเรา (/contact)',
+  manage:  'Lead รับบริหารอาคาร (/manage)',
+  listing: 'ประกาศใหม่',
+}
+
+/** Each value is the text the Settings box shows: "a@x.com, b@y.com". */
+export type AlertEmails = Record<AlertKey, string>
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Comma- or space-separated text → the addresses in it, lower-cased, deduped. */
+export function splitEmails(v: unknown): string[] {
+  return Array.from(new Set(str(v).toLowerCase().split(/[\s,;]+/).filter(Boolean)))
+}
+
+/** Addresses in the text that are not emails, so Settings can refuse them. */
+export function invalidEmails(v: unknown): string[] {
+  return splitEmails(v).filter(e => !EMAIL_RE.test(e))
+}
+
+function cleanList(v: unknown): string {
+  const ok = splitEmails(v).filter(e => EMAIL_RE.test(e))
+  return ok.length ? ok.join(', ') : DEFAULT_ALERT_EMAIL
+}
+
+/**
+ * Stored value → a list for every alert. Invalid entries are dropped and an
+ * empty list keeps the default. A plain string (the first, single-box version)
+ * applies to all three.
+ */
+export function normaliseAlertEmails(v: unknown): AlertEmails {
+  const o = (v && typeof v === 'object' ? v : { contact: v, manage: v, listing: v }) as Record<string, unknown>
+  return { contact: cleanList(o.contact), manage: cleanList(o.manage), listing: cleanList(o.listing) }
 }
 
 // ── Owner emails (key: email_templates) ──────────────────────────────────────
