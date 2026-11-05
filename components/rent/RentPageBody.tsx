@@ -128,7 +128,7 @@ export default function RentPageBody({ view, locale }: { view: LandingView; loca
               const title = (locale === 'en' && l.title_en) || l.title_th
               const type = TYPE_NAME[locale][l.property_type as RentType] ?? l.property_type
               return (
-                <Link key={l.slug} href={`/property/${l.slug}`} className="sm-rent-card"
+                <Link key={l.slug} href={`${locale === 'en' ? '/en' : ''}/property/${l.slug}`} target="_blank" rel="noopener" className="sm-rent-card"
                   style={{ background: '#fff', border: '1px solid #eef0ef', borderRadius: 18, overflow: 'hidden', display: 'block', textDecoration: 'none', boxShadow: '0 6px 20px -10px rgba(2,64,46,0.10)', transition: 'all .25s' }}>
                   <div style={{ height: 160, background: 'linear-gradient(135deg,#02402e,#048c73)', position: 'relative', overflow: 'hidden' }}>
                     {img && <img src={img} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}

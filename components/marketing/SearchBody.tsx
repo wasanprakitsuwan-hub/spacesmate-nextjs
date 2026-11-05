@@ -730,7 +730,7 @@ function ResultRow({ r, locale, from, placeName }: { r: Row; locale: Locale; fro
     ? `฿${r.priceFrom.toLocaleString('en-US')}${r.priceTo > r.priceFrom ? ` – ${r.priceTo.toLocaleString('en-US')}` : ''}`
     : t.askForPrice
   return (
-    <Link href={locale === 'en' ? `/en/property/${r.slug}` : `/property/${r.slug}`} className="sm-result"
+    <Link href={locale === 'en' ? `/en/property/${r.slug}` : `/property/${r.slug}`} target="_blank" rel="noopener" className="sm-result"
       style={{ display: 'flex', gap: 20, padding: '18px 0', borderBottom: `1px solid ${C.line}`, color: C.ink, alignItems: 'stretch', textDecoration: 'none' }}>
       <div className="sm-result-img" style={{ width: 200, height: 150, borderRadius: RADIUS, overflow: 'hidden', flexShrink: 0, background: C.line }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

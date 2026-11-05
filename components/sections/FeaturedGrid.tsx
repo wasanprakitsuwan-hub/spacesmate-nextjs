@@ -51,7 +51,7 @@ export default function FeaturedGrid({ pool, locale }: { pool: FeaturedCard[]; l
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '40px 24px' }}
       className={picked ? undefined : 'sm-feat-pending'}>
       {displayed.map(p => (
-        <Link key={p.slug} href={locale === 'en' ? `/en/property/${p.slug}` : `/property/${p.slug}`} className="sm-card"
+        <Link key={p.slug} href={locale === 'en' ? `/en/property/${p.slug}` : `/property/${p.slug}`} target="_blank" rel="noopener" className="sm-card"
           style={{ display: 'flex', flexDirection: 'column', gap: 12, color: C.ink, textDecoration: 'none' }}>
           <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: RADIUS, overflow: 'hidden', background: C.line }}>
             {p.image && (

@@ -23,7 +23,7 @@ export default function PropertyCard({ property, featured = false }: PropertyCar
   const typeLabel = PROPERTY_TYPE_LABELS[property.property_type]
 
   return (
-    <Link href={`/property/${property.slug}`} className="block">
+    <Link href={`/property/${property.slug}`} target="_blank" rel="noopener" className="block">
       <div className="card overflow-hidden group cursor-pointer">
 
         {/* Image */}
