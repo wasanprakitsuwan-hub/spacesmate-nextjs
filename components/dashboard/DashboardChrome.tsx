@@ -71,10 +71,14 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
   const displayName = userEmail.split('@')[0] || 'Owner'
   const listingsHref = localeHref('/owner-dashboard', locale)
   const profileHref = localeHref('/owner-dashboard/profile', locale)
-  // Round 7: a side menu with two pages, every control a text button.
+  const paymentsHref = localeHref('/owner-dashboard/payments', locale)
+  // Round 7: a side menu, every control a text button.
+  const onProfile = pathname.includes('/owner-dashboard/profile')
+  const onPayments = pathname.includes('/owner-dashboard/payments')
   const NAV = [
-    { href: listingsHref, label: t.myListings, active: !pathname.includes('/owner-dashboard/profile') },
-    { href: profileHref, label: t.profileTitle, active: pathname.includes('/owner-dashboard/profile') },
+    { href: listingsHref, label: t.myListings, active: !onProfile && !onPayments },
+    { href: paymentsHref, label: t.paymentsTitle, active: onPayments },
+    { href: profileHref, label: t.profileTitle, active: onProfile },
   ]
   const otherLang = locale === 'en'
     ? { href: thPath(pathname), lang: 'th', label: 'ภาษาไทย' }

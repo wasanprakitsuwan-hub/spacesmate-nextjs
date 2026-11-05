@@ -45,6 +45,7 @@ const EN_STATIC = new Set([
   '/reset-password',
   '/owner-dashboard',
   '/owner-dashboard/profile',
+  '/owner-dashboard/payments',
   '/privacy',
   '/terms',
 ])

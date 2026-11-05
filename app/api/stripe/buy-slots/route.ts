@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
         quantity:      String(qty),
         publish_property_id: publishId ?? '',
       },
+      // Company name and tax ID on the subscription's invoices.
+      tax_id_collection: { enabled: true },
+      ...(profile?.stripe_customer_id ? { customer_update: { name: 'auto' as const } } : {}),
       // sid lets the client-side purchase event carry a transaction_id, so a
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&sid={CHECKOUT_SESSION_ID}`,
