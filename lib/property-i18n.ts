@@ -49,6 +49,7 @@ export const PROPERTY_T = {
 
     chargesHeading: 'ค่าใช้จ่ายและเงื่อนไข',
     amenitiesHeading: 'สิ่งอำนวยความสะดวก',
+    amenityMissing: 'ไม่มี',
     locationHeading: 'ทำเลที่ตั้ง',
     nearbyStations: 'รถไฟฟ้าใกล้เคียง',
     nearbyHeading: 'สถานที่สำคัญใกล้เคียง',
@@ -140,6 +141,7 @@ export const PROPERTY_T = {
 
     chargesHeading: 'Costs and conditions',
     amenitiesHeading: 'Amenities',
+    amenityMissing: 'Not included',
     locationHeading: 'Location',
     nearbyStations: 'Nearby stations',
     nearbyHeading: "What's nearby",
