@@ -12,6 +12,7 @@ import HeroSection from '@/components/sections/HeroSection'
 import FeaturedListings from '@/components/sections/FeaturedListings'
 import OwnerPitch from '@/components/sections/OwnerPitch'
 import ManagementCTA from '@/components/sections/ManagementCTA'
+import Sm299Banner from '@/components/sections/Sm299Banner'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
 import UniversityLinks from '@/components/sections/UniversityLinks'
@@ -57,6 +58,7 @@ export default function EnglishHome() {
       <HeroSection locale="en" />
       <Suspense fallback={<SectionPlaceholder />}><FeaturedListings locale="en" /></Suspense>
       <OwnerPitch locale="en" />
+      <Sm299Banner locale="en" placement="home" />
       <ManagementCTA locale="en" />
       <Suspense fallback={<SectionPlaceholder />}><BlogSection locale="en" /></Suspense>
       <AreaLinks locale="en" />
