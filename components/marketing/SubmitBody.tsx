@@ -14,6 +14,7 @@ import { FaqLd } from '@/components/seo/JsonLd'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import CopyCodeButton from '@/components/marketing/CopyCodeButton'
 import { getCheckoutPromo } from '@/lib/promo-server'
+import Sm299Banner from '@/components/sections/Sm299Banner'
 import { C, WRAP, h2Style } from '@/lib/ui'
 
 
@@ -378,7 +379,8 @@ export default async function SubmitBody({ locale = 'th' }: { locale?: Locale })
         </div>
       </section>
 
-      {/* ── 6. Closing: text + photo ── */}
+      {/* ── 6. Closing: the SM299 banner while the promo is on, otherwise text + photo ── */}
+      {promo.enabled ? <Sm299Banner locale={locale} placement="page" /> : (
       <section style={wrap('0 16px 72px')}>
         <div style={{ background: C.green, borderRadius: 8, overflow: 'hidden', display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <div style={{ flex: '1 1 440px', minWidth: 0, padding: '44px 40px', display: 'flex', flexDirection: 'column', gap: 14, color: C.white, justifyContent: 'center', boxSizing: 'border-box' }}>
@@ -391,6 +393,7 @@ export default async function SubmitBody({ locale = 'th' }: { locale?: Locale })
           <img src={PHOTOS.building} alt={t.closingAlt} loading="lazy" style={{ flex: '1 1 360px', minWidth: 0, height: 300, objectFit: 'cover', display: 'block' }} />
         </div>
       </section>
+      )}
     </div>
   )
 }

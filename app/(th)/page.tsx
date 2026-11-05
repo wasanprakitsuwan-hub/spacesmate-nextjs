@@ -46,6 +46,7 @@ const baseMetadata: Metadata = {
 import FeaturedListings from '@/components/sections/FeaturedListings'
 import OwnerPitch from '@/components/sections/OwnerPitch'
 import ManagementCTA from '@/components/sections/ManagementCTA'
+import Sm299Banner from '@/components/sections/Sm299Banner'
 import BlogSection from '@/components/sections/BlogSection'
 import AreaLinks from '@/components/sections/AreaLinks'
 import UniversityLinks from '@/components/sections/UniversityLinks'
@@ -57,6 +58,7 @@ export default function HomePage() {
       <HeroSection />
       <Suspense fallback={<SectionPlaceholder />}><FeaturedListings /></Suspense>
       <OwnerPitch />
+      <Sm299Banner placement="home" />
       <ManagementCTA />
       <Suspense fallback={<SectionPlaceholder />}><BlogSection /></Suspense>
       <AreaLinks />
