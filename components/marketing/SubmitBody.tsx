@@ -129,15 +129,17 @@ export default async function SubmitBody({ locale = 'th' }: { locale?: Locale })
   return (
     <div style={{ background: C.paper, color: C.ink }}>
 
-      {/* ── 0. SM299 banner (only while the Settings promo is on) ── */}
-      <Sm299Banner locale={locale} placement="page" />
-
       {/* ── 1. Hero: green band, text left, sample listing card right ── */}
       <section style={{ background: C.green, color: C.white }}>
         <div style={{ ...wrap('64px 16px'), display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ flex: '1 1 520px', minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
               <span style={{ fontSize: 14, color: ON_GREEN, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="home" size={18} color={ON_GREEN} />{t.ownersEyebrow}</span>
+              {promo.enabled && (
+                <a href="#packages" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f2b25c', color: '#2b1800', borderRadius: 999, padding: '4px 12px', fontSize: 13.5, fontWeight: 600, textDecoration: 'none' }}>
+                  <Icon name="tag" size={15} color="#2b1800" strokeWidth={1.8} />{promoTitle} · {t.useCode} {promo.code}
+                </a>
+              )}
             </div>
             <h1 style={{ margin: '0 0 18px', fontSize: 'clamp(32px, 4.5vw, 46px)', lineHeight: 1.25, fontWeight: 600, color: C.white }}>
               {t.ownersTitle}<br />{t.heroTitleB}
@@ -377,7 +379,8 @@ export default async function SubmitBody({ locale = 'th' }: { locale?: Locale })
         </div>
       </section>
 
-      {/* ── 6. Closing: text + photo ── */}
+      {/* ── 6. Closing: the SM299 banner while the promo is on, otherwise text + photo ── */}
+      {promo.enabled ? <Sm299Banner locale={locale} placement="page" /> : (
       <section style={wrap('0 16px 72px')}>
         <div style={{ background: C.green, borderRadius: 8, overflow: 'hidden', display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <div style={{ flex: '1 1 440px', minWidth: 0, padding: '44px 40px', display: 'flex', flexDirection: 'column', gap: 14, color: C.white, justifyContent: 'center', boxSizing: 'border-box' }}>
@@ -390,6 +393,7 @@ export default async function SubmitBody({ locale = 'th' }: { locale?: Locale })
           <img src={PHOTOS.building} alt={t.closingAlt} loading="lazy" style={{ flex: '1 1 360px', minWidth: 0, height: 300, objectFit: 'cover', display: 'block' }} />
         </div>
       </section>
+      )}
     </div>
   )
 }

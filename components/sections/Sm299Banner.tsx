@@ -10,8 +10,9 @@ import { SITE_T, type Locale } from '@/lib/site-i18n'
  * a background.
  *
  * Two placements:
- *   - 'page': top of /list-your-property, in place of the old promo pill.
- *     Button goes straight to the listing form.
+ *   - 'page': bottom of /list-your-property, in place of the closing band
+ *     (which still shows while the promo is off). Button goes straight to
+ *     the listing form.
  *   - 'home': homepage owner section, between the owner pitch and the
  *     management band. Button goes to /list-your-property.
  *
@@ -57,9 +58,7 @@ export default async function Sm299Banner({ locale = 'th', placement }: { locale
 
   if (placement === 'page') {
     return (
-      <section style={{ background: C.paper }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px', boxSizing: 'border-box' }}>{card}</div>
-      </section>
+      <section style={{ maxWidth: WRAP, margin: '0 auto', padding: '0 16px 72px', boxSizing: 'border-box' }}>{card}</section>
     )
   }
   return (
