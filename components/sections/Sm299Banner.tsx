@@ -1,7 +1,7 @@
 import Link from '@/components/ui/LocaleLink'
 import { getCheckoutPromo } from '@/lib/promo-server'
 import { C, RADIUS, WRAP } from '@/lib/ui'
-import type { Locale } from '@/lib/site-i18n'
+import { SITE_T, type Locale } from '@/lib/site-i18n'
 
 /**
  * The SM299 owner banner (Founder, 5 Nov 2026): photo left, green panel right
@@ -19,29 +19,13 @@ import type { Locale } from '@/lib/site-i18n'
  * the same switch as the checkout and the packages banner, so the code is
  * never advertised when Stripe would reject it.
  */
-const T = {
-  th: {
-    eyebrow: 'สำหรับเจ้าของทรัพย์',
-    title: 'ลงประกาศปล่อยเช่ากับ SpacesMate',
-    sub: 'เข้าถึงผู้เช่าทั่วกรุงเทพฯ',
-    useCode: 'ใช้โค้ด',
-    cta: 'ลงประกาศเลย',
-  },
-  en: {
-    eyebrow: 'For property owners',
-    title: 'List your rental with SpacesMate',
-    sub: 'Reach renters across Bangkok',
-    useCode: 'Use code',
-    cta: 'List now',
-  },
-} as const
 
 const ON_GREEN = '#cfe3da'
 
 export default async function Sm299Banner({ locale = 'th', placement }: { locale?: Locale; placement: 'page' | 'home' }) {
   const promo = await getCheckoutPromo()
   if (!promo.enabled) return null
-  const t = T[locale]
+  const t = SITE_T[locale]
   const offer = locale === 'en' ? promo.title_en : promo.title_th
   const href = placement === 'page' ? '/list-your-property/new' : '/list-your-property'
 
@@ -49,22 +33,22 @@ export default async function Sm299Banner({ locale = 'th', placement }: { locale
     <div className="sm299-banner" style={{ display: 'flex', flexWrap: 'wrap', background: C.green, color: C.white, borderRadius: RADIUS * 2, overflow: 'hidden' }}>
       <div
         role="img"
-        aria-label={locale === 'en' ? 'Bright living room with a Bangkok city view' : 'ห้องนั่งเล่นวิวเมืองกรุงเทพฯ'}
+        aria-label={t.sm299PhotoAlt}
         style={{ flex: '1 1 380px', minHeight: 260, backgroundImage: 'url(/promo/sm299-owner.jpg)', backgroundSize: 'cover', backgroundPosition: 'center 55%' }}
       />
       <div style={{ flex: '1 1 380px', minWidth: 0, padding: 'clamp(28px, 4vw, 48px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
-        <span style={{ fontSize: 14, color: ON_GREEN, paddingBottom: 12, borderBottom: '1px solid rgba(207,227,218,0.35)' }}>{t.eyebrow}</span>
-        <h2 style={{ margin: 0, fontSize: 'clamp(26px, 3.2vw, 38px)', lineHeight: 1.3, fontWeight: 600, color: C.white }}>{t.title}</h2>
-        <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: ON_GREEN }}>{t.sub}</p>
+        <span style={{ fontSize: 14, color: ON_GREEN, paddingBottom: 12, borderBottom: '1px solid rgba(207,227,218,0.35)' }}>{t.sm299Eyebrow}</span>
+        <h2 style={{ margin: 0, fontSize: 'clamp(26px, 3.2vw, 38px)', lineHeight: 1.3, fontWeight: 600, color: C.white }}>{t.sm299Title}</h2>
+        <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: ON_GREEN }}>{t.sm299Sub}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
           <span style={{ background: '#f2b25c', color: '#2b1800', borderRadius: RADIUS, padding: '8px 16px', fontSize: 18, fontWeight: 600 }}>
-            {t.useCode} <span style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5 }}>{promo.code}</span>
+            {t.sm299UseCode} <span style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5 }}>{promo.code}</span>
           </span>
           <span style={{ fontSize: 15, color: C.white }}>{offer}</span>
         </div>
         <div style={{ marginTop: 8 }}>
           <Link href={href} style={{ display: 'inline-block', background: C.white, color: C.green, padding: '12px 28px', borderRadius: RADIUS, fontWeight: 600, fontSize: 16, textDecoration: 'none' }}>
-            {t.cta}
+            {t.sm299Cta}
           </Link>
         </div>
       </div>
