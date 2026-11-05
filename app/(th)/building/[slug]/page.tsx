@@ -93,7 +93,7 @@ export default async function BuildingPage({ params }: Props) {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 64px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 18 }}>
           {listings.map(l => (
-            <Link key={l.slug} href={`/property/${encodeURI(l.slug)}`}
+            <Link key={l.slug} href={`/property/${encodeURI(l.slug)}`} target="_blank" rel="noopener"
               style={{ textDecoration: 'none', border: '1px solid #eef0ef', borderRadius: 14, overflow: 'hidden', display: 'block', background: '#fff' }}>
               <div style={{ aspectRatio: '4/3', background: '#f1f5f4', overflow: 'hidden' }}>
                 {l.images?.[0] && (

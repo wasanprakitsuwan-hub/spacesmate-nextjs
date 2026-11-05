@@ -476,7 +476,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
               <a href={`/building/${encodeURI(building.slug)}`} style={{ fontSize: 14, color: C.teal }}>{t.sameBuildingAll(building.name)}</a>
             </div>
             {sameBuilding.map(r => (
-              <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} className="sm-card"
+              <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} target="_blank" rel="noopener" className="sm-card"
                 style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: `1px solid ${C.line}`, color: C.ink }}>
                 <div style={{ width: 96, height: 72, borderRadius: RADIUS, overflow: 'hidden', background: C.line, flexShrink: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -499,7 +499,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
             <h2 style={{ ...h2, marginBottom: 20 }}>{nearbyListings.some(x => x.km !== null) ? t.nearbyListingsHeading : t.relatedHeading}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '32px 24px' }}>
               {nearbyListings.map(({ p: r, km }) => (
-                <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} className="sm-card"
+                <Link key={r.slug} href={`${locale === 'en' ? '/en' : ''}/property/${r.slug}`} target="_blank" rel="noopener" className="sm-card"
                   style={{ display: 'flex', flexDirection: 'column', gap: 10, color: C.ink }}>
                   <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: RADIUS, overflow: 'hidden', background: C.line }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
