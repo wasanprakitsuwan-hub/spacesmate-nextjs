@@ -16,7 +16,9 @@
 // components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
 import { notFound } from 'next/navigation'
-import { AMENITY_SECTIONS, groupSelected } from '@/lib/amenities'
+import { AMENITY_SECTIONS, LEGACY_AMENITY_RENAMES } from '@/lib/amenities'
+import { getAmenitiesServer } from '@/lib/amenities-server'
+import AmenityIcon, { amenityIconKey } from '@/components/property/AmenityIcon'
 import { ListingLd, BreadcrumbLd } from '@/components/seo/JsonLd'
 import { createServerClient as buildingClient } from '@/lib/supabase'
 import { properties, getPropertyBySlug, fetchPropertyContent, type Property } from '@/lib/property-data'
@@ -187,11 +189,36 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
   const lineBtn = { href: dbContact?.line ? `https://line.me/R/ti/p/${dbContact.line}` : 'https://line.me/R/ti/p/@spacesmate' }
   const phone = dbContact?.phone ? { href: `tel:${dbContact.phone.replace(/\D/g, '')}`, label: dbContact.phone } : { href: 'tel:+66621524526', label: '062-152-4526' }
   const specs = [
-    { k: t.bedrooms, v: bedroomLabel },
-    ...(p.bathrooms > 0 ? [{ k: t.bathrooms, v: String(p.bathrooms) }] : []),
-    ...(p.size ? [{ k: t.size, v: t.sizeValue(p.size) }] : []),
-    ...(raw?.floor ? [{ k: t.floor, v: String(raw.floor) }] : []),
+    { k: t.bedrooms, v: bedroomLabel, icon: 'bed' },
+    ...(p.bathrooms > 0 ? [{ k: t.bathrooms, v: String(p.bathrooms), icon: 'bath' }] : []),
+    ...(p.size ? [{ k: t.size, v: t.sizeValue(p.size), icon: 'area' }] : []),
+    ...(raw?.floor ? [{ k: t.floor, v: String(raw.floor), icon: 'layers' }] : []),
   ]
+
+  // ── Amenities: every amenity in the system, ticked ones first ─────────────
+  // Founder, 5 Nov 2026: show the whole list, with what the listing lacks in
+  // muted grey, a grey cross and strikethrough, after the ticked ones. Guards:
+  //  · Area items (near a mall, shops, restaurant, park) are about the
+  //    neighbourhood, so an unticked one is never shown as missing.
+  //  · Fully and partly furnished exclude each other: once one is ticked the
+  //    other is not listed as missing.
+  //  · A section with nothing ticked shows nothing — the owner most likely
+  //    skipped it, and a column of crosses would state something untrue.
+  const amenityList = p.amenities.length > 0 ? await getAmenitiesServer() : []
+  const AREA_EN = /near|convenience|restaurant|garden|laundry shop/i
+  const ticked = new Set(p.amenities.map(a => LEGACY_AMENITY_RENAMES[a] ?? a))
+  const furnishTicked = amenityList.some(a => /furnish/i.test(a.name_en) && ticked.has(a.name_th))
+  const known = new Set(amenityList.map(a => a.name_th))
+  const amenityGroups = AMENITY_SECTIONS.map(sec => {
+    const inSec = amenityList.filter(a => a.section === sec.key)
+    const have = inSec.filter(a => ticked.has(a.name_th)).map(a => ({ th: a.name_th, en: a.name_en }))
+    // A stored name no longer in the list still shows, under the building.
+    if (sec.key === 'building') for (const n of Array.from(ticked)) if (!known.has(n)) have.push({ th: n, en: '' })
+    const missing = have.length === 0 ? [] : inSec.filter(a =>
+      !ticked.has(a.name_th) && !AREA_EN.test(a.name_en) && !(furnishTicked && /furnish/i.test(a.name_en)),
+    ).map(a => ({ th: a.name_th, en: a.name_en }))
+    return { sec, have, missing }
+  }).filter(g => g.have.length > 0)
 
   return (
     <div style={{ background: C.paper, minHeight: '100vh' }} className="sm-detail-page">
@@ -259,7 +286,7 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
           <dl style={{ display: 'grid', gridTemplateColumns: `repeat(${specs.length}, 1fr)`, border: `1px solid ${C.line}`, borderRadius: RADIUS, background: C.white, margin: '0 0 8px' }} className="sm-specs">
             {specs.map((sp, i) => (
               <div key={sp.k} style={{ padding: '14px 18px', borderLeft: i ? `1px solid ${C.line}` : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <dt style={{ fontSize: 13, color: C.muted }}>{sp.k}</dt>
+                <dt style={{ fontSize: 13, color: C.muted, display: 'flex', alignItems: 'center', gap: 6 }}><AmenityIcon name={sp.icon} size={16} color={C.teal} />{sp.k}</dt>
                 <dd style={{ margin: 0, fontSize: 17, fontWeight: 500 }}>{sp.v}</dd>
               </div>
             ))}
@@ -339,31 +366,31 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
           )}
 
           {/* Amenities — what is in the unit, then what the building provides. */}
-          {p.amenities.length > 0 && (() => {
-            const grouped = groupSelected(p.amenities)
-            return (
-              <section style={section}>
-                <h2 style={h2}>{t.amenitiesHeading}</h2>
-                {AMENITY_SECTIONS.map(sec => {
-                  const items = grouped[sec.key]
-                  if (!items.length) return null
-                  return (
-                    <div key={sec.key} style={{ marginBottom: 18 }}>
-                      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 8px' }}>{amenitySectionLabel(sec, locale)}</p>
-                      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px 24px', fontSize: 15 }}>
-                        {items.map(a => (
-                          <li key={a} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
-                            {localiseAmenity(a, locale)}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                })}
-              </section>
-            )
-          })()}
+          {amenityGroups.length > 0 && (
+            <section style={section}>
+              <h2 style={h2}>{t.amenitiesHeading}</h2>
+              {amenityGroups.map(({ sec, have, missing }) => (
+                <div key={sec.key} style={{ marginBottom: 18 }}>
+                  <p style={{ fontSize: 13, color: C.muted, margin: '0 0 8px' }}>{amenitySectionLabel(sec, locale)}</p>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px 20px', fontSize: 15 }}>
+                    {have.map(a => (
+                      <li key={a.th} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <AmenityIcon name={amenityIconKey(a.en)} color={C.teal} />
+                        {localiseAmenity(a.th, locale)}
+                      </li>
+                    ))}
+                    {missing.map(a => (
+                      <li key={a.th} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a19c94' }}>
+                        <AmenityIcon name="cross" color="#b5b0a7" />
+                        <span style={{ textDecoration: 'line-through' }}>{localiseAmenity(a.th, locale)}</span>
+                        <span className="sr-only">{t.amenityMissing}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          )}
 
           <section style={section}>
             <h2 style={h2}>{t.infoHeading}</h2>
