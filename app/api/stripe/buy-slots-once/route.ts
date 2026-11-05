@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { RECEIPT_FOOTER } from '@/lib/stripe-receipts'
 import { stripe, PACKAGE_DAYS } from '@/lib/stripe'
 import { PACKAGE_PRICE_THB } from '@/lib/packages'
 import { createServerClient } from '@/lib/supabase'
@@ -153,6 +154,21 @@ export async function POST(req: NextRequest) {
         quantity: qty,
       }],
       metadata,
+      // Receipts for the owner's payment history. Without a customer a
+      // one-time session is a guest checkout: nothing to list invoices by, and
+      // the webhook would save a null customer id. With an invoice, Stripe
+      // keeps a numbered PDF the owner can download later.
+      ...(customerParams.customer ? {} : { customer_creation: 'always' as const }),
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          metadata,
+          footer: RECEIPT_FOOTER,
+        },
+      },
+      // Lets a company buyer put its name and tax ID on the invoice.
+      tax_id_collection: { enabled: true },
+      ...(customerParams.customer ? { customer_update: { name: 'auto' as const } } : {}),
       // sid lets the client-side purchase event carry a transaction_id, so a
       // refresh of the success page does not count as a second purchase.
       success_url: `${siteUrl}/owner-dashboard?slots=${qty}&pkg=${package_id}&pp=1&sid={CHECKOUT_SESSION_ID}`,

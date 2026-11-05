@@ -252,7 +252,10 @@ async function grantSlotsForSession(
           package_type:           packageId,
           package_expires_at:     expires.toISOString(),
           stripe_subscription_id: subscriptionId,
-          stripe_customer_id:     customerId,
+          // A guest one-time checkout has no customer. Writing its null here
+          // would erase the customer an earlier subscription saved, and with
+          // it the owner's payment history and saved card.
+          ...(customerId ? { stripe_customer_id: customerId } : {}),
         }).eq('id', userId)
       } catch (profileErr) {
         console.error('[slots profile sync] non-fatal:', profileErr)
