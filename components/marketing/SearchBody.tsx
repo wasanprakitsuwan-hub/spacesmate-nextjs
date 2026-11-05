@@ -11,7 +11,7 @@ import Link from '@/components/ui/LocaleLink'
 import { localeHref } from '@/lib/routes-i18n'
 import {
   haversineKm, nearestStation, stationLabel, distanceLabel,
-  parseQuery, haystack, matchesTerms,
+  parseQuery, haystack, matchesTerms, nameKey, relevanceTier,
   suggestPlaces, placeFromParams, setPlaceList, stationById, placeKey, placeLabel, placePoint, placeIcon, inGreaterBangkok, type Place,
 } from '@/lib/search-match'
 import type { Station, RailSystem } from '@/lib/stations'
@@ -81,6 +81,7 @@ type Row = {
   updated: string
   created: string
   hay: string
+  names: string           // normalised Thai + English names, for name-first ranking
   nearest: { station: Station; km: number } | null
 }
 
@@ -108,6 +109,7 @@ function toRow(l: any, locale: Locale): Row {
     updated: l.updated_at || l.created_at || '',
     created: l.created_at || '',
     nearest,
+    names: nameKey(l.title_th, l.title_en),
     hay: haystack({
       title: l.title_th || '', titleEn: l.title_en || '', excerpt: l.description_th || '',
       address: l.address_th || '', district: l.district || '',
@@ -292,11 +294,23 @@ function SearchContent({ locale }: { locale: Locale }) {
     else if (sort === 'price_asc') out.sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity))
     else if (sort === 'price_desc') out.sort((a, b) => b.priceFrom - a.priceFrom)
     else if (sort === 'near') out.sort((a, b) => distFrom(a) - distFrom(b))
-    else if (rotation) out.sort((a, b) => (rotation.get(a.slug) ?? 0) - (rotation.get(b.slug) ?? 0))
-    else out.sort((a, b) => b.created.localeCompare(a.created))
+    else {
+      // Recommended: Fair Rotation (or newest until it is worked out). When a
+      // keyword was typed, listings whose name matches it come first and the
+      // rotation orders listings within each tier (see relevanceTier).
+      const fallback = (a: Row, b: Row) => rotation
+        ? (rotation.get(a.slug) ?? 0) - (rotation.get(b.slug) ?? 0)
+        : b.created.localeCompare(a.created)
+      const raw = place ? '' : keyword.trim()
+      if (raw) {
+        const { terms } = parseQuery(raw)
+        const tier = new Map(out.map(r => [r.slug, relevanceTier(r.names, raw, terms)]))
+        out.sort((a, b) => (tier.get(a.slug)! - tier.get(b.slug)!) || fallback(a, b))
+      } else out.sort(fallback)
+    }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFiltered, sp.get('type'), sort, rotation, distFrom])
+  }, [baseFiltered, sp.get('type'), sort, rotation, distFrom, keyword, place])
 
   const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE))
   const page = Math.min(pageParam, totalPages)

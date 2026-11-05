@@ -408,3 +408,31 @@ export function haystack(l: Searchable): string {
 export function matchesTerms(hay: string, terms: string[]): boolean {
   return terms.every(t => fuzzyIncludes(hay, t) || (AMENITY_EN_TO_TH[t] ? hay.includes(norm(AMENITY_EN_TO_TH[t])) : false))
 }
+
+// ── Ranking by relevance ─────────────────────────────────────────────────────
+
+/** A listing's names (Thai and English), normalised, for name-first ranking. */
+export function nameKey(titleTh?: string | null, titleEn?: string | null): string {
+  return [titleTh, titleEn].filter(Boolean).map(t => norm(String(t))).join('|')
+}
+
+/**
+ * How well a listing's name answers what was typed; lower ranks higher.
+ *   0  a name starts with the whole phrase ("st apartment" → ST Apartment)
+ *   1  a name contains the whole phrase
+ *   2  a name contains every leftover word
+ *   3  the words only appear elsewhere (description, address, amenities)
+ * The whole phrase is matched before type words are taken out, because a
+ * building is often named after its type ("ST Apartment", "P Apartment").
+ * Fair Rotation still orders listings within a tier.
+ */
+export function relevanceTier(names: string, raw: string, terms: string[]): number {
+  const phrase = norm(raw)
+  if (phrase.length >= 2) {
+    const parts = names.split('|')
+    if (parts.some(p => p.startsWith(phrase))) return 0
+    if (parts.some(p => p.includes(phrase))) return 1
+  }
+  if (terms.length && matchesTerms(names, terms)) return 2
+  return 3
+}
