@@ -81,7 +81,7 @@ export const WIZARD_T = {
     // ── Unit grid ──
     colRoomType: 'ประเภทห้อง',
     colRoomName: 'ชื่อห้อง (ไม่บังคับ)',
-    roomNamePlaceholder: 'เช่น Studio Deluxe, ห้องมุมมีระเบียง',
+    roomNamePlaceholder: 'เช่น Studio Deluxe',
     colSize: 'ขนาด (ตร.ม.)',
     col12m: 'สัญญา 12 เดือน (บาท/เดือน)',
     colDaily: 'ราคา/วัน',
@@ -268,7 +268,7 @@ export const WIZARD_T = {
 
     colRoomType: 'Room type',
     colRoomName: 'Room name (optional)',
-    roomNamePlaceholder: 'e.g. Studio Deluxe, corner room with balcony',
+    roomNamePlaceholder: 'e.g. Studio Deluxe',
     colSize: 'Size (m²)',
     col12m: '12-month contract (baht/month)',
     colDaily: 'Price/day',

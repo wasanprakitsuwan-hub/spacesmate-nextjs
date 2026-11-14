@@ -298,20 +298,17 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 't
     <div>
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-            {[t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
+            {[t.colRoomName, t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
           {rows.map(row => (
             <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', whiteSpace: 'nowrap' }}>{t.colRoomName}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
                 <input type="text" value={row.room_name ?? ''} maxLength={60}
                   onChange={e => upd(row.id, 'room_name', e.target.value)}
-                  placeholder={t.roomNamePlaceholder} style={{ ...SINP, padding: '7px 10px', flex: 1 }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+                  placeholder={t.roomNamePlaceholder} style={{ ...SINP, padding: '7px 10px' }} />
                 <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
                   {roomTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
