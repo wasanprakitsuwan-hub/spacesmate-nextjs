@@ -334,7 +334,16 @@ export default async function PropertyPageBody({ slug, locale }: { slug: string;
                     <tbody>
                       {aptUnits.map((u: any, i: number) => (
                         <tr key={u.id ?? i}>
-                          <td style={{ ...td, fontWeight: 500 }}>{roomTypeLabel(u.room_type, locale) || '—'}</td>
+                          <td style={{ ...td, fontWeight: 500, whiteSpace: 'normal', minWidth: 140 }}>
+                            {/* Room name first when the owner gave one, with the
+                                type under it; otherwise the type alone. */}
+                            {u.room_name?.trim() ? (
+                              <>
+                                <div>{u.room_name.trim()}</div>
+                                <div style={{ fontSize: 12.5, fontWeight: 400, color: C.muted, marginTop: 2 }}>{roomTypeLabel(u.room_type, locale) || '—'}</div>
+                              </>
+                            ) : (roomTypeLabel(u.room_type, locale) || '—')}
+                          </td>
                           <td style={{ ...td, color: C.muted }}>{u.size_sqm ? t.sizeValue(u.size_sqm) : '—'}</td>
                           <td style={{ ...td, fontWeight: 600, color: C.amber }}>{money(rate12(u))}</td>
                           {has6 && <td style={td}>{money(u.price_6mo)}</td>}
