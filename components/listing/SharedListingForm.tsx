@@ -20,6 +20,13 @@ export interface RoomTypeRow {
 export interface ApartmentUnitRow {
   id: string
   room_type: string
+  /**
+   * Optional free-text name the owner gives this row, e.g. "Studio Deluxe" or
+   * "ห้องมุมมีระเบียง". room_type stays the fixed category that search filters
+   * on; the name only tells two rows of the same type apart on the property
+   * page. Blank means the page shows the type alone, as before.
+   */
+  room_name: string
   size_sqm: string
   /**
    * Contract length, all paid monthly — matching CondoRentalDetail.
@@ -234,7 +241,7 @@ export function prepareSubmitData(form: FormState) {
     // only, so deposits entered for office and co-working were silently discarded.
     room_types = [
       { _type: 'charges', ...form.rental_charges },
-      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u })),
+      ...form.apartment_units.map(({ id: _id, ...u }) => ({ _type: 'apt_unit', ...u, room_name: (u.room_name ?? '').trim() })),
     ]
   } else if (['condo', 'house'].includes(form.property_type)) {
     const r = form.condo_rental
@@ -276,7 +283,7 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 't
   const t = WIZARD_T[locale]
   function addRow() {
     onChange([...rows, {
-      id: `au-${Date.now()}`, room_type: roomTypeOptions[0]?.value ?? 'studio',
+      id: `au-${Date.now()}`, room_type: roomTypeOptions[0]?.value ?? 'studio', room_name: '',
       size_sqm: '', price_12mo: '', price_1mo: '', price_daily: '',
       available_1mo: false, available_3mo: false, price_3mo: '',
       available_6mo: false, price_6mo: '',
@@ -291,14 +298,17 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 't
     <div>
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-            {[t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
+            {[t.colRoomName, t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
           {rows.map(row => (
             <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.9fr 0.9fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+                <input type="text" value={row.room_name ?? ''} maxLength={60}
+                  onChange={e => upd(row.id, 'room_name', e.target.value)}
+                  placeholder={t.roomNamePlaceholder} style={{ ...SINP, padding: '7px 10px' }} />
                 <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
                   {roomTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>

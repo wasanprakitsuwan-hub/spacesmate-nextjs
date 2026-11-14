@@ -238,6 +238,7 @@ function EditDrawer({ listing, userId, onClose, onSaved, locale }: { listing: Ow
         .map((r, i) => ({
           id: `au-${i}`,
           room_type: r.room_type || 'Studio',
+          room_name: String(r.room_name ?? ''),
           size_sqm:  String(r.size_sqm ?? ''),
           // Legacy rows stored the headline rate in price_1mo, because the main
           // input wrote to that field. If price_12mo is absent the row predates
