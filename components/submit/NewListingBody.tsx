@@ -232,9 +232,11 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error || 'Server error')
 
-      trackEvent('listing_draft_saved', {
-        package_id:    form.package_type,
+      // Fires only after the API saved the listing. Meta gets it as a Lead.
+      trackEvent('listing_submit', {
+        listing_id:    json.listing?.id,
         property_type: form.property_type,
+        package:       form.package_type,
         published:     json.published === true,
         mode,
       })

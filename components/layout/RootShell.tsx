@@ -32,6 +32,7 @@ import { SiteInfoProvider } from '@/components/layout/SiteInfoContext'
 import { getCompanyInfo } from '@/lib/site-settings'
 import { OrganizationLd, WebSiteLd } from '@/components/seo/JsonLd'
 import Analytics from '@/components/consent/Analytics'
+import ConsentDefaults from '@/components/consent/ConsentDefaults'
 import ConsentBanner from '@/components/consent/ConsentBanner'
 
 // ── Prompt font — self-hosted via next/font (eliminates render-blocking external request)
@@ -56,6 +57,9 @@ export default async function RootShell({
   return (
     <html lang={lang} className={prompt.variable}>
       <body className="bg-spacemate-bgLight text-spacemate-textCharcoal font-sans antialiased">
+        {/* Consent Mode v2 defaults (all denied). Must be the first script on
+            the page, before gtag.js and before any event is pushed. */}
+        <ConsentDefaults />
         <OrganizationLd locale={lang} company={company} />
         <WebSiteLd locale={lang} />
 
@@ -63,10 +67,10 @@ export default async function RootShell({
           <ConditionalSiteLayout>{children}</ConditionalSiteLayout>
         </SiteInfoProvider>
 
-        {/* Tracking now lives behind consent.
-            The GTM snippet and its <noscript> iframe used to sit here and fired
-            on every page load, before the visitor had been asked anything.
-            <Analytics /> loads GTM only once consent has been given.
+        {/* <Analytics /> loads GA4 for every visitor on the live site, under
+            Consent Mode (nothing stored until analytics is allowed), loads the
+            Meta pixel only with marketing consent, and adds Vercel's
+            cookieless counter. See components/consent/Analytics.
 
             The <noscript> fallback is deliberately not reinstated: a visitor
             with JavaScript disabled cannot be shown a banner, cannot answer it,

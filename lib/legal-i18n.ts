@@ -37,7 +37,7 @@ export const LEGAL_T = {
     termsMetaTitle: 'เงื่อนไขการใช้งาน',
     termsHeading: 'เงื่อนไขการใช้งาน',
     home: 'หน้าแรก',
-    privacyEffective: 'มีผลบังคับใช้ตั้งแต่ 10 สิงหาคม 2569 | ปรับปรุงล่าสุด 10 สิงหาคม 2569',
+    privacyEffective: 'มีผลบังคับใช้ตั้งแต่ 10 สิงหาคม 2569 | ปรับปรุงล่าสุด 26 พฤศจิกายน 2569',
     // 2568 BE is 2025 CE — a year before Space Works Co., Ltd. was incorporated
     // on 6 January 2026 (2569 BE). Corrected; the registration number 0105569001611
     // carries 569 and confirms the year.
@@ -66,7 +66,7 @@ export const LEGAL_T = {
     termsMetaTitle: 'Terms of use',
     termsHeading: 'Terms of use',
     home: 'Home',
-    privacyEffective: 'In effect from 10 August 2026 | last updated 10 August 2026',
+    privacyEffective: 'In effect from 10 August 2026 | last updated 26 November 2026',
     termsEffective: 'In effect from 6 January 2026 | last updated 25 June 2026',
     termsIntroA: 'Please read these terms carefully before using spacesmate.com. If you have any questions, contact ',
     privacyIntro1a: 'Space Works Co., Ltd. (',
@@ -138,13 +138,15 @@ const PRIVACY_TH: LegalSection[] = [
   },
   {
     title: '2. คุกกี้และความยินยอม',
-    content: `เว็บไซต์ไม่โหลดเครื่องมือวิเคราะห์หรือโฆษณาใด ๆ จนกว่าคุณจะให้ความยินยอม
+    content: `เว็บไซต์ไม่บันทึกคุกกี้เพื่อการวิเคราะห์หรือการโฆษณาใด ๆ จนกว่าคุณจะให้ความยินยอม
 
-เมื่อคุณให้ความยินยอมแล้ว จะมีการโหลด:
+หากคุณปฏิเสธคุกกี้เพื่อการวิเคราะห์ เรายังนับจำนวนการเข้าชมแบบไม่ระบุตัวตน โดยไม่ใช้คุกกี้หรือตัวระบุ
 
-• Google Tag Manager — ผู้รับ: Google
-• Google Analytics 4 — ผู้รับ: Google (G-QBQV320QXT)
-• Meta Pixel — ผู้รับ: Meta Platforms, Inc. (26085822227748725)
+เครื่องมือที่ใช้:
+
+• Google Analytics 4 — ผู้รับ: Google (G-QBQV320QXT) — โหลดในทุกหน้า แต่จะบันทึกคุกกี้ก็ต่อเมื่อคุณอนุญาตคุกกี้เพื่อการวิเคราะห์ หากไม่อนุญาต จะส่งเพียงสัญญาณนับการเข้าชมที่ไม่มีคุกกี้
+• Vercel Web Analytics — ผู้รับ: Vercel Inc. — นับการเข้าชมแบบไม่ระบุตัวตน ไม่ใช้คุกกี้และไม่เก็บ IP address
+• Meta Pixel — ผู้รับ: Meta Platforms, Inc. (26085822227748725) — โหลดเฉพาะเมื่อคุณอนุญาตคุกกี้เพื่อการตลาด
 
 การถอนความยินยอมทำได้ตลอดเวลาและง่ายเท่ากับการให้ ผ่านลิงก์ "ตั้งค่าคุกกี้" ที่ส่วนท้ายของทุกหน้า การถอนมีผลทันที และไม่กระทบความชอบด้วยกฎหมายของการประมวลผลก่อนหน้า
 
@@ -157,8 +159,8 @@ const PRIVACY_TH: LegalSection[] = [
 เราใช้ผู้ให้บริการภายนอกดังนี้ ซึ่งประมวลผลข้อมูลตามคำสั่งของเราและตามข้อกำหนดการให้บริการของแต่ละราย:
 
 • Supabase — ฐานข้อมูลหลัก (บัญชี ประกาศ คำขอ) · สิงคโปร์
-• Vercel — โฮสติ้งเว็บไซต์ (ข้อมูลคำขอ log) · สหรัฐอเมริกา / edge ทั่วโลก
-• Google — Tag Manager, Analytics (ตัวระบุออนไลน์ ข้อมูลการใช้งาน) · สหรัฐอเมริกา
+• Vercel — โฮสติ้งเว็บไซต์และการนับการเข้าชมแบบไม่ระบุตัวตน (ข้อมูลคำขอ log) · สหรัฐอเมริกา / edge ทั่วโลก
+• Google — Analytics (ตัวระบุออนไลน์ ข้อมูลการใช้งาน) · สหรัฐอเมริกา
 • Meta Platforms — Pixel เพื่อการโฆษณา (ตัวระบุออนไลน์ พฤติกรรมการเข้าชม) · สหรัฐอเมริกา
 • Stripe — รับชำระเงิน (ข้อมูลบัตรและรหัสลูกค้า) · สหรัฐอเมริกา / ไอร์แลนด์
 • n8n Cloud — ระบบอัตโนมัติ · สหภาพยุโรป
@@ -263,13 +265,15 @@ Cookies strictly necessary for login and security are not subject to consent, be
   },
   {
     title: '2. Cookies and consent',
-    content: `The site loads no analytics or advertising tooling until you consent.
+    content: `The site sets no analytics or advertising cookies until you consent.
 
-Once you consent, the following load:
+If you decline analytics cookies, we still count visits anonymously, without cookies or identifiers.
 
-• Google Tag Manager — recipient: Google
-• Google Analytics 4 — recipient: Google (G-QBQV320QXT)
-• Meta Pixel — recipient: Meta Platforms, Inc. (26085822227748725)
+The tools used:
+
+• Google Analytics 4 — recipient: Google (G-QBQV320QXT) — loads on every page, but sets cookies only if you allow analytics cookies. Without that permission it sends cookieless visit counts only
+• Vercel Web Analytics — recipient: Vercel Inc. — anonymous visit counts, with no cookies and no IP address stored
+• Meta Pixel — recipient: Meta Platforms, Inc. (26085822227748725) — loads only if you allow marketing cookies
 
 You can withdraw consent at any time, and as easily as you gave it, through the "cookie settings" link in the footer of every page. Withdrawal takes effect immediately and does not affect the lawfulness of processing carried out beforehand.
 
@@ -282,8 +286,8 @@ We record your decision so it can be demonstrated under section 19. That record 
 We use the following external providers, which process data on our instructions and under their own terms of service:
 
 • Supabase — primary database (accounts, listings, requests) · Singapore
-• Vercel — website hosting (request data, logs) · United States / global edge
-• Google — Tag Manager, Analytics (online identifiers, usage data) · United States
+• Vercel — website hosting and anonymous visit counts (request data, logs) · United States / global edge
+• Google — Analytics (online identifiers, usage data) · United States
 • Meta Platforms — Pixel for advertising (online identifiers, browsing behaviour) · United States
 • Stripe — payment processing (card data and customer identifiers) · United States / Ireland
 • n8n Cloud — automation · European Union

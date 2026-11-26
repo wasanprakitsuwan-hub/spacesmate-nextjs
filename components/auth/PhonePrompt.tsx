@@ -51,10 +51,7 @@ export default function PhonePrompt({ locale = 'th' }: { locale?: Locale }) {
           // sign-in. Anything older is a returning user logging back in.
           const ageMs = Date.now() - new Date(user.created_at).getTime()
           if (ageMs < 2 * 60 * 1000) {
-            trackEvent('sign_up', { method: 'google' })
-            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-              window.fbq('track', 'CompleteRegistration')
-            }
+            trackEvent('sign_up', { method: 'google' })   // + Meta CompleteRegistration
           } else {
             trackEvent('login', { method: 'google' })
           }
