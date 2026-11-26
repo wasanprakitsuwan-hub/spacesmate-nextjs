@@ -281,11 +281,8 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
       if (authErr) {
         setError(authErr.message || t.signupFailedShort)
       } else if (data.user) {
-        // ── Tracking: GA4 sign_up + Facebook Pixel CompleteRegistration ──
+        // GA4 sign_up; trackEvent also sends Meta CompleteRegistration.
         trackEvent('sign_up', { method: 'email' })
-        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-          window.fbq('track', 'CompleteRegistration')
-        }
         setConfirmedEmail(signEmail)
       }
     } catch {

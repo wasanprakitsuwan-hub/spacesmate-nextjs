@@ -7,11 +7,12 @@
  *   analytics and advertising cookies need consent: they are genuinely optional
  *   and the visitor gains nothing from them.
  *
- * THE APPROACH
- *   GTM is not loaded at all until consent is given. The alternative — loading
- *   it with Google Consent Mode defaults set to denied — still lets Google
- *   receive cookieless pings, and "we sent them less data than we could have"
- *   is a weaker position to defend than "we sent nothing".
+ * THE APPROACH (changed 26 Nov 2026, Founder's tracking spec)
+ *   Until then GTM was not loaded at all before consent. It is now replaced by
+ *   GA4 under Google Consent Mode v2: gtag.js loads for everyone with every
+ *   signal denied (components/consent/ConsentDefaults), and this decision is
+ *   passed to Google as a consent update. Visitors who decline send cookieless
+ *   pings only. The Meta pixel still loads only with marketing consent.
  *
  *   Necessary cookies are not offered as a choice, because they are not one:
  *   they are the session and security cookies without which the site cannot

@@ -100,7 +100,7 @@ export default function ManageBody({ locale = 'th' }: { locale?: Locale }) {
         }
         throw new Error(j.error || t.genericError)
       }
-      trackEvent('management_form_submit', { property_type: type, preferred_channel: channel })
+      trackEvent('manage_lead_submit', { form_location: 'manage_page', property_type: type, preferred_channel: channel })
       setSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.genericError)

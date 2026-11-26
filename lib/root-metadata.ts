@@ -60,9 +60,9 @@ export function rootMetadata(locale: Locale): Metadata {
     // Google Search Console ownership, rendered server-side on every page.
     //
     // Deliberately NOT verified via the Google Analytics or Tag Manager methods:
-    // GTM here loads only after cookie consent (components/consent/Analytics.tsx),
-    // and Google's verifier does not accept cookies — it would see a page with no
-    // container and fail. A static token in <head> is independent of consent and
+    // the tags here depend on cookie consent and the live hostname
+    // (components/consent/Analytics.tsx), and Google's verifier does not accept
+    // cookies, so it could see a page with no tag and fail. A static token in <head> is independent of consent and
     // carries no tracking, so it is unconditional.
     //
     // Do not remove. Google re-checks periodically and silently unverifies the

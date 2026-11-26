@@ -25,7 +25,8 @@ import { readConsent, writeConsent, onConsentChange, type Consent } from '@/lib/
  *   Rejecting is one click, exactly like accepting. No "manage preferences"
  *   maze in between.
  *
- *   Nothing loads before a decision. The banner does not pre-tick the optional
+ *   Nothing is stored before a decision. (GA4 loads under Consent Mode with
+ *   every signal denied; see ConsentDefaults.) The banner does not pre-tick the optional
  *   categories, because a pre-ticked box is the site deciding, not the visitor.
  *
  *   Necessary cookies are stated, not offered. Presenting a toggle nobody can

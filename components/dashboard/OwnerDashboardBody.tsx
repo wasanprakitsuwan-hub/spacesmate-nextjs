@@ -466,13 +466,26 @@ export default function OwnerDashboardBody({ locale = 'th' }: { locale?: Locale 
     if (!slots) return
 
     const pkg = q.get('pkg') || 'basic'
-    trackEvent('slot_purchased', {
-      transaction_id: q.get('sid') || undefined,
-      package_id:     pkg,
-      quantity:       slots,
-      value:          (PACKAGE_PRICE_THB[pkg] ?? 0) * slots,
-      currency:       'THB',
-    })
+    const sid = q.get('sid') || ''
+    // Once per order: a second visit to the same return URL (back button,
+    // bookmark) must not count a second sale. GA4 also dedupes on
+    // transaction_id, but Meta and Vercel do not.
+    const seenKey = sid ? `sm_purchase_${sid}` : ''
+    let seen = false
+    try { seen = !!seenKey && localStorage.getItem(seenKey) === '1' } catch { /* storage blocked */ }
+    if (!seen) {
+      // value is the list price; a promo code discount is not subtracted here.
+      const value = (PACKAGE_PRICE_THB[pkg] ?? 0) * slots
+      trackEvent('purchase', {
+        transaction_id: sid || undefined,
+        value,
+        currency:       'THB',
+        package:        pkg,
+        quantity:       slots,
+        items:          [{ item_name: pkg, price: PACKAGE_PRICE_THB[pkg] ?? 0, quantity: slots }],
+      })
+      try { if (seenKey) localStorage.setItem(seenKey, '1') } catch { /* fine */ }
+    }
     window.history.replaceState({}, '', '/owner-dashboard')
   }, [])
 
