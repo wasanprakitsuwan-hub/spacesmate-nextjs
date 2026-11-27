@@ -146,7 +146,8 @@ const PRIVACY_TH: LegalSection[] = [
 
 • Google Analytics 4 — ผู้รับ: Google (G-QBQV320QXT) — โหลดในทุกหน้า แต่จะบันทึกคุกกี้ก็ต่อเมื่อคุณอนุญาตคุกกี้เพื่อการวิเคราะห์ หากไม่อนุญาต จะส่งเพียงสัญญาณนับการเข้าชมที่ไม่มีคุกกี้
 • Vercel Web Analytics — ผู้รับ: Vercel Inc. — นับการเข้าชมแบบไม่ระบุตัวตน ไม่ใช้คุกกี้และไม่เก็บ IP address
-• Meta Pixel — ผู้รับ: Meta Platforms, Inc. (26085822227748725) — โหลดเฉพาะเมื่อคุณอนุญาตคุกกี้เพื่อการตลาด
+• Meta Pixel — ผู้รับ: Meta Platforms, Inc. (26085822227748725) — โหลดเฉพาะเมื่อคุณอนุญาตคุกกี้เพื่อการตลาด เมื่ออนุญาตแล้ว เหตุการณ์เดียวกันจะถูกส่งจากเซิร์ฟเวอร์ของเราไปยัง Meta ด้วย (Conversions API) พร้อม IP address และ user agent เพื่อจับคู่กับโฆษณา ไม่ส่งชื่อ อีเมล หรือเบอร์โทร
+• แหล่งที่มาของโฆษณา — เมื่อเจ้าของทรัพย์มาจากลิงก์โฆษณา เราเก็บชื่อแคมเปญ (UTM) ไว้กับประกาศเพื่อนับผลโฆษณาของเราเอง และเก็บรหัสคลิก fbclid เฉพาะเมื่อคุณอนุญาตคุกกี้เพื่อการตลาด
 
 การถอนความยินยอมทำได้ตลอดเวลาและง่ายเท่ากับการให้ ผ่านลิงก์ "ตั้งค่าคุกกี้" ที่ส่วนท้ายของทุกหน้า การถอนมีผลทันที และไม่กระทบความชอบด้วยกฎหมายของการประมวลผลก่อนหน้า
 
@@ -273,7 +274,8 @@ The tools used:
 
 • Google Analytics 4 — recipient: Google (G-QBQV320QXT) — loads on every page, but sets cookies only if you allow analytics cookies. Without that permission it sends cookieless visit counts only
 • Vercel Web Analytics — recipient: Vercel Inc. — anonymous visit counts, with no cookies and no IP address stored
-• Meta Pixel — recipient: Meta Platforms, Inc. (26085822227748725) — loads only if you allow marketing cookies
+• Meta Pixel — recipient: Meta Platforms, Inc. (26085822227748725) — loads only if you allow marketing cookies. Once allowed, the same events are also sent from our server to Meta (Conversions API) with your IP address and user agent to match them to ads. No name, email or phone number is sent
+• Ad source — when an owner arrives from an ad link, we keep the campaign name (UTM) with their listing to count our own ad results, and keep the fbclid click id only if you allow marketing cookies
 
 You can withdraw consent at any time, and as easily as you gave it, through the "cookie settings" link in the footer of every page. Withdrawal takes effect immediately and does not affect the lawfulness of processing carried out beforehand.
 

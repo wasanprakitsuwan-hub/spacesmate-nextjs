@@ -1168,7 +1168,7 @@ export function VideoUploadZone({ videoUrl, onVideoChange, packageType, locale =
 // ── Listing Form Fields (master form component) ────────────────────────────────
 export function ListingFormFields({
   form, onChange, onAmenityToggle, onImagesChange,
-  isPublicUpload = false, isAdmin = false, isMobile = false, locale = 'th',
+  isPublicUpload = false, isAdmin = false, isMobile = false, locale = 'th', step,
 }: {
   form: FormState
   onChange: (k: string, v: any) => void
@@ -1188,8 +1188,19 @@ export function ListingFormFields({
    * amenity name, facing, district, charge key — is identical in both locales.
    */
   locale?: Locale
+  /**
+   * Show only one step of the 4-step owner wizard (/list-your-property/new):
+   * 1 the room (type, size, location, map, description, amenities), 2 photos
+   * and video, 3 prices, rental terms and contact. Left out, every section
+   * shows, as the owner dashboard and the admin screen have always had it.
+   * Sections are numbered only on the full form; inside a step the numbers
+   * would skip about.
+   */
+  step?: 1 | 2 | 3
 }) {
   const t = WIZARD_T[locale]
+  const inStep = (n: 1 | 2 | 3) => step === undefined || step === n
+  const sh = (n: string, label: string) => (step === undefined ? `${n} · ${label}` : label)
   const roomOpts = getRoomTypeOptions(form.property_type, locale)
 
   // Editable in Settings; defaults until it loads.
@@ -1231,8 +1242,9 @@ export function ListingFormFields({
   return (
     <>
       {/* ── 1 · ข้อมูลหลัก ── */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`1 · ${t.mainInfo}`} />
+        <SectionHead text={sh('1', `${t.mainInfo}`)} />
         <div style={{ marginBottom: 14 }}>
           <label style={SLBL}>{t.propertyType} *</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -1261,9 +1273,11 @@ export function ListingFormFields({
           <input value={form.title_en} onChange={e => onChange('title_en', e.target.value)} placeholder="Condo for Rent near BTS Ekkamai" style={SINP} />
         </div>
       </div>
+      </>)}
 
       {/* Slug is generated at creation and never edited — changing it breaks
           every existing link. Shown here for reference only. */}
+      {inStep(1) && (<>
       {isAdmin && form.slug && (
         <div style={{ marginBottom: 20, marginTop: -8 }}>
           <label style={SLBL}>URL {t.ofListing}</label>
@@ -1275,14 +1289,16 @@ export function ListingFormFields({
           </p>
         </div>
       )}
+      </>)}
 
       {/* ── 2 · ราคาและประเภทห้อง ── */}
+      {inStep(3) && (<>
       <div style={{ marginBottom: 24 }}>
         {/* Apartment */}
         {isApartment && (
           <>
             {PackageSelector}
-            <SectionHead text={`2 · ${t.roomTypesAndPrices}`} />
+            <SectionHead text={sh('2', `${t.roomTypesAndPrices}`)} />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
               {t.addEachRoomType}
             </p>
@@ -1294,7 +1310,7 @@ export function ListingFormFields({
         {isCondoOrHouse && (
           <>
             {PackageSelector}
-            <SectionHead text={`2 · ${t.rentalDetail}`} />
+            <SectionHead text={sh('2', `${t.rentalDetail}`)} />
             <CondoHouseRentalDetail detail={form.condo_rental} propertyType={form.property_type} onChange={d => onChange('condo_rental', d)} locale={locale} />
           </>
         )}
@@ -1303,7 +1319,7 @@ export function ListingFormFields({
         {isOfficeOrCo && (
           <>
             {PackageSelector}
-            <SectionHead text={`2 · ${t.spaceTypesAndPrices}`} />
+            <SectionHead text={sh('2', `${t.spaceTypesAndPrices}`)} />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 12px' }}>
               {t.addEachSpaceType}
             </p>
@@ -1311,10 +1327,12 @@ export function ListingFormFields({
           </>
         )}
       </div>
+      </>)}
 
       {/* ── 3 · ขนาดและลักษณะ ── */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`3 · ${t.sizeAndLayout}`} />
+        <SectionHead text={sh('3', `${t.sizeAndLayout}`)} />
         {showAreaSqm && (
           <div style={{ display: 'grid', gridTemplateColumns: showFloor ? '1fr 1fr' : '1fr', gap: 12, marginBottom: showBedsBaths ? 12 : 0 }}>
             <div>
@@ -1346,41 +1364,49 @@ export function ListingFormFields({
           </div>
         )}
       </div>
+      </>)}
 
       {/* ── 3B · รายละเอียดการเช่า ── */}
+      {inStep(3) && (<>
       {isApartment ? (
         <div style={{ marginBottom: 24 }}>
-          <SectionHead text={`3B · ${t.rentalDetail}`} />
+          <SectionHead text={sh('3B', `${t.rentalDetail}`)} />
           <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.utilitiesNote}</p>
           <RentalChargesSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} locale={locale} />
         </div>
       ) : (
         <div style={{ marginBottom: 24 }}>
-          <SectionHead text={`3B · ${t.rentalDetail}`} />
+          <SectionHead text={sh('3B', `${t.rentalDetail}`)} />
           <p style={{ fontSize: 12, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.depositsNote}</p>
           <DepositSection charges={form.rental_charges} onChange={c => onChange('rental_charges', c)} locale={locale} />
         </div>
       )}
+      </>)}
 
       {/* ── 4 · ที่ตั้งและที่อยู่ ── */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`4 · ${t.locationAndAddress}`} />
+        <SectionHead text={sh('4', `${t.locationAndAddress}`)} />
         <ThaiAddressSelect
           form={{ address_th: form.address_th, district: form.district, sub_district: form.sub_district, province: form.province, postcode: form.postcode }}
           onChange={onChange}
           locale={locale}
         />
       </div>
+      </>)}
 
       {/* ── 5 · พิกัดบนแผนที่ ── */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`5 · ${t.mapCoords}`} />
+        <SectionHead text={sh('5', `${t.mapCoords}`)} />
         <MapPicker lat={form.lat} lng={form.lng} onLatLng={(lat, lng) => { onChange('lat', lat); onChange('lng', lng) }} locale={locale} />
       </div>
+      </>)}
 
       {/* ── 6 · รายละเอียดประกาศ (TH / EN) ── */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`6 · ${t.listingDetail}`} />
+        <SectionHead text={sh('6', `${t.listingDetail}`)} />
         <div style={{ display: 'flex', gap: 0, marginBottom: 10, borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', width: 'fit-content' }}>
           {(['th', 'en'] as const).map(lang => (
             <button
@@ -1418,14 +1444,16 @@ export function ListingFormFields({
           />
         )}
       </div>
+      </>)}
 
       {/* ── 7 · สิ่งอำนวยความสะดวก ──
           Always two sections, for every property type. The list is loaded from
           Settings so admins can add, edit and remove items; it falls back to
           lib/amenities defaults if that request fails, because a form showing no
           amenities looks broken and would publish listings with none selected. */}
+      {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`7 · ${t.amenities}`} />
+        <SectionHead text={sh('7', `${t.amenities}`)} />
         {AMENITY_SECTIONS.map(sec => {
           const items = bySection(amenityList, sec.key)
           if (!items.length) return null
@@ -1454,10 +1482,12 @@ export function ListingFormFields({
           )
         })}
       </div>
+      </>)}
 
       {/* ── 8 · รูปภาพห้อง ── */}
+      {inStep(2) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`8 · ${t.roomImages}`} />
+        <SectionHead text={sh('8', `${t.roomImages}`)} />
         <ImageUploadZone
           images={form.images}
           onImagesChange={onImagesChange}
@@ -1467,16 +1497,20 @@ export function ListingFormFields({
         />
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '7px 0 0' }}>{t.firstIsCover}</p>
       </div>
+      </>)}
 
       {/* ── 9 · วิดีโอ (Premium) ── */}
+      {inStep(2) && (<>
       <div style={{ marginBottom: 24 }}>
-        <SectionHead text={`9 · ${t.listingVideo} (${t.premiumOnly})`} />
+        <SectionHead text={sh('9', `${t.listingVideo} (${t.premiumOnly})`)} />
         <VideoUploadZone videoUrl={form.video_url} onVideoChange={v => onChange('video_url', v)} packageType={form.package_type} locale={locale} />
       </div>
+      </>)}
 
       {/* ── 10 · ข้อมูลการติดต่อ ── */}
+      {inStep(3) && (<>
       <div style={{ marginBottom: 8 }}>
-        <SectionHead text={`10 · ${t.contactInfo}`} />
+        <SectionHead text={sh('10', `${t.contactInfo}`)} />
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.contactShownOnListing}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
@@ -1506,6 +1540,7 @@ export function ListingFormFields({
           </p>
         </div>
       </div>
+      </>)}
     </>
   )
 }

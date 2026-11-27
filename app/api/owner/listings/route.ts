@@ -184,6 +184,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Which ad brought the owner (lib/funnel), kept on the listing for the
+    // Founder's own per-campaign count. A separate write so a database that
+    // has not run 20261127a yet still saves the listing.
+    const attribution = cleanAttribution(fields.attribution)
+    if (attribution && data?.id) {
+      const { error: attrErr } = await supabase.from('properties').update({ attribution }).eq('id', data.id)
+      if (attrErr) console.warn('[owner POST] attribution not saved:', attrErr.message)
+    }
+
     // ── Send email notifications ──────────────────────────────────────────────
     try {
       const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL || 'https://spacesmate.com'
@@ -431,4 +440,16 @@ export async function DELETE(req: NextRequest) {
     console.error('owner DELETE error:', err)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
+}
+
+/** Only the known keys, as short strings. Anything else in the body is dropped. */
+function cleanAttribution(raw: unknown): Record<string, string> | null {
+  if (!raw || typeof raw !== 'object') return null
+  const keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'landing', 'landed_at', 'fbclid']
+  const out: Record<string, string> = {}
+  for (const k of keys) {
+    const v = (raw as Record<string, unknown>)[k]
+    if (typeof v === 'string' && v) out[k] = v.slice(0, 255)
+  }
+  return Object.keys(out).length ? out : null
 }
