@@ -93,14 +93,14 @@ export default function FbLandingBody({ promoCode, samples }: { promoCode: strin
         .fbl-sample b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13.5px; line-height: 1.4; font-weight: 600; }
         .fbl-sample small { display: block; margin-top: 3px; font-size: 12px; color: #6b6660; }
         .fbl-sample em { display: block; margin-top: 5px; font-style: normal; font-size: 15px; font-weight: 600; color: #a65f08; }
-        .fbl-faq { background: #fff; border: 1px solid #e5e2da; border-radius: 12px; overflow: hidden; }
-        .fbl-faq details { border-bottom: 1px solid #ece9e2; }
-        .fbl-faq details:last-child { border-bottom: 0; }
-        .fbl-faq summary { list-style: none; cursor: pointer; min-height: 54px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; font-weight: 500; color: #02402e; }
+        .fbl-faq { background: #fff; border: 1px solid #e5e2da; border-radius: 6px; overflow: hidden; }
+        /* Same look as the site FAQ (components/faq/FAQAccordion): green question, +/− at the right, hairline dividers. */
+        .fbl-faq details + details { border-top: 1px solid #ece9e2; }
+        .fbl-faq summary { list-style: none; cursor: pointer; padding: 16px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; font-size: 15.5px; font-weight: 500; line-height: 1.5; color: #02402e; }
         .fbl-faq summary::-webkit-details-marker { display: none; }
-        .fbl-faq summary::after { content: 'ดู'; font-size: 13px; color: #037a64; flex-shrink: 0; }
-        .fbl-faq details[open] summary::after { content: 'ปิด'; }
-        .fbl-faq details p { margin: 0; padding: 0 16px 16px; font-size: 14px; line-height: 1.7; color: #4a4541; animation: fblOpen .2s ease-out; }
+        .fbl-faq summary::after { content: '+'; font-size: 20px; line-height: 1.1; color: #6b6660; flex-shrink: 0; }
+        .fbl-faq details[open] summary::after { content: '−'; }
+        .fbl-faq details p { margin: 0; padding: 0 48px 18px 20px; font-size: 15px; line-height: 1.75; color: #231f20; animation: fblOpen .2s ease-out; }
         @keyframes fblOpen { from { opacity: 0; transform: translateY(-4px) } to { opacity: 1; transform: none } }
         .fbl-tiers { background: #fff; border: 1px solid #e5e2da; border-radius: 12px; }
         .fbl-tier { padding: 13px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid #ece9e2; }
