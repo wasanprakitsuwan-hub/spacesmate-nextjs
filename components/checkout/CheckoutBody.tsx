@@ -28,6 +28,7 @@ import { trackEvent } from '@/lib/analytics'
 import { PACKAGE_PRICE_THB, PACKAGE_IMAGE_LIMITS, PACKAGE_ALLOWS_VIDEO, pricePerMonth } from '@/lib/packages'
 import { CHECKOUT_T, type Locale } from '@/lib/checkout-i18n'
 import { localeHref } from '@/lib/routes-i18n'
+import EmailCodePanel from '@/components/owner/EmailCodePanel'
 import { PROPERTY_TYPE_LABELS } from '@/lib/constants'
 import { normalisePromo, type CheckoutPromo } from '@/lib/promo'
 import { C, RADIUS, btnStyle } from '@/lib/ui'
@@ -180,6 +181,8 @@ function Checkout({ locale }: { locale: Locale }) {
     router.push(localeHref('/owner-dashboard', locale))
   }
 
+  const [needCode, setNeedCode] = useState(false)
+
   async function pay() {
     if (!token) return
     setBusy(true); setError('')
@@ -201,6 +204,11 @@ function Checkout({ locale }: { locale: Locale }) {
         body: JSON.stringify(body),
       })
       const json = await res.json()
+      // First payment from an account whose email is not proven yet
+      // (lib/email-verify): ask for the code here, then carry on paying.
+      if (res.status === 403 && json.error === 'email_unverified') {
+        setNeedCode(true); setBusy(false); return
+      }
       if (!res.ok || !json.url) throw new Error(json.error === 'promo_inactive' ? t.promoInactive : json.error || t.checkoutFailed)
       window.location.href = json.url
     } catch (err) {
@@ -225,6 +233,13 @@ function Checkout({ locale }: { locale: Locale }) {
 
   return (
     <div style={{ background: C.paper, minHeight: '70vh', padding: '28px 16px 64px' }}>
+      {needCode && (
+        <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(35,31,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ width: '100%', maxWidth: 440 }}>
+            <EmailCodePanel locale={locale} onVerified={() => { setNeedCode(false); void pay() }} />
+          </div>
+        </div>
+      )}
       <style>{`
         .sm-co-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
         .sm-co-aside { position: sticky; top: 88px; }

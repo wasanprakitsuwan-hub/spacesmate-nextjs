@@ -7,6 +7,8 @@ import Footer from '@/components/layout/Footer'
 import FloatingChat from '@/components/ui/FloatingChat'
 import TermsGate from '@/components/auth/TermsGate'
 import { useLocale } from '@/lib/use-locale'
+import FunnelHeader from '@/components/layout/FunnelHeader'
+import { isFunnelPath } from '@/lib/funnel'
 
 // Routes that have their own dedicated layouts — suppress the public Navbar/Footer/FloatingChat
 const DASHBOARD_ROUTES = ['/dashboard', '/owner-dashboard', '/login', '/reset-password']
@@ -28,6 +30,12 @@ export default function ConditionalSiteLayout({ children }: { children: React.Re
   const isDashboard = DASHBOARD_ROUTES.some(r => base === r || base.startsWith(r + '/'))
   // Not on the pages where people are signing in or resetting a password.
   const gate = base === '/login' || base === '/reset-password' ? null : <TermsGate locale={locale} />
+
+  // Owner funnel (Facebook ads): logo + login only, no footer, no floating
+  // LINE button over the sticky call to action. See lib/funnel.
+  if (isFunnelPath(base)) {
+    return <><FunnelHeader locale={locale} /><main>{children}</main>{gate}</>
+  }
 
   if (isDashboard) {
     // Dashboard pages have their own header/layout — render children only

@@ -12,6 +12,9 @@ import { useLocale } from '@/lib/use-locale'
 // components/ui/LocaleLink and lib/routes-i18n.
 import Link from '@/components/ui/LocaleLink'
 import { readConsent, writeConsent, onConsentChange, type Consent } from '@/lib/consent'
+import { usePathname } from 'next/navigation'
+import { thPath } from '@/lib/routes-i18n'
+import { isFunnelPath } from '@/lib/funnel'
 
 /**
  * Cookie consent banner.
@@ -38,6 +41,10 @@ import { readConsent, writeConsent, onConsentChange, type Consent } from '@/lib/
 
 export default function ConsentBanner() {
   const t = CONSENT_T[useLocale()]
+  // On the owner funnel (Facebook ad traffic) a one-line bar that sits above
+  // the sticky call to action instead of covering the hero. Same two equal
+  // choices; per-category settings stay in the footer's cookie settings link.
+  const compact = isFunnelPath(thPath(usePathname() ?? ''))
 
   const [decided, setDecided] = useState<Consent | null | undefined>(undefined)
   const [detail,  setDetail]  = useState(false)
@@ -56,6 +63,28 @@ export default function ConsentBanner() {
   const acceptAll = () => writeConsent({ analytics: true,  marketing: true })
   const rejectAll = () => writeConsent({ analytics: false, marketing: false })
   const saveChoice = () => writeConsent({ analytics, marketing })
+
+  if (compact) {
+    const b: React.CSSProperties = { height: 36, padding: '0 14px', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', flexShrink: 0 }
+    return (
+      <div role="dialog" aria-modal="false" aria-label={t.dialogLabel}
+        style={{
+          position: 'fixed', left: 10, right: 10, zIndex: 9999,
+          bottom: 'calc(84px + env(safe-area-inset-bottom, 0px))',
+          maxWidth: 560, margin: '0 auto',
+          background: '#fff', border: '1px solid #dcd8ce', borderRadius: 10,
+          boxShadow: '0 6px 20px -10px rgba(2,64,46,0.25)',
+          padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+        <p style={{ margin: 0, flex: 1, fontSize: 12, lineHeight: 1.45, color: '#231f20' }}>
+          {t.compactText}{' '}
+          <Link href="/privacy" style={{ color: '#037a64', textDecoration: 'underline' }}>{t.privacyLink}</Link>
+        </p>
+        <button type="button" onClick={rejectAll} style={{ ...b, background: '#fff', border: '1px solid #dcd8ce', color: '#231f20' }}>{t.compactReject}</button>
+        <button type="button" onClick={acceptAll} style={{ ...b, background: '#037a64', border: '1px solid #037a64', color: '#fff' }}>{t.compactAccept}</button>
+      </div>
+    )
+  }
 
   return (
     <div

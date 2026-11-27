@@ -507,6 +507,12 @@ export const CONSENT_T = {
     rejectAll: 'ปฏิเสธทั้งหมด · Reject all',
     customise: 'ตั้งค่า · Customise',
     settingsLink: 'ตั้งค่าคุกกี้',
+    // Compact one-line bar on the owner funnel (Facebook ad traffic), where the
+    // full banner would cover the hero and the sticky button. Same two equal
+    // choices; the detailed settings stay one tap away in the footer link.
+    compactText: 'เราใช้คุกกี้เพื่อวัดผลเว็บไซต์และโฆษณา เมื่อคุณอนุญาต',
+    compactAccept: 'ยอมรับ',
+    compactReject: 'ปฏิเสธ',
   },
   en: {
     dialogLabel: 'Cookie settings / การตั้งค่าคุกกี้',
@@ -526,5 +532,8 @@ export const CONSENT_T = {
     rejectAll: 'Reject all · ปฏิเสธทั้งหมด',
     customise: 'Customise · ตั้งค่า',
     settingsLink: 'Cookie settings',
+    compactText: 'We use cookies to measure the site and our ads, if you allow it.',
+    compactAccept: 'Accept',
+    compactReject: 'Reject',
   },
 } as const

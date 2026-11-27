@@ -720,3 +720,23 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
     html
   )
 }
+
+// ── Email code before first payment ────────────────────────────────────────────
+//
+// A 6-digit code rather than a link: owners from Facebook ads are inside the
+// Facebook app's browser, and a link opens in a different browser where they
+// are not signed in. A code is read in the mail app and typed back into the
+// page they never left.
+export async function sendEmailCode(to: string, code: string): Promise<boolean> {
+  const html = layout(`
+  <div style="background:#02402e;padding:28px 32px 24px">
+    <p style="color:#d97f11;font-size:11px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:1.5px">SpacesMate</p>
+    <h1 style="color:#fff;font-size:21px;font-weight:700;margin:0;line-height:1.35">รหัสยืนยันอีเมลของคุณ</h1>
+  </div>
+  <div style="padding:26px 32px 8px">
+    <p style="font-size:14.5px;color:#334155;line-height:1.8;margin:0 0 18px">กรอกรหัสนี้ในหน้าลงประกาศเพื่อยืนยันอีเมลก่อนเผยแพร่ รหัสใช้ได้ 15 นาที</p>
+    <p style="font-size:34px;font-weight:700;letter-spacing:10px;color:#02402e;margin:0 0 18px;font-family:monospace">${code}</p>
+    <p style="font-size:13px;color:#64748b;line-height:1.7;margin:0">Your SpacesMate confirmation code. It works for 15 minutes.<br>ถ้าคุณไม่ได้ขอรหัสนี้ ไม่ต้องทำอะไร</p>
+  </div>`)
+  return sendEmail([to], `รหัสยืนยัน SpacesMate: ${code}`, html)
+}

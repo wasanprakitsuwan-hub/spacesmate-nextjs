@@ -43,7 +43,11 @@ export function trackEvent(eventName: string, params: Params = {}) {
     const fb: Params = { content_name: eventName }
     if (typeof p.value === 'number') fb.value = p.value
     if (typeof p.currency === 'string') fb.currency = p.currency
-    window.fbq('track', meta, fb)
+    // One id for the browser pixel and the server copy, so Meta counts the
+    // event once (deduplication on event_name + event_id).
+    const eventId = newEventId()
+    window.fbq('track', meta, fb, { eventID: eventId })
+    sendServerCopy(meta, eventId, fb)
   }
 
   // Vercel accepts flat string / number / boolean values only.
@@ -58,3 +62,29 @@ export function trackEvent(eventName: string, params: Params = {}) {
 
 /** Alias matching the tracking spec's name. */
 export const track = trackEvent
+
+function newEventId(): string {
+  try { return crypto.randomUUID() } catch { return `${Date.now()}-${Math.random().toString(36).slice(2)}` }
+}
+
+/**
+ * Meta Conversions API, browser → /api/meta/event → Meta.
+ *
+ * Only ever called next to a pixel event, and the pixel loads only with
+ * marketing consent, so the server copy exists for exactly the visitors the
+ * pixel already covers. It recovers events the pixel loses to ad blockers and
+ * iOS browser limits. Visitors who declined or ignored the banner send
+ * nothing to Meta from either side (PDPA; privacy policy section 2).
+ */
+function sendServerCopy(event: string, eventId: string, data: Params) {
+  try {
+    const cookie = (name: string) => document.cookie.split('; ').find(c => c.startsWith(name + '='))?.split('=')[1]
+    const body = JSON.stringify({
+      event, event_id: eventId, url: window.location.href,
+      value: data.value, currency: data.currency, content_name: data.content_name,
+      fbp: cookie('_fbp'), fbc: cookie('_fbc'),
+    })
+    if (navigator.sendBeacon) navigator.sendBeacon('/api/meta/event', new Blob([body], { type: 'application/json' }))
+    else void fetch('/api/meta/event', { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true })
+  } catch { /* never break the page for analytics */ }
+}

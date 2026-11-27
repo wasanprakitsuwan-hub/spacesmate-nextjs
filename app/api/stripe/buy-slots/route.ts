@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe, STRIPE_PRICES, PACKAGE_DAYS } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
+import { isOwnerVerified } from '@/lib/email-verify'
 import { requireAuth, isErr } from '@/lib/auth-guard'
 import { promoSessionParams } from '@/lib/stripe-promo'
 
@@ -18,6 +19,11 @@ import { promoSessionParams } from '@/lib/stripe-promo'
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if (isErr(auth)) return auth
+  // Email proven before the first payment (lib/email-verify). /checkout
+  // shows the code panel on this answer.
+  if (!(await isOwnerVerified(auth.id))) {
+    return NextResponse.json({ error: 'email_unverified' }, { status: 403 })
+  }
 
   try {
     const { package_id = 'basic', quantity = 1, publish_property_id = null, promotion_code_id = null } = await req.json()
