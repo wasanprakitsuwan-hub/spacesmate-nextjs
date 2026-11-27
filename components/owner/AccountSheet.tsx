@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/ui/LocaleLink'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import TurnstileWidget, { TURNSTILE_ENABLED } from '@/components/auth/TurnstileWidget'
 import { createBrowserClient } from '@/lib/supabase'
 // Google sign-ups carry no tick; TermsGate asks them once when they land.
 import { termsMetadata } from '@/lib/terms-consent'
@@ -43,6 +44,9 @@ export default function AccountSheet({
   const [pwd, setPwd] = useState('')
   const [accepted, setAccepted] = useState(false)
   const [honeypot, setHoneypot] = useState('')
+  const [captcha, setCaptcha] = useState('')
+  // A Turnstile token works once; remount the widget for a fresh one after a refusal.
+  const [captchaKey, setCaptchaKey] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [inbox, setInbox] = useState('')
@@ -61,6 +65,7 @@ export default function AccountSheet({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) { setError(t.badEmail); return }
     if (pwd.length < 8) { setError(t.pwdTooShort); return }
     if (mode === 'signup' && !accepted) { setError(t.needAccept); return }
+    if (mode === 'signup' && TURNSTILE_ENABLED && !captcha) { setError(t.needCaptcha); return }
     setBusy(true); setError('')
     const supabase = createBrowserClient()
     try {
@@ -74,10 +79,14 @@ export default function AccountSheet({
       const pre = await fetch('/api/auth/pre-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: addr, honeypot }),
+        body: JSON.stringify({ email: addr, honeypot, turnstileToken: captcha }),
       })
       const preJ = await pre.json().catch(() => ({})) as { ok?: boolean; error?: string }
-      if (!pre.ok || !preJ.ok) { setError(preJ.error ?? t.genericError); setBusy(false); return }
+      if (!pre.ok || !preJ.ok) {
+        setError(preJ.error ?? t.genericError); setBusy(false)
+        setCaptcha(''); setCaptchaKey(k => k + 1)
+        return
+      }
 
       const { data, error: err } = await supabase.auth.signUp({
         email: addr, password: pwd,
@@ -181,6 +190,7 @@ export default function AccountSheet({
                     </span>
                   </label>
                 )}
+                {mode === 'signup' && <TurnstileWidget key={captchaKey} onToken={tok => { setCaptcha(tok); if (tok) setError('') }} />}
                 {error && <p role="alert" style={{ margin: 0, fontSize: 13.5, color: '#b42318' }}>{error}</p>}
                 <button type="submit" disabled={busy} className="sm-btn-primary" style={{ ...btnStyle('primary'), height: 52, fontSize: 16, opacity: busy ? 0.7 : 1 }}>
                   {busy ? t.saving : mode === 'login' ? t.loginAndSave : t.signupAndSave}

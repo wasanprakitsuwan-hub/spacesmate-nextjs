@@ -294,36 +294,76 @@ export function ApartmentUnitGrid({ rows, onChange, roomTypeOptions, locale = 't
     onChange(rows.map(r => r.id === id ? { ...r, [field]: val } : r))
   }
 
+  const lbl = (text: string) => <span className="sm-au-lbl">{text}</span>
+  const inp: React.CSSProperties = { ...SINP, padding: '7px 10px' }
+  const baht: React.CSSProperties = { position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }
+
   return (
-    <div>
+    <div className="sm-au">
+      {/* Wide screens: one table row per room type. Phones (≤640px): each row
+          becomes a card with its own labels, two fields per line. */}
+      <style>{`
+        .sm-au-head, .sm-au-row { display: grid; grid-template-columns: 1.3fr 1.2fr 0.6fr 0.9fr 0.8fr auto; gap: 6px; }
+        .sm-au-row { align-items: center; margin-bottom: 10px; }
+        .sm-au-lbl, .sm-au-top { display: none; }
+        @media (max-width: 640px) {
+          .sm-au-head { display: none; }
+          .sm-au-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+          .sm-au-row { grid-template-columns: 1fr 1fr; gap: 10px 10px; align-items: end; margin-bottom: 12px; }
+          .sm-au-row > .sm-au-wide { grid-column: 1 / -1; }
+          .sm-au-row > .sm-au-del { display: none; }
+          .sm-au-lbl { display: block; font-size: 12.5px; font-weight: 600; color: #334155; margin-bottom: 5px; }
+          .sm-au-row input, .sm-au-row select { height: 44px; }
+          .sm-au-terms { row-gap: 12px !important; }
+        }
+      `}</style>
       {rows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, marginBottom: 6, paddingLeft: 2 }}>
+          <div className="sm-au-head" style={{ marginBottom: 6, paddingLeft: 2 }}>
             {[t.colRoomName, t.colRoomType, t.colSize, t.col12m, t.colDaily, ''].map(h => (
               <div key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</div>
             ))}
           </div>
-          {rows.map(row => (
+          {rows.map((row, i) => (
             <div key={row.id} style={{ background: '#fafffe', border: '1px solid #eef0ef', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 28px', gap: 6, alignItems: 'center', marginBottom: 10 }}>
-                <input type="text" value={row.room_name ?? ''} maxLength={60}
-                  onChange={e => upd(row.id, 'room_name', e.target.value)}
-                  placeholder={t.roomNamePlaceholder} style={{ ...SINP, padding: '7px 10px' }} />
-                <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={{ ...SINP, padding: '7px 10px' }}>
-                  {roomTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <input type="number" value={row.size_sqm} onChange={e => upd(row.id, 'size_sqm', e.target.value)} placeholder="28" style={{ ...SINP, padding: '7px 10px' }} />
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
-                  <input type="number" value={row.price_12mo} onChange={e => upd(row.id, 'price_12mo', e.target.value)} placeholder="7,000" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12.5, color: '#94a3b8', pointerEvents: 'none' }}>฿</span>
-                  <input type="number" value={row.price_daily} onChange={e => upd(row.id, 'price_daily', e.target.value)} placeholder="900" style={{ ...SINP, padding: '7px 10px 7px 22px' }} />
-                </div>
-                <button type="button" onClick={() => removeRow(row.id)} style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{t.remove}</button>
+              <div className="sm-au-top">
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: '#02402e' }}>{t.roomN(i + 1)}</span>
+                <button type="button" onClick={() => removeRow(row.id)} style={{ height: 32, padding: '0 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13 }}>{t.remove}</button>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
+              <div className="sm-au-row">
+                <label className="sm-au-wide" style={{ display: 'block' }}>
+                  {lbl(t.colRoomName)}
+                  <input type="text" value={row.room_name ?? ''} maxLength={60}
+                    onChange={e => upd(row.id, 'room_name', e.target.value)}
+                    placeholder={t.roomNamePlaceholder} style={inp} />
+                </label>
+                <label style={{ display: 'block' }}>
+                  {lbl(t.colRoomType)}
+                  <select value={row.room_type} onChange={e => upd(row.id, 'room_type', e.target.value)} style={inp}>
+                    {roomTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </label>
+                <label style={{ display: 'block' }}>
+                  {lbl(t.colSize)}
+                  <input type="number" inputMode="decimal" value={row.size_sqm} onChange={e => upd(row.id, 'size_sqm', e.target.value)} placeholder="28" style={inp} />
+                </label>
+                <label style={{ display: 'block' }}>
+                  {lbl(t.col12m)}
+                  <span style={{ position: 'relative', display: 'block' }}>
+                    <span style={baht}>฿</span>
+                    <input type="number" inputMode="numeric" value={row.price_12mo} onChange={e => upd(row.id, 'price_12mo', e.target.value)} placeholder="7,000" style={{ ...inp, paddingLeft: 22 }} />
+                  </span>
+                </label>
+                <label style={{ display: 'block' }}>
+                  {lbl(t.colDaily)}
+                  <span style={{ position: 'relative', display: 'block' }}>
+                    <span style={baht}>฿</span>
+                    <input type="number" inputMode="numeric" value={row.price_daily} onChange={e => upd(row.id, 'price_daily', e.target.value)} placeholder="900" style={{ ...inp, paddingLeft: 22 }} />
+                  </span>
+                </label>
+                <button type="button" className="sm-au-del" onClick={() => removeRow(row.id)} style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#b91c1c', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{t.remove}</button>
+              </div>
+              <div className="sm-au-terms" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', paddingLeft: 2, borderTop: '1px dashed #eef0ef', paddingTop: 8 }}>
                 <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.shorterTerms}</span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={row.available_1mo} onChange={e => upd(row.id, 'available_1mo', e.target.checked)} style={{ width: 14, height: 14, accentColor: '#048c73' }} />
@@ -417,7 +457,7 @@ export function CondoHouseRentalDetail({ detail, propertyType, onChange, locale 
       </div>
       <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 14px 16px' }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: '#02402e', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 5 }}><span className="msym" style={{ fontSize: 15, fontVariationSettings: "'wght' 300, 'FILL' 0" }}>payments</span>{t.rentByTerm}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+        <div className="sm-g4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
           {([
             { key: 'price_12mo', label: t.monthN(12), ph: '15,000' },
             { key: 'price_6mo',  label: t.monthN(6),  ph: '16,000' },
@@ -898,7 +938,7 @@ export function ThaiAddressSelect({ form, onChange, locale = 'th' }: {
           {provinces.map(p => <option key={p.id} value={p.id}>{provinceLabel(p.name, locale)}</option>)}
         </select>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+      <div className="sm-g2m" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
           <label style={SLBL}>{t.district} {loadA && <span className="msym" style={{ fontSize: 13, color: '#94a3b8', animation: 'spin .8s linear infinite', display: 'inline-block' }}>sync</span>}</label>
           <select value={amphId ?? ''} onChange={e => { const id = parseInt(e.target.value as string); if (!isNaN(id)) selectAmphure(id) }} disabled={!provId || loadA} style={selStyle(!provId || loadA)}>
@@ -1240,7 +1280,17 @@ export function ListingFormFields({
   const [descTab, setDescTab] = useState<'th' | 'en'>('th')
 
   return (
-    <>
+    <div className="sm-lf">
+      {/* Phones: 16px inputs (iOS zooms into anything smaller), roomier fields,
+          and two-up grids that would squeeze text drop to one column. */}
+      <style>{`
+        @media (max-width: 640px) {
+          .sm-lf input:not([type=checkbox]):not([type=radio]), .sm-lf select, .sm-lf textarea { font-size: 16px !important; }
+          .sm-lf input:not([type=checkbox]):not([type=radio]), .sm-lf select { min-height: 44px; }
+          .sm-lf .sm-g2m { grid-template-columns: 1fr !important; }
+          .sm-lf .sm-g4 { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
       {/* ── 1 · ข้อมูลหลัก ── */}
       {inStep(1) && (<>
       <div style={{ marginBottom: 24 }}>
@@ -1512,7 +1562,7 @@ export function ListingFormFields({
       <div style={{ marginBottom: 8 }}>
         <SectionHead text={sh('10', `${t.contactInfo}`)} />
         <p style={{ fontSize: 11.5, color: '#94a3b8', margin: '-8px 0 14px' }}>{t.contactShownOnListing}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div className="sm-g2m" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
             <label style={SLBL}>{t.contactName}</label>
             <input value={form.contact_name} onChange={e => onChange('contact_name', e.target.value)}
@@ -1524,7 +1574,7 @@ export function ListingFormFields({
               placeholder="0812345678" style={SINP} />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="sm-g2m" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
             <label style={SLBL}>LINE ID</label>
             <input value={form.contact_line} onChange={e => onChange('contact_line', e.target.value)}
@@ -1541,6 +1591,6 @@ export function ListingFormFields({
         </div>
       </div>
       </>)}
-    </>
+    </div>
   )
 }
