@@ -1,24 +1,39 @@
 import type { Metadata } from 'next'
 import { DEFAULT_OG_IMAGE } from '@/lib/root-metadata'
-import GuideBody from '@/components/guide/GuideBody'
-import { GUIDE_UI, loadGuide } from '@/lib/guide-content'
+import GuideHub from '@/components/guide/GuideHub'
+import { GUIDE_HUB_EN as t } from '@/lib/guide-content'
 import { withPageSeo } from '@/lib/page-seo'
 import { hreflang } from '@/lib/hreflang'
 
-// Picks up guide edits from the dashboard (tagged revalidation) and SEO edits from /dashboard/pages.
-export const revalidate = 300
-
-const t = GUIDE_UI.en
+export const revalidate = 3600
 
 const baseMetadata: Metadata = {
   title: t.metaTitle,
   description: t.metaDesc,
-  openGraph: { title: t.metaTitle, description: t.metaDesc, type: 'article', images: [DEFAULT_OG_IMAGE], url: 'https://spacesmate.com/en/guide' },
+  openGraph: { title: t.metaTitle, description: t.metaDesc, type: 'website', images: [DEFAULT_OG_IMAGE], url: 'https://spacesmate.com/en/guide' },
   alternates: hreflang('/guide', 'en'),
 }
 
-export default async function Page() {
-  return <GuideBody guide={await loadGuide('en')} locale="en" />
+export default function Page() {
+  return (
+    <GuideHub
+      homeLabel={t.home}
+      crumb={t.crumb}
+      title={t.title}
+      intro={t.intro}
+      cards={[]}
+      subhead={t.subhead}
+      extra={[
+        { href: '/guide/listing', title: t.manualTitle, desc: t.manualDesc },
+        { href: '/faq', title: t.faqTitle, desc: t.faqDesc },
+      ]}
+      note={t.note}
+      noteLink={{ href: 'https://spacesmate.com/guide', label: t.noteLink }}
+      cta={{ title: t.ctaTitle, body: t.ctaBody, list: t.ctaList, manage: t.ctaManage }}
+      url="https://spacesmate.com/en/guide"
+      homeUrl="https://spacesmate.com/en"
+    />
+  )
 }
 
 export async function generateMetadata(): Promise<Metadata> {

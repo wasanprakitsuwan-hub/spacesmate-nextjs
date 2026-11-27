@@ -34,6 +34,7 @@ export const GUIDE_UI = {
     metaDesc: 'วิธีลงประกาศให้เช่ากับ SpacesMate ทีละขั้นตอน ตั้งแต่สมัครบัญชี กรอกข้อมูล ปักหมุด ใส่รูป จนชำระเงินและจัดการประกาศ',
     home: 'หน้าแรก',
     crumb: 'คู่มือการลงประกาศ',
+    hubCrumb: 'คู่มือเจ้าของ',
     toc: 'ในคู่มือนี้',
     step: (n: number) => `ขั้นที่ ${n}`,
     faqTitle: 'คำถามเกี่ยวกับการลงประกาศ',
@@ -48,6 +49,7 @@ export const GUIDE_UI = {
     metaDesc: 'How to list a rental on SpacesMate step by step: account, details, map pin, photos, payment and managing your listing.',
     home: 'Home',
     crumb: 'Listing guide',
+    hubCrumb: 'Owner guides',
     toc: 'In this guide',
     step: (n: number) => `Step ${n}`,
     faqTitle: 'Questions about listing',
@@ -57,4 +59,25 @@ export const GUIDE_UI = {
     ctaBody: 'Packages start at ฿299 for 30 days, and your listing goes live as soon as you pay',
     cta: 'Start listing',
   },
+} as const
+
+/** /en/guide: the English owner guide hub. The long-form owner guides are Thai only. */
+export const GUIDE_HUB_EN = {
+  metaTitle: 'Owner guides',
+  metaDesc: 'Guides for Bangkok property owners on SpacesMate: how to list a rental step by step, and answers about packages, renewals and building management.',
+  home: 'Home',
+  crumb: 'Owner guides',
+  title: 'Owner guides',
+  intro: 'Everything you need to list and manage a rental on SpacesMate, from setting up your first listing to handing over a whole building.',
+  subhead: 'Listing on SpacesMate',
+  manualTitle: 'How to list on SpacesMate',
+  manualDesc: '7 steps, about 10 to 15 minutes',
+  faqTitle: 'Frequently asked questions',
+  faqDesc: 'Packages, fees, renewals and building management',
+  note: 'Our in-depth guides on renting out an apartment, deposits and lease contracts under Thai rules are written in Thai.',
+  noteLink: 'Read them on the Thai site',
+  ctaTitle: 'Have a room or a building to rent out?',
+  ctaBody: 'List it yourself from ฿299 per room per month, or let SpacesMate manage the whole building.',
+  ctaList: 'List your property',
+  ctaManage: 'Ask about building management',
 } as const

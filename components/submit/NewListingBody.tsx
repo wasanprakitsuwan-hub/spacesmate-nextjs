@@ -389,7 +389,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
               <p style={{ margin: '10px 0 0', fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
                 <strong style={{ color: C.ink, fontWeight: 600 }}>{t.fillFreely}</strong>{t.fillFreelyBody(MAX_IMAGES_ANY_PACKAGE)}
               </p>
-              <Link href="/guide" style={{ display: 'inline-block', marginTop: 10, fontSize: 13.5, color: C.teal, textDecoration: 'none' }}>{t.guideLink}</Link>
+              <Link href="/guide/listing" style={{ display: 'inline-block', marginTop: 10, fontSize: 13.5, color: C.teal, textDecoration: 'none' }}>{t.guideLink}</Link>
             </div>
           </aside>
         </div>

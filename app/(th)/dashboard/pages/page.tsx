@@ -397,7 +397,7 @@ export default function PagesPage() {
         background: '#fff', textDecoration: 'none',
       }}>
         <span>
-          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: '#02402e' }}>คู่มือการลงประกาศ (/guide)</span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: '#02402e' }}>คู่มือการลงประกาศ (/guide/listing)</span>
           <span style={{ display: 'block', fontSize: 13, color: '#6b6660', marginTop: 2 }}>แก้ขั้นตอน ภาพหน้าจอ และคำถามท้ายคู่มือ ทั้งภาษาไทยและอังกฤษ</span>
         </span>
         <span style={{ fontSize: 14, color: '#037a64', whiteSpace: 'nowrap' }}>แก้ไข →</span>
