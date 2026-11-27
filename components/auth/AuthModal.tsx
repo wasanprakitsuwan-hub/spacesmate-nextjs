@@ -13,6 +13,7 @@
  *   3. Actual Supabase signUp only runs if pre-register returns { ok: true }
  */
 
+import TurnstileWidget, { TURNSTILE_ENABLED } from '@/components/auth/TurnstileWidget'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
@@ -44,53 +45,6 @@ const INP: React.CSSProperties = {
 }
 const LBL: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }
 const FG: React.CSSProperties  = { marginBottom: 14 }
-
-// ── Cloudflare Turnstile widget ────────────────────────────────────────────────
-// Only rendered when NEXT_PUBLIC_TURNSTILE_SITE_KEY env var is present.
-// Uses Turnstile's implicit rendering via data attributes.
-function TurnstileWidget({ onToken }: { onToken: (t: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    // Load Turnstile script once
-    const existing = document.getElementById('cf-turnstile-script')
-    if (!existing) {
-      const s = document.createElement('script')
-      s.id  = 'cf-turnstile-script'
-      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-      s.async = true
-      s.defer = true
-      document.head.appendChild(s)
-    }
-
-    // Wait for Turnstile to be available, then render
-    let attempts = 0
-    const poll = setInterval(() => {
-      attempts++
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const w = window as any
-      if (w.turnstile && ref.current && !ref.current.dataset.rendered) {
-        ref.current.dataset.rendered = 'true'
-        w.turnstile.render(ref.current, {
-          sitekey:  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
-          callback: (token: string) => onToken(token),
-          'expired-callback': () => onToken(''),
-          theme: 'light',
-          size: 'flexible',
-        })
-        clearInterval(poll)
-      }
-      if (attempts > 40) clearInterval(poll)  // give up after 4s
-    }, 100)
-
-    return () => clearInterval(poll)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <div ref={ref} style={{ margin: '4px 0 14px', minHeight: 65, borderRadius: 10, overflow: 'hidden' }} />
-  )
-}
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th' }: Props) {
@@ -129,7 +83,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
   const [honeypot,        setHoneypot]        = useState('')   // must stay empty
   const [turnstileToken,  setTurnstileToken]  = useState('')   // set by Turnstile widget
 
-  const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const turnstileEnabled = TURNSTILE_ENABLED
 
   // Close on backdrop click
   function handleOverlay(e: React.MouseEvent) {
@@ -487,7 +441,7 @@ export default function AuthModal({ onClose, defaultTab = 'login', locale = 'th'
 
               {/* ── Cloudflare Turnstile (shows only when site key configured) ── */}
               {turnstileEnabled && (
-                <TurnstileWidget onToken={setTurnstileToken} />
+                <div style={{ margin: '4px 0 14px' }}><TurnstileWidget onToken={setTurnstileToken} /></div>
               )}
 
               <div style={{ margin: '4px 0 14px' }}>

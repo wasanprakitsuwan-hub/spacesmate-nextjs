@@ -382,6 +382,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
         .sm-nl-aside { position: sticky; top: 150px; }
         .sm-nl-bar { position: sticky; bottom: 0; z-index: 20; }
         @media (min-width: 961px) { .sm-nl-actions { justify-content: flex-end; } .sm-nl-actions .sm-btn-primary { flex: 0 0 320px !important; } }
+        @media (max-width: 640px) { .sm-nl-card { padding: 16px 14px 20px !important; } }
         @media (max-width: 960px) { .sm-nl-grid { grid-template-columns: minmax(0, 1fr); } .sm-nl-aside { display: none; } }
         @media (prefers-reduced-motion: reduce) { .sm-step { animation: none; } .sm-gauge-fill { transition: none; } }
       `}</style>
@@ -434,7 +435,7 @@ function SubmitNewForm({ locale }: { locale: Locale }) {
           <div style={{ minWidth: 0 }}>
             <div key={step} className="sm-step">
               {step <= 3 && (
-                <div style={{ ...card, padding: '20px 20px 24px' }}>
+                <div className="sm-nl-card" style={{ ...card, padding: '20px 20px 24px' }}>
                   <ListingFormFields
                     form={form}
                     onChange={onChange}

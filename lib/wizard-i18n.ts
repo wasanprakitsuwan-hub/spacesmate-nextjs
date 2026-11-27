@@ -87,6 +87,7 @@ export const WIZARD_T = {
     colDaily: 'ราคา/วัน',
     shorterTerms: 'สัญญาสั้นกว่า:',
     addRoomType: 'เพิ่มประเภทห้อง',
+    roomN: (n: number) => `ห้องแบบที่ ${n}`,
 
     // ── Property identity ──
     projectName: 'ชื่อโครงการ / หมู่บ้าน',
@@ -274,6 +275,7 @@ export const WIZARD_T = {
     colDaily: 'Price/day',
     shorterTerms: 'Shorter terms:',
     addRoomType: 'Add a room type',
+    roomN: (n: number) => `Room type ${n}`,
 
     projectName: 'Project / village name',
     condoName: 'Condominium name',
