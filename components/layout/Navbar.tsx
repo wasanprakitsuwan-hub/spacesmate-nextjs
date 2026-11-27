@@ -107,7 +107,7 @@ export default function Navbar() {
     textDecoration: 'none',
   })
 
-  const ownerActive = isActive('/list-your-property') || isActive('/manage')
+  const ownerActive = isActive('/list-your-property') || isActive('/manage') || isActive('/guide')
 
   async function handleSignOut() {
     const supabase = createBrowserClient()
@@ -132,6 +132,7 @@ export default function Navbar() {
     { label: t.navSearch,  icon: 'search',    href: '/search' },
     { label: t.navSubmit,  icon: 'sell',       href: '/list-your-property' },
     { label: t.navManage,  icon: 'handshake',  href: '/manage' },
+    { label: t.navGuide,   icon: 'menu_book',  href: '/guide' },
     { label: t.navBlog,    icon: 'article',    href: '/blog' },
     ...(session ? [{ label: t.navDashboard, icon: 'dashboard', href: userInfo?.dashUrl ?? '/owner-dashboard' }] : []),
   ]
@@ -182,6 +183,15 @@ export default function Navbar() {
                 <span>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navManage}</span>
                   <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 1 }}>{t.navManageDesc}</span>
+                </span>
+              </Link>
+              <Link href="/guide" style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '11px 13px', borderRadius: 6, cursor: 'pointer', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = C.paper}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                <span className="msym" style={{ fontSize: 21, color: C.teal, marginTop: 1 }}>menu_book</span>
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#231f20' }}>{t.navGuide}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 1 }}>{t.navGuideDesc}</span>
                 </span>
               </Link>
             </div>

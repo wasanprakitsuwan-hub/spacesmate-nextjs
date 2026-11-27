@@ -24,7 +24,8 @@ import type { Locale } from '@/lib/faq-i18n'
 // and keyword-dense. Every answer is emitted as FAQPage JSON-LD by
 // app/faq/page.tsx — server-side, so it is in the HTML those engines fetch.
 
-export interface FAQ { q: string; a: string }
+/** link: optional read-more link under the answer (kept out of the FAQPage schema). */
+export interface FAQ { q: string; a: string; link?: { href: string; label: string } }
 export interface Category {
   id: string
   icon: string
@@ -134,6 +135,41 @@ const TH: Category[] = [
       },
     ],
   },
+  {
+    id: 'before-renting',
+    icon: 'menu_book',
+    title: 'เรื่องควรรู้ก่อนปล่อยเช่า',
+    subtitle: 'เงินประกัน สัญญาเช่า และการปล่อยเช่าตามกฎ สคบ.',
+    faqs: [
+      {
+        q: 'ปล่อยเช่าอพาร์ทเม้นท์หรือคอนโด ต้องเริ่มจากอะไร?',
+        a: 'มี 7 ขั้นตอนหลัก: เตรียมห้องให้พร้อมเข้าอยู่ ตั้งค่าเช่าจากห้องใกล้เคียง ลงประกาศพร้อมรูปและราคาที่ชัดเจน คัดกรองผู้เช่า ทำสัญญาเช่า ส่งมอบห้องพร้อมบันทึกสภาพ และดูแลผู้เช่าระหว่างสัญญา',
+        link: { href: '/guide/ปล่อยเช่าอพาร์ทเม้นท์', label: 'อ่านคู่มือปล่อยเช่าทีละขั้นตอน' },
+      },
+      {
+        q: 'เก็บเงินประกันและค่าเช่าล่วงหน้าได้กี่เดือน?',
+        a: 'ถ้ามีห้องให้เช่าเพื่ออยู่อาศัยตั้งแต่ 3 ห้องขึ้นไป ประกาศ สคบ. พ.ศ. 2568 กำหนดให้เงินประกันรวมกับค่าเช่าล่วงหน้าไม่เกิน 3 เดือนของค่าเช่ารายเดือน รูปแบบที่ใช้กันมากคือประกัน 2 เดือนและค่าเช่าล่วงหน้า 1 เดือน',
+      },
+      {
+        q: 'ต้องคืนเงินประกันให้ผู้เช่าภายในกี่วัน?',
+        a: 'ถ้าผู้เช่าไม่ได้ทำความเสียหาย ต้องคืนภายใน 7 วันนับแต่สัญญาสิ้นสุดและได้ห้องคืน ถ้ามีความเสียหายที่ผู้เช่าต้องรับผิด หักค่าซ่อมที่จ่ายจริงแล้วคืนส่วนที่เหลือภายใน 14 วัน ความเสื่อมจากการใช้งานตามปกติหักจากเงินประกันไม่ได้',
+      },
+      {
+        q: 'สัญญาเช่าห้องต้องมีอะไรบ้าง?',
+        a: 'อย่างน้อยควรมีชื่อคู่สัญญา ห้องที่เช่า ระยะเวลาเช่า ค่าเช่าและวันชำระ เงินประกัน อัตราค่าน้ำค่าไฟ เงื่อนไขการบอกเลิกสัญญา และบันทึกสภาพห้องพร้อมรูปแนบท้ายสัญญา ผู้ให้เช่าที่มีตั้งแต่ 3 ห้องขึ้นไปต้องใช้ข้อสัญญาตามประกาศ สคบ. พ.ศ. 2568',
+        link: { href: '/guide/ปล่อยเช่าอพาร์ทเม้นท์#contract', label: 'ดูรายการที่ต้องมีในสัญญา' },
+      },
+      {
+        q: 'ปล่อยเช่าคอนโดรายวันได้ไหม?',
+        a: 'การให้เช่าห้องพักรายวันเพื่อรับค่าตอบแทนเข้าข่ายธุรกิจโรงแรมตาม พ.ร.บ.โรงแรม พ.ศ. 2547 ซึ่งต้องได้รับอนุญาต และข้อบังคับนิติบุคคลอาคารชุดส่วนใหญ่ห้ามให้เช่ารายวัน การปล่อยเช่ารายเดือนพร้อมสัญญาจึงเป็นทางที่ปลอดภัยกว่า',
+      },
+      {
+        q: 'ห้องว่างนาน ไม่มีคนเช่า ควรทำอย่างไร?',
+        a: 'เริ่มจากเทียบค่าเช่ากับห้องประเภทเดียวกันใกล้สถานีเดียวกัน ถ่ายรูปใหม่ให้สว่างและครบทุกมุม เขียนรายละเอียดให้ชัดเรื่องค่าน้ำค่าไฟและการเดินทาง แล้วลงประกาศในหลายช่องทาง ถ้ายังว่างนาน ให้ทีมบริหารช่วยดูแลทั้งการตลาดและการหาผู้เช่าได้',
+        link: { href: '/guide/ปล่อยเช่าอพาร์ทเม้นท์#price', label: 'ดูค่าเช่ากลางรายสถานีจากประกาศจริง' },
+      },
+    ],
+  },
 ]
 
 const EN: Category[] = [
@@ -234,6 +270,39 @@ const EN: Category[] = [
       {
         q: 'Does SpacesMate hold the security deposit on the owner’s behalf?',
         a: 'No. SpacesMate does not hold security deposits. The deposit belongs to the owner directly: the owner receives it and returns it to the tenant within 14 days of check-out. SpacesMate only coordinates.',
+      },
+    ],
+  },
+  {
+    id: 'before-renting',
+    icon: 'menu_book',
+    title: 'Before you rent out',
+    subtitle: 'Deposits, leases and the Thai consumer protection rules',
+    faqs: [
+      {
+        q: 'Where do I start when renting out an apartment or condo?',
+        a: 'There are seven main steps: get the room ready to move into, set the rent against nearby rooms, list it with clear photos and a clear price, screen tenants, sign a lease, hand over the room with a condition record, and look after the tenancy until it ends.',
+        link: { href: '/guide/ปล่อยเช่าอพาร์ทเม้นท์', label: 'Read the step-by-step guide (in Thai)' },
+      },
+      {
+        q: 'How many months of deposit and advance rent can I take?',
+        a: 'If you let 3 or more residential units, the Office of the Consumer Protection Board (OCPB) notice of 2025 caps the deposit plus advance rent at 3 months of the monthly rent. A common split is a 2-month deposit and 1 month in advance.',
+      },
+      {
+        q: 'How soon must I return the deposit?',
+        a: 'If the tenant caused no damage, within 7 days of the lease ending and the room being handed back. If there is damage the tenant is liable for, deduct the actual repair cost and return the rest within 14 days. Normal wear and tear cannot be deducted.',
+      },
+      {
+        q: 'What should a room lease include?',
+        a: 'At least the parties, the room, the lease term, the rent and due date, the deposit, the water and electricity rates, the termination terms, and a condition record with photos attached to the lease. Landlords with 3 or more units must use lease terms that follow the 2025 OCPB notice.',
+      },
+      {
+        q: 'Can I rent out my condo daily?',
+        a: 'Renting rooms by the day for payment falls under the Hotel Act 2004 and needs a licence, and most condominium bylaws forbid daily rentals. Monthly rentals under a written lease are the safer route.',
+      },
+      {
+        q: 'My room has been empty for a long time. What should I do?',
+        a: 'Compare your rent with the same room type near the same station, retake bright photos of every corner, state the water and electricity rates and travel options clearly, and list on more than one channel. If it still sits empty, a management team can take over marketing and finding tenants.',
       },
     ],
   },

@@ -11,7 +11,7 @@ async function getToken() {
   return session?.access_token ?? ''
 }
 
-// Pages › คู่มือการลงประกาศ. Edits the /guide text in both languages and saves
+// Pages › คู่มือการลงประกาศ. Edits the /guide/listing text in both languages and saves
 // it to site_settings 'listing_guide'; the settings API refreshes the page cache.
 export default function GuideEditorPage() {
   const [guides, setGuides]   = useState<Record<GuideLocale, Guide>>(DEFAULT_GUIDE)
@@ -91,7 +91,7 @@ export default function GuideEditorPage() {
       <PageHead
         back={{ href: '/dashboard/pages', label: 'หน้าเว็บ (Pages)' }}
         title="คู่มือการลงประกาศ"
-        sub={<>แก้ข้อความหน้า <a href={lang === 'en' ? '/en/guide' : '/guide'} target="_blank" rel="noreferrer" style={{ color: C.teal }}>{lang === 'en' ? '/en/guide' : '/guide'}</a> ทุกบรรทัดควรตรงกับการทำงานจริงของเว็บ</>}
+        sub={<>แก้ข้อความหน้า <a href={lang === 'en' ? '/en/guide/listing' : '/guide/listing'} target="_blank" rel="noreferrer" style={{ color: C.teal }}>{lang === 'en' ? '/en/guide/listing' : '/guide/listing'}</a> ทุกบรรทัดควรตรงกับการทำงานจริงของเว็บ</>}
         actions={<>
           <div style={{ display: 'inline-flex', border: `1px solid ${C.border}`, borderRadius: RADIUS, overflow: 'hidden' }}>
             {(['th', 'en'] as const).map(l => (

@@ -25,6 +25,9 @@ structured data rather than leaving a bare figure to be interpreted.
 - [List your property](https://spacesmate.com/list-your-property): listing subscription tiers and how to list
 - [Services](https://spacesmate.com/services): full property management for building owners
 - [FAQ](https://spacesmate.com/faq): listing, fees, and management questions answered
+- [Owner guides](https://spacesmate.com/guide): Thai how-to guides for landlords (renting out, pricing, leases, deposits under the OCPB 2025 rules)
+- [How to rent out an apartment or condo (Thai)](https://spacesmate.com/guide/%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%AD%E0%B8%A2%E0%B9%80%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%AD%E0%B8%9E%E0%B8%B2%E0%B8%A3%E0%B9%8C%E0%B8%97%E0%B9%80%E0%B8%A1%E0%B9%89%E0%B8%99%E0%B8%97%E0%B9%8C): 7 steps from preparing the room to managing tenants, with live median rents by station
+- [Listing manual](https://spacesmate.com/guide/listing): how to list on SpacesMate step by step
 - [Blog](https://spacesmate.com/blog): Bangkok rental market guidance
 - [About](https://spacesmate.com/about)
 - [Contact](https://spacesmate.com/contact)

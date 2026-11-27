@@ -367,6 +367,33 @@ export async function listRentPages(): Promise<RentPageSummary[]> {
   return out
 }
 
+/** One row of the owner guide's rent table: a station, a type, and its median rent. */
+export type RentSnapshotRow = { path: string; place: string; systems: string[]; type: 'condo' | 'apartment'; count: number; median: number }
+
+/**
+ * Median asking rent by station for condos and apartments, from live listings
+ * within the rent-page radius. Only station/type pairs with INDEX_MIN or more
+ * listings, so a median never rests on one or two rooms. Read by the owner
+ * guide at /guide/<slug>; neighbouring stations share listings, which is
+ * stated on the page.
+ */
+export async function loadRentSnapshot(limit = 8): Promise<RentSnapshotRow[]> {
+  const [places, all] = await Promise.all([loadRentPlaces(), loadPinnedListings()])
+  const rows: RentSnapshotRow[] = []
+  for (const place of places) {
+    if (place.kind !== 'station') continue
+    const near = listingsNear(place, all)
+    for (const type of ['condo', 'apartment'] as const) {
+      const prices = near.filter(l => l.property_type === type && l.price_from > 0).map(l => l.price_from).sort((a, b) => a - b)
+      const n = prices.length
+      if (n < INDEX_MIN) continue
+      const median = n % 2 ? prices[(n - 1) / 2] : Math.round((prices[n / 2 - 1] + prices[n / 2]) / 2)
+      rows.push({ path: rentPath(place, type), place: rentPlaceLabel(place, 'th'), systems: place.station.systems, type, count: n, median })
+    }
+  }
+  return rows.sort((a, b) => b.count - a.count || a.place.localeCompare(b.place, 'th')).slice(0, limit)
+}
+
 /** The old /area slug folded into this rent page, if any — for its hand-written text. */
 
 /** Metadata for both locales. Shares loadRentPage's cache() entry with the body. */

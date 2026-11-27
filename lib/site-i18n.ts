@@ -115,6 +115,8 @@ export const SITE_T = {
     navSubmitDesc: 'สร้างประกาศเอง ฟรี + แพ็กเกจ',
     navManage: 'รับฝากบริหาร',
     navManageDesc: 'ให้เราดูแลให้ครบวงจร',
+    navGuide: 'คู่มือเจ้าของ',
+    navGuideDesc: 'ปล่อยเช่า ตั้งค่าเช่า ทำสัญญา',
     navBlog: 'บทความ',
     navDashboard: 'แดชบอร์ด',
     navProfile: 'ข้อมูลส่วนตัว',
@@ -143,7 +145,7 @@ export const SITE_T = {
     footerTenants: 'ผู้เช่า',
     footerOwners: 'เจ้าของทรัพย์',
     footerOwnerLogin: 'เข้าสู่ระบบเจ้าของ',
-    footerGuide: 'คู่มือการลงประกาศ',
+    footerGuide: 'คู่มือเจ้าของ',
     // Public address. The registered one (Rama IV) stays on legal documents.
   },
 
@@ -235,6 +237,8 @@ export const SITE_T = {
     navSubmitDesc: 'Create it yourself — free, plus packages',
     navManage: 'Full management',
     navManageDesc: 'We handle the whole tenancy',
+    navGuide: 'Owner guides',
+    navGuideDesc: 'How to list and manage a rental',
     navBlog: 'Articles',
     navDashboard: 'Dashboard',
     navProfile: 'My profile',
@@ -262,7 +266,7 @@ export const SITE_T = {
     footerTenants: 'Renters',
     footerOwners: 'Owners',
     footerOwnerLogin: 'Owner sign-in',
-    footerGuide: 'Listing guide',
+    footerGuide: 'Owner guides',
   },
 } as const
 
