@@ -73,7 +73,11 @@ export function isSameOrigin(req: NextRequest, allowedHosts: string[]): boolean 
   const raw = req.headers.get('origin') ?? req.headers.get('referer')
   if (!raw) return false
   try {
-    return allowedHosts.includes(new URL(raw).hostname)
+    const host = new URL(raw).hostname
+    // Vercel preview deployments of this project (…-spaces-mate.vercel.app),
+    // so photo upload and the other guarded routes work on PR previews.
+    if (allowedHosts === ALLOWED_HOSTS && /^spacesmate-nextjs-[a-z0-9-]+-spaces-mate\.vercel\.app$/.test(host)) return true
+    return allowedHosts.includes(host)
   } catch {
     return false
   }
