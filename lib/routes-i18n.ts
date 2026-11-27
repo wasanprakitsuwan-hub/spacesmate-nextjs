@@ -36,6 +36,7 @@ const EN_STATIC = new Set([
   '/checkout',
   '/faq',
   '/guide',
+  '/guide/listing',
   '/contact',
   '/search',
   '/list-your-property',
@@ -81,6 +82,8 @@ const EN_DYNAMIC_PREFIXES = ['/property/', '/area/', '/rent/']
  * Thai-only, deliberately, and worth naming so nobody wonders:
  *   /blog/[slug]         see below — NOT a missing page
  *   /building/[slug]     no English version yet
+ *   /guide/[slug]        the long-form owner guides (lib/owner-guides), Thai only;
+ *                        /guide/listing is the one guide page with an English twin
  *   /list-your-property/success      post-checkout, reached from Stripe
  *   /list-your-property/cancel       likewise
  *   /dashboard/*         admin surfaces, Thai-only by design

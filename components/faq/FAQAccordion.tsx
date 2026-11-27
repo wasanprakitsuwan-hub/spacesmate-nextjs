@@ -32,7 +32,10 @@ function FAQItem({ faq, isOpen, onToggle, first }: { faq: FAQ; isOpen: boolean; 
         <span aria-hidden style={{ fontSize: 20, lineHeight: 1.1, color: C.muted, flexShrink: 0 }}>{isOpen ? '−' : '+'}</span>
       </button>
       {isOpen && (
-        <p style={{ fontSize: 15, color: C.ink, lineHeight: 1.75, margin: 0, padding: '0 48px 18px 20px', whiteSpace: 'pre-line' }}>{faq.a}</p>
+        <div style={{ padding: '0 48px 18px 20px' }}>
+          <p style={{ fontSize: 15, color: C.ink, lineHeight: 1.75, margin: 0, whiteSpace: 'pre-line' }}>{faq.a}</p>
+          {faq.link && <Link href={faq.link.href} style={{ display: 'inline-block', marginTop: 8, fontSize: 14.5, color: C.teal, textDecoration: 'none' }}>{faq.link.label} →</Link>}
+        </div>
       )}
     </div>
   )
@@ -66,7 +69,7 @@ export default function FAQAccordion({ locale = 'th' }: { locale?: Locale }) {
         </nav>
         <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', fontWeight: 600, color: C.green, margin: '0 0 8px' }}>{t.heading}</h1>
         <p style={{ fontSize: 16, color: C.muted, margin: '0 0 28px', lineHeight: 1.65 }}>
-          {t.subA} {t.subB} · <Link href="/guide" style={{ color: C.teal, textDecoration: 'none' }}>{t.guideLink}</Link>
+          {t.subA} {t.subB} · <Link href="/guide/listing" style={{ color: C.teal, textDecoration: 'none' }}>{t.guideLink}</Link>
         </p>
 
         <div className="sm-faq-grid">

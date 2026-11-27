@@ -4,6 +4,7 @@ import { listDistrictPages } from '@/lib/district-pages'
 import { hasEnglishPosts } from '@/lib/blog-links'
 import { listRentPages } from '@/lib/rent-pages'
 import { getBuildingsWithListings } from '@/lib/buildings'
+import { OWNER_GUIDES, ownerGuidePath } from '@/lib/owner-guides'
 
 const SITE = 'https://spacesmate.com'
 
@@ -42,7 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/services',           'monthly', 0.7, 0.6],
     ['/blog',               'weekly',  0.7, 0.5],
     ['/faq',                'monthly', 0.5, 0.6],
-    ['/guide',              'monthly', 0.6, 0.6],
+    ['/guide',              'monthly', 0.7, 0.5],
+    ['/guide/listing',      'monthly', 0.6, 0.6],
     ['/about',              'yearly',  0.5, 0.4],
     ['/contact',            'yearly',  0.5, 0.4],
     ['/terms',              'yearly',  0.3, 0.3],
@@ -61,6 +63,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: en, changeFrequency, priority: enP, lastModified: now, alternates },
     ]
   })
+
+  // ── Owner guides, Thai only (no English twin, so no alternates) ─────────
+  const ownerGuidePages: MetadataRoute.Sitemap = OWNER_GUIDES.map(g => ({
+    url: encodeURI(`${SITE}${ownerGuidePath(g)}`),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+    lastModified: new Date(g.reviewed),
+  }))
 
   // ── Rent-near-a-place pages, Thai and English ───────────────────────────
   // Station and landmark pages, all types and per type. Only those with
@@ -174,5 +184,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('sitemap: live data unavailable, serving static entries only', err)
   }
 
-  return [...staticPages, ...rentPages, ...districtPages, ...buildingPages, ...propertyPages, ...blogPages]
+  return [...staticPages, ...ownerGuidePages, ...rentPages, ...districtPages, ...buildingPages, ...propertyPages, ...blogPages]
 }

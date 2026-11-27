@@ -1,18 +1,20 @@
 import LocaleLink from '@/components/ui/LocaleLink'
-import { FaqLd } from '@/components/seo/JsonLd'
+import { BreadcrumbLd, FaqLd } from '@/components/seo/JsonLd'
 import { GUIDE_UI, type Guide, type GuideLocale } from '@/lib/guide-content'
 import { C, RADIUS, WRAP, btnStyle, h2Style } from '@/lib/ui'
 
 /**
- * /guide and /en/guide. Server-rendered so the steps and the FAQ are in the
+ * /guide/listing and /en/guide/listing. Server-rendered so the steps and the FAQ are in the
  * HTML search and answer engines fetch. A step's screenshot shows only once one
  * is uploaded from the dashboard; there are no public placeholders.
  */
 export default function GuideBody({ guide, locale }: { guide: Guide; locale: GuideLocale }) {
   const t = GUIDE_UI[locale]
+  const base = locale === 'en' ? 'https://spacesmate.com/en' : 'https://spacesmate.com'
   return (
     <div style={{ background: C.paper, padding: '28px 16px 72px' }}>
       <FaqLd qa={guide.faq} />
+      <BreadcrumbLd trail={[{ name: 'SpacesMate', url: base }, { name: t.hubCrumb, url: `${base}/guide` }, { name: t.crumb, url: `${base}/guide/listing` }]} />
       <style>{`
         .sm-gd-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: start; }
         .sm-gd-toc { position: sticky; top: 88px; }
@@ -22,6 +24,8 @@ export default function GuideBody({ guide, locale }: { guide: Guide; locale: Gui
       <div style={{ maxWidth: WRAP, margin: '0 auto' }}>
         <nav aria-label="breadcrumb" style={{ fontSize: 13, color: C.muted, marginBottom: 10 }}>
           <LocaleLink href="/" style={{ color: C.teal, textDecoration: 'none' }}>{t.home}</LocaleLink>
+          <span style={{ margin: '0 6px', color: C.faint }}>/</span>
+          <LocaleLink href="/guide" style={{ color: C.teal, textDecoration: 'none' }}>{t.hubCrumb}</LocaleLink>
           <span style={{ margin: '0 6px', color: C.faint }}>/</span>{t.crumb}
         </nav>
 
