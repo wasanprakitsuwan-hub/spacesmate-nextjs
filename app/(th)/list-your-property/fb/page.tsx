@@ -34,10 +34,14 @@ async function getSamples(): Promise<SampleCard[]> {
       .eq('listing_status', 'active')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .gt('price_from', 0)
+      // Ads target Bangkok owners: show Bangkok rooms only, condos and
+      // apartments first (what most of them are listing).
+      .eq('province', 'กรุงเทพมหานคร')
       .order('created_at', { ascending: false })
-      .limit(12)
-    return (data ?? [])
-      .filter(r => Array.isArray(r.images) && typeof r.images[0] === 'string')
+      .limit(24)
+    const withPhoto = (data ?? []).filter(r => Array.isArray(r.images) && typeof r.images[0] === 'string')
+    const rooms = withPhoto.filter(r => r.property_type === 'condo' || r.property_type === 'apartment')
+    return [...rooms, ...withPhoto.filter(r => !rooms.includes(r))]
       .slice(0, 2)
       .map(r => ({
         title: String(r.title_th ?? ''),
